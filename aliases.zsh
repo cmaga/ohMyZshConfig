@@ -1,6 +1,6 @@
 # This is where aliases are for oh my zsh
 
-# OS detection for platform-specific commands
+# OS Platform-specific commands
 case "$OSTYPE" in
   darwin*)
     # macOS specific aliases
