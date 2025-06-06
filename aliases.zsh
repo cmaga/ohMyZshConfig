@@ -31,4 +31,4 @@ alias gitd="git diff"
 alias gitl="git log"
 alias gita="git add ."
 alias gitc="cz commit"
-alias gnuke="git branch | grep -v "master" | xargs git branch -D" # deletes all local branches except master
+alias gnuke="git branch | grep -v \"master\\|main\" | xargs git branch -D" # deletes all local branches except master/main
