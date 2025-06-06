@@ -22,8 +22,8 @@ esac
 
 # config shortcuts
 alias zconf="vim ~/.zshrc"
-alias zsource="source ~/.zshrc" # reloads zsh config
 alias sshconf="vim ~/.ssh/config"
+alias zsource="source ~/.zshrc" # reloads zsh config
 
 # git aliases
 alias gits="git status"
