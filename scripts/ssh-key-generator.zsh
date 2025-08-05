@@ -1,16 +1,16 @@
-#!/usr/bin/env zsh
-
+#!/bin/zsh
 # SSH Key Generator Script
 # Manages SSH keys for different hosts with organized storage and ssh-agent integration
 
-# Exit if any command fails
 set -e
 
 # Configuration
 SSH_DIR="$HOME/.ssh"
 KEYS_DIR="$SSH_DIR/keys"
 CONFIG_FILE="$SSH_DIR/config"
-SCRIPT_DIR="$SSH_DIR/scripts"
+
+# Global variable to store generated key path
+GENERATED_KEY_PATH=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -20,7 +20,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Ensure required directories exist
-mkdir -p "$KEYS_DIR" "$SCRIPT_DIR"
+mkdir -p "$KEYS_DIR"
 
 # Function to print colored output
 print_color() {
@@ -79,7 +79,7 @@ get_host_details() {
     ' "$CONFIG_FILE"
 }
 
-# Function to generate SSH key
+# Function to generate SSH key (fixed version using global variable)
 generate_ssh_key() {
     local host=$1
     local email=$2
@@ -110,7 +110,8 @@ generate_ssh_key() {
     local pub_key_content=$(cat "$key_path.pub")
     copy_to_clipboard "$pub_key_content"
     
-    echo "$key_path"
+    # Set global variable instead of using echo/return
+    GENERATED_KEY_PATH="$key_path"
 }
 
 # Function to add host to SSH config
@@ -181,7 +182,7 @@ select_existing_host() {
     done
 }
 
-# Function to create new host
+# Updated create_new_host function
 create_new_host() {
     local host_alias hostname username email key_type_choice
     
@@ -204,16 +205,16 @@ create_new_host() {
         *) key_type="ed25519" ;;
     esac
     
-    # Generate key
-    local key_path=$(generate_ssh_key "$host_alias" "$email" "$key_type")
+    # Generate key (uses global variable)
+    generate_ssh_key "$host_alias" "$email" "$key_type"
     
-    # Add to SSH config
-    add_host_to_config "$host_alias" "$hostname" "$username" "$key_path"
+    # Add to SSH config using the global variable
+    add_host_to_config "$host_alias" "$hostname" "$username" "$GENERATED_KEY_PATH"
     
     print_color $GREEN "🎉 New host '$host_alias' created successfully!"
 }
 
-# Function to add key to existing host
+# Updated add_key_to_existing_host function
 add_key_to_existing_host() {
     local host=$1
     local email key_type_choice
@@ -241,8 +242,8 @@ add_key_to_existing_host() {
         *) key_type="ed25519" ;;
     esac
     
-    # Generate key
-    local key_path=$(generate_ssh_key "$host" "$email" "$key_type")
+    # Generate key (uses global variable)
+    generate_ssh_key "$host" "$email" "$key_type"
     
     # Update SSH config with new key path
     print_color $BLUE "📝 Updating SSH config with new key..."
@@ -250,8 +251,8 @@ add_key_to_existing_host() {
     # Create backup
     cp "$CONFIG_FILE" "$CONFIG_FILE.backup.$(date +%Y%m%d_%H%M%S)"
     
-    # Update IdentityFile line for this host
-    sed -i.tmp "/^Host $host$/,/^Host / s|IdentityFile.*|IdentityFile $key_path|" "$CONFIG_FILE"
+    # Update IdentityFile line for this host using the global variable
+    sed -i.tmp "/^Host $host$/,/^Host / s|IdentityFile.*|IdentityFile $GENERATED_KEY_PATH|" "$CONFIG_FILE"
     rm -f "$CONFIG_FILE.tmp"
     
     print_color $GREEN "🎉 Key added to host '$host' successfully!"
@@ -261,13 +262,38 @@ add_key_to_existing_host() {
 list_keys() {
     print_color $BLUE "🗂️  Managed SSH Keys:"
     
-    if [[ ! -d "$KEYS_DIR" ]] || [[ -z "$(ls -A "$KEYS_DIR" 2>/dev/null)" ]]; then
-        print_color $YELLOW "No managed keys found"
-        return
+    # Check if keys directory exists and has files
+    if [[ ! -d "$KEYS_DIR" ]]; then
+        print_color $YELLOW "📁 Keys directory doesn't exist yet"
+        print_color $BLUE "💡 Generate your first key by selecting option 1 or 2"
+        return 0
     fi
     
+    # Check if directory is empty using a simple and reliable method
+    if [[ -z "$(ls -A "$KEYS_DIR" 2>/dev/null)" ]]; then
+        print_color $YELLOW "📁 No SSH keys found in $KEYS_DIR"
+        print_color $BLUE "💡 Generate your first key by selecting option 1 or 2"
+        return 0
+    fi
+    
+    # Check if ssh-agent is accessible
+    local agent_status=""
+    if ! ssh-add -l >/dev/null 2>&1; then
+        local exit_code=$?
+        if [[ $exit_code -eq 2 ]]; then
+            agent_status="agent_not_running"
+        elif [[ $exit_code -eq 1 ]]; then
+            agent_status="agent_no_keys"
+        fi
+    else
+        agent_status="agent_with_keys"
+    fi
+    
+    # List the keys
+    local found_keys=false
     for key_file in "$KEYS_DIR"/*; do
         if [[ -f "$key_file" ]] && [[ "$key_file" != *.pub ]]; then
+            found_keys=true
             local key_name=$(basename "$key_file")
             local host_name=$(echo "$key_name" | sed 's/id_[^_]*_//')
             
@@ -275,25 +301,100 @@ list_keys() {
             echo "     🔐 Private: $key_file"
             echo "     🔓 Public:  $key_file.pub"
             
-            # Check if key is in ssh-agent
-            local fingerprint=$(ssh-keygen -lf "$key_file" 2>/dev/null | awk '{print $2}')
-            if ssh-add -l 2>/dev/null | grep -q "$fingerprint"; then
-                print_color $GREEN "     ✓ Loaded in ssh-agent"
-            else
+            # Check if key is in ssh-agent (only if agent is accessible)
+            if [[ "$agent_status" == "agent_not_running" ]]; then
+                print_color $RED "     ✗ SSH agent not running"
+            elif [[ "$agent_status" == "agent_no_keys" ]]; then
                 print_color $YELLOW "     ⚠ Not loaded in ssh-agent"
+            else
+                local fingerprint=$(ssh-keygen -lf "$key_file" 2>/dev/null | awk '{print $2}')
+                if ssh-add -l 2>/dev/null | grep -q "$fingerprint"; then
+                    print_color $GREEN "     ✓ Loaded in ssh-agent"
+                else
+                    print_color $YELLOW "     ⚠ Not loaded in ssh-agent"
+                fi
             fi
             echo
         fi
     done
+    
+    # If no valid key files were found (shouldn't happen if directory check passed)
+    if [[ "$found_keys" == false ]]; then
+        print_color $YELLOW "📁 No valid SSH key files found"
+        print_color $BLUE "💡 Generate your first key by selecting option 1 or 2"
+    fi
+    
+    # Show agent status summary
+    case "$agent_status" in
+        "agent_not_running")
+            print_color $YELLOW "🔧 SSH Agent Status: Not running"
+            print_color $BLUE "   To start: eval \$(ssh-agent -s)"
+            ;;
+        "agent_no_keys")
+            print_color $YELLOW "🔧 SSH Agent Status: Running but no keys loaded"
+            print_color $BLUE "   Keys will be added automatically when generated"
+            ;;
+        "agent_with_keys")
+            print_color $GREEN "🔧 SSH Agent Status: Running with keys loaded"
+            ;;
+    esac
 }
 
-# Main menu
+# Function to check SSH agent status
+check_ssh_agent_status() {
+    print_color $BLUE "🔍 SSH Agent Status:"
+    
+    # Check if ssh-agent is running
+    if ! ssh-add -l >/dev/null 2>&1; then
+        local exit_code=$?
+        if [[ $exit_code -eq 2 ]]; then
+            # Exit code 2 means ssh-agent is not running
+            print_color $RED "✗ SSH agent is not running"
+            print_color $BLUE "To start ssh-agent: eval \$(ssh-agent -s)"
+        elif [[ $exit_code -eq 1 ]]; then
+            # Exit code 1 means ssh-agent is running but has no keys
+            print_color $YELLOW "⚠ SSH agent is running but has no keys loaded"
+            print_color $BLUE "Keys will be added automatically when generated"
+        fi
+    else
+        # Exit code 0 means ssh-agent is running with keys
+        print_color $GREEN "✓ SSH agent is running with loaded keys"
+        echo "Loaded keys:"
+        ssh-add -l | sed 's/^/  /'
+    fi
+}
+
+# Main menu with better user guidance
 main_menu() {
     local choice
     
     print_color $BLUE "🔐 SSH Key Generator"
     echo
-    echo "What would you like to do?"
+    
+    # Show quick status
+    local has_hosts=false
+    local has_keys=false
+    
+    if [[ -f "$CONFIG_FILE" ]] && [[ -n "$(get_ssh_hosts)" ]]; then
+        has_hosts=true
+    fi
+    
+    if [[ -d "$KEYS_DIR" ]] && [[ -n "$(ls -A "$KEYS_DIR" 2>/dev/null)" ]]; then
+        has_keys=true
+    fi
+    
+    # Provide contextual guidance
+    if [[ "$has_hosts" == false ]] && [[ "$has_keys" == false ]]; then
+        print_color $YELLOW "👋 Welcome! No SSH hosts or keys found."
+        print_color $BLUE "💡 Start by creating a new host configuration (option 2)"
+        echo
+    elif [[ "$has_hosts" == true ]] && [[ "$has_keys" == false ]]; then
+        print_color $BLUE "📋 Found existing SSH hosts but no managed keys."
+        print_color $BLUE "💡 Add keys to existing hosts (option 1) or create new ones (option 2)"
+        echo
+    fi
+
+        echo "What would you like to do?"
     echo "  1. Add key to existing host"
     echo "  2. Create new host configuration"
     echo "  3. List managed keys"
@@ -310,30 +411,43 @@ main_menu() {
                 local selected_host=$(select_existing_host)
                 if [[ -n "$selected_host" ]]; then
                     add_key_to_existing_host "$selected_host"
+                    echo
+                    print_color $GREEN "✨ Key generation complete!"
+                    read "?Press Enter to return to main menu..."
+                    main_menu
                 fi
             else
                 local create_new
-                print_color $YELLOW "No existing hosts found. Would you like to create a new one? (y/n)"
-                read "create_new?> "
+                print_color $YELLOW "No existing hosts found in SSH config."
+                print_color $BLUE "💡 Would you like to create a new host configuration instead?"
+                read "create_new?(y/n): "
                 if [[ "$create_new" =~ ^[Yy] ]]; then
                     create_new_host
+                    echo
+                    print_color $GREEN "✨ Host creation complete!"
+                    read "?Press Enter to return to main menu..."
                 fi
+                main_menu
             fi
             ;;
         2)
             create_new_host
+            echo
+            print_color $GREEN "✨ Host creation complete!"
+            read "?Press Enter to return to main menu..."
+            main_menu
             ;;
         3)
             list_keys
+            echo
+            read "?Press Enter to return to main menu..."
+            main_menu
             ;;
         4)
-            print_color $BLUE "🔍 SSH Agent Status:"
-            if ssh-add -l 2>/dev/null; then
-                print_color $GREEN "✓ SSH agent is running with loaded keys"
-            else
-                print_color $YELLOW "⚠ SSH agent is not running or has no keys loaded"
-                print_color $BLUE "To start ssh-agent: eval \$(ssh-agent -s)"
-            fi
+            check_ssh_agent_status
+            echo
+            read "?Press Enter to return to main menu..."
+            main_menu
             ;;
         5)
             print_color $GREEN "👋 Goodbye!"
@@ -341,16 +455,12 @@ main_menu() {
             ;;
         *)
             print_color $RED "Invalid option. Please try again."
+            echo
             main_menu
             ;;
     esac
 }
 
-# Check if ssh-agent is running
-if ! ssh-add -l >/dev/null 2>&1; then
-    print_color $YELLOW "⚠ SSH agent is not running. Starting ssh-agent..."
-    eval "$(ssh-agent -s)"
-fi
-
-# Run main menu
+# Start the script
 main_menu
+    
