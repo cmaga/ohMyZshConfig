@@ -182,15 +182,22 @@ select_existing_host() {
     done
 }
 
-# Updated create_new_host function
+# Function to create new host configuration
 create_new_host() {
-    local host_alias hostname username email key_type_choice
+    local host_alias hostname email username key_type_choice
     
     print_color $BLUE "🆕 Creating new host configuration"
     
     read "host_alias?Enter host alias (e.g., 'github-work', 'server1'): "
     read "hostname?Enter hostname/IP (e.g., 'github.com', '192.168.1.100'): "
-    read "username?Enter username: "
+    read "username?Enter username (default: git): "
+    
+    # Use 'git' as default if no username provided
+    if [[ -z "$username" ]]; then
+        username="git"
+        print_color $BLUE "🔍 Using default username: git"
+    fi
+    
     read "email?Enter your email for the key: "
     
     # Ask for key type
@@ -208,13 +215,16 @@ create_new_host() {
     # Generate key (uses global variable)
     generate_ssh_key "$host_alias" "$email" "$key_type"
     
-    # Add to SSH config using the global variable
-    add_host_to_config "$host_alias" "$hostname" "$username" "$GENERATED_KEY_PATH"
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config using the ~/ path
+    add_host_to_config "$host_alias" "$hostname" "$username" "$config_key_path"
     
     print_color $GREEN "🎉 New host '$host_alias' created successfully!"
 }
 
-# Updated add_key_to_existing_host function
+# Function to add key to existing host
 add_key_to_existing_host() {
     local host=$1
     local email key_type_choice
@@ -245,14 +255,17 @@ add_key_to_existing_host() {
     # Generate key (uses global variable)
     generate_ssh_key "$host" "$email" "$key_type"
     
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
     # Update SSH config with new key path
     print_color $BLUE "📝 Updating SSH config with new key..."
     
     # Create backup
     cp "$CONFIG_FILE" "$CONFIG_FILE.backup.$(date +%Y%m%d_%H%M%S)"
     
-    # Update IdentityFile line for this host using the global variable
-    sed -i.tmp "/^Host $host$/,/^Host / s|IdentityFile.*|IdentityFile $GENERATED_KEY_PATH|" "$CONFIG_FILE"
+    # Update IdentityFile line for this host using the ~/ path
+    sed -i.tmp "/^Host $host$/,/^Host / s|IdentityFile.*|IdentityFile $config_key_path|" "$CONFIG_FILE"
     rm -f "$CONFIG_FILE.tmp"
     
     print_color $GREEN "🎉 Key added to host '$host' successfully!"
@@ -364,7 +377,6 @@ check_ssh_agent_status() {
     fi
 }
 
-# Main menu with better user guidance
 main_menu() {
     local choice
     
