@@ -1,0 +1,38 @@
+#!/bin/zsh
+# Git pre-commit hook for Oh-My-Zsh configuration
+# Runs lint checks before commits
+
+# Color codes for output
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+BLUE='\\033[0;34m'
+NC='\\033[0m' # No Color
+
+echo -e "${BLUE}🔍 Running pre-commit validation...${NC}"
+echo
+
+# Check if any relevant files are staged for commit
+staged_files=$(git diff --cached --name-only | grep -E '\\.(zsh|txt)$|^\\.zshrc$|^aliases\\.zsh$|^Makefile$')
+
+if [[ -z "$staged_files" ]]; then
+    echo -e "${YELLOW}No relevant files staged for commit, skipping validation.${NC}"
+    exit 0
+fi
+
+echo -e "${BLUE}Staged files to validate:${NC}"
+echo "$staged_files" | sed 's/^/  /'
+echo
+
+# Run the lint target
+if make lint; then
+    echo
+    echo -e "${GREEN}✅ Pre-commit validation passed!${NC}"
+    exit 0
+else
+    echo
+    echo -e "${RED}❌ Pre-commit validation failed!${NC}"
+    echo -e "${YELLOW}Please fix the issues above before committing.${NC}"
+    echo -e "${YELLOW}You can run 'make lint' to check your changes.${NC}"
+    exit 1
+fi

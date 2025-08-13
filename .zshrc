@@ -75,6 +75,9 @@ esac
 # Load additional local configuration if it exists
 [ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
 
+# Load machine-specific configuration if it exists
+[ -f "$HOME/.zshrc.$(hostname)" ] && source "$HOME/.zshrc.$(hostname)"
+
 # Additional nvm helper function for Windows
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; then
     # Function to properly refresh PATH after nvm use

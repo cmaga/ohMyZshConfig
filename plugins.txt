@@ -1,0 +1,7 @@
+# Oh-My-Zsh Plugin List
+# One plugin per line in the format: username/repository-name
+# Lines starting with # are comments and will be ignored
+
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-completions
+zsh-users/zsh-syntax-highlighting
