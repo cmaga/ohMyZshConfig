@@ -30,6 +30,7 @@ alias gits="git status"
 alias gitd="git diff"
 alias gitl="git log"
 alias gita="git add ."
+alias gitm="git commit -m"
 alias gnuke="git branch | grep -v \"master\\|main\" | xargs git branch -D" # deletes all local branches except master/main
 
 # SSH Key Generation and Management

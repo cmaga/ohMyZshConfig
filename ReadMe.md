@@ -161,7 +161,10 @@ ohMyZshConfig/
 
 Most things are added/changed as needed which is very rare.
 
-- setup has never been tested
+- All scripts working on mac
+- untested on windows
+- untested on pop
+- untested on ubuntu
 
 ## 📄 License
 
