@@ -25,10 +25,8 @@ alias zconf="vim ~/.zshrc"
 alias sshconf="vim ~/.ssh/config"
 alias zsource="source ~/.zshrc" # reloads zsh config
 
-# git aliases
-alias gits="git status"
-alias gitd="git diff"
-alias gitl="git log"
+# git aliases mainly are added by the git plugin these are some extras
+# thats why the alias is different for some git commands
 alias gita="git add ."
 alias gitm="git commit -m"
 alias gnuke="git branch | grep -v \"master\\|main\" | xargs git branch -D" # deletes all local branches except master/main
