@@ -23,14 +23,22 @@ help: ## Show this help message
 	@echo "  $(GREEN)lint$(NC)     - Format files and run lint checks"
 	@echo "  $(GREEN)deploy$(NC)   - Deploy changes/config from this project to the local system"
 	@echo "  $(GREEN)update$(NC)   - Check and update custom plugins from plugins.txt"
-	@echo "  $(GREEN)setup$(NC)    - Initial setup to prepare system for deployments and updates"
+	@echo "  $(GREEN)setup$(NC)    - Complete system setup (fresh system to fully configured)"
 	@echo "  $(GREEN)help$(NC)     - Show this help message"
 	@echo ""
 	@echo "Typical workflow:"
-	@echo "  $(YELLOW)make setup$(NC)   # First time setup"
-	@echo "  $(YELLOW)make deploy$(NC)  # Deploy your configs"
+	@echo "  $(YELLOW)make setup$(NC)   # Full setup on fresh system (installs zsh, oh-my-zsh, plugins, configs)"
+	@echo "  $(YELLOW)make deploy$(NC)  # Deploy config changes to existing setup"
 	@echo "  $(YELLOW)make update$(NC)  # Update plugins when needed"
-	@echo "  $(YELLOW)make lint$(NC)    # Check code quality before commits"
+	@echo "  $(YELLOW)make lint$(NC)    # Validate configuration before commits"
+	@echo ""
+	@echo "$(BLUE)Fresh System Setup:$(NC)"
+	@echo "  The $(YELLOW)setup$(NC) command handles everything needed on a fresh system:"
+	@echo "  • Installs prerequisites (git, curl, zsh)"
+	@echo "  • Sets zsh as default shell"
+	@echo "  • Installs Oh-My-Zsh framework"
+	@echo "  • Installs custom plugins"
+	@echo "  • Deploys all configuration files"
 
 lint: ## Format files and run lint checks
 	@echo "$(BLUE)� Running lint checks...$(NC)"
@@ -63,7 +71,7 @@ lint: ## Format files and run lint checks
 			echo "$$line" | grep -q '^#' && continue; \
 			line=$$(echo "$$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//'); \
 			[ -z "$$line" ] && continue; \
-			if ! echo "$$line" | grep -q '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$$'; then \
+			if ! echo "$$line" | grep -q '^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*/[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$$'; then \
 				echo "  $(RED)❌ Invalid plugin format: $$line$(NC)"; \
 				echo "  $(YELLOW)Expected format: username/repository-name$(NC)"; \
 				exit 1; \
@@ -93,36 +101,39 @@ update: ## Check and update custom plugins from plugins.txt
 	@"$(CURRENT_DIR)/scripts/plugin-manager.zsh"
 
 setup: ## Initial setup to prepare system for deployments and updates
-	@echo "$(BLUE)🚀 Setting up Oh-My-Zsh configuration management...$(NC)"
+	@echo "$(BLUE)🚀 Full System Setup for Oh-My-Zsh Configuration$(NC)"
 	@echo ""
-	@echo "$(BLUE)Step 1: Checking Oh-My-Zsh installation...$(NC)"
-	@if [ ! -d "$(ZSH_DIR)" ]; then \
-		echo "$(RED)❌ Oh-My-Zsh not found at $(ZSH_DIR)$(NC)"; \
-		echo "$(BLUE)Please install Oh-My-Zsh first:$(NC)"; \
-		echo "$(YELLOW)sh -c \\\"$$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\\\"$(NC)"; \
-		exit 1; \
-	else \
-		echo "  $(GREEN)✅ Oh-My-Zsh found at $(ZSH_DIR)$(NC)"; \
+	@echo "$(BLUE)Preparing fresh system for Oh-My-Zsh configuration management...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Phase 1: System Prerequisites & Environment Setup$(NC)"
+	@chmod +x "$(CURRENT_DIR)/scripts/system-setup.zsh"
+	@if "$(CURRENT_DIR)/scripts/system-setup.zsh"; then \
+		echo ""; \
+		echo "$(BLUE)Phase 2: Plugin Management$(NC)"; \
+		echo "$(BLUE)Installing and updating custom plugins...$(NC)"; \
+		$(MAKE) update; \
+		echo ""; \
+		echo "$(BLUE)Phase 3: Configuration Deployment$(NC)"; \
+		echo "$(BLUE)Deploying configuration files to system...$(NC)"; \
+		$(MAKE) deploy; \
+		echo ""; \
+		echo "$(GREEN)🎉 Complete System Setup Finished!$(NC)"; \
+		echo ""; \
+		echo "$(BLUE)📋 Setup Summary:$(NC)"; \
+		echo "  $(GREEN)✅ System prerequisites installed$(NC)"; \
+		echo "  $(GREEN)✅ Zsh configured as default shell$(NC)"; \
+		echo "  $(GREEN)✅ Oh-My-Zsh framework installed$(NC)"; \
+		echo "  $(GREEN)✅ Custom plugins installed and updated$(NC)"; \
+		echo "  $(GREEN)✅ Configuration files deployed$(NC)"; \
+		echo "  $(GREEN)✅ Scripts and aliases available$(NC)"; \
+		echo ""; \
+		echo "$(YELLOW)🔄 Next Steps:$(NC)"; \
+		echo "  1. $(YELLOW)Restart your terminal$(NC) (or run 'source ~/.zshrc')"; \
+		echo "  2. Test your setup with: $(YELLOW)kgen$(NC) (SSH key generator)"; \
+		echo "  3. View available aliases: $(YELLOW)gits, gitd, gitl$(NC)"; \
+		echo ""; \
+		echo "$(BLUE)💡 Maintenance Commands:$(NC)"; \
+		echo "  - $(YELLOW)make update$(NC) - Update plugins"; \
+		echo "  - $(YELLOW)make deploy$(NC) - Deploy config changes"; \
+		echo "  - $(YELLOW)make lint$(NC) - Validate configuration before commits"; \
 	fi
-	@echo ""
-	@echo "$(BLUE)Step 2: Setting up plugin directory...$(NC)"
-	@mkdir -p "$(PLUGINS_DIR)"
-	@echo "  $(GREEN)✅ Plugin directory ready at $(PLUGINS_DIR)$(NC)"
-	@echo ""
-	@echo "$(BLUE)Step 3: Making scripts executable...$(NC)"
-	@chmod +x scripts/*.zsh update-zsh-config.zsh hooks/pre-commit 2>/dev/null || true
-	@echo "  $(GREEN)✅ Scripts are executable$(NC)"
-	@echo ""
-	@echo "$(BLUE)Step 4: Running initial plugin installation...$(NC)"
-	@$(MAKE) update
-	@echo ""
-	@echo "$(BLUE)Step 5: Deploying configuration files...$(NC)"
-	@$(MAKE) deploy
-	@echo ""
-	@echo "$(GREEN)🎉 Setup complete!$(NC)"
-	@echo "$(YELLOW)💡 Run 'source ~/.zshrc' or restart your terminal to apply changes$(NC)"
-	@echo ""
-	@echo "$(BLUE)Next steps:$(NC)"
-	@echo "  - Run '$(YELLOW)make update$(NC)' to update plugins"
-	@echo "  - Run '$(YELLOW)make deploy$(NC)' to deploy config changes"
-	@echo "  - Run '$(YELLOW)make lint$(NC)' before committing changes"

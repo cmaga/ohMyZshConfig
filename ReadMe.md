@@ -157,86 +157,11 @@ ohMyZshConfig/
 └── README.md                   # This file
 ```
 
-## 🔄 Migration from Old Workflow
+## 🤝 Dev notes
 
-If you were using the old manual workflow:
+Most things are added/changed as needed which is very rare.
 
-- `source ./update-zsh-config.zsh` still works
-- New workflow: `make deploy` (equivalent functionality)
-- Plugin management is now automated via `make update`
-
-### New Workflow Benefits:
-
-- **Cleaner separation**: `make deploy` for configs, `make update` for plugins
-- **Quality control**: `make lint` ensures code quality
-- **One-time setup**: `make setup` prepares everything for future use
-
-## 🐛 Troubleshooting
-
-### Plugins not working after installation
-
-```bash
-# Reload your shell configuration
-source ~/.zshrc
-# Or restart your terminal
-```
-
-### Permission issues
-
-```bash
-# Fix script permissions
-chmod +x scripts/*.zsh update-zsh-config.zsh
-```
-
-### Oh-My-Zsh not found
-
-```bash
-# Verify Oh-My-Zsh installation
-ls -la ~/.oh-my-zsh
-# If missing, reinstall:
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-```
-
-### Plugin installation fails
-
-```bash
-# Check network connectivity and try again
-make update
-# Or install manually:
-cd ~/.oh-my-zsh/custom/plugins
-git clone https://github.com/zsh-users/zsh-autosuggestions.git
-```
-
-## 📝 Available Aliases
-
-### Git Shortcuts
-
-- `gits` - git status
-- `gitd` - git diff
-- `gitl` - git log
-- `gita` - git add .
-- `gnuke` - delete all local branches except master/main
-
-### Configuration Management
-
-- `zconf` - edit ~/.zshrc
-- `aconf` - edit aliases.zsh
-- `sshconf` - edit ~/.ssh/config
-- `zsource` - reload zsh config
-
-### Platform-Specific
-
-- `getip` - get local IP address (cross-platform)
-- `nvmr` - Windows-specific nvm PATH refresh helper
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Run tests (`make lint`)
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+- setup has never been tested
 
 ## 📄 License
 

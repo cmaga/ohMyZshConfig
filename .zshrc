@@ -11,6 +11,7 @@ git
 zsh-completions
 zsh-autosuggestions
 zsh-syntax-highlighting
+zsh-you-should-use
 )
 
 # Path to plugin
