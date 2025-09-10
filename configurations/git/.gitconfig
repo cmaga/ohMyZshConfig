@@ -1,0 +1,12 @@
+# Default configuration (personal projects/learning)
+[user]
+    name = cmaga
+    email = christophernm1999@gmail.com
+[color]
+    ui = true
+
+[includeIf "gitdir:~/dev/work/"]
+    path = ~/.oh-my-zsh/custom/git/gitconfig-work
+
+[includeIf "gitdir:~/dev/kratos/"]
+    path = ~/.oh-my-zsh/custom/git/gitconfig-kratos

@@ -88,8 +88,7 @@ deploy: ## Deploy changes/config from this project to the local system
 		echo "$(RED)❌ update-zsh-config.zsh not found$(NC)"; \
 		exit 1; \
 	fi
-	@chmod +x "$(CURRENT_DIR)/update-zsh-config.zsh"
-	@echo "y" | "$(CURRENT_DIR)/update-zsh-config.zsh" || true
+	@"$(CURRENT_DIR)/update-zsh-config.zsh"
 
 update: ## Check and update custom plugins from plugins.txt
 	@echo "$(BLUE)🔄 Checking and updating custom plugins...$(NC)"
@@ -97,7 +96,6 @@ update: ## Check and update custom plugins from plugins.txt
 		echo "$(RED)❌ plugins.txt not found$(NC)"; \
 		exit 1; \
 	fi
-	@chmod +x "$(CURRENT_DIR)/scripts/plugin-manager.zsh"
 	@"$(CURRENT_DIR)/scripts/plugin-manager.zsh"
 
 setup: ## Initial setup to prepare system for deployments and updates
@@ -105,8 +103,15 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@echo ""
 	@echo "$(BLUE)Preparing fresh system for Oh-My-Zsh configuration management...$(NC)"
 	@echo ""
+	@echo "$(BLUE)Phase 0: Setting script permissions...$(NC)"
+	@for file in scripts/*.zsh update-zsh-config.zsh hooks/pre-commit; do \
+		if [ -f "$$file" ]; then \
+			echo "  Setting executable permissions for $$file"; \
+			chmod +x "$$file"; \
+		fi; \
+	done
+	@echo ""
 	@echo "$(BLUE)Phase 1: System Prerequisites & Environment Setup$(NC)"
-	@chmod +x "$(CURRENT_DIR)/scripts/system-setup.zsh"
 	@if "$(CURRENT_DIR)/scripts/system-setup.zsh"; then \
 		echo ""; \
 		echo "$(BLUE)Phase 2: Plugin Management$(NC)"; \

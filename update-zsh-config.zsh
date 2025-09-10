@@ -31,10 +31,17 @@ info() {
 ZSHRC_SOURCE="$(pwd)/.zshrc"
 ALIASES_SOURCE="$(pwd)/aliases.zsh"
 SCRIPTS_SOURCE="$(pwd)/scripts"
+GITCONFIG_SOURCE="$(pwd)/configurations/git/.gitconfig"
+GITCONFIG_WORK_SOURCE="$(pwd)/configurations/git/gitconfig-work"
+GITCONFIG_KRATOS_SOURCE="$(pwd)/configurations/git/gitconfig-kratos"
 ZSHRC_DEST="$HOME/.zshrc"
 OMZ_DIR="${ZSH:-$HOME/.oh-my-zsh}"
 ALIASES_DEST="$OMZ_DIR/custom/aliases.zsh"
 SCRIPTS_DEST="$OMZ_DIR/custom/scripts"
+GITCONFIG_DEST="$HOME/.gitconfig"
+CUSTOM_GIT_DIR="$OMZ_DIR/custom/git"
+GITCONFIG_WORK_DEST="$CUSTOM_GIT_DIR/gitconfig-work"
+GITCONFIG_KRATOS_DEST="$CUSTOM_GIT_DIR/gitconfig-kratos"
 
 # Check if source files exist
 [ -f "$ZSHRC_SOURCE" ] || error "Source .zshrc not found at $ZSHRC_SOURCE"
@@ -81,23 +88,46 @@ else
     warn "Scripts directory not found at $SCRIPTS_SOURCE - skipping scripts deployment"
 fi
 
+# Deploy Git configurations
+if [ -f "$GITCONFIG_SOURCE" ] && [ -f "$GITCONFIG_WORK_SOURCE" ] && [ -f "$GITCONFIG_KRATOS_SOURCE" ]; then
+    log "Deploying Git configurations..."
+    
+    # Create custom git directory if it doesn't exist
+    if [ ! -d "$CUSTOM_GIT_DIR" ]; then
+        info "Creating custom git directory..."
+        mkdir -p "$CUSTOM_GIT_DIR" || error "Failed to create custom git directory"
+    fi
+    
+    # Deploy git config files
+    cp "$GITCONFIG_SOURCE" "$GITCONFIG_DEST" || error "Failed to deploy .gitconfig"
+    cp "$GITCONFIG_WORK_SOURCE" "$GITCONFIG_WORK_DEST" || error "Failed to deploy gitconfig-work"
+    cp "$GITCONFIG_KRATOS_SOURCE" "$GITCONFIG_KRATOS_DEST" || error "Failed to deploy gitconfig-kratos"
+    
+    log "Git configurations deployed successfully!"
+else
+    warn "Git configuration files not found - skipping Git config deployment"
+fi
+
 log "Deployment complete!"
 
 # Show what was deployed
 info "Deployed files:"
 echo "  ✓ .zshrc → $ZSHRC_DEST"
 echo "  ✓ aliases.zsh → $ALIASES_DEST"
+if [ -f "$GITCONFIG_SOURCE" ] && [ -f "$GITCONFIG_WORK_SOURCE" ] && [ -f "$GITCONFIG_KRATOS_SOURCE" ]; then
+    echo "  ✓ Git configurations:"
+    echo "    - .gitconfig → $GITCONFIG_DEST"
+    echo "    - gitconfig-work → $GITCONFIG_WORK_DEST"
+    echo "    - gitconfig-kratos → $GITCONFIG_KRATOS_DEST"
+fi
 if [ -d "$SCRIPTS_SOURCE" ]; then
-    echo "  ✓ scripts/ → $SCRIPTS_DEST"
     # List deployed scripts
-    if [ -n "$(ls -A "$SCRIPTS_DEST" 2>/dev/null)" ]; then
-        info "Deployed scripts:"
-        for script in "$SCRIPTS_DEST"/*; do
-            if [ -f "$script" ]; then
-                echo "    - $(basename "$script")"
-            fi
-        done
-    fi
+    info "Deployed scripts:"
+    for script in "$SCRIPTS_SOURCE"/*; do
+        if [ -f "$script" ]; then
+            echo "    - $(basename "$script")"
+        fi
+    done
 fi
 
 # Offer to source the new configuration
