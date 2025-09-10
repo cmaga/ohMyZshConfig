@@ -30,13 +30,13 @@ make lint
 
 ## 📋 Available Commands
 
-| Command       | Description                                                 |
-| ------------- | ----------------------------------------------------------- |
-| `make setup`  | Initial setup to prepare system for deployments and updates |
-| `make deploy` | Deploy changes/config from this project to the local system |
-| `make update` | Check and update custom plugins from plugins.txt            |
-| `make lint`   | Format files and run lint checks                            |
-| `make help`   | Show available commands                                     |
+| Command       | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| `make setup`  | Initial setup to prepare system for deployments and updates         |
+| `make deploy` | Deploy zsh configs, scripts, and git configurations to local system |
+| `make update` | Check and update custom plugins from plugins.txt                    |
+| `make lint`   | Format files and run lint checks                                    |
+| `make help`   | Show available commands                                             |
 
 ## 🔧 Prerequisites
 
@@ -96,6 +96,28 @@ Features:
 - Cross-platform clipboard integration
 - SSH agent integration
 
+## ⚙️ Git Configuration Management
+
+The repository includes centralized git configuration management with support for multiple profiles:
+
+### Configuration Files
+
+- `configurations/git/.gitconfig` - Main git configuration (deployed to `~/.gitconfig`)
+- `configurations/git/gitconfig-work` - Work-specific settings
+- `configurations/git/gitconfig-kratos` - Kratos-specific settings
+
+### How It Works
+
+When you run `make deploy`, the system automatically:
+
+1. Copies the main `.gitconfig` to your home directory (`~/.gitconfig`)
+2. Places profile-specific configs in `~/.oh-my-zsh/custom/git/`
+3. Sets up the git configuration structure for easy profile switching
+
+### Using Git Profiles
+
+The work and kratos configurations are stored as separate files that can be included in your main git config or used for specific repositories. This allows you to maintain different git identities for different projects.
+
 ## ⚙️ Machine-Specific Overrides
 
 Create machine-specific configuration files for custom settings per machine:
@@ -148,6 +170,11 @@ ohMyZshConfig/
 ├── plugins.txt                 # List of Oh-My-Zsh plugins to install
 ├── .zshrc                      # Main Zsh configuration
 ├── aliases.zsh                 # Platform-specific aliases
+├── configurations/
+│   └── git/
+│       ├── .gitconfig          # Main git configuration
+│       ├── gitconfig-work      # Work-specific git settings
+│       └── gitconfig-kratos    # Kratos-specific git settings
 ├── scripts/
 │   ├── ssh-key-generator.zsh   # SSH key management utility
 │   └── plugin-manager.zsh      # Plugin installation/update script
