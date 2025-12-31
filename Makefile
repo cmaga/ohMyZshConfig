@@ -110,6 +110,9 @@ setup: ## Initial setup to prepare system for deployments and updates
 			chmod +x "$$file"; \
 		fi; \
 	done
+	@echo "  Configuring git hooks path..."
+	@git config core.hooksPath hooks
+	@echo "  $(GREEN)✅ Git hooks configured to use hooks/ directory$(NC)"
 	@echo ""
 	@echo "$(BLUE)Phase 1: System Prerequisites & Environment Setup$(NC)"
 	@if "$(CURRENT_DIR)/scripts/system-setup.zsh"; then \
