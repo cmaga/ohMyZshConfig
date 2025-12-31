@@ -172,6 +172,13 @@ set_default_shell() {
         return 0
     fi
     
+    # Check for exec zsh workaround in .bashrc (for restricted environments)
+    if [[ -f "$HOME/.bashrc" ]] && grep -q "exec zsh" "$HOME/.bashrc" 2>/dev/null; then
+        print_status "success" "Found 'exec zsh' workaround in .bashrc - shell setup complete"
+        print_status "info" "Skipping chsh (using bashrc workaround for restricted environments)"
+        return 0
+    fi
+    
     print_status "warning" "Current shell is $current_shell"
     print_status "action" "Setting zsh as default shell..."
     
@@ -257,6 +264,45 @@ create_directories() {
     else
         print_status "success" "Scripts directory exists"
     fi
+    
+    # Create git profile directories
+    local work_dir="$HOME/dev/work"
+    if [[ ! -d "$work_dir" ]]; then
+        print_status "action" "Creating work directory for git profile..."
+        mkdir -p "$work_dir"
+        print_status "success" "Work directory created at $work_dir"
+    else
+        print_status "success" "Work directory exists"
+    fi
+    
+    local kratos_dir="$HOME/dev/kratos"
+    if [[ ! -d "$kratos_dir" ]]; then
+        print_status "action" "Creating kratos directory for git profile..."
+        mkdir -p "$kratos_dir"
+        print_status "success" "Kratos directory created at $kratos_dir"
+    else
+        print_status "success" "Kratos directory exists"
+    fi
+}
+
+# Function to check and install Claude
+check_install_claude() {
+    print_status "info" "Checking for Claude..."
+    
+    if command -v claude >/dev/null 2>&1; then
+        print_status "success" "Claude found"
+        return 0
+    fi
+    
+    print_status "warning" "Claude not found"
+    print_status "download" "Installing Claude..."
+    
+    if curl -fsSL https://claude.ai/install.sh | bash; then
+        print_status "success" "Claude installed successfully"
+    else
+        print_status "error" "Claude installation failed"
+        return 1
+    fi
 }
 
 # Function to check system readiness
@@ -324,8 +370,13 @@ main() {
     create_directories
     echo
     
-    # Step 5: Final verification
-    print_status "info" "Step 5: System verification..."
+    # Step 5: Install Claude
+    print_status "info" "Step 5: Installing Claude..."
+    check_install_claude
+    echo
+    
+    # Step 6: Final verification
+    print_status "info" "Step 6: System verification..."
     check_system_readiness
     echo
     

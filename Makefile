@@ -124,19 +124,6 @@ setup: ## Initial setup to prepare system for deployments and updates
 		echo ""; \
 		echo "$(GREEN)🎉 Complete System Setup Finished!$(NC)"; \
 		echo ""; \
-		echo "$(BLUE)📋 Setup Summary:$(NC)"; \
-		echo "  $(GREEN)✅ System prerequisites installed$(NC)"; \
-		echo "  $(GREEN)✅ Zsh configured as default shell$(NC)"; \
-		echo "  $(GREEN)✅ Oh-My-Zsh framework installed$(NC)"; \
-		echo "  $(GREEN)✅ Custom plugins installed and updated$(NC)"; \
-		echo "  $(GREEN)✅ Configuration files deployed$(NC)"; \
-		echo "  $(GREEN)✅ Scripts and aliases available$(NC)"; \
-		echo ""; \
-		echo "$(YELLOW)🔄 Next Steps:$(NC)"; \
-		echo "  1. $(YELLOW)Restart your terminal$(NC) (or run 'source ~/.zshrc')"; \
-		echo "  2. Test your setup with: $(YELLOW)kgen$(NC) (SSH key generator)"; \
-		echo "  3. View available aliases: $(YELLOW)gits, gitd, gitl$(NC)"; \
-		echo ""; \
 		echo "$(BLUE)💡 Maintenance Commands:$(NC)"; \
 		echo "  - $(YELLOW)make update$(NC) - Update plugins"; \
 		echo "  - $(YELLOW)make deploy$(NC) - Deploy config changes"; \

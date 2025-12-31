@@ -4,6 +4,29 @@ A comprehensive terminal configuration repository that provides cross-platform O
 
 ## 🚀 Quick Start
 
+### 🔧 Prerequisites
+
+1. **Install Zsh and set as default shell**
+
+   ```bash
+      # macOS (using Homebrew)
+      brew install zsh
+      chsh -s $(which zsh)
+
+      # Ubuntu/Debian
+      sudo apt install zsh
+      chsh -s $(which zsh)
+
+      # If you can't change default shell due to org settings this program handles the following workaround correctly
+      echo "exec zsh" >> ~/.bashrc
+   ```
+
+2. **Install Oh-My-Zsh**
+
+   ```bash
+      sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+   ```
+
 ### First Time Setup
 
 ```bash
@@ -37,28 +60,6 @@ make lint
 | `make update` | Check and update custom plugins from plugins.txt                    |
 | `make lint`   | Format files and run lint checks                                    |
 | `make help`   | Show available commands                                             |
-
-## 🔧 Prerequisites
-
-1. **Install Zsh and set as default shell**
-
-   ```bash
-   # macOS (using Homebrew)
-   brew install zsh
-   chsh -s $(which zsh)
-
-   # Ubuntu/Debian
-   sudo apt install zsh
-   chsh -s $(which zsh)
-
-   # If you can't change default shell:
-   echo "exec zsh" >> ~/.bashrc
-   ```
-
-2. **Install Oh-My-Zsh**
-   ```bash
-   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-   ```
 
 ## 🔌 Plugin Management
 
