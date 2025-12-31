@@ -151,21 +151,9 @@ This will:
 - Verify file permissions are correct
 - Validate plugins.txt format
 
-## 🪝 Git Hooks (Optional)
-
-Install the pre-commit hook to automatically validate shell syntax:
-
-```bash
-# Copy the hook and make it executable
-cp hooks/pre-commit .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
-The hook will run syntax validation on staged `.zsh` files before each commit.
-
 ## 📁 Project Structure
 
-```
+```txt
 ohMyZshConfig/
 ├── Makefile                    # Build automation commands
 ├── plugins.txt                 # List of Oh-My-Zsh plugins to install
@@ -187,12 +175,12 @@ ohMyZshConfig/
 
 ## 🤝 Dev notes
 
-Most things are added/changed as needed which is very rare.
+Changes made as needed unless specified here.
 
-- All scripts working on mac
-- untested on windows
-- untested on pop
-- untested on ubuntu
+- Mac working
+- Windows untested
+- PopOs untested
+- Ubuntu working
 
 ## 📄 License
 
