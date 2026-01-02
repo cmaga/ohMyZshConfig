@@ -82,7 +82,7 @@ get_host_details() {
 # Function to generate SSH key (fixed version using global variable)
 generate_ssh_key() {
     local host=$1
-    local email=$2
+    local comment=$2
     local key_type=${3:-ed25519}
     
     local key_name="id_${key_type}_${host}"
@@ -91,7 +91,7 @@ generate_ssh_key() {
     print_color $BLUE "🔑 Generating $key_type SSH key for host: $host"
     
     # Generate the key
-    ssh-keygen -t "$key_type" -C "$email" -f "$key_path" -N ""
+    ssh-keygen -t "$key_type" -C "$comment" -f "$key_path" -N ""
     
     # Set proper permissions
     chmod 600 "$key_path"
@@ -182,25 +182,29 @@ select_existing_host() {
     done
 }
 
-# Function to create new host configuration
-create_new_host() {
-    local host_alias hostname email username key_type_choice
+# Function to create Bitbucket host configuration
+create_bitbucket_host() {
+    local workspace key_type_choice
     
-    print_color $BLUE "🆕 Creating new host configuration"
+    print_color $BLUE "📦 Bitbucket Account Setup"
+    echo
+    print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
+    echo "  Your Bitbucket clone URLs: git@bitbucket.org:WORKSPACE/repo.git"
+    echo "  Clone URLs will work without modification!"
+    echo
+    read "workspace?Enter workspace name: "
     
-    read "host_alias?Enter host alias (e.g., 'github-work', 'server1'): "
-    read "hostname?Enter hostname/IP (e.g., 'github.com', '192.168.1.100'): "
-    read "username?Enter username (default: git): "
-    
-    # Use 'git' as default if no username provided
-    if [[ -z "$username" ]]; then
-        username="git"
-        print_color $BLUE "🔍 Using default username: git"
+    if [[ -z "$workspace" ]]; then
+        print_color $RED "Workspace name cannot be empty"
+        return 1
     fi
     
-    read "email?Enter your email for the key: "
+    local host_alias="bitbucket.org:$workspace"
+    local hostname="bitbucket.org"
+    local username="git"
     
     # Ask for key type
+    echo
     echo "Select key type:"
     echo "  1. ed25519 (recommended)"
     echo "  2. rsa"
@@ -212,22 +216,218 @@ create_new_host() {
         *) key_type="ed25519" ;;
     esac
     
-    # Generate key (uses global variable)
-    generate_ssh_key "$host_alias" "$email" "$key_type"
+    # Generate key using host alias as comment
+    generate_ssh_key "$host_alias" "$host_alias" "$key_type"
     
     # Convert absolute path to ~/ format for config file
     local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
     
-    # Add to SSH config using the ~/ path
+    # Add to SSH config
     add_host_to_config "$host_alias" "$hostname" "$username" "$config_key_path"
     
-    print_color $GREEN "🎉 New host '$host_alias' created successfully!"
+    print_color $GREEN "🎉 Bitbucket host '$host_alias' created successfully!"
+}
+
+# Function to create GitHub host configuration
+create_github_host() {
+    local suffix key_type_choice
+    
+    print_color $BLUE "🐙 GitHub Account Setup"
+    echo
+    print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
+    echo "  For multiple accounts, add a suffix: -work, -personal, etc."
+    echo "  Note: You'll need to modify clone URLs"
+    echo "  Example: git@github.com:user/repo.git → git@github.com-work:user/repo.git"
+    echo
+    read "suffix?Enter suffix (e.g., -work, -personal): "
+    
+    if [[ -z "$suffix" ]]; then
+        print_color $RED "Suffix cannot be empty"
+        return 1
+    fi
+    
+    local host_alias="github.com$suffix"
+    local hostname="github.com"
+    local username="git"
+    
+    # Ask for key type
+    echo
+    echo "Select key type:"
+    echo "  1. ed25519 (recommended)"
+    echo "  2. rsa"
+    read "key_type_choice?Choice (1-2, default: 1): "
+    
+    local key_type="ed25519"
+    case $key_type_choice in
+        2) key_type="rsa" ;;
+        *) key_type="ed25519" ;;
+    esac
+    
+    # Generate key using host alias as comment
+    generate_ssh_key "$host_alias" "$host_alias" "$key_type"
+    
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config
+    add_host_to_config "$host_alias" "$hostname" "$username" "$config_key_path"
+    
+    print_color $GREEN "🎉 GitHub host '$host_alias' created successfully!"
+}
+
+# Function to create GitLab host configuration
+create_gitlab_host() {
+    local suffix key_type_choice
+    
+    print_color $BLUE "🦊 GitLab Account Setup"
+    echo
+    print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
+    echo "  For multiple accounts, add a suffix: -work, -personal, etc."
+    echo "  Note: You'll need to modify clone URLs"
+    echo "  Example: git@gitlab.com:user/repo.git → git@gitlab.com-work:user/repo.git"
+    echo
+    read "suffix?Enter suffix (e.g., -work, -personal): "
+    
+    if [[ -z "$suffix" ]]; then
+        print_color $RED "Suffix cannot be empty"
+        return 1
+    fi
+    
+    local host_alias="gitlab.com$suffix"
+    local hostname="gitlab.com"
+    local username="git"
+    
+    # Ask for key type
+    echo
+    echo "Select key type:"
+    echo "  1. ed25519 (recommended)"
+    echo "  2. rsa"
+    read "key_type_choice?Choice (1-2, default: 1): "
+    
+    local key_type="ed25519"
+    case $key_type_choice in
+        2) key_type="rsa" ;;
+        *) key_type="ed25519" ;;
+    esac
+    
+    # Generate key using host alias as comment
+    generate_ssh_key "$host_alias" "$host_alias" "$key_type"
+    
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config
+    add_host_to_config "$host_alias" "$hostname" "$username" "$config_key_path"
+    
+    print_color $GREEN "🎉 GitLab host '$host_alias' created successfully!"
+}
+
+# Function to create custom host configuration
+create_custom_host() {
+    local host_alias hostname username key_type_choice
+    
+    print_color $BLUE "⚙️  Custom Host Configuration"
+    echo
+    print_color $BLUE "Host (SSH config field 'Host' - your connection alias)"
+    echo "  This is the shortcut name you'll use to connect"
+    echo "  Example: myserver, prod-db, github.com-custom"
+    echo
+    read "host_alias?Enter Host: "
+    
+    if [[ -z "$host_alias" ]]; then
+        print_color $RED "Host cannot be empty"
+        return 1
+    fi
+    
+    echo
+    print_color $BLUE "HostName (SSH config field 'HostName' - actual server address)"
+    echo "  The real domain or IP where SSH connects"
+    echo "  Example: github.com, 192.168.1.100, myserver.example.com"
+    echo
+    read "hostname?Enter HostName: "
+    
+    if [[ -z "$hostname" ]]; then
+        print_color $RED "HostName cannot be empty"
+        return 1
+    fi
+    
+    echo
+    print_color $BLUE "User (SSH config field 'User' - login username)"
+    echo "  Username for SSH authentication"
+    echo "  For git services: 'git' (default)"
+    echo "  For servers: your username"
+    echo
+    read "username?Enter User [git]: "
+    
+    # Use 'git' as default if no username provided
+    if [[ -z "$username" ]]; then
+        username="git"
+    fi
+    
+    # Ask for key type
+    echo
+    echo "Select key type:"
+    echo "  1. ed25519 (recommended)"
+    echo "  2. rsa"
+    read "key_type_choice?Choice (1-2, default: 1): "
+    
+    local key_type="ed25519"
+    case $key_type_choice in
+        2) key_type="rsa" ;;
+        *) key_type="ed25519" ;;
+    esac
+    
+    # Generate key using host alias as comment
+    generate_ssh_key "$host_alias" "$host_alias" "$key_type"
+    
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config
+    add_host_to_config "$host_alias" "$hostname" "$username" "$config_key_path"
+    
+    print_color $GREEN "🎉 Custom host '$host_alias' created successfully!"
+}
+
+# Function to create new host configuration with service selector
+create_new_host() {
+    local service_choice
+    
+    print_color $BLUE "🆕 Create New Host Configuration"
+    echo
+    echo "Select service type:"
+    echo "  1. GitHub"
+    echo "  2. Bitbucket"
+    echo "  3. GitLab"
+    echo "  4. Custom host"
+    echo
+    read "service_choice?Choice (1-4): "
+    
+    echo
+    case $service_choice in
+        1)
+            create_github_host
+            ;;
+        2)
+            create_bitbucket_host
+            ;;
+        3)
+            create_gitlab_host
+            ;;
+        4)
+            create_custom_host
+            ;;
+        *)
+            print_color $RED "Invalid option"
+            return 1
+            ;;
+    esac
 }
 
 # Function to add key to existing host
 add_key_to_existing_host() {
     local host=$1
-    local email key_type_choice
+    local key_type_choice
     
     print_color $BLUE "🔑 Adding new key to existing host: $host"
     
@@ -238,8 +438,6 @@ add_key_to_existing_host() {
         return 1
     fi
     
-    read "email?Enter your email for the key: "
-    
     # Ask for key type
     echo "Select key type:"
     echo "  1. ed25519 (recommended)"
@@ -252,8 +450,8 @@ add_key_to_existing_host() {
         *) key_type="ed25519" ;;
     esac
     
-    # Generate key (uses global variable)
-    generate_ssh_key "$host" "$email" "$key_type"
+    # Generate key using host alias as comment
+    generate_ssh_key "$host" "$host" "$key_type"
     
     # Convert absolute path to ~/ format for config file
     local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
