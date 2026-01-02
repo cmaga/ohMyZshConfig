@@ -131,8 +131,8 @@ if [ -d "$SCRIPTS_SOURCE" ]; then
 fi
 
 # Offer to source the new configuration
-read "REPLY?Would you like to apply the new configuration now? (y/n) "
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+read "REPLY?Would you like to apply the new configuration now? (Y/n) "
+if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
     log "Sourcing ~/.zshrc..."
     source ~/.zshrc
     log "Done! Your new Zsh configuration is now active."
