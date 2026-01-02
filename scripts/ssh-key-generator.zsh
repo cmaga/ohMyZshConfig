@@ -353,6 +353,78 @@ list_keys() {
     esac
 }
 
+# Function to delete all keys
+delete_all_keys() {
+    print_color $BLUE "🗑️  Delete All SSH Keys"
+    echo
+    
+    # Check if there are any keys to delete
+    local has_keys=false
+    if [[ -d "$KEYS_DIR" ]] && [[ -n "$(ls -A "$KEYS_DIR" 2>/dev/null)" ]]; then
+        has_keys=true
+    fi
+    
+    if [[ "$has_keys" == false ]]; then
+        print_color $YELLOW "📁 No SSH keys found to delete"
+        return 0
+    fi
+    
+    # Show what will be deleted
+    print_color $YELLOW "⚠️  WARNING: This will delete the following keys:"
+    echo
+    for key_file in "$KEYS_DIR"/*; do
+        if [[ -f "$key_file" ]] && [[ "$key_file" != *.pub ]]; then
+            local key_name=$(basename "$key_file")
+            echo "  🔐 $key_name"
+            if [[ -f "$key_file.pub" ]]; then
+                echo "  🔓 $key_name.pub"
+            fi
+        fi
+    done
+    echo
+    
+    # Confirmation prompt
+    local confirm
+    print_color $RED "⚠️  This action cannot be undone!"
+    read "confirm?Are you sure you want to delete ALL keys? (yes/no): "
+    
+    if [[ "$confirm" != "yes" ]]; then
+        print_color $BLUE "Operation cancelled"
+        return 0
+    fi
+    
+    # Step 1: Remove all keys from SSH agent
+    print_color $BLUE "🔧 Removing all keys from SSH agent..."
+    if ssh-add -D >/dev/null 2>&1; then
+        print_color $GREEN "✓ All keys removed from SSH agent"
+    else
+        local exit_code=$?
+        if [[ $exit_code -eq 2 ]]; then
+            print_color $YELLOW "⚠ SSH agent not running (no keys to remove from agent)"
+        else
+            print_color $YELLOW "⚠ Could not remove keys from SSH agent"
+        fi
+    fi
+    
+    # Step 2: Delete all key files
+    print_color $BLUE "🗑️  Deleting all key files..."
+    local deleted_count=0
+    for key_file in "$KEYS_DIR"/*; do
+        if [[ -f "$key_file" ]]; then
+            rm -f "$key_file"
+            ((deleted_count++))
+        fi
+    done
+    
+    if [[ $deleted_count -gt 0 ]]; then
+        print_color $GREEN "✓ Deleted $deleted_count file(s) from $KEYS_DIR"
+    else
+        print_color $YELLOW "No files were deleted"
+    fi
+    
+    print_color $GREEN "🎉 All keys have been removed!"
+}
+
 # Function to check SSH agent status
 check_ssh_agent_status() {
     print_color $BLUE "🔍 SSH Agent Status:"
@@ -411,10 +483,11 @@ main_menu() {
     echo "  2. Create new host configuration"
     echo "  3. List managed keys"
     echo "  4. Show SSH agent status"
-    echo "  5. Exit"
+    echo "  5. Delete all keys"
+    echo "  6. Exit"
     echo
     
-    read "choice?Choose an option (1-5): "
+    read "choice?Choose an option (1-6): "
     
     case $choice in
         1)
@@ -462,6 +535,12 @@ main_menu() {
             main_menu
             ;;
         5)
+            delete_all_keys
+            echo
+            read "?Press Enter to return to main menu..."
+            main_menu
+            ;;
+        6)
             print_color $GREEN "👋 Goodbye!"
             exit 0
             ;;
@@ -475,4 +554,3 @@ main_menu() {
 
 # Start the script
 main_menu
-    
