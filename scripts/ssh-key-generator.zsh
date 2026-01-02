@@ -184,22 +184,23 @@ select_existing_host() {
 
 # Function to create Bitbucket host configuration
 create_bitbucket_host() {
-    local workspace key_type_choice
+    local suffix key_type_choice
     
     print_color $BLUE "📦 Bitbucket Account Setup"
     echo
     print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
-    echo "  Your Bitbucket clone URLs: git@bitbucket.org:WORKSPACE/repo.git"
-    echo "  Clone URLs will work without modification!"
+    echo "  For multiple accounts, add a name: work, personal, etc."
+    echo "  Note: You'll need to modify clone URLs"
+    echo "  Example: git@bitbucket.org:user/repo.git → git@bitbucket.org-work:user/repo.git"
     echo
-    read "workspace?Enter workspace name: "
+    read "suffix?Enter name (e.g., work, personal): "
     
-    if [[ -z "$workspace" ]]; then
-        print_color $RED "Workspace name cannot be empty"
+    if [[ -z "$suffix" ]]; then
+        print_color $RED "Name cannot be empty"
         return 1
     fi
     
-    local host_alias="bitbucket.org:$workspace"
+    local host_alias="bitbucket.org-$suffix"
     local hostname="bitbucket.org"
     local username="git"
     
@@ -235,18 +236,18 @@ create_github_host() {
     print_color $BLUE "🐙 GitHub Account Setup"
     echo
     print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
-    echo "  For multiple accounts, add a suffix: -work, -personal, etc."
+    echo "  For multiple accounts, add a name: work, personal, etc."
     echo "  Note: You'll need to modify clone URLs"
     echo "  Example: git@github.com:user/repo.git → git@github.com-work:user/repo.git"
     echo
-    read "suffix?Enter suffix (e.g., -work, -personal): "
+    read "suffix?Enter name (e.g., work, personal): "
     
     if [[ -z "$suffix" ]]; then
-        print_color $RED "Suffix cannot be empty"
+        print_color $RED "Name cannot be empty"
         return 1
     fi
     
-    local host_alias="github.com$suffix"
+    local host_alias="github.com-$suffix"
     local hostname="github.com"
     local username="git"
     
@@ -282,18 +283,18 @@ create_gitlab_host() {
     print_color $BLUE "🦊 GitLab Account Setup"
     echo
     print_color $BLUE "Host (SSH config alias - used in git clone URLs)"
-    echo "  For multiple accounts, add a suffix: -work, -personal, etc."
+    echo "  For multiple accounts, add a name: work, personal, etc."
     echo "  Note: You'll need to modify clone URLs"
     echo "  Example: git@gitlab.com:user/repo.git → git@gitlab.com-work:user/repo.git"
     echo
-    read "suffix?Enter suffix (e.g., -work, -personal): "
+    read "suffix?Enter name (e.g., work, personal): "
     
     if [[ -z "$suffix" ]]; then
-        print_color $RED "Suffix cannot be empty"
+        print_color $RED "Name cannot be empty"
         return 1
     fi
     
-    local host_alias="gitlab.com$suffix"
+    local host_alias="gitlab.com-$suffix"
     local hostname="gitlab.com"
     local username="git"
     
