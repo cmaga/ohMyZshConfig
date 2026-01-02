@@ -682,10 +682,10 @@ main_menu() {
     echo "  3. List managed keys"
     echo "  4. Show SSH agent status"
     echo "  5. Delete all keys"
-    echo "  6. Exit"
+    echo "  0. Exit"
     echo
     
-    read "choice?Choose an option (1-6): "
+    read "choice?Choose an option (0-5): "
     
     case $choice in
         1)
@@ -738,7 +738,7 @@ main_menu() {
             read "?Press Enter to return to main menu..."
             main_menu
             ;;
-        6)
+        0)
             print_color $GREEN "👋 Goodbye!"
             exit 0
             ;;
