@@ -137,20 +137,6 @@ export WORK_ENV="true"
 alias vpn="sudo openconnect work.company.com"
 ```
 
-## 🧪 Testing & Validation
-
-Run syntax validation and basic checks:
-
-```bash
-make lint
-```
-
-This will:
-
-- Check syntax of all `.zsh` files using `zsh -n`
-- Verify file permissions are correct
-- Validate plugins.txt format
-
 ## 📁 Project Structure
 
 ```txt
