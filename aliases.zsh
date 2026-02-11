@@ -34,6 +34,9 @@ alias zsource="source ~/.zshrc" # reloads zsh config
 alias gita="git add ."
 alias gitm="git commit -m"
 alias gnuke="git branch | grep -v \"master\\|main\" | xargs git branch -D" # deletes all local branches except master/main
+alias gskip='git update-index --skip-worktree'
+alias gunskip='git update-index --no-skip-worktree'
+alias gskipped='git ls-files -v | grep "^S"'
 
 # SSH Key Generation and Management
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
