@@ -5,6 +5,7 @@ case "$OSTYPE" in
   darwin*)
     # macOS specific aliases
     alias getip="ipconfig getifaddr en0"
+    alias astudio='open -a "Android Studio"'
     ckill() { [ -z "$1" ] && echo "Usage: ckill <port>" || { lsof -ti :$1 | xargs kill -9 2>/dev/null || echo "No process on port $1"; }; }
     ;;
   linux*)
