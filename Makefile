@@ -21,7 +21,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "Available commands:"
 	@echo "  $(GREEN)lint$(NC)     - Format files and run lint checks"
-	@echo "  $(GREEN)deploy$(NC)   - Deploy changes/config from this project to the local system"
+	@echo "  $(GREEN)deploy$(NC)   - Deploy zsh, git, and Cline configs to local system"
 	@echo "  $(GREEN)update$(NC)   - Check and update custom plugins from plugins.txt"
 	@echo "  $(GREEN)setup$(NC)    - Complete system setup (fresh system to fully configured)"
 	@echo "  $(GREEN)help$(NC)     - Show this help message"

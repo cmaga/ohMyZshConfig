@@ -97,11 +97,40 @@ Features:
 - Cross-platform clipboard integration
 - SSH agent integration
 
+## ⚙️ Cline Configuration Management
+
+The repository includes centralized Cline (AI coding assistant) configuration management:
+
+### Cline Configuration Files
+
+- `configurations/cline/rules/` - Global rules applied to all projects
+- `configurations/cline/workflows/` - Reusable workflow instructions
+- `configurations/cline/hooks/` - Hook scripts for Cline events
+- `configurations/cline/skills/` - Custom skills with dependencies
+
+### Deployment Locations
+
+| Config Type | Deployed To                    |
+| ----------- | ------------------------------ |
+| Rules       | `~/Documents/Cline/Rules/`     |
+| Workflows   | `~/Documents/Cline/Workflows/` |
+| Hooks       | `~/Documents/Cline/Hooks/`     |
+| Skills      | `~/.cline/skills/`             |
+
+### Skills and Repository Dependencies
+
+Skills may include repository dependencies (e.g., reference documentation). These are:
+
+- **Not tracked in git** - Listed in `.gitignore`
+- **Cloned during deployment** - The `update-repo.zsh` script in each skill fetches required repos
+
+This keeps the repository lightweight while ensuring dependencies are available after deployment.
+
 ## ⚙️ Git Configuration Management
 
 The repository includes centralized git configuration management with support for multiple profiles:
 
-### Configuration Files
+### Git Configuration Files
 
 - `configurations/git/.gitconfig` - Main git configuration (deployed to `~/.gitconfig`)
 - `configurations/git/gitconfig-work` - Work-specific settings
@@ -146,6 +175,11 @@ ohMyZshConfig/
 ├── .zshrc                      # Main Zsh configuration
 ├── aliases.zsh                 # Platform-specific aliases
 ├── configurations/
+│   ├── cline/                  # Cline AI assistant configurations
+│   │   ├── rules/              # Global rules for all projects
+│   │   ├── workflows/          # Reusable workflow instructions
+│   │   ├── hooks/              # Hook scripts for Cline events
+│   │   └── skills/             # Custom skills with dependencies
 │   └── git/
 │       ├── .gitconfig          # Main git configuration
 │       ├── gitconfig-work      # Work-specific git settings
@@ -155,7 +189,7 @@ ohMyZshConfig/
 │   └── plugin-manager.zsh      # Plugin installation/update script
 ├── hooks/
 │   └── pre-commit              # Git pre-commit hook for validation
-├── update-zsh-config.zsh       # Legacy deployment script (still supported)
+├── update-zsh-config.zsh       # Deployment script
 └── README.md                   # This file
 ```
 
