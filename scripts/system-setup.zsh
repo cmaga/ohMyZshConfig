@@ -275,6 +275,15 @@ create_directories() {
         print_status "success" "Work directory exists"
     fi
     
+    local personal_dir="$HOME/dev/personal"
+    if [[ ! -d "$personal_dir" ]]; then
+        print_status "action" "Creating personal directory..."
+        mkdir -p "$personal_dir"
+        print_status "success" "Personal directory created at $personal_dir"
+    else
+        print_status "success" "Personal directory exists"
+    fi
+    
     local kratos_dir="$HOME/dev/kratos"
     if [[ ! -d "$kratos_dir" ]]; then
         print_status "action" "Creating kratos directory for git profile..."
