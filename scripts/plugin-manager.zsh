@@ -79,6 +79,35 @@ manage_plugin() {
         echo
         
         if git clone "$plugin_url" "$plugin_path"; then
+            # Fix broken symlinks on Windows (Git can't create symlinks without Developer Mode)
+            if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]]; then
+                local expected_plugin_file="$plugin_path/$plugin_name.plugin.zsh"
+                if [[ ! -f "$expected_plugin_file" ]]; then
+                    # Check for a text-file symlink stub (small file containing just a filename)
+                    local found_stub=false
+                    for candidate in "$plugin_path"/*.plugin.zsh; do
+                        if [[ -f "$candidate" && $(wc -c < "$candidate") -lt 200 ]]; then
+                            local target=$(cat "$candidate" | tr -d '[:space:]')
+                            if [[ -f "$plugin_path/$target" ]]; then
+                                cp "$plugin_path/$target" "$expected_plugin_file"
+                                print_color $YELLOW "  ⚠️  Fixed broken symlink: copied $target → $plugin_name.plugin.zsh"
+                                found_stub=true
+                                break
+                            fi
+                        fi
+                    done
+                    # If no stub found, look for any .plugin.zsh file and copy it
+                    if [[ $found_stub == false ]]; then
+                        for candidate in "$plugin_path"/*.plugin.zsh; do
+                            if [[ -f "$candidate" && "$(basename "$candidate")" != "$plugin_name.plugin.zsh" ]]; then
+                                cp "$candidate" "$expected_plugin_file"
+                                print_color $YELLOW "  ⚠️  Created missing $plugin_name.plugin.zsh from $(basename "$candidate")"
+                                break
+                            fi
+                        done
+                    fi
+                fi
+            fi
             print_color $GREEN "✅ Successfully installed $plugin_name"
         else
             print_color $RED "❌ Failed to install $plugin_name"

@@ -156,7 +156,7 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
             mkdir -p "$skill_dest"
 
             # Copy skill files excluding the repos directory
-            rsync -a --exclude="dependencies/repos/" "$skill_dir" "$skill_dest/" || {
+            rsync -a --exclude="dependencies/repos/" "$skill_dir" "$skill_dest/" 2>/dev/null || {
                 # Fallback if rsync is unavailable: copy manually
                 find "$skill_dir" -not -path "*/dependencies/repos/*" -type f | while read -r src_file; do
                     rel_path="${src_file#$skill_dir}"

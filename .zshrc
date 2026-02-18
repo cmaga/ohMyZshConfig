@@ -56,6 +56,9 @@ msys*|cygwin*|mingw*)
     [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
     
+    # Windows-specific PATH additions
+    export PATH="$HOME/.local/bin:$PATH"
+    
     # Windows-specific PATH management for nvm
     # Ensure nvm's node comes first in PATH
     if [ -n "$NVM_BIN" ]; then

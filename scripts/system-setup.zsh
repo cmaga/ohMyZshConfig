@@ -370,10 +370,15 @@ main() {
     create_directories
     echo
     
-    # Step 5: Install Claude
-    print_status "info" "Step 5: Installing Claude..."
-    check_install_claude
-    echo
+    # Step 5: Install Claude (skip on Windows - handled by setup-windows.ps1)
+    if [[ "$OSTYPE" != msys* && "$OSTYPE" != cygwin* && "$OSTYPE" != mingw* ]]; then
+        print_status "info" "Step 5: Installing Claude..."
+        check_install_claude
+        echo
+    else
+        print_status "info" "Step 5: Skipping Claude install (handled by Windows setup script)"
+        echo
+    fi
     
     # Step 6: Final verification
     print_status "info" "Step 6: System verification..."

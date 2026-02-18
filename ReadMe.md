@@ -8,23 +8,50 @@ A comprehensive terminal configuration repository that provides cross-platform O
 
 1. **Install Zsh and set as default shell**
 
+   On mac using homebrew
+
    ```bash
       # macOS (using Homebrew)
       brew install zsh
       chsh -s $(which zsh)
+   ```
 
+   Ubuntu/debian
+
+   ```bash
       # Ubuntu/Debian
       sudo apt install zsh
       chsh -s $(which zsh)
+   ```
 
-      # If you can't change default shell due to org settings this program handles the following workaround correctly
-      echo "exec zsh" >> ~/.bashrc
+   Windows
+
+   [install git bash](https://git-scm.com/install/windows)
+
+   [install zsh manually](https://dominikrys.com/posts/zsh-in-git-bash-on-windows/)
+
+   Then open powershell as admin:
+
+   ```powershell
+      Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+   ```
+
+   If you can't change default shell, the following workaround can be used.
+
+   ```bash
+   echo "exec zsh" >> ~/.bashrc
+   ```
+
+   Then install make:
+
+   ```zsh
+   choco install make
    ```
 
 2. **Install Oh-My-Zsh**
 
    ```bash
-      sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
    ```
 
 ### First Time Setup
