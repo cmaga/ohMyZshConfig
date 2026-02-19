@@ -64,6 +64,43 @@ msys*|cygwin*|mingw*)
     if [ -n "$NVM_BIN" ]; then
         export PATH="$NVM_BIN:$PATH"
     fi
+
+    # SSH agent auto-start for Windows (Git Bash/Zsh)
+    # macOS and Linux handle ssh-agent via system keychain / desktop environment,
+    # but Windows needs explicit agent management.
+    _ssh_agent_env="$HOME/.ssh/agent.env"
+
+    _ssh_agent_load_env() {
+        [[ -f "$_ssh_agent_env" ]] && source "$_ssh_agent_env" >| /dev/null
+    }
+
+    _ssh_agent_start() {
+        (umask 077; ssh-agent >| "$_ssh_agent_env")
+        source "$_ssh_agent_env" >| /dev/null
+    }
+
+    _ssh_agent_load_keys() {
+        local keys_dir="$HOME/.ssh/keys"
+        [[ -d "$keys_dir" ]] || return
+        for _key in "$keys_dir"/id_*(N); do
+            [[ "$_key" != *.pub ]] && ssh-add "$_key" 2>/dev/null
+        done
+    }
+
+    _ssh_agent_load_env
+    _ssh_agent_state=$(ssh-add -l >| /dev/null 2>&1; echo $?)
+
+    if [[ ! "$SSH_AUTH_SOCK" ]] || [[ $_ssh_agent_state -eq 2 ]]; then
+        # Agent not running — start it and load keys
+        _ssh_agent_start
+        _ssh_agent_load_keys
+    elif [[ $_ssh_agent_state -eq 1 ]]; then
+        # Agent running but no keys loaded
+        _ssh_agent_load_keys
+    fi
+
+    unset _ssh_agent_env _ssh_agent_state _key
+    unfunction _ssh_agent_load_env _ssh_agent_start _ssh_agent_load_keys 2>/dev/null
     ;;
     
 *)
