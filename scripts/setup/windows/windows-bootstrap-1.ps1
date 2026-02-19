@@ -1,4 +1,4 @@
-# setup-windows.ps1
+# windows-bootstrap-1.ps1
 #Requires -RunAsAdministrator
 
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -127,6 +127,34 @@ if (!(Test-Path $zshBin)) {
     Write-Host "Zsh already installed in Git Bash" -ForegroundColor Yellow
 }
 
+# --- Install nvm-windows ---
+if (!(Get-Command nvm -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing nvm-windows..." -ForegroundColor Cyan
+    choco install nvm -y
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+} else {
+    Write-Host "nvm-windows already installed" -ForegroundColor Yellow
+}
+
+# --- Install Node.js LTS via nvm ---
+if (Get-Command nvm -ErrorAction SilentlyContinue) {
+    Write-Host "Installing Node.js LTS via nvm..." -ForegroundColor Cyan
+    nvm install lts
+    nvm use lts
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+    # --- Install pnpm globally ---
+    if (Get-Command npm -ErrorAction SilentlyContinue) {
+        Write-Host "Installing pnpm globally..." -ForegroundColor Cyan
+        npm install -g pnpm
+        Write-Host "pnpm installed" -ForegroundColor Green
+    } else {
+        Write-Host "npm not found after nvm setup — skipping pnpm install" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "nvm not found — skipping Node.js and pnpm install" -ForegroundColor Yellow
+}
+
 # --- Install Claude Code ---
 $claudeBin = "$env:USERPROFILE\.local\bin\claude.exe"
 if (!(Test-Path $claudeBin)) {
@@ -152,6 +180,6 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";
 Write-Host "`nRunning bash setup..." -ForegroundColor Cyan
 $gitBash = "$gitDir\bin\bash.exe"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-& $gitBash "$scriptDir/setup-shell.sh"
+& $gitBash "$scriptDir/windows-bootstrap-2.sh"
 
 Write-Host "`n✅ Setup complete! Restart your terminal." -ForegroundColor Cyan

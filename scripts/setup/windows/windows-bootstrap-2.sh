@@ -1,6 +1,6 @@
 #!/bin/bash
-# setup-shell.sh
-# Called by setup-windows.ps1 — runs in Git Bash context
+# windows-bootstrap-2.sh
+# Called by windows-bootstrap-1.ps1 — runs in Git Bash context
 
 # --- Configure .bashrc for UTF-8 + Zsh ---
 if ! grep -q "exec zsh" ~/.bashrc 2>/dev/null; then

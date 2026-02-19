@@ -4,7 +4,7 @@ A comprehensive terminal configuration repository that provides cross-platform O
 
 ## 🚀 Quick Start
 
-Each platform has a bootstrap script that installs prerequisites, then `make setup` handles everything else (Oh-My-Zsh, plugins, configuration deployment, Claude Code CLI, directory structure).
+Each platform has a bootstrap script that installs prerequisites (including nvm, Node.js LTS, and pnpm), then `make setup` handles everything else (Oh-My-Zsh, plugins, configuration deployment, Claude Code CLI, directory structure).
 
 ### macOS
 
@@ -28,7 +28,7 @@ make setup
 
 ```powershell
 # 1. Open PowerShell as Administrator and run:
-.\scripts\setup\windows\setup-windows.ps1
+.\scripts\setup\windows\windows-bootstrap-1.ps1
 
 # 2. Restart your terminal, open Git Bash, then:
 cd ohMyZshConfig
@@ -39,11 +39,11 @@ make setup
 
 ### Bootstrap Scripts (per-platform)
 
-| Platform | Script                                    | Installs                                                                             |
-| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
-| macOS    | `scripts/setup/macos/bootstrap.sh`        | Xcode Command Line Tools (git, make; zsh is already the default shell)               |
-| Linux    | `scripts/setup/linux/bootstrap.sh`        | git, make, zsh (auto-detects apt/dnf/yum/pacman/zypper)                              |
-| Windows  | `scripts/setup/windows/setup-windows.ps1` | Chocolatey, Git, 7-Zip, Make + Zsh (MSYS2 into Git Bash), Claude Code CLI, Oh-My-Zsh |
+| Platform | Script                                          | Installs                                                                                                             |
+| -------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| macOS    | `scripts/setup/macos/bootstrap.sh`              | Xcode CLI Tools (git, make; zsh is default), Homebrew, nvm, Node.js LTS, pnpm (via corepack)                         |
+| Linux    | `scripts/setup/linux/bootstrap.sh`              | git, make, zsh, curl, nvm, Node.js LTS, pnpm (via corepack)                                                          |
+| Windows  | `scripts/setup/windows/windows-bootstrap-1.ps1` | Chocolatey, Git, 7-Zip, Make + Zsh (MSYS2 into Git Bash), nvm-windows, Node.js LTS, pnpm, Claude Code CLI, Oh-My-Zsh |
 
 ### `make setup` (all platforms)
 
@@ -215,8 +215,8 @@ ohMyZshConfig/
 │       ├── linux/
 │       │   └── bootstrap.sh    # Linux prerequisite installer
 │       └── windows/
-│           ├── setup-windows.ps1  # Windows full bootstrap (Admin)
-│           └── setup-shell.sh     # Git Bash shell configuration
+│           ├── windows-bootstrap-1.ps1  # Windows full bootstrap (Admin PowerShell)
+│           └── windows-bootstrap-2.sh   # Git Bash shell configuration
 ├── hooks/
 │   └── pre-commit              # Git pre-commit hook for validation
 ├── update-zsh-config.zsh       # Deployment script

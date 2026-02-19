@@ -379,7 +379,7 @@ main() {
     create_directories
     echo
     
-    # Step 5: Install Claude (skip on Windows - handled by setup-windows.ps1)
+    # Step 5: Install Claude (skip on Windows - handled by windows-bootstrap-1.ps1)
     if [[ "$OSTYPE" != msys* && "$OSTYPE" != cygwin* && "$OSTYPE" != mingw* ]]; then
         print_status "info" "Step 5: Installing Claude..."
         check_install_claude
