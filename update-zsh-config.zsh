@@ -167,7 +167,7 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
             }
 
             # Run the update-repo script to clone/update skill repositories
-            repo_script="$skill_dir/dependencies/scripts/update-repo.zsh"
+            repo_script="$skill_dest/dependencies/scripts/update-repo.zsh"
             if [ -f "$repo_script" ]; then
                 info "Fetching repositories for skill: $skill_name"
                 chmod +x "$repo_script"
