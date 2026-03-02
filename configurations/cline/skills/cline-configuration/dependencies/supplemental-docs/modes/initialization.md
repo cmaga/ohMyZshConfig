@@ -84,7 +84,7 @@ Create the initial structure in the **project root**:
     └── (hook scripts)
 ```
 
-Note: ROADMAP.md and PROGRESS.md are placed in `automation/` subdirectory so Cline doesn't interpret them as rules.
+Note: ROADMAP.md and PROGRESS.md use `paths: []` frontmatter to prevent Cline from interpreting them as active rules (see templates for format). Cline processes all `.md` files in `.clinerules/` recursively, but conditional rules with empty paths arrays never activate.
 
 ## Step 5: Generate Automation Roadmap
 

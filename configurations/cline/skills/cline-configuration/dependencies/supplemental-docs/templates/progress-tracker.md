@@ -1,3 +1,7 @@
+---
+paths: []
+---
+
 # Cline Configuration Progress
 
 Track cline-init sessions and configuration evolution.

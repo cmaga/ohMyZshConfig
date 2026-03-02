@@ -1,3 +1,7 @@
+---
+paths: []
+---
+
 # Automation Roadmap
 
 ## Vision
