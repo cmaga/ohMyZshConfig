@@ -8,6 +8,7 @@ ZSH_THEME="half-life"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 plugins=(
 git
+direnv
 zsh-completions
 zsh-autosuggestions
 zsh-syntax-highlighting

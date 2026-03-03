@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup update deploy lint
+.PHONY: help setup update deploy deploy-cline lint
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -23,11 +23,12 @@ help: ## Show this help message
 	@printf "$(BLUE)Oh-My-Zsh Configuration Management$(NC)\n"
 	@printf "\n"
 	@printf "Available commands:\n"
-	@printf "  $(GREEN)lint$(NC)     - Format files and run lint checks\n"
-	@printf "  $(GREEN)deploy$(NC)   - Deploy zsh, git, and Cline configs to local system\n"
-	@printf "  $(GREEN)update$(NC)   - Check and update custom plugins from plugins.txt\n"
-	@printf "  $(GREEN)setup$(NC)    - Complete system setup (fresh system to fully configured)\n"
-	@printf "  $(GREEN)help$(NC)     - Show this help message\n"
+	@printf "  $(GREEN)lint$(NC)          - Format files and run lint checks\n"
+	@printf "  $(GREEN)deploy$(NC)        - Deploy zsh, git, and Cline configs to local system\n"
+	@printf "  $(GREEN)deploy-cline$(NC)  - Deploy only Cline configs (rules, workflows, skills)\n"
+	@printf "  $(GREEN)update$(NC)        - Check and update custom plugins from plugins.txt\n"
+	@printf "  $(GREEN)setup$(NC)         - Complete system setup (fresh system to fully configured)\n"
+	@printf "  $(GREEN)help$(NC)          - Show this help message\n"
 	@printf "\n"
 	@printf "Typical workflow:\n"
 	@printf "  $(YELLOW)make setup$(NC)   # Full setup on fresh system (installs zsh, oh-my-zsh, plugins, configs)\n"
@@ -92,6 +93,14 @@ deploy: ## Deploy changes/config from this project to the local system
 		exit 1; \
 	fi
 	@"$(CURRENT_DIR)/update-zsh-config.zsh"
+
+deploy-cline: ## Deploy only Cline configurations (rules, workflows, hooks, skills)
+	@printf "$(BLUE)📋 Deploying Cline configuration files...$(NC)\n"
+	@if [ ! -f "$(CURRENT_DIR)/scripts/deploy-cline.zsh" ]; then \
+		printf "$(RED)❌ scripts/deploy-cline.zsh not found$(NC)\n"; \
+		exit 1; \
+	fi
+	@"$(CURRENT_DIR)/scripts/deploy-cline.zsh"
 
 update: ## Check and update custom plugins from plugins.txt
 	@printf "$(BLUE)🔄 Checking and updating custom plugins...$(NC)\n"

@@ -11,7 +11,7 @@ The goal of this skill is to help users Bootstrap and evolve a custom Cline conf
 
 ### Step 1: Check Prerequisites
 
-- Verify the target project has a `./docs/memory-bank/` directory
+- Verify the target project has a `.cline-project/workflows/memory-bank/` directory
 - If the memory bank doesn't exist, stop and tell the user to create it first
 
 ### Step 2: Deep dive available tools

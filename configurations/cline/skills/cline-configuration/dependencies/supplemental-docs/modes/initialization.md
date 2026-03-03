@@ -4,7 +4,7 @@ Use this mode when setting up Cline for a project for the first time (no `.cline
 
 ## Step 1: Read Memory Bank
 
-Read all files in the **project's** `./docs/memory-bank/` directory to understand the project's tech stack, architecture, conventions, and current state.
+Read all files in the **project's** `.cline-project/workflows/memory-bank/` directory to understand the project's tech stack, architecture, conventions, and current state.
 
 ## Step 2: Gather Development Context
 
@@ -55,7 +55,7 @@ After gathering all context, now plan what configurations to create:
 2. **Propose initial configurations** for Phase 1:
    - What rules should be created (consider conditional rules for path-specific guidance)
    - What patterns should be excluded in .clineignore (dependencies, build artifacts, etc.)
-   - What skills would be helpful (ensure NO skills modify ./docs/memory-bank/)
+   - What skills would be helpful (ensure NO skills modify `.cline-project/workflows/memory-bank/`)
    - What workflows to automate repetitive tasks
    - What hooks for quality gates (8 types available: TaskStart, TaskResume, TaskCancel, TaskComplete, PreToolUse, PostToolUse, UserPromptSubmit, PreCompact)
 3. **Present the proposal** to the user for approval:
@@ -63,7 +63,7 @@ After gathering all context, now plan what configurations to create:
    - Explain how they address the user's pain points
    - Ask for confirmation before proceeding
 
-**Note:** Ensure no configurations modify ./docs/memory-bank/ - it is read-only user documentation.
+**Note:** Ensure no configurations modify `.cline-project/workflows/memory-bank/` - it is read-only user documentation.
 
 ## Step 4: Create Directory Structure
 
@@ -72,9 +72,6 @@ Create the initial structure in the **project root**:
 ```txt
 .clineignore              (file access control - see Cline docs)
 .clinerules/
-├── automation/
-│   ├── ROADMAP.md       (automation roadmap - see templates/roadmap.md)
-│   └── PROGRESS.md      (session tracking - see templates/progress-tracker.md)
 ├── (rule files at root level)
 ├── skills/
 │   └── (skill directories with SKILL.md)
@@ -82,13 +79,23 @@ Create the initial structure in the **project root**:
 │   └── (workflow .md files)
 └── hooks/
     └── (hook scripts)
+
+.cline-project/
+├── skills/
+│   └── cline-configuration/
+│       ├── roadmap.md    (automation roadmap - see templates/roadmap.md)
+│       └── progress.md   (session tracking - see templates/progress-tracker.md)
+├── workflows/
+│   └── memory-bank/      (project documentation)
+└── hooks/
+    └── (hook state/logs)
 ```
 
-Note: ROADMAP.md and PROGRESS.md use `paths: []` frontmatter to prevent Cline from interpreting them as active rules (see templates for format). Cline processes all `.md` files in `.clinerules/` recursively, but conditional rules with empty paths arrays never activate.
+Note: Artifacts (generated data) go in `.cline-project/` organized by feature type, while instructions (rules, workflows, hooks) stay in `.clinerules/`.
 
 ## Step 5: Generate Automation Roadmap
 
-Create `.clinerules/automation/ROADMAP.md` using [templates/roadmap.md](../templates/roadmap.md), customized based on interview answers.
+Create `.cline-project/skills/cline-configuration/roadmap.md` using [templates/roadmap.md](../templates/roadmap.md), customized based on interview answers.
 
 ## Step 6: Generate Initial Configuration
 
@@ -100,9 +107,23 @@ Generate **Phase 1** tool configurations based on memory bank and interview cont
 - **Create workflows** for repetitive processes
 - **Create hooks** for quality gates (choose from 8 available hook types)
 
+### Optional: JIRA Integration
+
+If user indicated they use JIRA for ticket management during the interview (Step 2), invoke the JIRA setup workflow:
+
+```
+/jira-setup.md
+```
+
+This workflow will:
+
+1. Check prerequisites (jira CLI, gh CLI, jq)
+2. Create `.cline-project/skills/jira/config.json` with user's project settings
+3. Enable JIRA hooks for automatic ticket context injection
+
 ## Step 7: Create Progress Tracker
 
-Create `.clinerules/automation/PROGRESS.md` using [templates/progress-tracker.md](../templates/progress-tracker.md) to track this session and future sessions.
+Create `.cline-project/skills/cline-configuration/progress.md` using [templates/progress-tracker.md](../templates/progress-tracker.md) to track this session and future sessions.
 
 ## Step 8: Report Summary
 
@@ -110,7 +131,7 @@ Report back with a simple summary of 1-3 sentences covering what was created.
 
 ## Guidelines
 
-- **Memory Bank is Read-Only**: Never suggest or create configurations that modify ./docs/memory-bank/. The memory bank is user-maintained documentation that Cline only reads for context.
+- **Memory Bank is Read-Only**: Never suggest or create configurations that modify `.cline-project/workflows/memory-bank/`. The memory bank is user-maintained documentation that Cline only reads for context.
 - **Separate Gathering from Planning**: During Step 2 (Gather Development Context), focus only on understanding the user's needs. Save all configuration suggestions for Step 3.
 - **Progressive Disclosure**: Don't overwhelm users during the interview phase. Ask questions progressively and allow them to skip to defaults if desired.
 - **Phase-Based Approach**: Start with minimal Phase 1 configurations. More advanced automation should be added in later phases as the user becomes comfortable.

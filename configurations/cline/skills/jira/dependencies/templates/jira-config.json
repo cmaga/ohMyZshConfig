@@ -1,0 +1,19 @@
+{
+    "server": "https://company.atlassian.net",
+    "email": "your-email@company.com",
+    "installationType": "cloud",
+    "username": "your-username",
+    "projectKey": "PROJ",
+    "branchFormat": "{username}/feature/{ticketId}/{description}",
+    "commitFormat": "[{ticketId}] {message}",
+    "baseBranch": "main",
+    "labels": [],
+    "transitions": {
+        "backlog": "BACKLOG",
+        "selectedForDevelopment": "SELECTED FOR DEVELOPMENT",
+        "inProgress": "IN PROGRESS",
+        "inReview": "IN REVIEW",
+        "done": "DONE"
+    },
+    "prTemplate": "Resolves {ticketId}\n\n## Changes\n- \n\n## Testing\n- "
+}

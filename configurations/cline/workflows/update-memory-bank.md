@@ -12,11 +12,11 @@ When updating the memory bank, follow these steps:
 
 **If memory bank exists:**
 
-- Read all files in `docs/memory-bank/` to understand current documentation state
+- Read all files in `.cline-project/workflows/memory-bank/` to understand current documentation state
 
 **If memory bank is missing:**
 
-- Create `docs/memory-bank/` directory
+- Create `.cline-project/workflows/memory-bank/` directory
 - Initialize all core files with basic structure:
   - `projectBrief.md` - Gather from README, package files, and project structure
   - `productContext.md` - Derive from existing documentation and code purpose
@@ -90,7 +90,7 @@ Summarize what was updated:
 
 ## Additional Context Files
 
-Create additional files/folders within `docs/memory-bank/` when needed:
+Create additional files/folders within `.cline-project/workflows/memory-bank/` when needed:
 
 - **Complex features** → `features/[feature-name].md`
 - **API specifications** → `api/[service-name].md`
