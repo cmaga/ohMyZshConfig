@@ -1,0 +1,7 @@
+{
+    "worktreeDir": "./wt",
+    "prTargetBranch": "develop",
+    "branchPrefix": "feature/",
+    "maxParallelAgents": 3,
+    "subAgentTimeout": "30m"
+}

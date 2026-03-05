@@ -1,0 +1,13 @@
+{
+    "username": "your-username",
+    "projectKey": "PROJ",
+    "branchFormat": "{username}/feature/{ticketId}/{description}",
+    "commitFormat": "[{ticketId}] {message}",
+    "baseBranch": "main",
+    "transitions": {
+        "inProgress": "In Progress",
+        "inReview": "In Review",
+        "done": "Done"
+    },
+    "prTemplate": "Resolves {ticketId}\n\n## Changes\n- \n\n## Testing\n- "
+}
