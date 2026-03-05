@@ -105,6 +105,38 @@ else
     exit 1
 fi
 
+# --- Install GitHub CLI ---
+echo
+if command -v gh &>/dev/null; then
+    echo "${GREEN}✅ GitHub CLI already installed${NC}"
+else
+    echo "${YELLOW}📦 Installing GitHub CLI...${NC}"
+    brew install gh
+    if command -v gh &>/dev/null; then
+        echo "${GREEN}✅ GitHub CLI installed${NC}"
+    else
+        echo "${RED}❌ GitHub CLI installation failed${NC}"
+    fi
+fi
+
+# Configure gh to disable pager (prevents hanging in automation)
+gh config set pager cat
+echo "${GREEN}✅ GitHub CLI pager disabled${NC}"
+
+# --- Install Bitbucket CLI ---
+echo
+if command -v bb &>/dev/null; then
+    echo "${GREEN}✅ Bitbucket CLI already installed${NC}"
+else
+    echo "${YELLOW}📦 Installing Bitbucket CLI...${NC}"
+    brew install gildas/tap/bitbucket-cli
+    if command -v bb &>/dev/null; then
+        echo "${GREEN}✅ Bitbucket CLI installed${NC}"
+    else
+        echo "${YELLOW}⚠️  Bitbucket CLI installation failed (optional)${NC}"
+    fi
+fi
+
 echo
 echo "${GREEN}🎉 macOS bootstrap complete!${NC}"
 echo "${BLUE}Next step: run 'make setup' to complete the full configuration.${NC}"

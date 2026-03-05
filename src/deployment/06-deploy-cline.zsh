@@ -1,39 +1,47 @@
 #!/bin/zsh
+# Cline Deployment Script
+# Deploys Cline configuration files from git repository to system
+# And install the cline cli
 
-# Deploy Cline configuration files from git repository to system
+set -e
 
-# Color codes for output (ANSI-C quoting for cross-shell compatibility)
-GREEN=$'\033[0;32m'
-YELLOW=$'\033[1;33m'
-RED=$'\033[0;31m'
-BLUE=$'\033[0;34m'
-NC=$'\033[0m' # No Color
+# Source common utilities
+SCRIPT_DIR="${0:A:h}"
+source "${SCRIPT_DIR}/lib/common.zsh"
 
-# Print with color
-log() {
-    echo "${GREEN}$1${NC}"
-}
+# Get project root and storage paths
+PROJECT_ROOT="${SCRIPT_DIR:h:h}"
+STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 
-warn() {
-    echo "${YELLOW}WARNING: $1${NC}"
-}
+# Cline Configuration Source
+CLINE_CONFIG_SOURCE="${STORAGE_DIR}/cline"
 
-error() {
-    echo "${RED}ERROR: $1${NC}"
-    exit 1
-}
+# Install Cline CLI
+print_status "info" "Checking for Cline CLI..."
 
-info() {
-    echo "${BLUE}$1${NC}"
-}
+if command_exists cline; then
+    local cline_version=$(cline --version 2>/dev/null || echo "unknown")
+    print_status "success" "Cline CLI already installed ($cline_version)"
+else
+    print_status "warning" "Cline CLI not found"
+    print_status "download" "Installing Cline CLI via pnpm..."
+    
+    if pnpm install -g @cline/cli 2>/dev/null || npm install -g @cline/cli 2>/dev/null; then
+        print_status "success" "Cline CLI installed successfully"
+        
+        # Verify installation
+        if command_exists cline; then
+            local cline_version=$(cline --version 2>/dev/null || echo "unknown")
+            print_status "success" "Cline CLI verified ($cline_version)"
+        else
+            warn "Cline CLI installed but not found in PATH - you may need to restart your terminal"
+        fi
+    else
+        warn "Failed to install Cline CLI - continuing with config deployment"
+    fi
+fi
 
-# Cline Configuration Paths
-CLINE_CONFIG_SOURCE="$(pwd)/configurations/cline"
-CLINE_DOCS_DIR="$HOME/Documents/Cline"
-CLINE_RULES_DEST="$CLINE_DOCS_DIR/Rules"
-CLINE_WORKFLOWS_DEST="$CLINE_DOCS_DIR/Workflows"
-CLINE_HOOKS_DEST="$CLINE_DOCS_DIR/Hooks"
-CLINE_SKILLS_DEST="$HOME/.cline/skills"
+echo
 
 # Deploy Cline configurations
 if [ -d "$CLINE_CONFIG_SOURCE" ]; then

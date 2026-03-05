@@ -1,6 +1,14 @@
 #!/bin/zsh
 # SSH Key Generator Script
 # Manages SSH keys for different hosts with organized storage and ssh-agent integration
+#
+# Usage:
+#   kgen                        # Interactive menu
+#   kgen --create <service> <suffix>  # Non-interactive key creation
+#   kgen --list                 # List all keys
+#   kgen --copy <host-alias>    # Copy key to clipboard
+#
+# Supported services: github, bitbucket, gitlab
 
 set -e
 
@@ -648,6 +656,197 @@ check_ssh_agent_status() {
     fi
 }
 
+# Function to copy existing key to clipboard (interactive)
+copy_key_to_clipboard() {
+    local keys=()
+    local key_names=()
+    
+    # Build array of available keys
+    if [[ -d "$KEYS_DIR" ]]; then
+        for key_file in "$KEYS_DIR"/*; do
+            if [[ -f "$key_file" ]] && [[ "$key_file" != *.pub ]]; then
+                keys+=("$key_file")
+                local key_name=$(basename "$key_file" | sed 's/id_[^_]*_//')
+                key_names+=("$key_name")
+            fi
+        done
+    fi
+    
+    if [[ ${#keys[@]} -eq 0 ]]; then
+        print_color $YELLOW "No SSH keys found in $KEYS_DIR"
+        print_color $BLUE "Generate keys first using option 2"
+        return 1
+    fi
+    
+    print_color $BLUE "Select a key to copy to clipboard:"
+    echo
+    for i in "${!key_names[@]}"; do
+        echo "  $((i+1)). ${key_names[i]}"
+    done
+    echo
+    
+    local selection
+    read "selection?Choose key (1-${#keys[@]}): "
+    
+    if [[ "$selection" =~ ^[0-9]+$ ]] && [[ $selection -ge 1 ]] && [[ $selection -le ${#keys[@]} ]]; then
+        local selected_key="${keys[$((selection-1))]}"
+        local selected_name="${key_names[$((selection-1))]}"
+        local pub_key_content=$(cat "$selected_key.pub")
+        copy_to_clipboard "$pub_key_content"
+        echo
+        print_color $GREEN "Copied $selected_name public key to clipboard"
+    else
+        print_color $RED "Invalid selection"
+        return 1
+    fi
+}
+
+# Function to create key non-interactively
+create_key_noninteractive() {
+    local service=$1
+    local suffix=$2
+    
+    if [[ -z "$service" ]] || [[ -z "$suffix" ]]; then
+        echo "Usage: kgen --create <service> <suffix>"
+        echo "  Services: github, bitbucket, gitlab"
+        echo "  Example: kgen --create github gsi"
+        exit 1
+    fi
+    
+    local hostname
+    local host_alias
+    
+    case $service in
+        github)
+            hostname="github.com"
+            host_alias="github.com-$suffix"
+            ;;
+        bitbucket)
+            hostname="bitbucket.org"
+            host_alias="bitbucket.org-$suffix"
+            ;;
+        gitlab)
+            hostname="gitlab.com"
+            host_alias="gitlab.com-$suffix"
+            ;;
+        *)
+            echo "Unknown service: $service"
+            echo "Supported services: github, bitbucket, gitlab"
+            exit 1
+            ;;
+    esac
+    
+    # Check if key already exists
+    local key_path="$KEYS_DIR/id_ed25519_$host_alias"
+    if [[ -f "$key_path" ]]; then
+        print_color $YELLOW "Key already exists: $host_alias"
+        return 0
+    fi
+    
+    print_color $BLUE "Creating SSH key for $host_alias..."
+    
+    # Generate key (using ed25519 by default)
+    generate_ssh_key "$host_alias" "$host_alias" "ed25519"
+    
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config
+    add_host_to_config "$host_alias" "$hostname" "git" "$config_key_path"
+    
+    print_color $GREEN "Created SSH key: $host_alias"
+}
+
+# Function to copy key by name (non-interactive)
+copy_key_by_name() {
+    local host_alias=$1
+    
+    if [[ -z "$host_alias" ]]; then
+        echo "Usage: kgen --copy <host-alias>"
+        exit 1
+    fi
+    
+    # Find the key file
+    local key_file=$(ls "$KEYS_DIR"/id_*_"$host_alias" 2>/dev/null | head -1)
+    
+    if [[ -f "$key_file" ]] && [[ -f "$key_file.pub" ]]; then
+        local pub_key_content=$(cat "$key_file.pub")
+        copy_to_clipboard "$pub_key_content"
+        print_color $GREEN "Copied $host_alias public key to clipboard"
+    else
+        print_color $RED "Key not found: $host_alias"
+        echo "Available keys:"
+        for kf in "$KEYS_DIR"/*; do
+            if [[ -f "$kf" ]] && [[ "$kf" != *.pub ]]; then
+                local key_name=$(basename "$kf" | sed 's/id_[^_]*_//')
+                echo "  $key_name"
+            fi
+        done
+        exit 1
+    fi
+}
+
+# Function to list keys non-interactively
+list_keys_noninteractive() {
+    if [[ ! -d "$KEYS_DIR" ]] || [[ -z "$(ls -A "$KEYS_DIR" 2>/dev/null)" ]]; then
+        echo "No SSH keys found"
+        exit 0
+    fi
+    
+    for key_file in "$KEYS_DIR"/*; do
+        if [[ -f "$key_file" ]] && [[ "$key_file" != *.pub ]]; then
+            local key_name=$(basename "$key_file" | sed 's/id_[^_]*_//')
+            echo "$key_name"
+        fi
+    done
+}
+
+# Parse command line arguments
+parse_args() {
+    case "$1" in
+        --create)
+            create_key_noninteractive "$2" "$3"
+            exit 0
+            ;;
+        --list)
+            list_keys_noninteractive
+            exit 0
+            ;;
+        --copy)
+            copy_key_by_name "$2"
+            exit 0
+            ;;
+        --help|-h)
+            echo "SSH Key Generator (kgen)"
+            echo ""
+            echo "Usage:"
+            echo "  kgen                        # Interactive menu"
+            echo "  kgen --create <service> <suffix>  # Create key for service"
+            echo "  kgen --list                 # List all keys"
+            echo "  kgen --copy <host-alias>    # Copy key to clipboard"
+            echo ""
+            echo "Services: github, bitbucket, gitlab"
+            echo ""
+            echo "Examples:"
+            echo "  kgen --create github gsi    # Creates github.com-gsi key"
+            echo "  kgen --copy github.com-gsi  # Copies public key to clipboard"
+            exit 0
+            ;;
+        "")
+            # No arguments, run interactive menu
+            return 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+}
+
+# Parse arguments first
+parse_args "$@"
+
 main_menu() {
     local choice
     
@@ -683,10 +882,11 @@ main_menu() {
     echo "  3. List managed keys"
     echo "  4. Show SSH agent status"
     echo "  5. Delete all keys"
+    echo "  6. Copy key to clipboard"
     echo "  0. Exit"
     echo
     
-    read "choice?Choose an option (0-5): "
+    read "choice?Choose an option (0-6): "
     
     case $choice in
         1)
@@ -735,6 +935,12 @@ main_menu() {
             ;;
         5)
             delete_all_keys
+            echo
+            read "?Press Enter to return to main menu..."
+            main_menu
+            ;;
+        6)
+            copy_key_to_clipboard
             echo
             read "?Press Enter to return to main menu..."
             main_menu

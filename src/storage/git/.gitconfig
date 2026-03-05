@@ -1,0 +1,12 @@
+# Default configuration (personal projects/learning)
+[user]
+    name = cmaga
+    email = christophernm1999@gmail.com
+[color]
+    ui = true
+
+[includeIf "gitdir:~/dev/gsi/"]
+    path = ~/.oh-my-zsh/custom/git/gitconfig-gsi
+
+[includeIf "gitdir:~/dev/ms/"]
+    path = ~/.oh-my-zsh/custom/git/gitconfig-ms

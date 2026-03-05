@@ -128,6 +128,47 @@ else
     exit 1
 fi
 
+# --- Install GitHub CLI ---
+echo
+if command -v gh &>/dev/null; then
+    echo "${GREEN}✅ GitHub CLI already installed${NC}"
+else
+    echo "${YELLOW}📦 Installing GitHub CLI...${NC}"
+    case "$PM" in
+        apt)
+            # GitHub CLI official repo for Debian/Ubuntu
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt update -qq
+            sudo apt install -y gh
+            ;;
+        dnf)
+            sudo dnf install -y gh
+            ;;
+        yum)
+            sudo yum install -y gh
+            ;;
+        pacman)
+            sudo pacman -S --noconfirm github-cli
+            ;;
+        zypper)
+            sudo zypper install -y gh
+            ;;
+    esac
+    
+    if command -v gh &>/dev/null; then
+        echo "${GREEN}✅ GitHub CLI installed${NC}"
+    else
+        echo "${YELLOW}⚠️  GitHub CLI installation failed (optional)${NC}"
+    fi
+fi
+
+# Configure gh to disable pager (prevents hanging in automation)
+if command -v gh &>/dev/null; then
+    gh config set pager cat
+    echo "${GREEN}✅ GitHub CLI pager disabled${NC}"
+fi
+
 echo
 echo "${GREEN}🎉 Linux bootstrap complete!${NC}"
 echo "${BLUE}Next step: run 'make setup' to complete the full configuration.${NC}"
