@@ -10,7 +10,7 @@ source "${SCRIPT_DIR}/lib/common.zsh"
 
 # Get project root and storage paths
 PROJECT_ROOT="${SCRIPT_DIR:h:h}"
-STORAGE_DIR="$(get_storage_dir)"
+STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 
 # Source paths
 ZSHRC_SOURCE="${STORAGE_DIR}/zsh/.zshrc"

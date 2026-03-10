@@ -8,8 +8,9 @@ set -e
 SCRIPT_DIR="${0:A:h}"
 source "${SCRIPT_DIR}/lib/common.zsh"
 
-# Get storage paths
-STORAGE_DIR="$(get_storage_dir)"
+# Get project root and storage paths
+PROJECT_ROOT="${SCRIPT_DIR:h:h}"
+STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 
 # Source paths
 GITCONFIG_SOURCE="${STORAGE_DIR}/git/.gitconfig"

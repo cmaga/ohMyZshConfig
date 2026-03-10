@@ -1,7 +1,7 @@
 {
     "worktreeDir": "./wt",
+    "planDir": ".cline-project/skills/automater/plans",
     "prTargetBranch": "develop",
     "branchPrefix": "feature/",
-    "maxParallelAgents": 3,
-    "subAgentTimeout": "30m"
+    "maxParallelAgents": 3
 }

@@ -26,8 +26,9 @@ SERVICES=("github" "bitbucket")
 # Script - No need to edit below this line
 # ============================================================================
 
-# Get path to ssh-key-generator.zsh in storage
-STORAGE_DIR="$(get_storage_dir)"
+# Get project root and storage paths
+PROJECT_ROOT="${SCRIPT_DIR:h:h}"
+STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 KGEN_SCRIPT="${STORAGE_DIR}/scripts/ssh-key-generator.zsh"
 
 # Check kgen exists

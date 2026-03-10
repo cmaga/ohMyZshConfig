@@ -5,64 +5,59 @@ description: Parallel worktree orchestration for Jira tickets. Use when asked to
 
 # Automater
 
-Orchestrate Jira ticket lifecycle using git worktrees and Cline CLI sub-agents.
+Orchestrate Jira ticket implementation using git worktrees and Cline CLI sub-agents.
 
-## Step 1: Load configuration
+## Step 1: Load Configuration
 
-Before routing to a mode, read configuration values from `.cline-project/skills/automater/config.json`. If this file does not exist go directly to step 2. If it does skip to step 3.
+Read configuration from `.cline-project/skills/automater/config.json`. If this file does not exist, proceed to Step 2. Otherwise, skip to Step 3.
 
 ```bash
 CONFIG_FILE=".cline-project/skills/automater/config.json"
 WORKTREE_DIR=$(jq -r '.worktreeDir // "./wt"' "$CONFIG_FILE")
+PLAN_DIR=$(jq -r '.planDir // ".cline-project/skills/automater/plans"' "$CONFIG_FILE")
 BRANCH_PREFIX=$(jq -r '.branchPrefix // "feature/"' "$CONFIG_FILE")
 PR_TARGET=$(jq -r '.prTargetBranch // "develop"' "$CONFIG_FILE")
 MAX_PARALLEL=$(jq -r '.maxParallelAgents // 3' "$CONFIG_FILE")
 ```
 
-Here is a description of the configuration fields for context:
-
-| Field               | Default    | Description               |
-| ------------------- | ---------- | ------------------------- |
-| `worktreeDir`       | `./wt`     | Directory for worktrees   |
-| `prTargetBranch`    | `develop`  | Base branch for PRs       |
-| `branchPrefix`      | `feature/` | Branch name prefix        |
-| `maxParallelAgents` | 3          | Max concurrent sub-agents |
+| Field               | Default                                 | Description                        |
+| ------------------- | --------------------------------------- | ---------------------------------- |
+| `worktreeDir`       | `./wt`                                  | Directory for worktrees            |
+| `planDir`           | `.cline-project/skills/automater/plans` | Directory for implementation plans |
+| `prTargetBranch`    | `develop`                               | Base branch for PRs                |
+| `branchPrefix`      | `feature/`                              | Branch name prefix                 |
+| `maxParallelAgents` | 3                                       | Max concurrent sub-agents          |
 
 ## Step 2: Setup Configuration
 
-If this file or any fields are missing, ask the user in a conversation way to provide these and once you have the information write the config file. Here is the [default config template](./dependencies/templates/config.json) you can use when writing the file for the first time.
+If the config file is missing, ask the user conversationally for these values and write the config file using the [default config template](./dependencies/templates/config.json).
 
-Make sure to also add the worktree path to the project's `.gitignore` if it's not already there:
-
-````bash
-echo "${WORKTREE_DIR}/" >> .gitignore
-
--
-
-## First-Time Setup
-
-Add worktree directory to gitignore:
+Ensure the worktree directory is in `.gitignore`:
 
 ```bash
-echo 'wt/' >> .gitignore
-````
+grep -q "^${WORKTREE_DIR}/" .gitignore || echo "${WORKTREE_DIR}/" >> .gitignore
+```
+
+Create the plans directory:
+
+```bash
+mkdir -p "${PLAN_DIR}"
+```
 
 ## Step 3: Determine Mode
 
-The following modes are available. Parse the user request to determine which mode to execute:
+Parse the user's request to determine which mode to execute:
 
-### Modes
-
-| Mode          | Triggers                                      | Action                                       |
-| ------------- | --------------------------------------------- | -------------------------------------------- |
-| **implement** | "implement PROJ-123", "work on these tickets" | Dispatch sub-agents to implement tickets     |
-| **sync**      | "sync", "sweep", "move merged to done"        | Check PR status, transition tickets, cleanup |
-| **status**    | "status", "what's in progress"                | Report worktrees, PRs, tickets               |
+| Mode            | Triggers                                                        | Action                                     |
+| --------------- | --------------------------------------------------------------- | ------------------------------------------ |
+| **design**      | "design PROJ-123", "create plan for...", "plan implementation"  | Create an implementation plan for a ticket |
+| **orchestrate** | "implement PROJ-123", "execute plan", "run plan", "orchestrate" | Orchestrate sub-agents to implement plans  |
+| **cleanup**     | "cleanup", "sweep", "remove merged worktrees"                   | Clean up worktrees for merged PRs          |
 
 ## Step 4: Execute Mode
 
-Once a mode is determined, follow steps in the corresponding file:
+Follow the instructions in the corresponding mode file:
 
-- [implement.md](modes/implement.md)
-- [sync.md](modes/sync.md)
-- [status.md](modes/status.md)
+- [design.md](modes/design.md) - Create implementation plans
+- [orchestrate.md](modes/orchestrate.md) - Orchestrate sub-agents to implement plans
+- [cleanup.md](modes/cleanup.md) - Clean up merged worktrees

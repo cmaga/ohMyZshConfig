@@ -136,6 +136,7 @@ CLINE_DOCS_DIR="$HOME/Documents/Cline"
 CLINE_RULES_DEST="$CLINE_DOCS_DIR/Rules"
 CLINE_WORKFLOWS_DEST="$CLINE_DOCS_DIR/Workflows"
 CLINE_HOOKS_DEST="$CLINE_DOCS_DIR/Hooks"
+CLINE_AGENTS_DEST="$CLINE_DOCS_DIR/Agents"
 CLINE_SKILLS_DEST="$HOME/.cline/skills"
 
 # =============================================================================

@@ -51,6 +51,7 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
     mkdir -p "$CLINE_RULES_DEST" || error "Failed to create Cline Rules directory"
     mkdir -p "$CLINE_WORKFLOWS_DEST" || error "Failed to create Cline Workflows directory"
     mkdir -p "$CLINE_HOOKS_DEST" || error "Failed to create Cline Hooks directory"
+    mkdir -p "$CLINE_AGENTS_DEST" || error "Failed to create Cline Agents directory"
     mkdir -p "$CLINE_SKILLS_DEST" || error "Failed to create Cline Skills directory"
 
     # Deploy rules
@@ -72,6 +73,13 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
         info "Deploying Cline hooks..."
         cp -r "$CLINE_CONFIG_SOURCE/hooks"/. "$CLINE_HOOKS_DEST"/ 2>/dev/null
         log "Cline hooks deployed to $CLINE_HOOKS_DEST"
+    fi
+
+    # Deploy custom agents
+    if [ -d "$CLINE_CONFIG_SOURCE/agents" ]; then
+        info "Deploying Cline custom agents..."
+        cp "$CLINE_CONFIG_SOURCE/agents"/*.md "$CLINE_AGENTS_DEST"/ 2>/dev/null || true
+        log "Cline agents deployed to $CLINE_AGENTS_DEST"
     fi
 
     # Deploy skills (excluding repos directories, which are fetched on-demand)
@@ -115,6 +123,7 @@ info "Deployed Cline files:"
 echo "  - Rules -> $CLINE_RULES_DEST"
 echo "  - Workflows -> $CLINE_WORKFLOWS_DEST"
 echo "  - Hooks -> $CLINE_HOOKS_DEST"
+echo "  - Agents -> $CLINE_AGENTS_DEST"
 echo "  - Skills -> $CLINE_SKILLS_DEST"
 
 log "Cline deployment complete!"
