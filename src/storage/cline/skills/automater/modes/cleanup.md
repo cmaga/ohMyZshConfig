@@ -9,10 +9,12 @@ Clean up worktrees for merged PRs and synchronize Jira ticket status.
 List all automater-managed worktrees:
 
 ```bash
-git worktree list --porcelain | grep "worktree ${WORKTREE_DIR}/"
+git worktree list --porcelain | grep -A2 "worktree ${WORKTREE_DIR}/"
 ```
 
 Extract ticket keys from worktree paths (e.g., `./wt/PROJ-123` → `PROJ-123`).
+
+Also capture the branch name for each worktree from the `branch refs/heads/<name>` line in the porcelain output.
 
 ### Step 2: Check PR Status
 
@@ -20,13 +22,25 @@ For each discovered ticket, query PR status using the git-provider skill.
 
 ### Step 3: Process Results
 
-| PR State      | Worktree Exists | Action                                     |
-| ------------- | --------------- | ------------------------------------------ |
-| MERGED/CLOSED | Yes             | Transition Jira to "Done", remove worktree |
-| OPEN          | Yes             | Ensure ticket is "In Review"               |
-| NO PR         | Yes             | Stale - ask user to resume or cleanup      |
+| PR State      | Worktree Exists | Action                                                    |
+| ------------- | --------------- | --------------------------------------------------------- |
+| MERGED/CLOSED | Yes             | Transition Jira to "Done", remove worktree, delete branch |
+| OPEN          | Yes             | Ensure ticket is "In Review"                              |
+| NO PR         | Yes             | Stale - ask user to resume or cleanup                     |
 
-Determine actions based on the PR state above. Then proceed to use the jira skill for ticket actions and remove worktrees if needed.
+Determine actions based on the PR state above. Then proceed to use the jira skill for ticket actions and remove worktrees/branches if needed.
+
+#### Branch Cleanup for Merged PRs
+
+When removing a worktree for merged/closed PRs, also delete the associated local branch. The order matters - remove the worktree first since git won't allow deleting a branch with an attached worktree:
+
+```bash
+# 1. Remove the worktree
+git worktree remove ./wt/PROJ-123
+
+# 2. Delete the local branch
+git branch -D PROJ-123
+```
 
 ### Step 4: Report Summary
 
@@ -37,8 +51,8 @@ Create a summary once clean up is complete. Below is an example:
 
 ### Completed/Closed
 
-- PROJ-123: PR #42 merged, transitioned to Done, worktree removed
-- PROJ-125: PR #43 merged, transitioned to Done, worktree removed
+- PROJ-123: PR #42 merged, transitioned to Done, worktree removed, branch deleted
+- PROJ-125: PR #43 merged, transitioned to Done, worktree removed, branch deleted
 
 ### Still In Review
 

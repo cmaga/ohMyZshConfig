@@ -1,7 +1,0 @@
-{
-    "worktreeDir": "./wt",
-    "planDir": ".cline-project/skills/automater/plans",
-    "prTargetBranch": "develop",
-    "branchPrefix": "feature/",
-    "maxParallelInstances": 3
-}

@@ -111,12 +111,12 @@ Location: `.cline-project/skills/jira/config.json`
 
 Always use these flags for parseable output:
 
-| Flag           | Purpose                      |
-| -------------- | ---------------------------- |
-| `--plain`      | Non-interactive table output |
-| `--no-headers` | Omit column headers          |
-| `--raw`        | JSON output                  |
-| `--no-input`   | Skip interactive prompts     |
+| Flag           | Purpose                  |
+| -------------- | ------------------------ |
+| `--plain`      | No pager                 |
+| `--no-headers` | Omit column headers      |
+| `--raw`        | JSON output              |
+| `--no-input`   | Skip interactive prompts |
 
 #### Label Usage
 
@@ -162,19 +162,19 @@ jira issue view {ticketId} --plain
 **Transition issue:**
 
 ```bash
-jira issue move {ticketId} "{transitions.inProgress}"
+jira issue move {ticketId} "{transitions.inProgress}" --plain
 ```
 
 **Create issue:**
 
 ```bash
-jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" --no-input
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" --no-input --plain
 ```
 
 **Add comment:**
 
 ```bash
-jira issue comment add {ticketId} -b "Comment text"
+jira issue comment add {ticketId} -b "Comment text" --plain
 ```
 
 ## Full CLI Reference

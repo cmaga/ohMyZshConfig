@@ -6,6 +6,30 @@
 - **Branch:** {BRANCH_PREFIX}{TICKET-KEY}
 - **Plan creation date:** {date}
 
+## Executor Instructions
+
+Execute this plan independently without asking questions. Your job is to transform this plan into working, tested, linted, and reviewed code.
+
+**Rules:**
+
+- Stay in scope - Only modify files directly required for this ticket
+- Prefer existing patterns - Use patterns already established in the codebase rather than introducing new ones
+- Note related issues in your completion summary but do not fix them
+
+**Workflow:**
+
+1. Read and understand this implementation plan
+2. Implement all tasks following this plan exactly
+3. Final review - ensure code is clean, tests pass, changes follow architecture
+4. Push the branch to remote
+5. Create PR using git-provider skill targeting the branch specified in Meta
+6. Update Jira ticket using jira skill - add PR link comment, move to In Review
+7. Complete with attempt_completion summary including:
+   - PR link
+   - Brief description of changes
+   - Any related issues discovered (but not fixed)
+   - Any major assumptions made
+
 ## Overview
 
 { What is being done and why}
