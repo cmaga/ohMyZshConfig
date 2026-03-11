@@ -757,6 +757,61 @@ create_key_noninteractive() {
     print_color $GREEN "Created SSH key: $host_alias"
 }
 
+# Function to create default key (no suffix) non-interactively
+create_default_key_noninteractive() {
+    local service=$1
+    
+    if [[ -z "$service" ]]; then
+        echo "Usage: kgen --create-default <service>"
+        echo "  Services: github, bitbucket, gitlab"
+        echo "  Example: kgen --create-default github"
+        exit 1
+    fi
+    
+    local hostname
+    local host_alias
+    
+    case $service in
+        github)
+            hostname="github.com"
+            host_alias="github.com"
+            ;;
+        bitbucket)
+            hostname="bitbucket.org"
+            host_alias="bitbucket.org"
+            ;;
+        gitlab)
+            hostname="gitlab.com"
+            host_alias="gitlab.com"
+            ;;
+        *)
+            echo "Unknown service: $service"
+            echo "Supported services: github, bitbucket, gitlab"
+            exit 1
+            ;;
+    esac
+    
+    # Check if key already exists
+    local key_path="$KEYS_DIR/id_ed25519_$host_alias"
+    if [[ -f "$key_path" ]]; then
+        print_color $YELLOW "Key already exists: $host_alias"
+        return 0
+    fi
+    
+    print_color $BLUE "Creating default SSH key for $host_alias..."
+    
+    # Generate key (using ed25519 by default)
+    generate_ssh_key "$host_alias" "$host_alias" "ed25519"
+    
+    # Convert absolute path to ~/ format for config file
+    local config_key_path=$(echo "$GENERATED_KEY_PATH" | sed "s|$HOME|~|")
+    
+    # Add to SSH config
+    add_host_to_config "$host_alias" "$hostname" "git" "$config_key_path"
+    
+    print_color $GREEN "Created default SSH key: $host_alias"
+}
+
 # Function to copy key by name (non-interactive)
 copy_key_by_name() {
     local host_alias=$1
@@ -808,6 +863,10 @@ parse_args() {
             create_key_noninteractive "$2" "$3"
             exit 0
             ;;
+        --create-default)
+            create_default_key_noninteractive "$2"
+            exit 0
+            ;;
         --list)
             list_keys_noninteractive
             exit 0
@@ -820,16 +879,18 @@ parse_args() {
             echo "SSH Key Generator (kgen)"
             echo ""
             echo "Usage:"
-            echo "  kgen                        # Interactive menu"
-            echo "  kgen --create <service> <suffix>  # Create key for service"
-            echo "  kgen --list                 # List all keys"
-            echo "  kgen --copy <host-alias>    # Copy key to clipboard"
+            echo "  kgen                             # Interactive menu"
+            echo "  kgen --create <service> <suffix> # Create key for service with suffix"
+            echo "  kgen --create-default <service>  # Create default key (no suffix)"
+            echo "  kgen --list                      # List all keys"
+            echo "  kgen --copy <host-alias>         # Copy key to clipboard"
             echo ""
             echo "Services: github, bitbucket, gitlab"
             echo ""
             echo "Examples:"
-            echo "  kgen --create github gsi    # Creates github.com-gsi key"
-            echo "  kgen --copy github.com-gsi  # Copies public key to clipboard"
+            echo "  kgen --create github gsi         # Creates github.com-gsi key"
+            echo "  kgen --create-default github     # Creates github.com key (default/personal)"
+            echo "  kgen --copy github.com-gsi       # Copies public key to clipboard"
             exit 0
             ;;
         "")

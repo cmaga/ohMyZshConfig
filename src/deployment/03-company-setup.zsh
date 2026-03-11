@@ -82,6 +82,19 @@ else
     print_color $YELLOW "Personal directory exists: $personal_dir"
 fi
 
+# Create default SSH keys for personal use (no suffix)
+print_color $BLUE "Setting up personal SSH keys (default)..."
+echo ""
+for service in "${SERVICES[@]}"; do
+    print_color $BLUE "  Creating default SSH key for $service..."
+    
+    # Run kgen with --create-default flag
+    if "$KGEN_SCRIPT" --create-default "$service" 2>/dev/null; then
+        KEYS_CREATED+=("${service}-default")
+    fi
+done
+echo ""
+
 # Summary
 echo ""
 print_color $BLUE "Setup Complete!"
