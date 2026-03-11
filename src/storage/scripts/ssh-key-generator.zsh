@@ -680,8 +680,8 @@ copy_key_to_clipboard() {
     
     print_color $BLUE "Select a key to copy to clipboard:"
     echo
-    for i in "${!key_names[@]}"; do
-        echo "  $((i+1)). ${key_names[i]}"
+    for i in {1..${#key_names[@]}}; do
+        echo "  $i. ${key_names[$i]}"
     done
     echo
     
@@ -689,8 +689,8 @@ copy_key_to_clipboard() {
     read "selection?Choose key (1-${#keys[@]}): "
     
     if [[ "$selection" =~ ^[0-9]+$ ]] && [[ $selection -ge 1 ]] && [[ $selection -le ${#keys[@]} ]]; then
-        local selected_key="${keys[$((selection-1))]}"
-        local selected_name="${key_names[$((selection-1))]}"
+        local selected_key="${keys[$selection]}"
+        local selected_name="${key_names[$selection]}"
         local pub_key_content=$(cat "$selected_key.pub")
         copy_to_clipboard "$pub_key_content"
         echo
