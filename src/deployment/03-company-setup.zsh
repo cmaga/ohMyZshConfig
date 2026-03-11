@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Company Setup Script
-# Creates development directories and generates SSH keys for each company
+# Creates development directories. Generates SSH keys for each company/service combination using the kgen script.
+# The keys are created based on if the identity file name matches the company/service combination.
 #
 
 set -e

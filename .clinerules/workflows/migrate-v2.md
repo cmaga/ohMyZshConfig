@@ -6,12 +6,13 @@ Minimum changes required to get `make deploy` working on a machine with pre-v2 n
 
 Version 2 introduced standardized naming conventions:
 
-| Type                | Old Examples         | New Standard     |
-| ------------------- | -------------------- | ---------------- |
-| Company Codes       | work, geisel, kratos | `gsi`, `ms`      |
-| Dev Directories     | `~/dev/work`         | `~/dev/gsi`      |
-| SSH Host Aliases    | `github.com-work`    | `github.com-gsi` |
-| Git Config Profiles | `gitconfig-work`     | `gitconfig-gsi`  |
+| Type                | Old Examples               | New Standard                |
+| ------------------- | -------------------------- | --------------------------- |
+| Company Codes       | work, geisel, kratos       | `gsi`, `ms`                 |
+| Dev Directories     | `~/dev/work`               | `~/dev/gsi`                 |
+| SSH Host Aliases    | `github.com-work`          | `github.com-gsi`            |
+| Git Config Profiles | `gitconfig-work`           | `gitconfig-gsi`             |
+| SSH Keys            | `id_ed25519_github-geisel` | `id_ed25519_github.com-gsi` |
 
 ---
 
@@ -38,11 +39,15 @@ Directories:
   ~/dev/work → ~/dev/gsi
   ~/dev/kratos → ~/dev/ms
 
-SSH Host Aliases (in ~/.ssh/config - only the Host line, not IdentityFile):
-  github.com-work → github.com-gsi
-  github.com-geisel → github.com-gsi
-  github.com-kratos → github.com-ms
-  bitbucket.org-work → bitbucket.org-gsi
+SSH Host Aliases (in ~/.ssh/config - MUST include both the host name and identity file):
+  Host: github.com-work → github.com-gsi
+    IdentityFile: ~/.ssh/keys/id_ed25519_github-work → ~/.ssh/keys/id_ed25519_github.com-gsi
+  Host: github.com-geisel → github.com-gsi
+    IdentityFile: ~/.ssh/keys/id_ed25519_github-geisel → ~/.ssh/keys/id_ed25519_github.com-gsi
+  Host: github.com-kratos → github.com-ms
+    IdentityFile: ~/.ssh/keys/id_ed25519_github-kratos → ~/.ssh/keys/id_ed25519_github.com-ms
+  Host: bitbucket.org-work → bitbucket.org-gsi
+    IdentityFile: ~/.ssh/keys/id_ed25519_bitbucket-work → ~/.ssh/keys/id_ed25519_bitbucket.org-gsi
 
 Git Config Profiles (in ~/.oh-my-zsh/custom/git/):
   gitconfig-work → gitconfig-gsi
