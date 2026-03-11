@@ -5,7 +5,7 @@ description: Parallel worktree orchestration for Jira tickets. Use when asked to
 
 # Automater
 
-Orchestrate Jira ticket implementation using git worktrees and Cline CLI sub-agents.
+Orchestrate Jira ticket implementation using git worktrees and Cline CLI parallel instances.
 
 ## Step 1: Load Configuration
 
@@ -17,16 +17,16 @@ WORKTREE_DIR=$(jq -r '.worktreeDir // "./wt"' "$CONFIG_FILE")
 PLAN_DIR=$(jq -r '.planDir // ".cline-project/skills/automater/plans"' "$CONFIG_FILE")
 BRANCH_PREFIX=$(jq -r '.branchPrefix // "feature/"' "$CONFIG_FILE")
 PR_TARGET=$(jq -r '.prTargetBranch // "develop"' "$CONFIG_FILE")
-MAX_PARALLEL=$(jq -r '.maxParallelAgents // 3' "$CONFIG_FILE")
+MAX_PARALLEL=$(jq -r '.maxParallelInstances // 3' "$CONFIG_FILE")
 ```
 
-| Field               | Default                                 | Description                        |
-| ------------------- | --------------------------------------- | ---------------------------------- |
-| `worktreeDir`       | `./wt`                                  | Directory for worktrees            |
-| `planDir`           | `.cline-project/skills/automater/plans` | Directory for implementation plans |
-| `prTargetBranch`    | `develop`                               | Base branch for PRs                |
-| `branchPrefix`      | `feature/`                              | Branch name prefix                 |
-| `maxParallelAgents` | 3                                       | Max concurrent sub-agents          |
+| Field                  | Default                                 | Description                        |
+| ---------------------- | --------------------------------------- | ---------------------------------- |
+| `worktreeDir`          | `./wt`                                  | Directory for worktrees            |
+| `planDir`              | `.cline-project/skills/automater/plans` | Directory for implementation plans |
+| `prTargetBranch`       | `develop`                               | Base branch for PRs                |
+| `branchPrefix`         | `feature/`                              | Branch name prefix                 |
+| `maxParallelInstances` | 3                                       | Max concurrent CLI instances       |
 
 ## Step 2: Setup Configuration
 
@@ -48,16 +48,16 @@ mkdir -p "${PLAN_DIR}"
 
 Parse the user's request to determine which mode to execute:
 
-| Mode            | Triggers                                                        | Action                                     |
-| --------------- | --------------------------------------------------------------- | ------------------------------------------ |
-| **design**      | "design PROJ-123", "create plan for...", "plan implementation"  | Create an implementation plan for a ticket |
-| **orchestrate** | "implement PROJ-123", "execute plan", "run plan", "orchestrate" | Orchestrate sub-agents to implement plans  |
-| **cleanup**     | "cleanup", "sweep", "remove merged worktrees"                   | Clean up worktrees for merged PRs          |
+| Mode            | Triggers                                                        | Action                                       |
+| --------------- | --------------------------------------------------------------- | -------------------------------------------- |
+| **design**      | "design PROJ-123", "create plan for...", "plan implementation"  | Create an implementation plan for a ticket   |
+| **orchestrate** | "implement PROJ-123", "execute plan", "run plan", "orchestrate" | Orchestrate CLI instances to implement plans |
+| **cleanup**     | "cleanup", "sweep", "remove merged worktrees"                   | Clean up worktrees for merged PRs            |
 
 ## Step 4: Execute Mode
 
 Follow the instructions in the corresponding mode file:
 
 - [design.md](modes/design.md) - Create implementation plans
-- [orchestrate.md](modes/orchestrate.md) - Orchestrate sub-agents to implement plans
+- [orchestrate.md](modes/orchestrate.md) - Orchestrate CLI instances to implement plans
 - [cleanup.md](modes/cleanup.md) - Clean up merged worktrees
