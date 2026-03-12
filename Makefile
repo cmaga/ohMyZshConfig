@@ -136,16 +136,19 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "$(BLUE)Phase 1: Simple Dependencies$(NC)\n"
 	@"$(DEPLOYMENT_DIR)/02-simple-deps.zsh"
 	@printf "\n"
-	@printf "$(BLUE)Phase 2: Zsh Deployment (installs zsh, omz, plugins, deploys configs)$(NC)\n"
+	@printf "$(BLUE)Phase 2: Company Setup (directories + SSH keys)$(NC)\n"
+	@"$(DEPLOYMENT_DIR)/03-company-setup.zsh"
+	@printf "\n"
+	@printf "$(BLUE)Phase 3: Zsh Deployment (installs zsh, omz, plugins, deploys configs)$(NC)\n"
 	@$(MAKE) deploy-zsh
 	@printf "\n"
-	@printf "$(BLUE)Phase 3: Git Deployment$(NC)\n"
+	@printf "$(BLUE)Phase 4: Git Deployment$(NC)\n"
 	@$(MAKE) deploy-git
 	@printf "\n"
-	@printf "$(BLUE)Phase 4: Cline Deployment$(NC)\n"
+	@printf "$(BLUE)Phase 5: Cline Deployment$(NC)\n"
 	@$(MAKE) deploy-cline
 	@printf "\n"
-	@printf "$(BLUE)Phase 5: Finalization$(NC)\n"
+	@printf "$(BLUE)Phase 6: Finalization$(NC)\n"
 	@$(MAKE) finalize
 	@printf "\n"
 	@printf "$(GREEN)Complete System Setup Finished!$(NC)\n"
