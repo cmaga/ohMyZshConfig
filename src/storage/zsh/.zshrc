@@ -1,4 +1,4 @@
-# Path to your oh-my-zsh installation.
+﻿# Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
 # Set theme - this must be before sourcing oh-my-zsh.sh
@@ -54,17 +54,27 @@ linux*)
     
 msys*|cygwin*|mingw*)
     # Windows specific settings (Git Bash)
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+    
+    # nvm-windows PATH integration
+    # nvm-windows sets two env vars:
+    #   NVM_HOME    â€” directory containing nvm.exe
+    #   NVM_SYMLINK â€” junction pointing to the active Node.js version
+    # Add both so that `nvm` and `node`/`npm`/`pnpm` are all available.
+    if [[ -n "$NVM_HOME" ]]; then
+        export PATH="$(cygpath "$NVM_HOME"):$PATH"
+    fi
+    if [[ -n "$NVM_SYMLINK" ]]; then
+        export PATH="$(cygpath "$NVM_SYMLINK"):$PATH"
+    elif [[ -n "$NVM_HOME" ]]; then
+        # NVM_SYMLINK missing â€” try to find an installed version in NVM_HOME
+        local _nvm_home_unix="$(cygpath "$NVM_HOME")"
+        local _active_node="$_nvm_home_unix/$(ls "$_nvm_home_unix" 2>/dev/null | grep '^v' | tail -1)"
+        [[ -d "$_active_node" ]] && export PATH="$_active_node:$PATH"
+        unset _nvm_home_unix _active_node
+    fi
     
     # Windows-specific PATH additions
     export PATH="$HOME/.local/bin:$PATH"
-    
-    # Windows-specific PATH management for nvm
-    # Ensure nvm's node comes first in PATH
-    if [ -n "$NVM_BIN" ]; then
-        export PATH="$NVM_BIN:$PATH"
-    fi
 
     # SSH agent auto-start for Windows (Git Bash/Zsh)
     # macOS and Linux handle ssh-agent via system keychain / desktop environment,
@@ -92,7 +102,7 @@ msys*|cygwin*|mingw*)
     _ssh_agent_state=$(ssh-add -l >| /dev/null 2>&1; echo $?)
 
     if [[ ! "$SSH_AUTH_SOCK" ]] || [[ $_ssh_agent_state -eq 2 ]]; then
-        # Agent not running — start it and load keys
+        # Agent not running â€” start it and load keys
         _ssh_agent_start
         _ssh_agent_load_keys
     elif [[ $_ssh_agent_state -eq 1 ]]; then
@@ -122,12 +132,12 @@ esac
 
 # Additional nvm helper function for Windows
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; then
-    # Function to properly refresh PATH after nvm use
+    # Function to properly refresh PATH after nvm use (nvm-windows)
     nvm_use_refresh() {
         nvm use "$1"
-        # Force refresh of PATH to ensure nvm's node is found first
+        # Rehash command table and re-add NVM_SYMLINK to PATH
         hash -r
-        export PATH="$NVM_BIN:$PATH"
+        [[ -n "$NVM_SYMLINK" ]] && export PATH="$(cygpath "$NVM_SYMLINK"):$PATH"
     }
     
     # Alias for easier use

@@ -32,6 +32,39 @@ check_install_git() {
     fi
 }
 
+# function to install direnv if not present
+# - Windows: uses the official install script (curl -sfL https://direnv.net/install.sh | bash)
+# - Linux/macOS: uses the system package manager
+check_install_direnv() {
+    local os=$(detect_os)
+    
+    print_status "info" "Checking for direnv..."
+    
+    if command_exists direnv; then
+        local direnv_version=$(direnv version 2>/dev/null || echo "unknown")
+        print_status "success" "direnv found (version $direnv_version)"
+        return 0
+    fi
+    
+    print_status "warning" "direnv not found"
+    
+    if [[ "$os" == "windows" ]]; then
+        print_status "install" "Installing direnv via install script..."
+        curl -sfL https://direnv.net/install.sh | bash
+    else
+        install_package "direnv"
+    fi
+    
+    # Verify installation
+    if command_exists direnv; then
+        local direnv_version=$(direnv version 2>/dev/null || echo "unknown")
+        print_status "success" "direnv installed successfully (version $direnv_version)"
+    else
+        print_status "error" "direnv installation failed"
+        exit 1
+    fi
+}
+
 # function to install curl if not present
 check_install_curl() {
     print_status "info" "Checking for curl..."
@@ -63,6 +96,7 @@ main() {
     
     check_install_git
     check_install_curl
+    check_install_direnv
     
     echo
     print_status "success" "Simple dependencies installed!"
