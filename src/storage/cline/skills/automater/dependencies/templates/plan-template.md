@@ -100,7 +100,7 @@ For VERIFY_ONLY:
 - Implementation complete
 - Tests passing (if TDD)
 - {Additional verification - linting, type checking, etc.}
-- Run: `{exact verification command or poject specific script}`
+- Run: `{exact verification command or project specific script}`
 
 **Commit message:** `{Change type}: {conventional commit message}`
 
