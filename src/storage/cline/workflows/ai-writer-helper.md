@@ -18,7 +18,6 @@ You are writing or revising a markdown file that will be consumed by an LLM (Cla
 - Examples over explanations — a single code block replaces a paragraph
 - File pointers over inlined content — never paste code that will go stale. Use `path/to/file.md — Read when [condition]`
 - Reserve CAPS/bold for max 1-2 truly critical rules. Overuse dilutes all of them
-- Never include rules enforceable by linters, formatters, or git hooks
 - Include verification steps (exact commands to validate work)
 - `##` headings as section anchors — strong attention signal, especially in long prompts
 - XML tags (`<constraints>`, `<output_format>`) only when you need hard data/instruction boundaries
@@ -51,32 +50,15 @@ You are writing or revising a markdown file that will be consumed by an LLM (Cla
 ## Anti-Patterns
 
 - Kitchen sink: stuffing every possible instruction. Degrades all instruction-following
-- Auto-generated files: `/init` is a starting point, not a finished product
 - Stale snippets: pasted code that drifts from the codebase. Use file refs
 - Style guides as instructions: these belong in linter configs
 - Redundant instructions: if Claude does it correctly without being told, delete it
 
-## Tooling Audit
-
-After drafting, scan every instruction and flag any that can be enforced by deterministic tooling instead of burning instruction budget. Present flagged rules to the user with a suggested migration target:
-
-- Code style (indentation, quotes, trailing commas, semicolons) → formatter config (Biome, Prettier)
-- Import ordering → linter autofix plugin
-- Naming conventions (casing, prefixes) → ESLint naming-convention rule
-- Commit message format → commitlint + git hook
-- Type strictness → tsconfig compiler options
-- File/folder naming → custom lint rule or pre-commit hook
-- Test co-location → folder structure check script
-- Branch naming → git hook
-
-Ask the user: "These rules can be enforced by tooling. Want me to remove them and set up the tooling instead, or keep them as-is?"
-
 ## Self-Check Before Finalizing
 
-For each line ask:
+For each task ask:
 
-1. Remove this → will Claude make mistakes? No → delete
-2. Can a linter/hook enforce this? Yes → flag in tooling audit
-3. Is this already default LLM behavior? Yes → delete
+1. Is guidance focused on the what instead of the how?
+2. can we save tokens on any deterministic tasks by using a script?
+3. Is this already default LLM behavior?
 4. Duplicates another instruction? Yes → consolidate
-5. Paragraph that could be a bullet? Yes → rewrite
