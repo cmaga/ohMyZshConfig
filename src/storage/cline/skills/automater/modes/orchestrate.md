@@ -1,52 +1,48 @@
 # Orchestrate Mode
 
-Orchestrate Cline CLI parallel instances to execute implementation plans using git worktrees.
+Execute implementation plans using git worktrees and Cline CLI parallel instances.
 
-## Important: Token Efficiency
+## Critical Rule
 
-**Do NOT read plan file contents.** Plans are already in the correct format (validated during design mode). Reading plans wastes tokens and time since CLI instances will read them directly. Only extract ticket keys from filenames.
+**Do NOT read plan file contents.** Plans are validated during design mode. Reading them wastes tokens. Extract ticket keys from filenames only.
 
 ## Process
 
-### Step 1: Validate Plan Count
+### Step 1: Create Worktrees
 
-You were given ticket names that should have corresponding implementation plans.
+Run [create-worktrees.zsh](../scripts/create-worktrees.zsh) with ticket keys as arguments:
 
-Check the following:
+```bash
+./src/storage/cline/skills/automater/scripts/create-worktrees.zsh PROJ-123 PROJ-456
+```
 
-- For each ticket you were given there is a corresponding plan in `.cline-project/skills/automater/plans/`
-- The number of ticket names you were given is 3 or fewer
+### Step 2: Dispatch CLI Instances
 
-These are hard requirements. If these conditions are not met you need to resolve this conversationally with the user.
+Run [dispatch-tickets.zsh](../scripts/dispatch-tickets.zsh) with the same ticket keys:
 
-### Step 2: Create Worktrees
+```bash
+./src/storage/cline/skills/automater/scripts/dispatch-tickets.zsh PROJ-123 PROJ-456
+```
 
-Run the worktree creation [script](../scripts/create-worktrees.zsh). Pass each ticket name as an argument.
+Script enforces: max 3 tickets, worktree existence, plan existence.
 
-### Step 3: Dispatch CLI Instances
+### Step 3: Report Results
 
-Run the [dispatch script](../scripts/dispatch-tickets.zsh) which will handle plan execution hand off and reporting. Pass each ticket name as args.
+Summarize dispatch script output:
 
-### Step 4: Report Results
+- Succeeded/failed tickets
+- PR links (if available)
+- Blocking issues
+- Next steps for failures
 
-The dispatch script outputs results to the console. Summarize for the user:
+## Error Reference
 
-- Which tickets succeeded/failed
-- PR links for successful implementations (if available)
-- Any blocking issues encountered
-- Next steps for failed tickets
+| Exit Code | Meaning            |
+| --------- | ------------------ |
+| 0         | All succeeded      |
+| 1         | One or more failed |
 
-## Error Handling
-
-The scripts provide detailed error messages and exit codes:
-
-| Exit Code | Meaning                       |
-| --------- | ----------------------------- |
-| 0         | All operations succeeded      |
-| 1         | One or more operations failed |
-
-Common issues and resolutions:
-
-- **Branch conflict**: A branch like `TICKET-123/subtask` exists, preventing creation of `TICKET-123`. Delete the conflicting branch.
-- **Worktree exists**: The worktree directory already exists. This is skipped (not an error).
-- **Plan not found**: The plan file doesn't exist in the worktree. Ensure design mode completed successfully.
+| Issue           | Resolution            |
+| --------------- | --------------------- |
+| Worktree exists | Skipped (resume work) |
+| Plan not found  | Run design mode first |

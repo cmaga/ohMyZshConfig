@@ -5,48 +5,34 @@ description: Parallel worktree orchestration for Jira tickets. Use when asked to
 
 # Automater
 
-Orchestrate Jira ticket implementation using git worktrees and Cline CLI parallel instances.
+Orchestrate Jira ticket implementation using git worktrees and Cline CLI.
 
-## Step 1: Ensure Setup
-
-Ensure the worktree directory is in `.gitignore`:
+## Setup
 
 ```bash
 grep -q "^./wt/" .gitignore || echo "./wt/" >> .gitignore
-```
-
-Create the plans directory if it doesn't exist:
-
-```bash
 mkdir -p ".cline-project/skills/automater/plans"
 ```
 
-## Step 2: Determine Mode
+## Mode Selection
 
-Parse the user's request to determine which mode to execute:
+| Mode            | Triggers                                    | Output                                       |
+| --------------- | ------------------------------------------- | -------------------------------------------- |
+| **design**      | "design PROJ-123", "plan implementation"    | `.cline-project/skills/automater/plans/*.md` |
+| **orchestrate** | "implement PROJ-123", "execute plan", "run" | `./wt/<TICKET>` worktrees + CLI instances    |
+| **cleanup**     | "cleanup", "sweep", "remove merged"         | Removes merged worktrees, syncs Jira         |
 
-| Mode            | Triggers                                                        | Action                                       |
-| --------------- | --------------------------------------------------------------- | -------------------------------------------- |
-| **design**      | "design PROJ-123", "create plan for...", "plan implementation"  | Create an implementation plan for a ticket   |
-| **orchestrate** | "implement PROJ-123", "execute plan", "run plan", "orchestrate" | Orchestrate CLI instances to implement plans |
-| **cleanup**     | "cleanup", "sweep", "remove merged worktrees"                   | Clean up worktrees for merged PRs            |
+## Mode Instructions
 
-## Step 3: Execute Mode
-
-Follow the instructions in the corresponding mode file:
-
-- [design.md](modes/design.md) - Create implementation plans
-- [orchestrate.md](modes/orchestrate.md) - Orchestrate CLI instances to implement plans
-- [cleanup.md](modes/cleanup.md) - Clean up merged worktrees
+- [design.md](modes/design.md) — Create implementation plans
+- [orchestrate.md](modes/orchestrate.md) — Execute plans via CLI
+- [cleanup.md](modes/cleanup.md) — Clean up merged worktrees
 
 ## Configuration
 
-All values are hardcoded for simplicity:
-
-| Setting            | Value                                   |
-| ------------------ | --------------------------------------- |
-| Worktree directory | `./wt`                                  |
-| Plan directory     | `.cline-project/skills/automater/plans` |
-| PR target branch   | `develop`                               |
-| Branch naming      | Ticket key only (e.g., `STAX-444`)      |
-| Max parallel       | 3                                       |
+| Setting      | Value                                   |
+| ------------ | --------------------------------------- |
+| Worktrees    | `./wt/<TICKET-KEY>`                     |
+| Plans        | `.cline-project/skills/automater/plans` |
+| PR target    | `main`                                  |
+| Max parallel | 3                                       |

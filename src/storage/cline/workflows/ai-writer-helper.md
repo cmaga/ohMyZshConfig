@@ -56,12 +56,27 @@ You are writing or revising a markdown file that will be consumed by an LLM (Cla
 - Style guides as instructions: these belong in linter configs
 - Redundant instructions: if Claude does it correctly without being told, delete it
 
+## Tooling Audit
+
+After drafting, scan every instruction and flag any that can be enforced by deterministic tooling instead of burning instruction budget. Present flagged rules to the user with a suggested migration target:
+
+- Code style (indentation, quotes, trailing commas, semicolons) → formatter config (Biome, Prettier)
+- Import ordering → linter autofix plugin
+- Naming conventions (casing, prefixes) → ESLint naming-convention rule
+- Commit message format → commitlint + git hook
+- Type strictness → tsconfig compiler options
+- File/folder naming → custom lint rule or pre-commit hook
+- Test co-location → folder structure check script
+- Branch naming → git hook
+
+Ask the user: "These rules can be enforced by tooling. Want me to remove them and set up the tooling instead, or keep them as-is?"
+
 ## Self-Check Before Finalizing
 
 For each line ask:
 
 1. Remove this → will Claude make mistakes? No → delete
-2. Can a linter/hook enforce this? Yes → delete
+2. Can a linter/hook enforce this? Yes → flag in tooling audit
 3. Is this already default LLM behavior? Yes → delete
 4. Duplicates another instruction? Yes → consolidate
 5. Paragraph that could be a bullet? Yes → rewrite

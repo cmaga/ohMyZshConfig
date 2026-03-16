@@ -22,6 +22,11 @@ if [[ $# -lt 1 ]]; then
     exit 1
 fi
 
+if [[ $# -gt 3 ]]; then
+    echo "${RED}Max 3 tickets at a time. Got $#${NC}"
+    exit 1
+fi
+
 TICKET_KEYS=("$@")
 
 # Check if cline CLI is available
