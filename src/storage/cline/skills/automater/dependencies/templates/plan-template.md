@@ -33,9 +33,16 @@ Your job is to transform this plan into working, tested, linted, and reviewed co
 - **MUST use:** {patterns, libraries}
 - **Testing:** {framework, coverage expectations}
 
+## Workflow Types
+
+- **TDD**: Write scaffolding and placeholder, write tests, write full implementation and then run the tests you wrote, fixing and updating anything as needed
+- **VERIFY_ONLY**: Implement without tests. No per-task verification needed.
+
+**Important:** Build, lint, and full test suite run ONCE at the end (see Definition of Done). Do NOT add build/lint/type-check verification to individual tasks.
+
 ## Tasks
 
-Execute in order. One task = one commit.
+Execute in order. Use one commit after all tasks.
 
 ---
 
@@ -51,13 +58,6 @@ Execute in order. One task = one commit.
 {What to implement. Input/output contracts. Edge cases. Error handling.}
 
 **Workflow:** TDD | VERIFY_ONLY
-
-For TDD:
-
-1. Create stubs/interfaces
-2. Write tests: happy path, edge case, error case
-3. Implement until green
-4. `npm test -- path/to/test.ts`
 
 **Commit:** `feat(module): description`
 
@@ -78,4 +78,3 @@ For TDD:
 - Branch pushed
 - PR created targeting {PR_TARGET}
 - Jira moved to "In Review"
-- PR link added to Jira
