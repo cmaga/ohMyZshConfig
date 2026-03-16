@@ -59,6 +59,6 @@ You are writing or revising a markdown file that will be consumed by an LLM (Cla
 For each task ask:
 
 1. Is guidance focused on the what instead of the how?
-2. can we save tokens on any deterministic tasks by using a script?
-3. Is this already default LLM behavior?
-4. Duplicates another instruction? Yes → consolidate
+2. Can we save tokens on any deterministic tasks by using a script?
+3. Is this already default LLM behavior? Remove.
+4. Duplicates another instruction? Consolidate
