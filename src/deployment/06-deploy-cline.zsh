@@ -22,11 +22,28 @@ print_status "info" "Checking for Cline CLI..."
 if command_exists cline; then
     local cline_version=$(cline --version 2>/dev/null || echo "unknown")
     print_status "success" "Cline CLI already installed ($cline_version)"
+elif [[ "$(detect_os)" == "windows" ]]; then
+    print_status "info" "Cline CLI installation not supported on Windows — skipping"
 else
     print_status "warning" "Cline CLI not found"
-    print_status "download" "Installing Cline CLI via pnpm..."
+
+    # Ensure pnpm global bin directory is configured before global install
+    if command_exists pnpm && [[ -z "$PNPM_HOME" || ! -d "$PNPM_HOME" ]]; then
+        print_status "info" "Configuring pnpm global bin directory..."
+        pnpm setup 2>/dev/null || true
+
+        # pnpm setup updates shell profile but doesn't affect the current session
+        if [[ -z "$PNPM_HOME" || ! -d "$PNPM_HOME" ]]; then
+            export PNPM_HOME="${HOME}/.local/share/pnpm"
+            mkdir -p "$PNPM_HOME"
+            export PATH="$PNPM_HOME:$PATH"
+            print_status "info" "Set PNPM_HOME=$PNPM_HOME for current session"
+        fi
+    fi
+
+    print_status "download" "Installing Cline CLI..."
     
-    if pnpm install -g @cline/cli 2>/dev/null || npm install -g @cline/cli 2>/dev/null; then
+    if pnpm install -g cline 2>/dev/null || npm install -g cline 2>/dev/null; then
         print_status "success" "Cline CLI installed successfully"
         
         # Verify installation
