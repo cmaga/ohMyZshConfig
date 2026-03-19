@@ -75,6 +75,7 @@ msys*|cygwin*|mingw*)
     
     # Windows-specific PATH additions
     export PATH="$HOME/.local/bin:$PATH"
+    export PATH="/c/Program Files/Amazon/AWSCLIV2:$PATH"
 
     # SSH agent auto-start for Windows (Git Bash/Zsh)
     # macOS and Linux handle ssh-agent via system keychain / desktop environment,
