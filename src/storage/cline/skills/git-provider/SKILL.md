@@ -28,20 +28,18 @@ gh auth status 2>&1
 
 ### 2. Auto-Switch Account by Directory
 
-Match working directory to account and switch if needed:
+Git conditional includes already map directories to user.name. Use that directly:
 
-| Directory Path | Account        |
-| -------------- | -------------- |
-| `~/dev/work`   | cmagana-gsi    |
-| `~/dev/kratos` | cmagana-kratos |
-| _default_      | cmaga          |
+| Directory Path | Account (from `git config user.name`) |
+| -------------- | ------------------------------------- |
+| `~/dev/gsi/`   | cmagana-gsi                           |
+| `~/dev/ms/`    | cmagana-ms                            |
+| _default_      | cmaga                                 |
 
 ```bash
-# Get expected account from table (longest prefix match wins)
-# Example: ~/dev/work/project-x matches ~/dev/work -> cmagana-gsi
-
-# Switch if current account differs
-gh auth switch --user "$EXPECTED_ACCOUNT"
+EXPECTED=$(git config user.name)
+CURRENT=$(gh auth status 2>&1 | grep -oP 'account \K\S+' || true)
+[[ "$CURRENT" != "$EXPECTED" ]] && gh auth switch --user "$EXPECTED"
 ```
 
 ## Operations

@@ -8,15 +8,18 @@ Add or manage GitHub CLI authentication.
 gh auth status 2>&1
 ```
 
-**Allowed accounts:** `cmaga`, `cmagana-gsi`, `cmagana-kratos`
+**Allowed accounts:** `cmaga`, `cmagana-gsi`, `cmagana-ms`
 
 - If all 3 exist → setup complete
 - If any missing → ask which to add (show only missing options)
 
 ## Add Account
 
+**Account name must match `git config user.name` for the target directory.**
+
 1. **Log into the correct GitHub account in your browser**
    - Ensure you're signed into the account you want to add
+   - Account username should match your git config user.name (e.g., `cmagana-gsi` for `~/dev/gsi/`)
 
 2. **Generate a Personal Access Token:**
 
