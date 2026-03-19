@@ -1,0 +1,20 @@
+# jira-cli configuration file
+# This file is used by jira-cli directly (not Cline's JSON config)
+# Reference: https://github.com/ankitpokhrel/jira-cli
+
+# Authentication is handled via JIRA_API_TOKEN environment variable
+# Set in .envrc: export JIRA_API_TOKEN="your-token"
+
+server: https://company.atlassian.net
+login: your-email@company.com
+project:
+  key: PROJ
+  type: classic
+board:
+  id: 0
+  name: ""
+  type: ""
+epic:
+  name: Epic Name
+  link: Epic Link
+installation: cloud
