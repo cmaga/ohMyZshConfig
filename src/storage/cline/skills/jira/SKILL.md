@@ -20,6 +20,16 @@ Check if `.cline-project/skills/jira/config.json` exists in the project.
 
 Guide the user through setup conversationally:
 
+#### 2.0 Prerequisites
+
+Run the prerequisites check script to verify system readiness:
+
+```bash
+~/.cline/skills/jira/scripts/prerequisites.sh
+```
+
+This checks for required dependencies (jira-cli, gh, jq, git) and reports what needs to be installed.
+
 #### 2.1 Install jira-cli
 
 ```bash

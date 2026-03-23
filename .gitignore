@@ -1,3 +1,4 @@
 # Ignore cloned repositories in skills dependencies
 # These are fetched at deploy time via the update-repo.zsh scripts
 src/storage/cline/skills/*/dependencies/repos/*/
+/temp

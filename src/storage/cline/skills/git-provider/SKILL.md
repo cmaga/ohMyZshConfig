@@ -38,7 +38,7 @@ Git conditional includes already map directories to user.name. Use that directly
 
 ```bash
 EXPECTED=$(git config user.name)
-CURRENT=$(gh auth status 2>&1 | grep -oP 'account \K\S+' || true)
+CURRENT=$(gh auth status 2>&1 | sed -n 's/.*account \([^ ]*\).*/\1/p' || true)
 [[ "$CURRENT" != "$EXPECTED" ]] && gh auth switch --user "$EXPECTED"
 ```
 
