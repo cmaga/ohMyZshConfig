@@ -8,6 +8,7 @@ Use this decision table to recommend the right Cline feature type based on user 
 | Domain expertise    | Skill        | On-demand (metadata: ~100 tokens) | Triggered by description match    |
 | Task automation     | Workflow     | On-demand                         | User invokes with `/name.md`      |
 | Quality enforcement | Hook         | Zero (runs as script)             | Automatic on events               |
+| Focused analysis    | Agent Config | Zero (spawned on demand)          | Tool call or description match    |
 | File exclusion      | .clineignore | Negative (helps save tokens)      | Always active                     |
 
 ## Special Considerations
@@ -42,4 +43,5 @@ When a workflow needs quality checks:
 | Domain expertise    | Skill        | On-demand (metadata: ~100 tokens) | Triggered by description match    |
 | Task automation     | Workflow     | On-demand                         | User invokes with `/name.md`      |
 | Quality enforcement | Hook         | Zero (runs as script)             | Automatic on events               |
+| Focused analysis    | Agent Config | Zero (spawned on demand)          | Tool call or description match    |
 | File exclusion      | .clineignore | Zero                              | Always active                     |

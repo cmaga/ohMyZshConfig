@@ -3,6 +3,21 @@
 Use this template for plans with 3-8 files, 3-4 agents, wave coordination
 with contracts between waves.
 
+## How to Fill This Template
+
+1. Replace all `[bracketed placeholders]` with concrete values
+2. Build spawn prompts by reading each agent's `.md` file and filling in task-specific details
+3. For Wave 2+ agents, include `INJECT_CONTRACT_FROM_[agent-name]` placeholders — the lead replaces these at runtime
+4. Every task needs a verification command
+5. Every wave boundary needs at least one contract defined
+
+### Placeholder Legend
+
+- `[insert tasks from plan]` — copy the task descriptions assigned to this agent
+- `[insert file list]` — exact file paths this agent owns (no overlap with other agents)
+- `[insert contracts]` — concrete type definitions, schema shapes, API signatures from upstream
+- `INJECT_CONTRACT_FROM_[name]` — the lead replaces this at runtime with the named agent's output
+
 ---
 
 ## Output Format
@@ -11,9 +26,11 @@ with contracts between waves.
 # Implementation Plan: [descriptive title]
 
 ## Overview
+
 [2-3 sentence description of what this plan implements]
 
 ## Acceptance Criteria
+
 - [ ] [criterion 1]
 - [ ] [criterion 2]
 - [ ] [criterion 3]
@@ -25,16 +42,19 @@ with contracts between waves.
 **Lead**: Opus (coordination only — use delegate mode)
 
 ### Agent: [name] (Wave 1)
+
 - **Model**: Sonnet
 - **Role**: [role description]
 - **Files owned**: [exact file paths]
 - **Produces contracts**: [what this agent must output for downstream agents]
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt from appropriate agents/*.md template.
-   Include: role, tasks, files owned, verification commands,
-   and contract obligations.]
-  ```
+```
+
+[Complete spawn prompt from appropriate agents/*.md template.
+Include: role, tasks, files owned, verification commands,
+and contract obligations.]
+
+```
 
 ### Agent: [name] (Wave 2)
 - **Model**: Sonnet
@@ -43,12 +63,14 @@ with contracts between waves.
 - **Consumes contracts**: [what this agent needs from Wave 1]
 - **Produces contracts**: [if any, for downstream]
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt. Include UPSTREAM CONTRACTS section
-   with placeholder: INJECT_CONTRACT_FROM_[wave1-agent-name].
-   The lead will replace this placeholder with the actual contract
-   content from the Wave 1 agent's completion message.]
-  ```
+```
+
+[Complete spawn prompt. Include UPSTREAM CONTRACTS section
+with placeholder: INJECT*CONTRACT_FROM*[wave1-agent-name].
+The lead will replace this placeholder with the actual contract
+content from the Wave 1 agent's completion message.]
+
+```
 
 ### Agent: [name] (Wave 2, parallel)
 - **Model**: Sonnet
@@ -56,9 +78,11 @@ with contracts between waves.
 - **Files owned**: [exact file paths — must NOT overlap with other Wave 2 agents]
 - **Consumes contracts**: [what this agent needs from Wave 1]
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt with contract injection placeholder]
-  ```
+```
+
+[Complete spawn prompt with contract injection placeholder]
+
+```
 
 ### Agent: reviewer (Final Wave)
 - **Model**: Opus
@@ -66,9 +90,11 @@ with contracts between waves.
 - **Files owned**: All (cleanup authority)
 - **Depends on**: All other agents
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt from agents/reviewer.md]
-  ```
+```
+
+[Complete spawn prompt from agents/reviewer.md]
+
+```
 
 ## Wave Execution Plan
 
@@ -78,8 +104,9 @@ with contracts between waves.
 **Completes when**: All Wave 1 tasks marked complete and contracts delivered
 
 **Contract handoff**: When Wave 1 agents complete, they send a message to the
-lead containing their produced contracts. The lead extracts these and injects
-them into Wave 2 spawn prompts before spawning Wave 2 agents.
+lead containing their produced contracts. The lead extracts these, writes them
+to `.claude/contracts/[team-name]/[contract-name].md`, and injects them into
+Wave 2 spawn prompts before spawning Wave 2 agents.
 
 ### Wave 2: Implementation
 **Agents**: [agent names — these run in parallel]
@@ -97,14 +124,16 @@ them into Wave 2 spawn prompts before spawning Wave 2 agents.
 ### Contract: [name, e.g., "Database Schema"]
 - **Produced by**: [agent name] (Wave 1)
 - **Consumed by**: [agent names] (Wave 2)
+- **Persist to**: `.claude/contracts/[team-name]/[contract-name].md`
 - **Content**: [describe exactly what the producing agent must include in their
-  completion message. E.g., "Exact table definitions with column types, TypeScript
-  interfaces that mirror the schema, all enums and constants." Be specific enough
-  that the lead knows what to extract and paste.]
+completion message. E.g., "Exact table definitions with column types, TypeScript
+interfaces that mirror the schema, all enums and constants." Be specific enough
+that the lead knows what to extract and paste.]
 
 ### Contract: [name, e.g., "API Signatures"]
 - **Produced by**: [agent name] (Wave 2)
 - **Consumed by**: [agent names] (later waves or reviewer)
+- **Persist to**: `.claude/contracts/[team-name]/[contract-name].md`
 - **Content**: [exact description]
 
 ## Tasks
@@ -158,11 +187,12 @@ Wave execution protocol:
 1. Create all tasks with their dependency (blockedBy) relationships
 2. Spawn Wave 1 agents. Wait for them to complete and deliver contracts.
 3. Extract contract content from Wave 1 completion messages.
-4. Spawn Wave 2 agents with contracts injected into their spawn prompts.
-   Replace INJECT_CONTRACT_FROM_[name] placeholders with actual content.
-5. Wait for Wave 2 to complete.
-6. Spawn reviewer agent.
-7. When reviewer reports done, notify the user.
+4. Write contracts to `.claude/contracts/[team-name]/` — files survive context compaction, messages may not.
+5. Spawn Wave 2 agents with contracts injected into their spawn prompts.
+ Replace INJECT_CONTRACT_FROM_[name] placeholders with actual content.
+6. Wait for Wave 2 to complete.
+7. Spawn reviewer agent.
+8. When reviewer reports done, notify the user.
 
 All implementation teammates use Sonnet. Reviewer uses Opus.
 ```

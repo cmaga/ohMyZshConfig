@@ -2,6 +2,13 @@
 
 Use this template for plans with 1-3 files, 1-2 agents, no wave coordination needed.
 
+## How to Fill This Template
+
+1. Replace all `[bracketed placeholders]` with concrete values
+2. Build spawn prompts by reading the agent's `.md` file and filling in the template with task-specific details
+3. Every task needs a verification command — no exceptions
+4. The reviewer agent is optional for small plans but recommended for sensitive areas
+
 ---
 
 ## Output Format
@@ -10,9 +17,11 @@ Use this template for plans with 1-3 files, 1-2 agents, no wave coordination nee
 # Implementation Plan: [descriptive title]
 
 ## Overview
+
 [2-3 sentence description of what this plan implements]
 
 ## Acceptance Criteria
+
 - [ ] [criterion 1]
 - [ ] [criterion 2]
 - [ ] [criterion 3]
@@ -22,15 +31,18 @@ Use this template for plans with 1-3 files, 1-2 agents, no wave coordination nee
 **Lead**: Opus (coordination only — use delegate mode)
 
 ### Agent: implementer
+
 - **Model**: Sonnet
 - **Role**: [brief role description]
 - **Files owned**: [exact file paths this agent may modify]
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt built from agents/implementer.md template,
-   filled in with task-specific details, file ownership, and
-   verification commands]
-  ```
+```
+
+[Complete spawn prompt built from agents/implementer.md template,
+filled in with task-specific details, file ownership, and
+verification commands]
+
+```
 
 ### Agent: reviewer (if applicable)
 - **Model**: Opus
@@ -38,9 +50,11 @@ Use this template for plans with 1-3 files, 1-2 agents, no wave coordination nee
 - **Files owned**: All (cleanup authority)
 - **Depends on**: implementer
 - **Spawn prompt**:
-  ```
-  [Complete spawn prompt built from agents/reviewer.md template]
-  ```
+```
+
+[Complete spawn prompt built from agents/reviewer.md template]
+
+```
 
 ## Tasks
 

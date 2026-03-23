@@ -50,6 +50,7 @@ Read the feature-specific reference and template:
 | Skill        | [references/skills.md](references/skills.md)           | [templates/skill/SKILL.md](templates/skill/SKILL.md) |
 | Workflow     | [references/workflows.md](references/workflows.md)     | [templates/workflow.md](templates/workflow.md)       |
 | Hook         | [references/hooks.md](references/hooks.md)             | [templates/hook.sh](templates/hook.sh)               |
+| Agent Config | [references/agents.md](references/agents.md)           | [templates/agent.yaml](templates/agent.yaml)         |
 | .clineignore | [references/clineignore.md](references/clineignore.md) | N/A                                                  |
 
 Read the doc references to create the feature. Ask the user for any additional information needed.

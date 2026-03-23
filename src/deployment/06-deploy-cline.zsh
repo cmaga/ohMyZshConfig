@@ -92,9 +92,11 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
         log "Cline hooks deployed to $CLINE_HOOKS_DEST"
     fi
 
-    # Deploy custom agents
+    # Deploy custom agents (YAML agent configs)
     if [ -d "$CLINE_CONFIG_SOURCE/agents" ]; then
         info "Deploying Cline custom agents..."
+        cp "$CLINE_CONFIG_SOURCE/agents"/*.yaml "$CLINE_AGENTS_DEST"/ 2>/dev/null || true
+        cp "$CLINE_CONFIG_SOURCE/agents"/*.yml "$CLINE_AGENTS_DEST"/ 2>/dev/null || true
         cp "$CLINE_CONFIG_SOURCE/agents"/*.md "$CLINE_AGENTS_DEST"/ 2>/dev/null || true
         log "Cline agents deployed to $CLINE_AGENTS_DEST"
     fi
@@ -107,10 +109,11 @@ if [ -d "$CLINE_CONFIG_SOURCE" ]; then
             skill_dest="$CLINE_SKILLS_DEST/$skill_name"
             mkdir -p "$skill_dest"
 
-            # Copy skill files excluding the repos directory
-            rsync -a --exclude="dependencies/repos/" "$skill_dir" "$skill_dest/" 2>/dev/null || {
+            # Copy skill files excluding repos and evals directories
+            # evals/ contains append-only feedback logs that must not be overwritten
+            rsync -a --exclude="dependencies/repos/" --exclude="evals/" "$skill_dir" "$skill_dest/" 2>/dev/null || {
                 # Fallback if rsync is unavailable: copy manually
-                find "$skill_dir" -not -path "*/dependencies/repos/*" -type f | while read -r src_file; do
+                find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/evals/*" -type f | while read -r src_file; do
                     rel_path="${src_file#$skill_dir}"
                     dest_file="$skill_dest/$rel_path"
                     mkdir -p "$(dirname "$dest_file")"

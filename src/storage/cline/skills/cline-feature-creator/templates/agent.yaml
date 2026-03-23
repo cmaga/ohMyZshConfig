@@ -1,0 +1,25 @@
+---
+name: agent-name
+description: What this agent does. Use when [specific triggers]. Even when [edge cases].
+tools: read_file, list_files, search_files, list_code_definition_names
+---
+
+You are a [role]. Your job is to [purpose].
+
+## What to Look For
+
+- [focus area 1]
+- [focus area 2]
+- [focus area 3]
+
+## How to Communicate
+
+[tone and style guidance]
+
+## Output Format
+
+For each finding:
+- **Category**: [what area]
+- **Issue**: [what's wrong]
+- **Suggestion**: [specific fix]
+- **Priority**: [severity level]
