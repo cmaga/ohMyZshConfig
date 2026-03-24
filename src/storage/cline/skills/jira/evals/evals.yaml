@@ -1,0 +1,78 @@
+# Jira Skill — Evaluation Log (append-only)
+# Each entry records feedback, analysis, or changes to the skill.
+
+- id: fb-001
+  type: feedback
+  date: 2026-03-24
+  source: user
+  summary: "--plain flag incorrectly applied to create/move/comment commands"
+  detail: >
+    The Key Flags table and Common Operations examples apply --plain universally,
+    but jira issue create, move, and comment add do not support --plain.
+    Only list and view commands support --plain and --no-headers.
+    create supports --raw for JSON output and --no-input to skip prompts.
+
+- id: fb-002
+  type: feedback
+  date: 2026-03-24
+  source: user
+  summary: "Missing jira-cli config file — setup flow has sequencing gap"
+  detail: >
+    Step 2.2 creates .envrc with JIRA_CONFIG_FILE pointing to a file that
+    doesn't exist yet. Step 2.4 runs jira init but there's no explicit
+    env-loading step between them. Projects end up with partial setup states
+    (token but no config, or config.json but no .jira-config.yml).
+
+- id: fb-003
+  type: feedback
+  date: 2026-03-24
+  source: user
+  summary: "Binary config gate too rigid — no partial setup handling"
+  detail: >
+    Step 1 checks only whether config.json exists, routing to full setup
+    or full execute. Real-world projects have four states: fresh, token-only,
+    token+skill-config, and fully-configured. The skill should detect the
+    actual state and route to whichever setup steps remain.
+
+- id: an-001
+  type: analysis
+  date: 2026-03-24
+  reviewed_feedback:
+    - fb-001
+    - fb-002
+    - fb-003
+  recurring_issues:
+    - theme: "Flag compatibility"
+      frequency: 1
+      detail: "Flags documented as universal but only work on subset of commands"
+    - theme: "Setup flow gaps"
+      frequency: 2
+      detail: "Both fb-002 and fb-003 relate to incomplete/rigid setup handling"
+  root_causes:
+    - "Flags table was written as a universal reference without per-command validation"
+    - "Setup flow assumed linear happy-path execution without partial-state recovery"
+  recommendations:
+    - description: "Replace universal flags table with per-command flag matrix"
+      confidence: high
+    - description: "Replace binary config gate with graduated pre-flight check"
+      confidence: high
+    - description: "Fix all Common Operations examples to use only valid flags per command"
+      confidence: high
+    - description: "Add explicit env-loading and verification steps in setup flow"
+      confidence: high
+  anti_recommendations: []
+
+- id: ch-001
+  type: change
+  date: 2026-03-24
+  version: "1.1.0"
+  trigger: an-001
+  description: >
+    Rewrote SKILL.md: replaced binary config gate with graduated pre-flight
+    check handling four setup states (fresh, token-only, token+config, ready).
+    Replaced universal flags table with per-command flag compatibility matrix.
+    Removed invalid --plain from create/move/comment examples. Added explicit
+    env-loading and verification steps in setup flow. Improved description
+    for better skill triggering. Added attention-anchor repeat of pre-flight
+    check at bottom per writing guide.
+  result: applied

@@ -1,155 +1,165 @@
 ---
 name: jira
-description: JIRA ticket management using jira-cli. Use whenver the user wants to interact with jira.
+description: JIRA ticket management using jira-cli. Use whenever the user wants to interact with jira, create tickets, transition issues, list sprints, or any Jira-related task.
 ---
 
 # JIRA Integration
 
 Manage JIRA tickets using jira-cli by ankitpokhrel.
 
-## Steps
+## Pre-flight Check
 
-### Step 1: Check Configuration
+Run this check at the start of **every invocation** to detect setup state and route accordingly.
 
-Check if `.cline-project/skills/jira/config.json` exists in the project.
+### Detection
 
-- **If config exists**: Proceed to Step 3 (Execute Commands)
-- **If config missing**: Proceed to Step 2 (Setup)
+Check these three items in order:
 
-### Step 2: Setup (First Time)
+1. **jira-cli installed?** — `command -v jira`
+2. **API token available?** — `.envrc` exists with `JIRA_API_TOKEN`
+3. **Skill config exists?** — `.cline-project/skills/jira/config.json`
+4. **jira-cli initialized?** — `.cline-project/skills/jira/.jira-config.yml` exists
 
-Guide the user through setup conversationally:
+### Routing
 
-#### 2.0 Prerequisites
+| State                   | Has jira-cli | Has token | Has config.json | Has .jira-config.yml | Action                 |
+| ----------------------- | ------------ | --------- | --------------- | -------------------- | ---------------------- |
+| Fresh                   | No           | No        | No              | No                   | Full setup (Steps 1-5) |
+| Partial: token only     | Yes          | Yes       | No              | No                   | Steps 3-5              |
+| Partial: token + config | Yes          | Yes       | Yes             | No                   | Steps 4-5              |
+| Ready                   | Yes          | Yes       | Yes             | Yes                  | Execute commands       |
 
-Run the prerequisites check script to verify system readiness:
+Skip any step whose artifact already exists. Always end with the verification step.
 
-```bash
-~/.cline/skills/jira/scripts/prerequisites.sh
-```
+## Setup Steps
 
-This checks for required dependencies (jira-cli, gh, jq, git) and reports what needs to be installed.
-
-#### 2.1 Install jira-cli
+### Step 1: Install jira-cli
 
 ```bash
 brew install jira-cli
 ```
 
-#### 2.2 Configure API Token
+Verify: `command -v jira`
 
-1. Provide the user this link: https://id.atlassian.com/manage-profile/security/api-tokens
-2. Ask the user to create a token and paste it in the conversation
-3. Once received, create `.envrc` in the project root:
+### Step 2: Configure API Token
+
+1. Provide this link: https://id.atlassian.com/manage-profile/security/api-tokens
+2. Ask the user to create a token and paste it
+3. Create `.envrc` in the project root:
 
 ```bash
 export JIRA_API_TOKEN="<token-from-user>"
 export JIRA_CONFIG_FILE=".cline-project/skills/jira/.jira-config.yml"
 ```
 
-4. Ensure `.envrc` is in `.gitignore`:
+4. Add `.envrc` to `.gitignore`:
 
 ```bash
 grep -q '^\\.envrc$' .gitignore || echo '.envrc' >> .gitignore
 ```
 
-5. If user has direnv installed, run `direnv allow` to load the token and config path.
+5. Load the environment:
 
-#### 2.3 Create Config File
+```bash
+# If direnv is installed:
+direnv allow
+
+# Otherwise:
+source .envrc
+```
+
+6. Verify both vars are set:
+
+```bash
+echo "TOKEN=${JIRA_API_TOKEN:+set}" && echo "CONFIG=${JIRA_CONFIG_FILE:+set}"
+```
+
+### Step 3: Create Skill Config
 
 Ask user for:
 
-- **server**: Atlassian server URL (e.g., https://company.atlassian.net)
-- **email**: Login email for JIRA
-- **installationType**: Usually "cloud" for Atlassian Cloud
+- **server**: Atlassian URL (e.g., https://company.atlassian.net)
+- **email**: Login email
+- **installationType**: Usually "cloud"
 - **username**: For branch naming (e.g., cmagana)
 - **projectKey**: JIRA project key (e.g., STAX)
-- **labels**: Default labels to filter by (optional - leave empty array to show all)
+- **labels**: Default label filters (empty array = show all)
 - **transitions**: Status names for their board
 
 Create `.cline-project/skills/jira/config.json` using template:
 [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json)
 
-#### 2.4 Initialize jira-cli
+### Step 4: Initialize jira-cli
 
-Ensure the `.envrc` is loaded (either via direnv or by sourcing manually), then run:
+Ensure `.envrc` is loaded first (`source .envrc` or `direnv allow`), then:
 
 ```bash
 jira init
 ```
 
-The `JIRA_CONFIG_FILE` environment variable tells jira-cli where to create the config file. This allows each project to have its own jira-cli configuration at `.cline-project/skills/jira/.jira-config.yml`.
+`JIRA_CONFIG_FILE` tells jira-cli where to write its config. Verify the file was created:
 
-During initialization:
+```bash
+test -f ".cline-project/skills/jira/.jira-config.yml" && echo "OK" || echo "MISSING"
+```
 
-- Select "Cloud" for Atlassian Cloud
-- Enter server URL (e.g., https://company.atlassian.net)
-- Enter login email
-- Select default project (use projectKey from config)
+During init, select:
 
-#### 2.5 Verify Connection
+- "Cloud" for Atlassian Cloud
+- Server URL from config
+- Login email from config
+- Default project from config
+
+### Step 5: Verify Connection
 
 ```bash
 jira me
 ```
 
-### Step 3: Execute Commands
+## Execute Commands
 
-When config exists, use it to construct jira-cli commands.
-
-**Important:** The `JIRA_CONFIG_FILE` environment variable must be set via `.envrc` before running any jira commands. This is configured during setup and ensures all commands use the project-specific config.
-
-#### Config Reference
+### Config Reference
 
 Location: `.cline-project/skills/jira/config.json`
 
-| Field              | Description                           |
-| ------------------ | ------------------------------------- |
-| `server`           | Atlassian server URL                  |
-| `email`            | Login email for JIRA                  |
-| `installationType` | Installation type (cloud or server)   |
-| `username`         | User identifier for branch naming     |
-| `projectKey`       | JIRA project key                      |
-| `branchFormat`     | Template for git branch names         |
-| `commitFormat`     | Template for commit messages          |
-| `baseBranch`       | Default base branch (e.g., main)      |
-| `labels`           | Default labels to filter issues       |
-| `transitions`      | Map of transition names for the board |
-| `prTemplate`       | Template for PR descriptions          |
+| Field              | Description              |
+| ------------------ | ------------------------ |
+| `server`           | Atlassian server URL     |
+| `email`            | Login email              |
+| `installationType` | cloud or server          |
+| `username`         | For branch naming        |
+| `projectKey`       | JIRA project key         |
+| `branchFormat`     | Git branch name template |
+| `commitFormat`     | Commit message template  |
+| `baseBranch`       | Default base branch      |
+| `labels`           | Default label filters    |
+| `transitions`      | Board transition names   |
+| `prTemplate`       | PR description template  |
 
-#### Key Flags for Cline
+### Flag Compatibility
 
-Always use these flags for parseable output:
+Not all flags work on all commands. Use only the flags valid for each command type:
 
-| Flag           | Purpose                  |
-| -------------- | ------------------------ |
-| `--plain`      | No pager                 |
-| `--no-headers` | Omit column headers      |
-| `--raw`        | JSON output              |
-| `--no-input`   | Skip interactive prompts |
+| Flag           | `issue list` | `issue view` | `issue create` | `issue move` | `issue comment add` |
+| -------------- | :----------: | :----------: | :------------: | :----------: | :-----------------: |
+| `--plain`      |     Yes      |     Yes      |       No       |      No      |         No          |
+| `--no-headers` |     Yes      |      No      |       No       |      No      |         No          |
+| `--raw`        |     Yes      |      No      |       No       |      No      |         No          |
+| `--no-input`   |      No      |      No      |      Yes       |      No      |         No          |
 
-#### Label Usage
+### Label Usage
 
-Labels should always be used to filter issues **unless** the `labels` array is empty in the config file.
-
-- **If `labels` has values**: Always include `-l{label}` flag for each label
-- **If `labels` is empty `[]`**: Do not include label flags (show all issues)
-
-Example with labels:
+Use labels to filter issues when the `labels` array in config has values. Omit label flags when the array is empty.
 
 ```bash
 # config.labels = ["team-alpha", "sprint-1"]
 jira issue list -p {projectKey} -lteam-alpha -lsprint-1 --plain --no-headers
-```
 
-Example without labels (show all):
-
-```bash
 # config.labels = []
 jira issue list -p {projectKey} --plain --no-headers
 ```
 
-#### Common Operations
+### Common Operations
 
 **List issues assigned to me:**
 
@@ -172,22 +182,32 @@ jira issue view {ticketId} --plain
 **Transition issue:**
 
 ```bash
-jira issue move {ticketId} "{transitions.inProgress}" --plain
+jira issue move {ticketId} "{transitions.inProgress}"
 ```
 
 **Create issue:**
 
 ```bash
-jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" --no-input --plain
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" --no-input
+```
+
+For long descriptions, write content to a temp file first, then pass via stdin:
+
+```bash
+cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary" --no-input
 ```
 
 **Add comment:**
 
 ```bash
-jira issue comment add {ticketId} -b "Comment text" --plain
+jira issue comment add {ticketId} "Comment text"
 ```
 
 ## Full CLI Reference
 
 For complete command documentation, see:
 [dependencies/docs/jira-cli-reference.md](dependencies/docs/jira-cli-reference.md)
+
+## Pre-flight Check (repeat for attention)
+
+Always run the detection check at the top of this file before executing commands. Handle partial setup states — never assume full setup or no setup.
