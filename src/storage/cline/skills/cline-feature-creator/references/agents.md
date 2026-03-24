@@ -4,6 +4,15 @@
 
 Cline supports file-based agent configurations that let you define named subagents with custom system prompts, restricted tool sets, skill filters, and model overrides. Each agent config becomes a dedicated tool (e.g., `use_subagent_security_reviewer`) that Cline can invoke alongside the generic `use_subagents` tool.
 
+## Invocation Model
+
+Agents are **always explicitly invoked** — they are not auto-triggered by description matching like skills. An agent runs only when:
+
+1. **The user asks for it** — e.g., "use the security reviewer to check this module"
+2. **A skill calls it** — e.g., the `plan-for-teams` skill invokes `use_subagent_security-reviewer` during its review step
+
+The `description` field helps the model understand the agent's purpose when it sees the tool in its tool list, but it does not drive automatic triggering. Write descriptions that are accurate and specific, not "pushy."
+
 ## Prerequisites
 
 1. **Enable Subagents**: Settings > Features > Agent section > toggle **Subagents** on
@@ -227,7 +236,7 @@ After creating an agent config:
 
 1. File is valid YAML frontmatter with `---` delimiters and a non-empty body
 2. `name` field matches the filename (minus extension)
-3. `description` is specific enough to trigger on relevant tasks
+3. `description` accurately describes the agent's purpose and scope
 4. Body is focused and under 100 lines
 5. Tools are restricted to what the agent actually needs
 6. Agent appears in Cline's tool list (check output channel if not)
