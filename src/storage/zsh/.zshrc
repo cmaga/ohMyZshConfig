@@ -38,12 +38,11 @@ case "$OSTYPE" in
 darwin*)
     # macOS specific settings
     [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh" # Apple Silicon
-    [ -s "/usr/local/opt/nvm/nvm.sh" ] && source "/usr/local/opt/nvm/nvm.sh" # Intel Mac
     [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && source "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
-    [ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && source "/usr/local/opt/nvm/etc/bash_completion.d/nvm"
     
     # Add macOS specific paths
     export PATH="/opt/homebrew/bin:$PATH"
+    export PATH="$HOME/.local/bin:$PATH"
     ;;
     
 linux*)

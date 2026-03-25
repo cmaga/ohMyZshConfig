@@ -1,12 +1,12 @@
-skill: "plan-for-teams"
-created: "2026-03-23"
+skill: "task-planner"
+created: "2026-03-25"
 
 log: []
 # Append-only event log. Each entry has a `type` field:
 #
 # type: feedback — User feedback after using the skill
 #   id: 1
-#   date: 2026-03-23
+#   date: 2026-03-25
 #   task: Brief description of what was done
 #   worked:
 #     - What went well
@@ -15,7 +15,7 @@ log: []
 #   severity: low|medium|high
 #
 # type: analysis — Pattern analysis during Improve mode
-#   date: 2026-03-24
+#   date: 2026-03-25
 #   reviewed_feedback: [1]
 #   recurring_issues:
 #     - Issue description (count)
@@ -28,8 +28,8 @@ log: []
 #
 # type: change — Modification applied to the skill
 #   version: 2
-#   date: 2026-03-24
-#   trigger: "analysis 2026-03-24: description of what triggered this"
+#   date: 2026-03-25
+#   trigger: "analysis 2026-03-25: description of what triggered this"
 #   description: What was changed
 #   result: applied|reverted
 #   lesson: (only if reverted) Why it failed
