@@ -110,7 +110,7 @@ if [[ "$TIER" == "--large" ]]; then
     (cd "$WORKTREE_PATH" && claude \
         --model "$MODEL" \
         --system-prompt-file "$AGENT_FILE" \
-        -y \
+        --dangerously-skip-permissions \
         -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 else
     # Small/Medium: Single implementer worker
@@ -119,7 +119,7 @@ else
     (cd "$WORKTREE_PATH" && claude \
         --model "$MODEL" \
         --system-prompt-file "$AGENT_FILE" \
-        -y \
+        --dangerously-skip-permissions \
         -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 fi
 
