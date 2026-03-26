@@ -64,6 +64,9 @@ After writing the plan, tell the user to run the launcher in a separate terminal
 ./path/to/launch.zsh --small plans/plan-STAX-42-small.md
 ./path/to/launch.zsh --medium plans/plan-STAX-78-medium.md
 ./path/to/launch.zsh --large plans/plan-STAX-112-large.md
+
+# With custom base branch:
+./path/to/launch.zsh --medium --base develop plans/plan-STAX-78-medium.md
 ```
 
 The global script location: `~/.cline/skills/task-planner/scripts/launch.zsh`

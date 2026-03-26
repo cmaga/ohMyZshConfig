@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 # Script: create-worktree.zsh
 # Purpose: Create a git worktree for a single ticket
-# Usage: create-worktree.zsh <ticket_key>
+# Usage: create-worktree.zsh <project_root> <ticket_key> [base_branch]
 
 set -euo pipefail
 
@@ -12,17 +12,20 @@ YELLOW=$'\033[0;33m'
 BLUE=$'\033[0;34m'
 NC=$'\033[0m'
 
-WORKTREE_DIR="./wt"
-PR_TARGET="main"
-
-if [[ $# -ne 1 ]]; then
-    echo "${RED}Usage: $0 <ticket_key>${NC}"
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+    echo "${RED}Usage: $0 <project_root> <ticket_key> [base_branch]${NC}"
     exit 1
 fi
 
-TICKET_KEY="$1"
+PROJECT_ROOT="$1"
+TICKET_KEY="$2"
+PR_TARGET="${3:-main}"
+WORKTREE_DIR="${PROJECT_ROOT}/wt"
 BRANCH="${TICKET_KEY}"
 WORKTREE_PATH="${WORKTREE_DIR}/${TICKET_KEY}"
+
+# Operate inside the repo
+cd "$PROJECT_ROOT"
 
 # Check if worktree already exists
 if [[ -d "$WORKTREE_PATH" ]]; then
@@ -56,7 +59,7 @@ else
     fi
 fi
 
-# Copy environment and configuration files
+# Copy environment and configuration files from project root
 [[ -f ".envrc" ]] && cp ".envrc" "${WORKTREE_PATH}/.envrc"
 [[ -d ".cline-project" ]] && cp -r ".cline-project" "${WORKTREE_PATH}/.cline-project"
 [[ -d ".clinerules" ]] && cp -r ".clinerules" "${WORKTREE_PATH}/.clinerules"

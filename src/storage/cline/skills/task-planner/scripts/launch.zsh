@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 # Script: launch.zsh
 # Purpose: Create worktree and spawn Claude Code instance to execute a plan
-# Usage: launch.zsh --small|--medium|--large <plan-file>
+# Usage: launch.zsh --small|--medium|--large [--base <branch>] <plan-file>
 
 set -euo pipefail
 
@@ -16,29 +16,56 @@ SCRIPT_DIR="${0:A:h}"
 AGENTS_DIR="${SCRIPT_DIR}/../dependencies/system-prompts"
 
 # Parse arguments
-if [[ $# -ne 2 ]]; then
-    echo "${RED}Usage: $0 --small|--medium|--large <plan-file>${NC}"
+BASE_BRANCH="main"
+TIER=""
+PLAN_FILE=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --small|--medium|--large)
+            TIER="$1"
+            shift
+            ;;
+        --base)
+            if [[ -z "${2:-}" ]]; then
+                echo "${RED}--base requires a branch name${NC}"
+                exit 1
+            fi
+            BASE_BRANCH="$2"
+            shift 2
+            ;;
+        *)
+            PLAN_FILE="$1"
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$TIER" || -z "$PLAN_FILE" ]]; then
+    echo "${RED}Usage: $0 --small|--medium|--large [--base <branch>] <plan-file>${NC}"
     exit 1
 fi
-
-TIER="$1"
-PLAN_FILE="$2"
 
 case "$TIER" in
     --small)  MODEL="haiku" ;;
     --medium) MODEL="sonnet" ;;
     --large)  MODEL="opus" ;;
-    *)
-        echo "${RED}Invalid tier: ${TIER}. Use --small, --medium, or --large${NC}"
-        exit 1
-        ;;
 esac
+
+# Resolve plan file to absolute path
+PLAN_FILE="${PLAN_FILE:A}"
 
 # Validate plan file exists
 if [[ ! -f "$PLAN_FILE" ]]; then
     echo "${RED}[ERROR]${NC} Plan file not found: ${PLAN_FILE}"
     exit 1
 fi
+
+# Derive project root from plan file location
+PROJECT_ROOT=$(git -C "$(dirname "$PLAN_FILE")" rev-parse --show-toplevel 2>/dev/null) || {
+    echo "${RED}[ERROR]${NC} Plan file is not inside a git repository"
+    exit 1
+}
 
 # Extract ticket key from plan filename (expects plan-TICKET-size.md)
 FILENAME=$(basename "$PLAN_FILE" .md)
@@ -51,15 +78,16 @@ if [[ -z "$TICKET_KEY" || "$TICKET_KEY" == "$FILENAME" ]]; then
 fi
 
 echo "${BLUE}=== Task Planner Launcher ===${NC}"
-echo "Tier:   ${TIER#--}"
-echo "Model:  ${MODEL}"
-echo "Ticket: ${TICKET_KEY}"
-echo "Plan:   ${PLAN_FILE}"
+echo "Tier:    ${TIER#--}"
+echo "Model:   ${MODEL}"
+echo "Ticket:  ${TICKET_KEY}"
+echo "Plan:    ${PLAN_FILE}"
+echo "Project: ${PROJECT_ROOT}"
 echo ""
 
 # Step 1: Create worktree
 echo "${BLUE}[1/3]${NC} Creating worktree..."
-WORKTREE_PATH=$("${SCRIPT_DIR}/create-worktree.zsh" "$TICKET_KEY" | tail -1)
+WORKTREE_PATH=$("${SCRIPT_DIR}/create-worktree.zsh" "$PROJECT_ROOT" "$TICKET_KEY" "$BASE_BRANCH" | tail -1)
 
 if [[ ! -d "$WORKTREE_PATH" ]]; then
     echo "${RED}[ERROR]${NC} Worktree creation failed"
@@ -79,20 +107,18 @@ if [[ "$TIER" == "--large" ]]; then
     # Large: Opus orchestrator with agent teams
     AGENT_FILE="${AGENTS_DIR}/orchestrator.md"
     echo "${YELLOW}[INFO]${NC} Using orchestrator agent with agent teams"
-    # TODO: Adjust claude CLI flags once exact syntax is confirmed
-    claude --model "$MODEL" \
-        --system-prompt "$AGENT_FILE" \
-        --cwd "$WORKTREE_PATH" \
-        "Execute the implementation plan at plans/${PLAN_BASENAME}" &
+    (cd "$WORKTREE_PATH" && claude \
+        --model "$MODEL" \
+        --system-prompt-file "$AGENT_FILE" \
+        -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 else
     # Small/Medium: Single implementer worker
     AGENT_FILE="${AGENTS_DIR}/implementer.md"
     echo "${YELLOW}[INFO]${NC} Using implementer agent"
-    # TODO: Adjust claude CLI flags once exact syntax is confirmed
-    claude --model "$MODEL" \
-        --system-prompt "$AGENT_FILE" \
-        --cwd "$WORKTREE_PATH" \
-        "Execute the implementation plan at plans/${PLAN_BASENAME}" &
+    (cd "$WORKTREE_PATH" && claude \
+        --model "$MODEL" \
+        --system-prompt-file "$AGENT_FILE" \
+        -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 fi
 
 CLAUDE_PID=$!

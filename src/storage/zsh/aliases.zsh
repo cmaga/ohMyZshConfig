@@ -48,3 +48,9 @@ alias gskipped='git ls-files -v | grep "^S"'
 
 # SSH Key Generation and Management
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
+
+# Task Planner - launch plan execution via Claude Code CLI
+TASK_PLANNER_LAUNCHER="$HOME/.cline/skills/task-planner/scripts/launch.zsh"
+run-small()  { $TASK_PLANNER_LAUNCHER --small "$@"; }
+run-medium() { $TASK_PLANNER_LAUNCHER --medium "$@"; }
+run-large()  { $TASK_PLANNER_LAUNCHER --large "$@"; }
