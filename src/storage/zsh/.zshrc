@@ -1,4 +1,4 @@
-﻿# Path to your oh-my-zsh installation.
+# Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
 # Set theme - this must be before sourcing oh-my-zsh.sh
@@ -56,8 +56,8 @@ msys*|cygwin*|mingw*)
     
     # nvm-windows PATH integration
     # nvm-windows sets two env vars:
-    #   NVM_HOME    â€” directory containing nvm.exe
-    #   NVM_SYMLINK â€” junction pointing to the active Node.js version
+    #   NVM_HOME    - directory containing nvm.exe
+    #   NVM_SYMLINK - junction pointing to the active Node.js version
     # Add both so that `nvm` and `node`/`npm`/`pnpm` are all available.
     if [[ -n "$NVM_HOME" ]]; then
         export PATH="$(cygpath "$NVM_HOME"):$PATH"
@@ -65,7 +65,7 @@ msys*|cygwin*|mingw*)
     if [[ -n "$NVM_SYMLINK" ]]; then
         export PATH="$(cygpath "$NVM_SYMLINK"):$PATH"
     elif [[ -n "$NVM_HOME" ]]; then
-        # NVM_SYMLINK missing â€” try to find an installed version in NVM_HOME
+        # NVM_SYMLINK missing - try to find an installed version in NVM_HOME
         local _nvm_home_unix="$(cygpath "$NVM_HOME")"
         local _active_node="$_nvm_home_unix/$(ls "$_nvm_home_unix" 2>/dev/null | grep '^v' | tail -1)"
         [[ -d "$_active_node" ]] && export PATH="$_active_node:$PATH"
@@ -102,7 +102,7 @@ msys*|cygwin*|mingw*)
     _ssh_agent_state=$(ssh-add -l >| /dev/null 2>&1; echo $?)
 
     if [[ ! "$SSH_AUTH_SOCK" ]] || [[ $_ssh_agent_state -eq 2 ]]; then
-        # Agent not running â€” start it and load keys
+        # Agent not running - start it and load keys
         _ssh_agent_start
         _ssh_agent_load_keys
     elif [[ $_ssh_agent_state -eq 1 ]]; then

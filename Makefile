@@ -49,6 +49,24 @@ help: ## Show this help message
 lint: ## Format files and run lint checks
 	@printf "$(BLUE)Running lint checks...$(NC)\n"
 	@printf "\n"
+	@printf "$(BLUE)Checking for UTF-8 BOM in shell files...$(NC)\n"
+	@bom_found=0; \
+	for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/aliases.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh hooks/pre-commit; do \
+		if [ -f "$$file" ]; then \
+			first_bytes=$$(xxd -p -l 3 "$$file" 2>/dev/null); \
+			if [ "$$first_bytes" = "efbbbf" ]; then \
+				printf "  $(RED)BOM detected: $$file$(NC)\n"; \
+				bom_found=1; \
+			fi; \
+		fi; \
+	done; \
+	if [ "$$bom_found" -eq 1 ]; then \
+		printf "  $(RED)Files with BOM must be re-saved as UTF-8 without BOM$(NC)\n"; \
+		exit 1; \
+	else \
+		printf "  $(GREEN)No BOM found$(NC)\n"; \
+	fi
+	@printf "\n"
 	@printf "$(BLUE)Checking zsh syntax...$(NC)\n"
 	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/aliases.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
 		if [ -f "$$file" ]; then \
