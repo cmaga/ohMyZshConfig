@@ -100,42 +100,34 @@ mkdir -p "${WORKTREE_PATH}/plans"
 cp "$PLAN_FILE" "${WORKTREE_PATH}/plans/"
 PLAN_BASENAME=$(basename "$PLAN_FILE")
 
-# Step 3: Spawn Claude Code instance
-echo "${BLUE}[3/3]${NC} Spawning Claude Code (${MODEL})..."
+# Step 3: Launch interactive Claude Code session
+echo "${BLUE}[3/3]${NC} Launching Claude Code (${MODEL})..."
+
+INITIAL_PROMPT="Execute the implementation plan at plans/${PLAN_BASENAME}. The target branch for the PR is ${BASE_BRANCH}."
 
 if [[ "$TIER" == "--large" ]]; then
-    # Large: Opus orchestrator with agent teams
     AGENT_FILE="${AGENTS_DIR}/orchestrator.md"
     echo "${YELLOW}[INFO]${NC} Using orchestrator agent with agent teams"
-    (cd "$WORKTREE_PATH" && claude \
-        --model "$MODEL" \
-        --system-prompt-file "$AGENT_FILE" \
-        --dangerously-skip-permissions \
-        -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 else
-    # Small/Medium: Single implementer worker
     AGENT_FILE="${AGENTS_DIR}/implementer.md"
     echo "${YELLOW}[INFO]${NC} Using implementer agent"
-    (cd "$WORKTREE_PATH" && claude \
-        --model "$MODEL" \
-        --system-prompt-file "$AGENT_FILE" \
-        --dangerously-skip-permissions \
-        -p "Execute the implementation plan at plans/${PLAN_BASENAME}") &
 fi
 
-CLAUDE_PID=$!
-
 echo ""
-echo "${GREEN}[LAUNCHED]${NC} Claude Code running in background (PID: ${CLAUDE_PID})"
+echo "${GREEN}[READY]${NC} Dropping into interactive Claude session"
 echo "Worktree: ${WORKTREE_PATH}"
 echo "Plan:     ${WORKTREE_PATH}/plans/${PLAN_BASENAME}"
+echo "Target:   ${BASE_BRANCH}"
 echo ""
-echo "Monitor with: ps -p ${CLAUDE_PID}"
-echo "Kill with:    kill ${CLAUDE_PID}"
 
 # Optionally set tmux pane title if in tmux
 if [[ -n "${TMUX:-}" ]]; then
     tmux rename-window "${TICKET_KEY}" 2>/dev/null || true
 fi
 
-exit 0
+# exec replaces this shell with Claude — you're now in an interactive session
+cd "$WORKTREE_PATH" && exec claude \
+    --model "$MODEL" \
+    --system-prompt-file "$AGENT_FILE" \
+    --dangerously-skip-permissions \
+    "$INITIAL_PROMPT"
