@@ -87,6 +87,14 @@ You are an orchestrator. Read this plan, identify sub-tasks and their dependenci
 | {scenario 2} | {expected outcome} |
 | {scenario 3} | {expected outcome} |
 
+## Pre-existing UI
+
+> Optional -- include only if UI was scaffolded during planning and already committed to the worktree.
+
+- `{path/to/component}` -- already created with mock data, do not recreate
+- `{path/to/styles}` -- approved by user, modify only to wire real data
+- **What to wire:** replace hardcoded/mock data with {real data source}
+
 ## Boundaries — do NOT touch
 
 - `{path/to/off-limits-file}` — {reason}

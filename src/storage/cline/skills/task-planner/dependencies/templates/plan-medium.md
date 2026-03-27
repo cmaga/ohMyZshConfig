@@ -36,6 +36,14 @@ Your job is to transform this plan into working, tested, linted code.
    - **Files:** `{path}`
    - **Spec:** {Details}
 
+## Pre-existing UI
+
+> Optional -- include only if UI was scaffolded during planning and already committed to the worktree.
+
+- `{path/to/component}` -- already created with mock data, do not recreate
+- `{path/to/styles}` -- approved by user, modify only to wire real data
+- **What to wire:** replace hardcoded/mock data with {real data source}
+
 ## Constraints
 
 - **DO NOT modify:** {files/modules off-limits}

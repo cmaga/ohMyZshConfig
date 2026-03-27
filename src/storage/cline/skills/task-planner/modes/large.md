@@ -32,22 +32,48 @@ Work with the user to reach full understanding:
 
 **If confidence < 10**: Ask specific questions. Offer your best guess for the user to confirm or correct. Loop until 10/10.
 
-### Step 3: Write Draft Plan
+### Step 3: UI Scaffolding (if applicable)
+
+If the ticket involves UI changes (components, styles, layouts, visual elements):
+
+1. **Create worktree early** -- run `create-worktree.zsh` now, before writing the plan.
+2. **Scaffold UI components** in the worktree with mock/hardcoded data. Follow existing patterns.
+3. **Start the dev server** and present:
+
+```
+Worktree: {path}
+Dev server: {URL, e.g. http://localhost:3000/path}
+
+Verify:
+- {What to visually check 1}
+- {What to visually check 2}
+```
+
+4. **Iterate** with the user until they approve the UI look and feel.
+5. **Commit** the approved UI work to the branch in the worktree.
+
+The plan written in subsequent steps will only cover the remaining deterministic work (wiring real data, API calls, business logic, tests). The UI is already done.
+
+If the ticket has no UI changes, skip this step.
+
+### Step 4: Write Draft Plan
 
 Use the template at [dependencies/templates/plan-large.md](../dependencies/templates/plan-large.md).
 
 Write a complete draft including sub-tasks, dependencies, test matrix, and boundaries.
 
-### Step 4: Review Gate
+If Step 3 was done, include a **Pre-existing UI** section listing files already committed in the worktree.
+
+### Step 5: Review Gate
 
 Run review sub-agents against the draft plan:
 
-1. **Security review** — invoke the `security-reviewer` sub-agent with the draft plan and affected files
-2. **Architecture review** — invoke the `techlead-reviewer` sub-agent with the draft plan and affected files (include edge case analysis in the prompt)
+1. **Security review** -- invoke the `security-reviewer` sub-agent with the draft plan and affected files
+2. **Architecture review** -- invoke the `techlead-reviewer` sub-agent with the draft plan and affected files (include edge case analysis in the prompt)
 
 Present each reviewer's findings to the user. The user can accept, adjust, or override each recommendation.
 
-### Step 5: Finalize Plan
+### Step 6: Finalize Plan
 
 Incorporate approved review feedback into the plan. Write the final version to: `./plans/plan-{TICKET}-large.md`
 
@@ -60,8 +86,9 @@ The plan must include:
 - Test matrix mapping scenarios to expected outcomes
 - Boundaries: files and modules explicitly off-limits
 - Done criteria with verification commands
+- **Pre-existing UI section** (if Step 3 was done): list files already committed in the worktree that workers should not recreate
 
-### Step 6: Hand Off
+### Step 7: Hand Off
 
 Tell the user:
 

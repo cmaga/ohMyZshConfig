@@ -4,9 +4,9 @@ Minimal planning for isolated changes. The ticket description is essentially the
 
 ## Critical Rules
 
-- Total interaction should be under 2 minutes
+- Total interaction should be under 2 minutes for non-UI tickets
 - Do not investigate the codebase beyond confirming the file exists
-- Do not discuss approach — confirm and write
+- Do not discuss approach -- confirm and write
 
 ## Process
 
@@ -18,9 +18,50 @@ Show the user:
 - Description (condensed)
 - Acceptance criteria
 
-Ask: "This looks like a small ticket. Confirm and I'll write the plan?"
+Determine: does this ticket involve UI changes (components, styles, layouts, visual elements)?
 
-### Step 2: Write Plan
+---
+
+### Path A: UI Changes (any ticket with visual elements)
+
+If the ticket involves UI changes, implement it directly -- no plan file, no handoff.
+
+#### A1: Create Worktree
+
+Run `create-worktree.zsh` to set up the branch and worktree. Work inside the worktree for all changes.
+
+#### A2: Implement Everything
+
+Make all changes -- UI and logic -- directly in the worktree. Use existing patterns from the codebase.
+
+#### A3: Show the User
+
+Start the dev server and present:
+
+```
+Worktree: {path}
+Dev server: {URL, e.g. http://localhost:3000/path}
+
+Verify:
+- {What to visually check 1}
+- {What to visually check 2}
+```
+
+Wait for user feedback. Iterate until approved.
+
+#### A4: Finalize
+
+- Commit all changes with a conventional commit referencing the ticket ID
+- Push the branch
+- Create a PR targeting main
+
+Done. No plan file needed.
+
+---
+
+### Path B: No UI Changes
+
+#### B1: Write Plan
 
 Use the template at [dependencies/templates/plan-small.md](../dependencies/templates/plan-small.md).
 
@@ -33,7 +74,7 @@ Fill in:
 
 Write to: `./plans/plan-{TICKET}-small.md`
 
-### Step 3: Hand Off
+#### B2: Hand Off
 
 Tell the user:
 
