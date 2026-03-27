@@ -2,20 +2,6 @@
 
 ## Size: large
 
-## Branch: {TICKET-KEY}
-
-## Who You Are
-
-You are an orchestrator. Read this plan, identify sub-tasks and their dependencies, then spawn workers to execute them.
-
-**Rules:**
-
-- Never write application code yourself — delegate to workers
-- Hold only plan summaries and worker status in context — not implementation details
-- Respect dependency ordering between sub-tasks
-- If a worker fails twice, escalate to an Opus worker
-- If the plan is incomplete or contradictory, reject it back to the user
-
 ## Context
 
 {Paragraph: what this change does and why it matters}
@@ -25,54 +11,76 @@ You are an orchestrator. Read this plan, identify sub-tasks and their dependenci
 - {Key architectural detail with file reference}
 - {Auth/data/API patterns relevant to this change}
 
-## Sub-tasks
+## Card Strategy
 
-### Sub-task A: {Title}
+### Card 1: {name}
 
-**Files:** `{path}` (create | modify), `{path}` (modify)
-**Steps:**
+- **Type**: autonomous
+- **Blocked by**: none
+- **Scope**: {what this card accomplishes}
+- **Files**:
+  - `{path}` — {create | modify}
+  - `{path}` — {modify}
+- **Implementation**:
+  1. {Step with specific implementation detail}
+  2. {Step with verification command}
+- **Reference**: `{path/to/example}` for pattern
+- **Verification**: `{command that proves this card is done}`
+- **Done when**: {specific observable outcome}
 
-1. {Step with specific implementation detail}
-2. {Step with verification command}
+### Card 2: {name}
 
-**Reference:** `{path/to/example}` for pattern
-**Depends on:** Nothing | Sub-task X
-**Verification:** `{command that proves this sub-task is done}`
+- **Type**: autonomous
+- **Blocked by**: Card 1
+- **Scope**: {what this card accomplishes}
+- **Files**: `{path}`
+- **Implementation**:
+  1. {Step}
+- **Verification**: `{command}`
+- **Done when**: {outcome}
 
-### Sub-task B: {Title}
+### Card 3: {name}
 
-**Files:** `{path}`
-**Steps:**
+- **Type**: autonomous
+- **Blocked by**: Card 1
+- **Scope**: {what this card accomplishes}
+- **Files**: `{path}`
+- **Implementation**:
+  1. {Step}
+- **Verification**: `{command}`
+- **Done when**: {outcome}
 
-1. {Step}
+### Card 4: {name}
 
-**Depends on:** Sub-task A
-**Verification:** `{command}`
-
-### Sub-task C: {Title}
-
-**Files:** `{path}`
-**Steps:**
-
-1. {Step}
-
-**Depends on:** Sub-task A
-**Verification:** `{command}`
-
-### Sub-task D: {Title}
-
-**Files:** `{path}`
-**Steps:**
-
-1. {Step}
-
-**Depends on:** Sub-tasks B and C
-**Verification:** `{command}`
+- **Type**: autonomous
+- **Blocked by**: Cards 2 and 3
+- **Scope**: {integration / final wiring}
+- **Files**: `{path}`
+- **Implementation**:
+  1. {Step}
+- **Verification**: `{command}`
+- **Done when**: {outcome}
 
 ## Parallelization
 
-- **Independent (can run in parallel):** Sub-tasks B, C
-- **Sequential:** A -> (B, C) -> D
+- **Independent (can run in parallel)**: Cards 2, 3
+- **Sequential**: Card 1 -> (Cards 2, 3) -> Card 4
+
+<!-- If UI prototyping was requested, Card 1 becomes:
+
+### Card 1: Prototype UI for {feature} (interactive)
+
+- **Type**: interactive (requires human review)
+- **Blocked by**: none
+- **Scope**: Scaffold UI components with mock data, start dev server, iterate with user
+- **Files**: `{path/to/components}`
+- **Prototype targets**:
+  - {Component/page 1}
+  - {Component/page 2}
+- **Done when**: User approves visual output in dev server
+
+Subsequent cards are blocked by Card 1 and must read Card 1's actual output files rather than assuming component names or prop shapes.
+-->
 
 ## Edge cases (from review)
 
@@ -87,25 +95,18 @@ You are an orchestrator. Read this plan, identify sub-tasks and their dependenci
 | {scenario 2} | {expected outcome} |
 | {scenario 3} | {expected outcome} |
 
-## Pre-existing UI
-
-> Optional -- include only if UI was scaffolded during planning and already committed to the worktree.
-
-- `{path/to/component}` -- already created with mock data, do not recreate
-- `{path/to/styles}` -- approved by user, modify only to wire real data
-- **What to wire:** replace hardcoded/mock data with {real data source}
-
 ## Boundaries — do NOT touch
 
 - `{path/to/off-limits-file}` — {reason}
 - `{module}` — out of scope
-- Do not add new dependencies
 
 ## Done when
 
-- All sub-tasks complete and integrated
+- All cards complete
 - All new and existing tests pass
 - Lint/format passes
 - Build succeeds
-- Branch pushed
-- PR created targeting main
+
+## Cross-Ticket Dependencies
+
+None

@@ -5,8 +5,8 @@ Collaborative planning for features and moderate refactors. You and the user agr
 ## Critical Rules
 
 - Investigate before discussing. Read files first, talk second.
-- The plan must be detailed enough that a Sonnet worker executes without asking questions.
-- Examples over descriptions -- reference `src/path/to/example.ts`, not "RESTful conventions."
+- The plan must be detailed enough that an executor implements without asking questions.
+- Examples over descriptions — reference `src/path/to/example.ts`, not "RESTful conventions."
 
 ## Process
 
@@ -32,29 +32,16 @@ Present your understanding to the user:
 
 **If confidence = 10**: Proceed to the next step.
 
-### Step 3: UI Scaffolding (if applicable)
+### Step 3: Check for UI Changes
 
-If the ticket involves UI changes (components, styles, layouts, visual elements):
+If the ticket involves any UI changes (components, styles, layouts, visual elements):
 
-1. **Create worktree early** -- run `create-worktree.zsh` now, before writing the plan.
-2. **Scaffold UI components** in the worktree with mock/hardcoded data. Follow existing patterns.
-3. **Start the dev server** and present:
+Ask the user: "This ticket involves UI changes ({list what}). Should these be prototyped as an interactive card?"
 
-```
-Worktree: {path}
-Dev server: {URL, e.g. http://localhost:3000/path}
+- **If yes**: The plan will split into an interactive prototype card (Card 1) and follow-up cards for wiring/backend/tests. Card 2+ are blocked by Card 1 and must read Card 1's actual output files rather than assuming component structure.
+- **If no**: UI changes are described textually in a normal autonomous card.
 
-Verify:
-- {What to visually check 1}
-- {What to visually check 2}
-```
-
-4. **Iterate** with the user until they approve the UI look and feel.
-5. **Commit** the approved UI work to the branch in the worktree.
-
-The plan written in the next step will only cover the remaining deterministic work (wiring real data, API calls, business logic, tests). The UI is already done.
-
-If the ticket has no UI changes, skip this step.
+If no UI changes, skip this step.
 
 ### Step 4: Write Plan
 
@@ -63,22 +50,16 @@ Use the template at [dependencies/templates/plan-medium.md](../dependencies/temp
 The plan must include:
 
 - Context: what and why (2-3 sentences)
-- Files to touch: exact paths with actions
-- Steps: numbered, ordered, each with clear deliverable
-- Constraints: files/patterns not to touch, dependencies not to add
-- Test expectations: specific test scenarios with expected outcomes
+- Card strategy: how to split into cards with dependency links
+- Per card: files to touch, implementation steps, constraints, test expectations
 - Done criteria: verifiable conditions
-- **Pre-existing UI section** (if Step 3 was done): list files already committed in the worktree that the implementer should not recreate
 
 Write to: `./plans/plan-{TICKET}-medium.md`
 
-### Step 5: Hand Off
+### Step 5: Done
 
 Tell the user:
 
 ```
 Plan written to plans/plan-{TICKET}-medium.md
-Launch with: ~/.cline/skills/task-planner/scripts/launch.zsh --medium plans/plan-{TICKET}-medium.md
 ```
-
-User reviews the PR asynchronously when ready. The plan should be good enough that the executor fixes its own bugs -- review is for feel, not correctness.

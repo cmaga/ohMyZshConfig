@@ -5,19 +5,20 @@ description: Generate tiered implementation plans for Jira tickets handed off to
 
 # Task Planner
 
-Generate implementation plans consumed by Claude Code instances. Cline plans, Claude Code executes.
+Generate implementation plans consumed by Cline Kanban. Cline plans, Kanban executes.
 
 ## Critical Rules
 
 - **Never switch to act mode for implementation.** Output is always a plan file on disk.
 - **Never auto-classify tickets.** The user decides small, medium, or large.
-- The plan file is the only bridge between Cline and Claude Code. It must be self-contained.
+- **Plans are implementation-focused.** No Jira transitions, no devops, no PR creation, no worktree management. Focus on what code changes need to happen and how.
+- **Cards are the unit of work.** Every plan describes one or more cards. Each card becomes an isolated task in Kanban with its own worktree. Cards run in parallel unless linked by dependencies.
+- **Always ask about UI prototyping.** If the ticket involves any UI changes (components, styles, layouts, visual elements), ask the user if these should be prototyped as an interactive card.
 
 ## Setup
 
 ```bash
 grep -q "^plans/" .gitignore || echo "plans/" >> .gitignore
-grep -q "^./wt/" .gitignore || echo "./wt/" >> .gitignore
 mkdir -p plans
 ```
 
@@ -31,11 +32,11 @@ If no ticket ID provided, ask for one.
 
 Ask the user to classify the ticket:
 
-| Tier       | When                                      | Planning depth                   | Executor                           |
-| ---------- | ----------------------------------------- | -------------------------------- | ---------------------------------- |
-| **Small**  | Bug fix, config, typo, isolated change    | Minimal — ticket is the plan     | Single Haiku instance              |
-| **Medium** | New feature, moderate refactor, 2-5 files | Steps, files, constraints, tests | Single Sonnet instance             |
-| **Large**  | Architectural, multi-module, 5+ files     | Full plan + review gate          | Opus orchestrator + Sonnet workers |
+| Tier       | When                                      | Planning depth                   |
+| ---------- | ----------------------------------------- | -------------------------------- |
+| **Small**  | Bug fix, config, typo, isolated change    | Minimal — ticket is the plan     |
+| **Medium** | New feature, moderate refactor, 2-5 files | Steps, files, constraints, tests |
+| **Large**  | Architectural, multi-module, 5+ files     | Full plan + review gate          |
 
 If user provides tier in initial message (e.g., "STAX-42 small"), skip this step.
 
@@ -55,21 +56,26 @@ plans/plan-STAX-78-medium.md
 plans/plan-STAX-112-large.md
 ```
 
-## Launching Execution
+## Card Strategy Concepts
 
-After writing the plan, tell the user to run the launcher in a separate terminal:
+Plans describe work as **cards** — isolated units of work that Kanban picks up. The downstream card creation system reads natural language, so write cards clearly.
 
-```bash
-# From project root:
-./path/to/launch.zsh --small plans/plan-STAX-42-small.md
-./path/to/launch.zsh --medium plans/plan-STAX-78-medium.md
-./path/to/launch.zsh --large plans/plan-STAX-112-large.md
+### Card Types
 
-# With custom base branch:
-./path/to/launch.zsh --medium --base develop plans/plan-STAX-78-medium.md
-```
+- **Autonomous**: runs without human interaction. The executor reads the card instructions and implements.
+- **Interactive (requires human review)**: the executor scaffolds something (usually UI), then waits for user feedback. The user may take over the session to iterate.
 
-The global script location: `~/.cline/skills/task-planner/scripts/launch.zsh`
+### Dependency Chains
+
+Cards can be linked so one blocks another. When Card B depends on Card A's output:
+
+- Card A must complete before Card B starts
+- Card B's instructions should reference Card A's actual output (read the files) rather than assuming exact names/structure
+- This enables fully autonomous chains where one task's output feeds into the next
+
+### Cross-Ticket Dependencies
+
+If this ticket's work depends on cards from another ticket, note it in the plan. The card creation system can link across tickets.
 
 ## Post-Completion
 

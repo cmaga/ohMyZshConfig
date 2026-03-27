@@ -2,64 +2,79 @@
 
 ## Size: medium
 
-## Branch: {TICKET-KEY}
-
-## Who You Are
-
-Execute this plan independently without asking questions.
-Your job is to transform this plan into working, tested, linted code.
-
-**Rules:**
-
-- Stay in scope — only modify files listed below
-- Use existing patterns — reference files are your style guide
-- Fix trivial issues encountered without architectural decisions
-- If something is ambiguous, fail loudly with a clear error rather than guessing
-
 ## Context
 
 {One paragraph: what and why}
 
-## Files to touch
+## Card Strategy
 
-- `{path/to/file}` — {action: create | modify | delete}
-- `{path/to/file}` — {action}
+### Card 1: {name}
 
-## Steps
+- **Type**: autonomous
+- **Blocked by**: none
+- **Scope**: {what this card accomplishes}
+- **Files**:
+  - `{path/to/file}` — {action: create | modify | delete}
+  - `{path/to/file}` — {action}
+- **Implementation**:
+  1. {Step description}
+     - **Reference**: `{path/to/example}` for pattern
+     - **Spec**: {What to implement, input/output contracts, edge cases}
+  2. {Step description}
+     - **Spec**: {Details}
+- **Constraints**:
+  - DO NOT modify: {files/modules off-limits}
+  - DO NOT add dependencies unless explicitly listed
+  - Pattern reference: `{path/to/existing/example}`
+- **Test expectations**:
+  - {Test scenario 1: input -> expected output}
+  - {Test scenario 2: edge case -> expected behavior}
+  - {Test scenario 3: error case -> expected error}
+- **Done when**:
+  - {Verifiable condition 1}
+  - {Verifiable condition 2}
+  - All new tests pass
+  - Existing tests still pass
+  - Lint/format passes
 
-1. {Step description}
-   - **Files:** `{path}`
-   - **Reference:** `{path/to/example}` for pattern
-   - **Spec:** {What to implement, input/output contracts, edge cases}
+### Card 2: {name} (if needed)
 
-2. {Step description}
-   - **Files:** `{path}`
-   - **Spec:** {Details}
+- **Type**: autonomous
+- **Blocked by**: Card 1
+- **Scope**: {what this card accomplishes}
+- **Files**: `{path}`
+- **Implementation**: {steps}
+- **Done when**: {criteria}
 
-## Pre-existing UI
+<!-- If UI prototyping was requested, use this structure:
 
-> Optional -- include only if UI was scaffolded during planning and already committed to the worktree.
+### Card 1: Prototype UI for {feature} (interactive)
 
-- `{path/to/component}` -- already created with mock data, do not recreate
-- `{path/to/styles}` -- approved by user, modify only to wire real data
-- **What to wire:** replace hardcoded/mock data with {real data source}
+- **Type**: interactive (requires human review)
+- **Blocked by**: none
+- **Scope**: Scaffold UI components with mock data, start dev server, iterate with user
+- **Files**: `{path/to/components}`
+- **Prototype targets**:
+  - {Component/page 1}
+  - {Component/page 2}
+- **Done when**: User approves visual output in dev server
 
-## Constraints
+### Card 2: Wire {feature} data layer + logic
 
-- **DO NOT modify:** {files/modules off-limits}
-- **DO NOT add dependencies** unless explicitly listed
-- **Pattern reference:** `{path/to/existing/example}`
+- **Type**: autonomous
+- **Blocked by**: Card 1
+- **Scope**: Wire real data to UI components created in Card 1
+- **Files**: `{path/to/api}`, `{path/to/components}`
+- **Implementation**: Read the component files committed by Card 1 on the branch. Do NOT assume component names or prop shapes — inspect the actual files. Then:
+  1. {Wire real API calls}
+  2. {Add error/loading states}
+  3. {Write tests}
+- **Done when**:
+  - {Acceptance criteria}
+  - All tests pass
+  - Lint/format passes
+-->
 
-## Test expectations
+## Cross-Ticket Dependencies
 
-- {Test scenario 1: input -> expected output}
-- {Test scenario 2: edge case -> expected behavior}
-- {Test scenario 3: error case -> expected error}
-
-## Done when
-
-- All new tests pass
-- Existing tests still pass
-- Lint/format passes
-- Branch pushed
-- PR created targeting main
+None
