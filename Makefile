@@ -109,7 +109,7 @@ lint: ## Format files and run lint checks
 
 deploy: deploy-zsh deploy-git deploy-cline deploy-claude-skills finalize ## Deploy all configs (zsh, git, cline, claude)
 
-deploy-claude-skills: ## Deploy skills to Claude Code global dir (~/.claude/skills/)
+deploy-claude: ## Deploy skills to Claude Code global dir (~/.claude/skills/)
 	@"$(DEPLOYMENT_DIR)/07-deploy-claude-skills.zsh"
 
 deploy-zsh: ## Deploy zsh configs (.zshrc, aliases.zsh, custom scripts)
