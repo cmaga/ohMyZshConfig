@@ -129,5 +129,5 @@ fi
 cd "$WORKTREE_PATH" && exec claude \
     --model "$MODEL" \
     --system-prompt-file "$AGENT_FILE" \
-    --dangerously-skip-permissions \
+    --permission-mode auto \
     "$INITIAL_PROMPT"
