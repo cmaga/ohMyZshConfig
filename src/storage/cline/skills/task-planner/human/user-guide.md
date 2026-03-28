@@ -1,27 +1,27 @@
 # Task Planner User Guide
 
-Quick reference for using the task-planner skill. This guide walks through a small ticket as an example.
+Quick reference for using the task-planner skill.
 
 ## Prerequisites
 
 - Jira CLI configured (the jira skill handles this)
-- Claude Code CLI (`claude`) installed
+- Cline Kanban set up for your project
 - Git repository with a remote
 
 ## How It Works
 
 ```
-You (in Cline)          Plan file on disk          Claude Code (in terminal)
-     |                       |                            |
-     |--- "plan STAX-42" -->|                            |
-     |    writes plan ------>|                            |
-     |                       |--- launch.zsh reads ------>|
-     |                       |    creates worktree        |
-     |                       |    executes plan           |
-     |                       |                     creates PR
+You (in Cline)          Plan file on disk          Cline Kanban
+     |                       |                         |
+     |--- "plan STAX-42" -->|                         |
+     |    writes plan ------>|                         |
+     |                       |--- cards created ------>|
+     |                       |    worktrees created    |
+     |                       |    tasks run parallel   |
+     |                       |                   creates PR
 ```
 
-Cline plans. Claude Code executes. The plan file is the only bridge.
+Cline plans. Kanban executes. The plan file is the only bridge.
 
 ## Example: Small Ticket
 
@@ -65,87 +65,77 @@ Cline creates `plans/plan-STAX-42-small.md` in your project root:
 
 ## Size: small
 
-## Branch: STAX-42
+## Context
 
-## Who You Are
+Fix a typo in the login error message string.
 
-Execute this plan independently without asking questions.
-If something is ambiguous, fail loudly with a clear error rather than guessing.
+## Card Strategy
 
-## What to change
+### Card 1: Fix login error typo
 
-- File: `src/auth/messages.ts`
-- Line 14: Change "Authenication failed" to "Authentication failed"
-
-## Done when
-
-- The typo is corrected
-- No other strings are modified
-- Existing tests still pass
+- **Type**: autonomous
+- **Scope**: Correct "Authenication" to "Authentication" in error messages
+- **Files**: `src/auth/messages.ts`
+- **What to change**: Line 14 — change "Authenication failed" to "Authentication failed"
+- **Done when**:
+  - The typo is corrected
+  - No other strings are modified
+  - Existing tests still pass
 ```
 
-Cline then tells you the launch command.
+### Step 5: Done
 
-### Step 5: Launch Claude Code
+The plan is on disk. Kanban picks it up, creates a card, sets up a worktree, and executes it. You move to the next ticket.
 
-In a **separate terminal** (not inside Cline), run:
+## UI Prototyping
 
-```bash
-~/.cline/skills/task-planner/scripts/launch.zsh --small plans/plan-STAX-42-small.md
-```
-
-This does three things:
-
-1. Creates a git worktree at `./wt/STAX-42` on branch `STAX-42`
-2. Copies the plan into the worktree
-3. Spawns a Claude Code Haiku instance that reads the plan and executes it
-
-### Step 6: Claude Code Executes
-
-The Haiku instance:
-
-1. Reads the plan
-2. Makes the change
-3. Runs verification (existing tests)
-4. Commits with message `fix(auth): correct typo in login error message Refs: STAX-42`
-5. Pushes the branch
-6. Creates a PR
-
-You get output like:
+If a ticket involves UI changes, Cline will ask:
 
 ```
-[LAUNCHED] Claude Code running in background (PID: 12345)
-Worktree: ./wt/STAX-42
-Plan:     ./wt/STAX-42/plans/plan-STAX-42-small.md
-
-Monitor with: ps -p 12345
-Kill with:    kill 12345
+This ticket involves UI changes (new dashboard page, stats cards).
+Should these be prototyped as an interactive card?
 ```
 
-### Step 7: Review the PR
+If you say **yes**, the plan splits into:
 
-Check the PR on GitHub. If CI passes, merge it.
+- **Card 1 (interactive)**: Scaffold UI with mock data. You review in the dev server and iterate.
+- **Card 2 (autonomous)**: Wire real data, add tests. Blocked by Card 1. Reads Card 1's actual output files.
+
+If you say **no**, the UI changes are described textually in a normal autonomous card.
 
 ## Tier Reference
 
-| Tier   | Trigger example       | Planning time | Executor               |
-| ------ | --------------------- | ------------- | ---------------------- |
-| Small  | `plan STAX-42 small`  | ~2 min        | Single Haiku instance  |
-| Medium | `plan STAX-78 medium` | ~10-15 min    | Single Sonnet instance |
-| Large  | `plan STAX-112 large` | ~20-30 min    | Opus + Sonnet workers  |
+| Tier   | Trigger example       | Planning time | What Cline does                 |
+| ------ | --------------------- | ------------- | ------------------------------- |
+| Small  | `plan STAX-42 small`  | ~2 min        | Confirm and write               |
+| Medium | `plan STAX-78 medium` | ~10-15 min    | Investigate, discuss, write     |
+| Large  | `plan STAX-112 large` | ~20-30 min    | Deep investigation, review gate |
 
 ## File Locations
 
-| What            | Where                                                       |
-| --------------- | ----------------------------------------------------------- |
-| Plans           | `./plans/` in project root (gitignored)                     |
-| Worktrees       | `./wt/{TICKET}` in project root (gitignored)                |
-| Launcher script | `~/.cline/skills/task-planner/scripts/launch.zsh`           |
-| System prompts  | `~/.cline/skills/task-planner/dependencies/system-prompts/` |
-| Plan templates  | `~/.cline/skills/task-planner/dependencies/templates/`      |
+| What           | Where                                                  |
+| -------------- | ------------------------------------------------------ |
+| Plans          | `./plans/` in project root (gitignored)                |
+| Plan templates | `~/.cline/skills/task-planner/dependencies/templates/` |
+| Mode docs      | `~/.cline/skills/task-planner/modes/`                  |
+
+## Card Concepts
+
+### Card Types
+
+- **Autonomous**: runs without human interaction
+- **Interactive**: requires human review (typically UI prototyping)
+
+### Dependency Chains
+
+Cards can be linked so one blocks another. The plan specifies this with "Blocked by" fields. Kanban handles the sequencing — when Card 1 completes, Card 2 starts automatically.
+
+### Cross-Ticket Dependencies
+
+If ticket B depends on work from ticket A, the plan notes this. Kanban can link cards across tickets.
 
 ## Tips
 
-- You can plan multiple tickets in one Cline session, then launch them all in parallel from separate terminals.
-- If a Claude Code instance fails, check the worktree for partial work. You can re-run the launcher or fix manually.
-- After merging, clean up: `git worktree remove ./wt/STAX-42 && git branch -d STAX-42`
+- Plan multiple tickets in one Cline session. Each plan kicks off independently in Kanban.
+- For medium/large tickets, the confidence loop (1-10 score) ensures the plan is solid before writing.
+- Large tickets get a review gate — security and architecture subagents vet the plan before finalization.
