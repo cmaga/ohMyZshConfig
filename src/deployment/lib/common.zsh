@@ -131,13 +131,10 @@ get_deployment_dir() {
 # Oh-My-Zsh directory
 OMZ_DIR="${ZSH:-$HOME/.oh-my-zsh}"
 
-# Cline directories
-CLINE_DOCS_DIR="$HOME/Documents/Cline"
-CLINE_RULES_DEST="$CLINE_DOCS_DIR/Rules"
-CLINE_WORKFLOWS_DEST="$CLINE_DOCS_DIR/Workflows"
-CLINE_HOOKS_DEST="$CLINE_DOCS_DIR/Hooks"
-CLINE_AGENTS_DEST="$CLINE_DOCS_DIR/Agents"
-CLINE_SKILLS_DEST="$HOME/.cline/skills"
+# Claude Code directories
+CLAUDE_DIR="$HOME/.claude"
+CLAUDE_SKILLS_DEST="$CLAUDE_DIR/skills"
+CLAUDE_AGENTS_DEST="$CLAUDE_DIR/agents"
 
 # =============================================================================
 # UTILITY FUNCTIONS
