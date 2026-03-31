@@ -1,4 +1,11 @@
 # Ignore cloned repositories in skills dependencies
 # These are fetched at deploy time via the update-repo.zsh scripts
-src/storage/cline/skills/*/dependencies/repos/*/
-/temp
+src/storage/claude/skills/*/dependencies/repos/*/
+
+# Temp files
+/src/storage/claude/temp-docs
+
+# Skill artifacts (runtime data, per-ticket)
+# These are created at runtime in target projects
+src/storage/claude/skills/*/artifacts/*
+!src/storage/claude/skills/*/artifacts/.gitkeep

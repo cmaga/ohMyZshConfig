@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup deploy deploy-zsh deploy-git deploy-cline deploy-claude-skills finalize lint
+.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude finalize lint
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -26,11 +26,10 @@ help: ## Show this help message
 	@printf "\n"
 	@printf "Available commands:\n"
 	@printf "  $(GREEN)lint$(NC)          - Format files and run lint checks\n"
-	@printf "  $(GREEN)deploy$(NC)        - Deploy all configs (zsh, git, cline)\n"
+	@printf "  $(GREEN)deploy$(NC)        - Deploy all configs (zsh, git, claude)\n"
 	@printf "  $(GREEN)deploy-zsh$(NC)    - Deploy only zsh configs (.zshrc, aliases, scripts)\n"
 	@printf "  $(GREEN)deploy-git$(NC)    - Deploy only git configs (.gitconfig, company profiles)\n"
-	@printf "  $(GREEN)deploy-cline$(NC)  - Deploy only Cline configs (rules, workflows, skills)\n"
-	@printf "  $(GREEN)deploy-claude-skills$(NC) - Deploy skills to Claude Code (~/.claude/skills/)\n"
+	@printf "  $(GREEN)deploy-claude$(NC) - Deploy only Claude Code configs (CLAUDE.md, rules, skills, agents)\n"
 	@printf "  $(GREEN)setup$(NC)         - Complete system setup (fresh system to fully configured)\n"
 	@printf "  $(GREEN)help$(NC)          - Show this help message\n"
 	@printf "\n"
@@ -49,24 +48,6 @@ help: ## Show this help message
 
 lint: ## Format files and run lint checks
 	@printf "$(BLUE)Running lint checks...$(NC)\n"
-	@printf "\n"
-	@printf "$(BLUE)Checking for UTF-8 BOM in shell files...$(NC)\n"
-	@bom_found=0; \
-	for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/aliases.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh hooks/pre-commit; do \
-		if [ -f "$$file" ]; then \
-			first_bytes=$$(xxd -p -l 3 "$$file" 2>/dev/null); \
-			if [ "$$first_bytes" = "efbbbf" ]; then \
-				printf "  $(RED)BOM detected: $$file$(NC)\n"; \
-				bom_found=1; \
-			fi; \
-		fi; \
-	done; \
-	if [ "$$bom_found" -eq 1 ]; then \
-		printf "  $(RED)Files with BOM must be re-saved as UTF-8 without BOM$(NC)\n"; \
-		exit 1; \
-	else \
-		printf "  $(GREEN)No BOM found$(NC)\n"; \
-	fi
 	@printf "\n"
 	@printf "$(BLUE)Checking zsh syntax...$(NC)\n"
 	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/aliases.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
@@ -107,10 +88,7 @@ lint: ## Format files and run lint checks
 	@printf "\n"
 	@printf "$(GREEN)All lint checks passed!$(NC)\n"
 
-deploy: deploy-zsh deploy-git deploy-cline deploy-claude-skills finalize ## Deploy all configs (zsh, git, cline, claude)
-
-deploy-claude: ## Deploy skills to Claude Code global dir (~/.claude/skills/)
-	@"$(DEPLOYMENT_DIR)/07-deploy-claude-skills.zsh"
+deploy: deploy-zsh deploy-git deploy-claude finalize ## Deploy all configs (zsh, git, claude)
 
 deploy-zsh: ## Deploy zsh configs (.zshrc, aliases.zsh, custom scripts)
 	@printf "$(BLUE)Deploying zsh configuration files...$(NC)\n"
@@ -128,16 +106,16 @@ deploy-git: ## Deploy git configs (.gitconfig, company profiles)
 	fi
 	@"$(DEPLOYMENT_DIR)/05-deploy-git.zsh"
 
-deploy-cline: ## Deploy Cline configs (rules, workflows, hooks, skills)
-	@printf "$(BLUE)Deploying Cline configuration files...$(NC)\n"
-	@if [ ! -f "$(DEPLOYMENT_DIR)/06-deploy-cline.zsh" ]; then \
-		printf "$(RED)src/deployment/06-deploy-cline.zsh not found$(NC)\n"; \
+deploy-claude: ## Deploy Claude Code configs (CLAUDE.md, rules, skills, agents)
+	@printf "$(BLUE)Deploying Claude Code configuration files...$(NC)\n"
+	@if [ ! -f "$(DEPLOYMENT_DIR)/06-deploy-claude.zsh" ]; then \
+		printf "$(RED)src/deployment/06-deploy-claude.zsh not found$(NC)\n"; \
 		exit 1; \
 	fi
-	@"$(DEPLOYMENT_DIR)/06-deploy-cline.zsh"
+	@"$(DEPLOYMENT_DIR)/06-deploy-claude.zsh"
 
 finalize: ## Final cleanup and shell reload prompt
-	@"$(DEPLOYMENT_DIR)/08-finalize.zsh"
+	@"$(DEPLOYMENT_DIR)/07-finalize.zsh"
 
 setup: ## Initial setup to prepare system for deployments and updates
 	@printf "$(BLUE)Full System Setup for Oh-My-Zsh Configuration$(NC)\n"
@@ -167,13 +145,10 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "$(BLUE)Phase 4: Git Deployment$(NC)\n"
 	@$(MAKE) deploy-git
 	@printf "\n"
-	@printf "$(BLUE)Phase 5: Cline Deployment$(NC)\n"
-	@$(MAKE) deploy-cline
+	@printf "$(BLUE)Phase 5: Claude Code Deployment$(NC)\n"
+	@$(MAKE) deploy-claude
 	@printf "\n"
-	@printf "$(BLUE)Phase 6: Claude Skills Deployment$(NC)\n"
-	@$(MAKE) deploy-claude-skills
-	@printf "\n"
-	@printf "$(BLUE)Phase 7: Finalization$(NC)\n"
+	@printf "$(BLUE)Phase 6: Finalization$(NC)\n"
 	@$(MAKE) finalize
 	@printf "\n"
 	@printf "$(GREEN)Complete System Setup Finished!$(NC)\n"
@@ -182,6 +157,5 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "  - $(YELLOW)make deploy$(NC) - Deploy all config changes\n"
 	@printf "  - $(YELLOW)make deploy-zsh$(NC) - Deploy zsh (includes plugins if needed)\n"
 	@printf "  - $(YELLOW)make deploy-git$(NC) - Deploy git configs\n"
-	@printf "  - $(YELLOW)make deploy-cline$(NC) - Deploy Cline configs\n"
-	@printf "  - $(YELLOW)make deploy-claude-skills$(NC) - Deploy skills to Claude Code\n"
+	@printf "  - $(YELLOW)make deploy-claude$(NC) - Deploy Claude Code configs\n"
 	@printf "  - $(YELLOW)make lint$(NC) - Validate configuration before commits\n"
