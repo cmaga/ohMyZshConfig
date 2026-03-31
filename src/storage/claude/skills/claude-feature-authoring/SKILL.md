@@ -2,7 +2,7 @@
 name: claude-feature-authoring
 description: |
   Guidelines for writing markdown files consumed by LLMs as instructions — CLAUDE.md, SKILL.md, subagent definitions, hooks, rules, and workflow commands. Use when creating, revising, or reviewing any context-injection file for Claude Code, or similar agentic coding tools. Also use when the user mentions CLAUDE.md, SKILL.md, AGENTS.md, .claude, or asks how to structure instructions for an AI coding assistant.
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Claude Feature Authoring
