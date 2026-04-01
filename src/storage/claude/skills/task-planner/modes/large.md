@@ -53,8 +53,8 @@ Write a complete draft including cards, dependencies, test matrix, and boundarie
 
 Run review sub-agents against the draft plan:
 
-1. **Security review** — invoke the `security-reviewer` sub-agent with the draft plan and affected files
-2. **Architecture review** — invoke the `techlead-reviewer` sub-agent with the draft plan and affected files (include edge case analysis in the prompt)
+1. **Security review** — invoke the `security-expert-agent` sub-agent with the draft plan and affected files
+2. **Architecture review** — invoke the `code-review-agent` sub-agent with the draft plan and affected files (include edge case analysis in the prompt)
 
 Present each reviewer's findings to the user. The user can accept, adjust, or override each recommendation.
 

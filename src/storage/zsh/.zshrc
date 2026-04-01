@@ -143,3 +143,6 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; 
     # Alias for easier use
     alias nvmr='nvm_use_refresh'
 fi
+
+# Shell env vars
+export ANTHROPIC_MODEL="sonnet"

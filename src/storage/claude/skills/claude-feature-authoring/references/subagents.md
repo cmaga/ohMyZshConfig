@@ -13,13 +13,17 @@ Subagents are specialized AI assistants that run in their own context window. Us
 
 If you create a file manually, restart your session or run `/agents` to load it immediately.
 
+## Naming Convention
+
+Agent filenames and `name` fields must end in `-agent` (e.g., `code-review-agent`, `security-expert-agent`). This removes ambiguity when referencing agents in skills, orchestration flows, and `@` mentions.
+
 ## Format
 
 Markdown file with YAML frontmatter. The markdown body becomes the subagent's system prompt, replacing the default Claude Code system prompt entirely. CLAUDE.md files and project memory still load through the normal message flow.
 
 ```yaml
 ---
-name: code-reviewer
+name: code-review-agent
 description: Reviews code for quality, readability, and best practices
 tools: Read, Grep, Glob
 model: sonnet
@@ -131,13 +135,13 @@ background: true
 Launch Claude Code with a subagent as the main session:
 
 ```bash
-claude --agent code-reviewer
+claude --agent code-review-agent
 ```
 
 Or set as project default in `.claude/settings.json`:
 
 ```json
-{ "agent": "code-reviewer" }
+{ "agent": "code-review-agent" }
 ```
 
 **This is fundamentally different from delegation.** When run via `--agent`, the subagent's system prompt replaces the default Claude Code system prompt entirely — the subagent IS the main session, not a delegated task.
