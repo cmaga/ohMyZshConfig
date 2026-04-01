@@ -8,7 +8,6 @@ ZSH_THEME="half-life"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 plugins=(
 git
-direnv
 zsh-completions
 zsh-autosuggestions
 zsh-syntax-highlighting
@@ -24,6 +23,33 @@ zstyle ':omz:update' mode auto
 # Initialization
 source $ZSH/oh-my-zsh.sh
 
+# Lazy direnv - chpwd only + initial load, 5s kill timeout via perl alarm
+if command -v direnv &>/dev/null; then
+  _direnv_export() {
+    eval "$(perl -e 'alarm 5; exec @ARGV' -- direnv export zsh 2>/dev/null)"
+  }
+
+  _lazy_direnv_hook() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+      if [[ -f "$dir/.envrc" ]]; then
+        _direnv_export
+        return
+      fi
+      dir="${dir:h}"
+    done
+    if [[ -n "$DIRENV_DIR" ]]; then
+      _direnv_export
+    fi
+  }
+
+  typeset -ag chpwd_functions
+  if [[ -z "${chpwd_functions[(r)_lazy_direnv_hook]+1}" ]]; then
+    chpwd_functions=( _lazy_direnv_hook ${chpwd_functions[@]} )
+  fi
+  _lazy_direnv_hook
+fi
+
 # User configuration
 alias aconf="vim $HOME/.oh-my-zsh/custom/aliases.zsh"
 
@@ -32,6 +58,9 @@ autoload -U compinit && compinit
 
 # NVM Configuration - MUST be set before OS-specific configurations
 export NVM_DIR="$HOME/.nvm"
+
+# Claude defualt model shell env
+export ANTHROPIC_MODEL="sonnet"
 
 # OS-specific configurations
 case "$OSTYPE" in
@@ -143,6 +172,3 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; 
     # Alias for easier use
     alias nvmr='nvm_use_refresh'
 fi
-
-# Shell env vars
-export ANTHROPIC_MODEL="sonnet"

@@ -16,6 +16,7 @@ STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 ZSHRC_SOURCE="${STORAGE_DIR}/zsh/.zshrc"
 ALIASES_SOURCE="${STORAGE_DIR}/zsh/aliases.zsh"
 SCRIPTS_SOURCE="${STORAGE_DIR}/scripts"
+DIRENV_TOML_SOURCE="${STORAGE_DIR}/direnv/direnv.toml"
 PLUGINS_FILE="${PROJECT_ROOT}/plugins.txt"
 
 # Destination paths
@@ -23,6 +24,8 @@ ZSHRC_DEST="$HOME/.zshrc"
 ALIASES_DEST="$OMZ_DIR/custom/aliases.zsh"
 SCRIPTS_DEST="$OMZ_DIR/custom/scripts"
 PLUGINS_DIR="$OMZ_DIR/custom/plugins"
+DIRENV_CONFIG_DIR="$HOME/.config/direnv"
+DIRENV_TOML_DEST="$DIRENV_CONFIG_DIR/direnv.toml"
 
 
 # Function to check and install zsh if its not present
@@ -246,6 +249,13 @@ deploy_configs() {
     log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
     cp "$ALIASES_SOURCE" "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
     
+    # Deploy direnv config
+    if [ -f "$DIRENV_TOML_SOURCE" ]; then
+        log "Deploying direnv.toml to $DIRENV_TOML_DEST"
+        mkdir -p "$DIRENV_CONFIG_DIR"
+        cp "$DIRENV_TOML_SOURCE" "$DIRENV_TOML_DEST" || error "Failed to deploy direnv.toml"
+    fi
+
     # Deploy utility scripts directory
     if [ -d "$SCRIPTS_SOURCE" ]; then
         log "Deploying scripts directory from $SCRIPTS_SOURCE to $SCRIPTS_DEST"
@@ -298,6 +308,7 @@ main() {
     info "Deployed files:"
     echo "  - .zshrc -> $ZSHRC_DEST"
     echo "  - aliases.zsh -> $ALIASES_DEST"
+    [ -f "$DIRENV_TOML_SOURCE" ] && echo "  - direnv.toml -> $DIRENV_TOML_DEST"
     if [ -d "$SCRIPTS_SOURCE" ]; then
         info "Deployed scripts:"
         for script in "$SCRIPTS_SOURCE"/*; do
