@@ -8,17 +8,19 @@ disable-model-invocation: true
 
 Workflow for updating/creating the persistent memory bank documentation that maintains project context across Claude Code sessions.
 
+**Important:** All paths in this skill are relative to the project root (current working directory), not the global `~/.claude/` directory. Each project maintains its own independent memory bank.
+
 ## Update Process
 
 ### Step 1: Review or Initialize Memory Bank
 
 **If memory bank exists:**
 
-- Read all files in `.claude/skills/workflow-memory-bank/artifacts/` to understand current documentation state
+- Read all files in `.claude/skills/workflow-memory-bank/` to understand current documentation state
 
 **If memory bank is missing:**
 
-- Create `.claude/skills/workflow-memory-bank/artifacts/` directory
+- Create `.claude/skills/workflow-memory-bank/` directory
 - Initialize all core files with basic structure:
   - `projectBrief.md` - Gather from README, package files, and project structure
   - `productContext.md` - Derive from existing documentation and code purpose
@@ -84,7 +86,7 @@ Focus updates on the most dynamic files:
 
 ## Additional Context Files
 
-Create additional files/folders within `.claude/skills/workflow-memory-bank/artifacts/` when needed:
+Create additional files/folders within `.claude/skills/workflow-memory-bank/` when needed:
 
 - **Complex features** - `features/[feature-name].md`
 - **API specifications** - `api/[service-name].md`
