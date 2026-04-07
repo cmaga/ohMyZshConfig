@@ -11,23 +11,27 @@ Manage JIRA tickets using jira-cli by ankitpokhrel.
 
 Run this check at the start of **every invocation** to detect setup state and route accordingly.
 
+> **Path convention:** All file paths in this skill are relative to the **project root**
+> (the git repository root / current working directory where Claude is invoked).
+> They are NOT relative to the skill definition directory (`~/.claude/skills/jira/`).
+
 ### Detection
 
-Check these three items in order:
+Check these items in order (all paths are relative to the project root):
 
 1. **jira-cli installed?** — `command -v jira`
-2. **API token available?** — `.envrc` exists with `JIRA_API_TOKEN`
-3. **Skill config exists?** — `.claude/skills/jira/config.json`
-4. **jira-cli initialized?** — `.claude/skills/jira/.jira-config.yml` exists
+2. **API token available?** — `<project-root>/.envrc` exists with `JIRA_API_TOKEN`
+3. **Skill config exists?** — `<project-root>/.claude/skills/jira/config.json`
+4. **jira-cli initialized?** — `<project-root>/.claude/skills/jira/.jira-config.yml` exists
 
 ### Routing
 
-| State                   | Has jira-cli | Has token | Has config.json | Has .jira-config.yml | Action                 |
-| ----------------------- | ------------ | --------- | --------------- | -------------------- | ---------------------- |
-| Fresh                   | No           | No        | No              | No                   | Full setup (Steps 1-5) |
-| Partial: token only     | Yes          | Yes       | No              | No                   | Steps 3-5              |
-| Partial: token + config | Yes          | Yes       | Yes             | No                   | Steps 4-5              |
-| Ready                   | Yes          | Yes       | Yes             | Yes                  | Execute commands       |
+| State                   | Has jira-cli | Has token | Has config.json | Has .jira-config.yml | Action                             |
+| ----------------------- | ------------ | --------- | --------------- | -------------------- | ---------------------------------- |
+| Fresh                   | No           | No        | No              | No                   | Full setup (Steps 1-5)             |
+| Partial: token only     | Yes          | Yes       | No              | No                   | Steps 3-5                          |
+| Partial: token + config | Yes          | Yes       | Yes             | No                   | Steps 4-5                          |
+| Ready                   | Yes          | Yes       | Yes             | Yes                  | Load config, then execute commands |
 
 Skip any step whose artifact already exists. Always end with the verification step.
 
@@ -49,7 +53,7 @@ Verify: `command -v jira`
 
 ```bash
 export JIRA_API_TOKEN="<token-from-user>"
-export JIRA_CONFIG_FILE=".claude/skills/jira/.jira-config.yml"
+export JIRA_CONFIG_FILE="$PWD/.claude/skills/jira/.jira-config.yml"
 ```
 
 4. Add `.envrc` to `.gitignore`:
@@ -100,7 +104,7 @@ jira init
 `JIRA_CONFIG_FILE` tells jira-cli where to write its config. Verify the file was created:
 
 ```bash
-test -f ".claude/skills/jira/.jira-config.yml" && echo "OK" || echo "MISSING"
+test -f "$PWD/.claude/skills/jira/.jira-config.yml" && echo "OK" || echo "MISSING"
 ```
 
 During init, select:
@@ -118,9 +122,28 @@ jira me
 
 ## Execute Commands
 
+### Load Config (mandatory)
+
+Before running any command, read `<project-root>/.claude/skills/jira/config.json` and substitute all `{placeholder}` values in commands with the corresponding config values.
+
+**Jira CLI flags** (substitute into every relevant command):
+
+- `-p {projectKey}` -- every `jira issue` command
+- `-l{label}` for each entry in `config.labels` -- on `issue create` and `issue list`. Omit if the array is empty
+- `config.transitions.<status>` -- use the mapped string as the target on `issue move`
+
+**Git workflow** (substitute when creating branches, commits, or PRs):
+
+- `branchFormat` -- interpolate `{username}`, `{ticketId}`, `{description}` to build branch names
+- `commitFormat` -- interpolate `{ticketId}`, `{message}` to build commit messages
+- `baseBranch` -- use as the base ref when creating feature branches
+- `prTemplate` -- interpolate `{ticketId}` and use as the PR description body
+
+Do not run any jira command without first reading this file.
+
 ### Config Reference
 
-Location: `.claude/skills/jira/config.json`
+Location: `<project-root>/.claude/skills/jira/config.json`
 
 | Field              | Description              |
 | ------------------ | ------------------------ |
@@ -188,14 +211,18 @@ jira issue move {ticketId} "{transitions.inProgress}"
 **Create issue:**
 
 ```bash
-jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" --no-input
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -l{label} --no-input
 ```
+
+Include `-l{label}` for each label in `config.labels`. Omit if the array is empty.
 
 For long descriptions, write content to a temp file first, then pass via stdin:
 
 ```bash
-cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary" --no-input
+cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary" -l{label} --no-input
 ```
+
+Include `-l{label}` for each label in `config.labels`. Omit if the array is empty.
 
 **Add comment:**
 
