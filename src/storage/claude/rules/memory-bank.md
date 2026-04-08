@@ -34,7 +34,7 @@ projectBrief.md
 
 ## Reading Instructions
 
-1. Check if `.claude/skills/workflow-memory-bank/` directory exists at the project root (the current working directory — NOT the global `~/.claude/` directory). The memory bank is project-specific and will never be in the global config. It is an optional tool that will not always be available.
+1. Check if `.claude/workflows/workflow-memory-bank/` directory exists at the project root (the current working directory — NOT the global `~/.claude/` directory). The memory bank is project-specific and will never be in the global config. It is an optional tool that will not always be available.
 2. If it exists, read ALL core files to establish complete context.
 3. Pay special attention to **activeContext.md** and **progress.md** for the most recent state
 4. Use this context to inform all decisions and maintain consistency
