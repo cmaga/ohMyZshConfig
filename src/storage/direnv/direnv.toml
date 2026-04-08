@@ -1,2 +1,2 @@
 [global]
-warn_timeout = "20s"
+warn_timeout = "5s"

@@ -189,16 +189,14 @@ Common structure:
 {If any}
 ```
 
-Plans are written to `./plans/` relative to the repo root. Naming convention:
+Plans are written to `.claude/skills/task-planner/plans/`. Naming convention:
 
 ```
-plans/
+.claude/skills/task-planner/plans/
   plan-STAX-42-small.md
   plan-STAX-78-medium.md
   plan-STAX-112-large.md
 ```
-
-The `plans/` directory is gitignored.
 
 ---
 

@@ -54,12 +54,12 @@ The plan must include:
 - Per card: files to touch, implementation steps, constraints, test expectations
 - Done criteria: verifiable conditions
 
-Write to: `./plans/plan-{TICKET}-medium.md`
+Write to: `.claude/skills/task-planner/plans/plan-{TICKET}-medium.md`
 
 ### Step 5: Done
 
 Tell the user:
 
 ```
-Plan written to plans/plan-{TICKET}-medium.md
+Plan written to .claude/skills/task-planner/plans/plan-{TICKET}-medium.md
 ```

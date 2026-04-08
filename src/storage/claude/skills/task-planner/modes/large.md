@@ -60,7 +60,7 @@ Present each reviewer's findings to the user. The user can accept, adjust, or ov
 
 ### Step 6: Finalize Plan
 
-Incorporate approved review feedback into the plan. Write the final version to: `./plans/plan-{TICKET}-large.md`
+Incorporate approved review feedback into the plan. Write the final version to: `.claude/skills/task-planner/plans/plan-{TICKET}-large.md`
 
 The plan must include:
 
@@ -78,5 +78,5 @@ The plan must include:
 Tell the user:
 
 ```
-Plan written to plans/plan-{TICKET}-large.md
+Plan written to .claude/skills/task-planner/plans/plan-{TICKET}-large.md
 ```

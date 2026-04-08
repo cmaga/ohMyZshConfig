@@ -47,37 +47,50 @@ if command -v direnv &>/dev/null; then
   if [[ -z "${chpwd_functions[(r)_lazy_direnv_hook]+1}" ]]; then
     chpwd_functions=( _lazy_direnv_hook ${chpwd_functions[@]} )
   fi
-  _lazy_direnv_hook
+  [[ "$PWD" != "$HOME" ]] && _lazy_direnv_hook
 fi
 
 # User configuration
 alias aconf="vim $HOME/.oh-my-zsh/custom/aliases.zsh"
 
-# Load zsh-completions
-autoload -U compinit && compinit
-
-# NVM Configuration - MUST be set before OS-specific configurations
+# NVM Configuration
 export NVM_DIR="$HOME/.nvm"
 
-# Claude defualt model shell env
+# Lazy NVM loader - defers sourcing nvm.sh until first use
+_nvm_lazy_load() {
+  local nvm_sh="$1" nvm_comp="$2"
+
+  _nvm_load() {
+    unset -f nvm node npm npx pnpm yarn 2>/dev/null
+    [ -s "$nvm_sh" ] && source "$nvm_sh"
+    [ -n "$nvm_comp" ] && [ -s "$nvm_comp" ] && source "$nvm_comp"
+    unset -f _nvm_load 2>/dev/null
+  }
+
+  nvm()  { _nvm_load; nvm "$@"; }
+  node() { _nvm_load; node "$@"; }
+  npm()  { _nvm_load; npm "$@"; }
+  npx()  { _nvm_load; npx "$@"; }
+  pnpm() { _nvm_load; pnpm "$@"; }
+  yarn() { _nvm_load; yarn "$@"; }
+}
+
+# Claude default model shell env
 export ANTHROPIC_MODEL="sonnet"
 
 # OS-specific configurations
 case "$OSTYPE" in
 darwin*)
     # macOS specific settings
-    [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh" # Apple Silicon
-    [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && source "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
-    
+    _nvm_lazy_load "/opt/homebrew/opt/nvm/nvm.sh" "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+
     # Add macOS specific paths
-    export PATH="/opt/homebrew/bin:$PATH"
     export PATH="$HOME/.local/bin:$PATH"
     ;;
-    
+
 linux*)
     # Linux specific settings
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+    _nvm_lazy_load "$NVM_DIR/nvm.sh" "$NVM_DIR/bash_completion"
     ;;
     
 msys*|cygwin*|mingw*)
@@ -145,8 +158,7 @@ msys*|cygwin*|mingw*)
     
 *)
     # Unknown OS, try common locations
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+    _nvm_lazy_load "$NVM_DIR/nvm.sh" "$NVM_DIR/bash_completion"
     ;;
 esac
 

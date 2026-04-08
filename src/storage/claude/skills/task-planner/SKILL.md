@@ -18,8 +18,7 @@ Generate implementation plans consumed by Claude Code. Claude plans, the executo
 ## Setup
 
 ```bash
-grep -q "^plans/" .gitignore || echo "plans/" >> .gitignore
-mkdir -p plans
+mkdir -p .claude/skills/task-planner/plans
 ```
 
 ## Step 1: Extract Ticket
@@ -48,12 +47,12 @@ If user provides tier in initial message (e.g., "STAX-42 small"), skip this step
 
 ## Plan Output
 
-Plans are written to `./plans/` in the project root:
+Plans are written to `.claude/skills/task-planner/plans/`:
 
 ```
-plans/plan-STAX-42-small.md
-plans/plan-STAX-78-medium.md
-plans/plan-STAX-112-large.md
+.claude/skills/task-planner/plans/plan-STAX-42-small.md
+.claude/skills/task-planner/plans/plan-STAX-78-medium.md
+.claude/skills/task-planner/plans/plan-STAX-112-large.md
 ```
 
 ## Card Strategy Concepts

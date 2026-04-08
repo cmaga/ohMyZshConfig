@@ -40,14 +40,14 @@ Fill in:
 - Done criteria: from acceptance criteria
 - Card strategy: single card (or 2 cards if UI prototyping)
 
-Write to: `./plans/plan-{TICKET}-small.md`
+Write to: `.claude/skills/task-planner/plans/plan-{TICKET}-small.md`
 
 ### Step 4: Done
 
 Tell the user:
 
 ```
-Plan written to plans/plan-{TICKET}-small.md
+Plan written to .claude/skills/task-planner/plans/plan-{TICKET}-small.md
 ```
 
 Move to the next ticket.
