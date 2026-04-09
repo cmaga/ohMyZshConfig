@@ -62,11 +62,21 @@ _nvm_lazy_load() {
   _NVM_LAZY_COMP="$2"
 
   _nvm_load() {
-    unset -f nvm node npm npx pnpm yarn 2>/dev/null
-    [ -s "$_NVM_LAZY_SH" ] && source "$_NVM_LAZY_SH"
-    [ -n "$_NVM_LAZY_COMP" ] && [ -s "$_NVM_LAZY_COMP" ] && source "$_NVM_LAZY_COMP"
+    # Guard against re-entry during nvm.sh sourcing (nvm use default -> node --version)
+    [[ -n "$_NVM_LOADING" ]] && return
+    _NVM_LOADING=1
+
+    # Save paths before cleanup
+    local _sh="$_NVM_LAZY_SH" _comp="$_NVM_LAZY_COMP"
     unset _NVM_LAZY_SH _NVM_LAZY_COMP
-    unset -f _nvm_load 2>/dev/null
+
+    # Remove all stubs AND this loader before sourcing nvm.sh
+    unset -f nvm node npm npx pnpm yarn _nvm_load 2>/dev/null
+
+    [ -s "$_sh" ] && source "$_sh"
+    [ -n "$_comp" ] && [ -s "$_comp" ] && source "$_comp"
+
+    unset _NVM_LOADING
   }
 
   nvm()  { _nvm_load; nvm "$@"; }
