@@ -62,29 +62,18 @@ _nvm_lazy_load() {
   _NVM_LAZY_COMP="$2"
 
   _nvm_load() {
-    # Guard against re-entry during nvm.sh sourcing (nvm use default -> node --version)
-    [[ -n "$_NVM_LOADING" ]] && return
-    _NVM_LOADING=1
-
-    # Save paths before cleanup
-    local _sh="$_NVM_LAZY_SH" _comp="$_NVM_LAZY_COMP"
-    unset _NVM_LAZY_SH _NVM_LAZY_COMP
-
-    # Remove all stubs AND this loader before sourcing nvm.sh
     unset -f nvm node npm npx pnpm yarn _nvm_load 2>/dev/null
-
-    [ -s "$_sh" ] && source "$_sh"
-    [ -n "$_comp" ] && [ -s "$_comp" ] && source "$_comp"
-
-    unset _NVM_LOADING
+    [ -s "$_NVM_LAZY_SH" ] && source "$_NVM_LAZY_SH"
+    [ -n "$_NVM_LAZY_COMP" ] && [ -s "$_NVM_LAZY_COMP" ] && source "$_NVM_LAZY_COMP"
+    unset _NVM_LAZY_SH _NVM_LAZY_COMP
   }
 
-  nvm()  { _nvm_load; nvm "$@"; }
-  node() { _nvm_load; node "$@"; }
-  npm()  { _nvm_load; npm "$@"; }
-  npx()  { _nvm_load; npx "$@"; }
-  pnpm() { _nvm_load; pnpm "$@"; }
-  yarn() { _nvm_load; yarn "$@"; }
+  nvm()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command nvm "$@"; }
+  node() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command node "$@"; }
+  npm()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command npm "$@"; }
+  npx()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command npx "$@"; }
+  pnpm() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command pnpm "$@"; }
+  yarn() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command yarn "$@"; }
 }
 
 # Claude default model shell env
