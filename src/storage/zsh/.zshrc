@@ -58,12 +58,14 @@ export NVM_DIR="$HOME/.nvm"
 
 # Lazy NVM loader - defers sourcing nvm.sh until first use
 _nvm_lazy_load() {
-  local nvm_sh="$1" nvm_comp="$2"
+  _NVM_LAZY_SH="$1"
+  _NVM_LAZY_COMP="$2"
 
   _nvm_load() {
     unset -f nvm node npm npx pnpm yarn 2>/dev/null
-    [ -s "$nvm_sh" ] && source "$nvm_sh"
-    [ -n "$nvm_comp" ] && [ -s "$nvm_comp" ] && source "$nvm_comp"
+    [ -s "$_NVM_LAZY_SH" ] && source "$_NVM_LAZY_SH"
+    [ -n "$_NVM_LAZY_COMP" ] && [ -s "$_NVM_LAZY_COMP" ] && source "$_NVM_LAZY_COMP"
+    unset _NVM_LAZY_SH _NVM_LAZY_COMP
     unset -f _nvm_load 2>/dev/null
   }
 

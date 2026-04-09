@@ -22,22 +22,30 @@ Check these items in order (all paths are relative to the project root):
 1. **jira-cli installed?** — `command -v jira`
 2. **API token available?** — `<project-root>/.envrc` exists with `JIRA_API_TOKEN`
 3. **Skill config exists?** — `<project-root>/.claude/skills/jira/config.json`
-4. **jira-cli initialized?** — `<project-root>/.claude/skills/jira/.jira-config.yml` exists
+4. **jira-cli config exists?** — file exists at the path specified by `$JIRA_CONFIG_FILE` (read from `.envrc`)
 
 ### Routing
 
-| State                   | Has jira-cli | Has token | Has config.json | Has .jira-config.yml | Action                             |
-| ----------------------- | ------------ | --------- | --------------- | -------------------- | ---------------------------------- |
-| Fresh                   | No           | No        | No              | No                   | Full setup (Steps 1-5)             |
-| Partial: token only     | Yes          | Yes       | No              | No                   | Steps 3-5                          |
-| Partial: token + config | Yes          | Yes       | Yes             | No                   | Steps 4-5                          |
-| Ready                   | Yes          | Yes       | Yes             | Yes                  | Load config, then execute commands |
+**If ALL checks pass** → Load config, execute commands (see "Execute Commands" below).
 
-Skip any step whose artifact already exists. Always end with the verification step.
+**If ANY check fails** → Hard stop. Do not attempt workarounds or fallbacks. Report which
+check(s) failed and tell the user:
 
-## Setup Steps
+> "Jira is not fully configured for this project. Invoke this skill in setup mode
+> (e.g. 'set up jira' or 'jira setup') to complete configuration."
+
+Then stop. Do not proceed with any jira commands.
+
+## Setup Mode
+
+Setup mode is triggered when the user explicitly asks to set up or configure jira
+(e.g. "set up jira", "jira setup", "configure jira for this project").
+
+Walk through these steps conversationally, asking the user for each piece of information.
 
 ### Step 1: Install jira-cli
+
+Skip if `command -v jira` succeeds.
 
 ```bash
 brew install jira-cli
@@ -45,24 +53,42 @@ brew install jira-cli
 
 Verify: `command -v jira`
 
-### Step 2: Configure API Token
+### Step 2: Collect Configuration
 
-1. Provide this link: https://id.atlassian.com/manage-profile/security/api-tokens
-2. Ask the user to create a token and paste it
-3. Create `.envrc` in the project root:
+Ask the user for each of these values conversationally. Present each question one at a time
+or in a natural grouping:
+
+- **server**: Atlassian URL (e.g., `https://company.atlassian.net`)
+- **email**: Login email
+- **installationType**: Usually "cloud"
+- **username**: For branch naming (e.g., cmagana)
+- **projectKey**: JIRA project key (e.g., STAX)
+- **labels**: Default label filters (empty array if none)
+- **transitions**: Status names for their board (backlog, inProgress, inReview, done, etc.)
+- **API token**: Direct the user to https://id.atlassian.com/manage-profile/security/api-tokens to create one, then ask them to paste it
+
+### Step 3: Write Skill Config
+
+Create `<project-root>/.claude/skills/jira/config.json` using the collected values.
+Use the template at [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json)
+as the structure, substituting the user's values.
+
+### Step 4: Create .envrc
+
+Create `<project-root>/.envrc` with:
 
 ```bash
 export JIRA_API_TOKEN="<token-from-user>"
 export JIRA_CONFIG_FILE="$PWD/.claude/skills/jira/.jira-config.yml"
 ```
 
-4. Add `.envrc` to `.gitignore`:
+Add `.envrc` to `.gitignore`:
 
 ```bash
 grep -q '^\\.envrc$' .gitignore || echo '.envrc' >> .gitignore
 ```
 
-5. Load the environment:
+Load the environment:
 
 ```bash
 # If direnv is installed:
@@ -72,53 +98,45 @@ direnv allow
 source .envrc
 ```
 
-6. Verify both vars are set:
+Verify both vars are set:
 
 ```bash
 echo "TOKEN=${JIRA_API_TOKEN:+set}" && echo "CONFIG=${JIRA_CONFIG_FILE:+set}"
 ```
 
-### Step 3: Create Skill Config
+### Step 5: Initialize jira-cli
 
-Ask user for:
-
-- **server**: Atlassian URL (e.g., https://company.atlassian.net)
-- **email**: Login email
-- **installationType**: Usually "cloud"
-- **username**: For branch naming (e.g., cmagana)
-- **projectKey**: JIRA project key (e.g., STAX)
-- **labels**: Default label filters (empty array = show all)
-- **transitions**: Status names for their board
-
-Create `.claude/skills/jira/config.json` using template:
-[dependencies/templates/jira-config.json](dependencies/templates/jira-config.json)
-
-### Step 4: Initialize jira-cli
-
-Ensure `.envrc` is loaded first (`source .envrc` or `direnv allow`), then:
+Ensure `.envrc` is loaded first, then run:
 
 ```bash
 jira init
 ```
 
-`JIRA_CONFIG_FILE` tells jira-cli where to write its config. Verify the file was created:
+`jira init` reads `JIRA_CONFIG_FILE` and writes its config directly to that path.
+
+During init, the following prompts appear. Enter the values collected in Step 2:
+
+| Prompt              | What to enter                                         |
+| ------------------- | ----------------------------------------------------- |
+| Installation type   | Select "Cloud" (or the value from `installationType`) |
+| Link to Jira server | Enter the `server` URL                                |
+| Login email         | Enter the `email`                                     |
+| Default board       | Select the appropriate board for the project          |
+| Default project     | Enter the `projectKey`                                |
+
+After init completes, verify the config was written:
 
 ```bash
-test -f "$PWD/.claude/skills/jira/.jira-config.yml" && echo "OK" || echo "MISSING"
+test -f "$JIRA_CONFIG_FILE" && echo "OK" || echo "MISSING"
 ```
 
-During init, select:
-
-- "Cloud" for Atlassian Cloud
-- Server URL from config
-- Login email from config
-- Default project from config
-
-### Step 5: Verify Connection
+### Step 6: Verify Connection
 
 ```bash
 jira me
 ```
+
+If this returns the user's account info, setup is complete.
 
 ## Execute Commands
 
@@ -158,6 +176,12 @@ Location: `<project-root>/.claude/skills/jira/config.json`
 | `labels`           | Default label filters    |
 | `transitions`      | Board transition names   |
 | `prTemplate`       | PR description template  |
+
+### Non-interactive Output
+
+jira-cli does not support `--no-pager`. For non-interactive, scriptable output use
+`--plain` and `--no-headers`. These flags suppress the interactive TUI and produce
+plain text suitable for parsing.
 
 ### Flag Compatibility
 
@@ -237,4 +261,5 @@ For complete command documentation, see:
 
 ## Pre-flight Check (repeat for attention)
 
-Always run the detection check at the top of this file before executing commands. Handle partial setup states — never assume full setup or no setup.
+Always run the detection check at the top of this file before executing commands.
+If any check fails, hard stop and direct the user to setup mode.
