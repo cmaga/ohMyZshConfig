@@ -88,15 +88,39 @@ check_install_curl() {
     fi
 }
 
+# function to install jq if not present
+check_install_jq() {
+    print_status "info" "Checking for jq..."
+
+    if command_exists jq; then
+        local jq_version=$(jq --version 2>/dev/null || echo "unknown")
+        print_status "success" "jq found ($jq_version)"
+        return 0
+    fi
+
+    print_status "warning" "jq not found"
+    install_package "jq"
+
+    # Verify installation
+    if command_exists jq; then
+        local jq_version=$(jq --version 2>/dev/null || echo "unknown")
+        print_status "success" "jq installed successfully ($jq_version)"
+    else
+        print_status "error" "jq installation failed"
+        exit 1
+    fi
+}
+
 # Main function
 main() {
     echo
     print_status "info" "Installing simple dependencies..."
     echo
-    
+
     check_install_git
     check_install_curl
     check_install_direnv
+    check_install_jq
     
     echo
     print_status "success" "Simple dependencies installed!"

@@ -114,6 +114,33 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         fi
     fi
 
+    # Deploy hooks (merge into ~/.claude/settings.json)
+    HOOKS_SOURCE="$CLAUDE_CONFIG_SOURCE/hooks.json"
+    SETTINGS_DEST="$CLAUDE_DIR/settings.json"
+
+    if [ -f "$HOOKS_SOURCE" ]; then
+        hooks_count=$(jq '.hooks | length' "$HOOKS_SOURCE" 2>/dev/null)
+        if [ "$hooks_count" -gt 0 ] 2>/dev/null; then
+            print_status "info" "Deploying Claude hooks..."
+
+            if ! command_exists jq; then
+                error "jq is required to deploy hooks — install it with: brew install jq"
+            fi
+
+            if [ ! -f "$SETTINGS_DEST" ]; then
+                echo '{}' > "$SETTINGS_DEST"
+            fi
+
+            jq -s '.[0] * {"hooks": .[1].hooks}' "$SETTINGS_DEST" "$HOOKS_SOURCE" > "${SETTINGS_DEST}.tmp" \
+                && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
+                || error "Failed to merge hooks into settings.json"
+
+            print_status "success" "Hooks deployed to $SETTINGS_DEST"
+        else
+            print_status "info" "hooks.json has no hooks — skipping hooks deployment"
+        fi
+    fi
+
     print_status "success" "Claude Code configurations deployed successfully!"
 else
     error "Claude Code configuration directory not found at $CLAUDE_CONFIG_SOURCE"
@@ -125,5 +152,6 @@ echo "  - CLAUDE.md -> $CLAUDE_DIR/CLAUDE.md"
 echo "  - Rules -> $CLAUDE_DIR/rules/"
 echo "  - Skills -> $CLAUDE_SKILLS_DEST"
 echo "  - Agents -> $CLAUDE_AGENTS_DEST"
+echo "  - Hooks -> $SETTINGS_DEST (merged)"
 
 print_status "success" "Claude Code deployment complete!"

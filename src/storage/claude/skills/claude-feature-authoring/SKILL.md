@@ -34,6 +34,30 @@ Before creating anything new, check if the problem is already solved.
 
 If an existing feature covers the use case, tell the user it exists and how to invoke it. If it's close but needs improvement, recommend improving it rather than building from scratch.
 
+## Output Location
+
+Determine where to write based on the feature scope identified in Phase 1.
+
+**Project-scoped features:** Write to `.claude/` in the current project directory. Create the directory if it does not exist.
+
+| Feature   | Write to                            |
+| --------- | ----------------------------------- |
+| CLAUDE.md | `./CLAUDE.md` (project root)        |
+| Rules     | `./.claude/rules/`                  |
+| Skills    | `./.claude/skills/<name>/`          |
+| Agents    | `./.claude/agents/`                 |
+| Hooks     | `./.claude/settings.json` or `./.claude/settings.local.json` |
+
+**Global features:** Write to the version-controlled source repo, not directly to `~/.claude/`. After writing, remind the user to run `make deploy-claude` from `~/dev/personal/ohMyZshConfig`.
+
+| Feature   | Write to                                                         |
+| --------- | ---------------------------------------------------------------- |
+| CLAUDE.md | `~/dev/personal/ohMyZshConfig/src/storage/claude/CLAUDE.md`      |
+| Rules     | `~/dev/personal/ohMyZshConfig/src/storage/claude/rules/`         |
+| Skills    | `~/dev/personal/ohMyZshConfig/src/storage/claude/skills/<name>/` |
+| Agents    | `~/dev/personal/ohMyZshConfig/src/storage/claude/agents/`        |
+| Hooks     | `~/dev/personal/ohMyZshConfig/src/storage/claude/hooks.json`     |
+
 ## Present Plan Before Writing
 
 Summarize your findings before authoring anything and wait for user approval:
