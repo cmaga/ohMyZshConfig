@@ -10,3 +10,10 @@ The path to the vault is '~/dev/vault'. Projects are located in company director
   Cross-project knowledge: ../../vault/brain/
 
 Before making architectural decisions or modifying core systems, consult the vault if it exists.
+
+A global graphify knowledge graph is available at ~/vault/graphify-out/.
+
+Rules:
+
+- Before answering architecture or codebase questions, read ~/vault/graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If ~/vault/graphify-out/wiki/index.md exists, navigate it instead of reading raw files

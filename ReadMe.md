@@ -47,14 +47,15 @@ make setup
 
 ### `make setup` (all platforms)
 
-Runs in 6 phases:
+Runs in 7 phases:
 
 1. **Phase 0** — Sets script permissions and configures git hooks path
 2. **Phase 1** — Simple dependencies (git, curl)
-3. **Phase 2** — Zsh deployment (installs zsh, sets default shell, installs Oh-My-Zsh, plugins, deploys configs)
-4. **Phase 3** — Git deployment (deploys git configs)
-5. **Phase 4** — Cline deployment (deploys Cline CLI + configs)
-6. **Phase 5** — Finalization (offers to reload shell configuration)
+3. **Phase 2** — Company setup (company directories + SSH key generation)
+4. **Phase 3** — Zsh deployment (installs zsh, sets default shell, installs Oh-My-Zsh, plugins, deploys configs)
+5. **Phase 4** — Git deployment (deploys git configs)
+6. **Phase 5** — Claude Code deployment (installs Claude Code CLI, deploys CLAUDE.md, rules, skills, agents, hooks)
+7. **Phase 6** — Finalization (offers to reload shell configuration)
 
 All deployment scripts are **idempotent** — they safely skip steps that are already complete.
 
@@ -62,13 +63,13 @@ All deployment scripts are **idempotent** — they safely skip steps that are al
 
 | Command             | Description                                                    |
 | ------------------- | -------------------------------------------------------------- |
-| `make setup`        | Full setup: system prerequisites → plugins → config deployment |
-| `make deploy`       | Deploy all configs (zsh, git, cline) to local system           |
-| `make deploy-zsh`   | Deploy zsh (installs zsh/omz if needed, deploys configs)       |
-| `make deploy-git`   | Deploy only git configs (.gitconfig, company profiles)         |
-| `make deploy-cline` | Deploy only Cline configs (rules, workflows, skills)           |
-| `make lint`         | Format files and run lint checks                               |
-| `make help`         | Show available commands                                        |
+| `make setup`         | Full setup: system prerequisites → plugins → config deployment        |
+| `make deploy`        | Deploy all configs (zsh, git, claude) to local system                 |
+| `make deploy-zsh`    | Deploy zsh (installs zsh/omz if needed, deploys configs)              |
+| `make deploy-git`    | Deploy only git configs (.gitconfig, company profiles)                |
+| `make deploy-claude` | Deploy only Claude Code configs (CLAUDE.md, rules, skills, agents)    |
+| `make lint`          | Format files and run lint checks                                      |
+| `make help`          | Show available commands                                               |
 
 ### Regular Workflow
 
@@ -121,32 +122,34 @@ Features:
 
 Both the Linux/macOS system setup and the Windows PowerShell script install [Claude Code](https://claude.ai) CLI automatically. It is available as `claude` after setup completes.
 
-## ⚙️ Cline Configuration Management
+## Claude Code Configuration Management
 
-The repository includes centralized Cline (AI coding assistant) configuration management:
+The repository includes centralized Claude Code configuration management:
 
-### Cline Configuration Files
+### Claude Code Configuration Files
 
-- `src/storage/cline/rules/` — Global rules applied to all projects
-- `src/storage/cline/workflows/` — Reusable workflow instructions
-- `src/storage/cline/hooks/` — Hook scripts for Cline events
-- `src/storage/cline/skills/` — Custom skills with dependencies
+- `src/storage/claude/CLAUDE.md` — Global CLAUDE.md applied to every project
+- `src/storage/claude/rules/` — Modular rule files (CLI usage, code quality, memory bank, knowledge vault, etc.)
+- `src/storage/claude/skills/` — Custom skills with optional repository dependencies
+- `src/storage/claude/agents/` — Subagent definitions
+- `src/storage/claude/hooks.json` — Hook config merged into `~/.claude/settings.json` at deploy time
 
 ### Deployment Locations
 
-| Config Type | Deployed To                    |
-| ----------- | ------------------------------ |
-| Rules       | `~/Documents/Cline/Rules/`     |
-| Workflows   | `~/Documents/Cline/Workflows/` |
-| Hooks       | `~/Documents/Cline/Hooks/`     |
-| Skills      | `~/.cline/skills/`             |
+| Config Type | Deployed To                               |
+| ----------- | ----------------------------------------- |
+| CLAUDE.md   | `~/.claude/CLAUDE.md`                     |
+| Rules       | `~/.claude/rules/`                        |
+| Skills      | `~/.claude/skills/`                       |
+| Agents      | `~/.claude/agents/`                       |
+| Hooks       | `~/.claude/settings.json` (merged via jq) |
 
 ### Skills and Repository Dependencies
 
 Skills may include repository dependencies (e.g., reference documentation). These are:
 
 - **Not tracked in git** — Listed in `.gitignore`
-- **Cloned during deployment** — The `update-repo.zsh` script in each skill fetches required repos
+- **Cloned at deploy time** — If a skill has `dependencies/scripts/update-repo.zsh`, it runs after the skill is copied to clone or update the required repos
 
 This keeps the repository lightweight while ensuring dependencies are available after deployment.
 
@@ -209,11 +212,14 @@ ohMyZshConfig/
 │   │   │   ├── .gitconfig      # Main git configuration
 │   │   │   ├── gitconfig-gsi   # GSI-specific git settings
 │   │   │   └── gitconfig-ms    # MS-specific git settings
-│   │   ├── cline/              # Cline AI assistant configurations
-│   │   │   ├── rules/          # Global rules for all projects
-│   │   │   ├── workflows/      # Reusable workflow instructions
-│   │   │   ├── hooks/          # Hook scripts for Cline events
-│   │   │   └── skills/         # Custom skills with dependencies
+│   │   ├── claude/             # Claude Code configurations
+│   │   │   ├── CLAUDE.md       # Global CLAUDE.md (deployed to ~/.claude/CLAUDE.md)
+│   │   │   ├── rules/          # Modular rule files
+│   │   │   ├── skills/         # Custom skills with optional dependencies
+│   │   │   ├── agents/         # Subagent definitions
+│   │   │   └── hooks.json      # Merged into ~/.claude/settings.json at deploy time
+│   │   ├── direnv/
+│   │   │   └── direnv.toml     # direnv configuration (deployed to ~/.config/direnv/)
 │   │   └── scripts/            # User utility scripts (deployed to ~/.oh-my-zsh/custom/scripts/)
 │   │       └── ssh-key-generator.zsh
 │   └── deployment/             # Deployment scripts (how things get deployed)
@@ -225,28 +231,28 @@ ohMyZshConfig/
 │       │   ├── linux/
 │       │   │   └── 01-bootstrap.sh
 │       │   └── windows/
-│       │       ├── bootstrap.ps1       # PowerShell entry point (calls 01-bootstrap.sh)
+│       │       ├── windows-bootstrap-1.ps1 # PowerShell entry point
 │       │       └── 01-bootstrap.sh
 │       ├── 02-simple-deps.zsh          # Simple dependencies (git, curl)
 │       ├── 03-company-setup.zsh        # Company directories & SSH key generation
 │       ├── 04-deploy-zsh.zsh           # Deploy zsh (install, omz, plugins, configs)
 │       ├── 05-deploy-git.zsh           # Deploy git configs (.gitconfig, company profiles)
-│       ├── 06-deploy-cline.zsh         # Deploy Cline CLI + configs (rules, workflows, skills)
+│       ├── 06-deploy-claude.zsh        # Deploy Claude Code CLI + configs (CLAUDE.md, rules, skills, agents, hooks)
 │       └── 07-finalize.zsh             # Final cleanup and shell reload prompt
 └── README.md                   # This file
 ```
 
 ### Script Numbering Convention
 
-| Number | Phase         | Scripts                                                |
-| ------ | ------------- | ------------------------------------------------------ |
-| 01     | Bootstrap     | Platform-specific bootstrap (first script to run)      |
-| 02     | Simple Deps   | Basic tools that don't need configuration (git, curl)  |
-| 03     | Company Setup | Company directories & SSH keys (optional)              |
-| 04     | Zsh Deploy    | Deploy zsh (install, omz, plugins, configs)            |
-| 05     | Git Deploy    | Deploy git configs (.gitconfig, company profiles)      |
-| 06     | Cline Deploy  | Deploy Cline CLI + configs (rules, workflows, skills)  |
-| 07     | Finalize      | Final cleanup and shell reload prompt (runs after all) |
+| Number | Phase         | Scripts                                                              |
+| ------ | ------------- | -------------------------------------------------------------------- |
+| 01     | Bootstrap     | Platform-specific bootstrap (first script to run)                    |
+| 02     | Simple Deps   | Basic tools that don't need configuration (git, curl)                |
+| 03     | Company Setup | Company directories & SSH keys (optional)                            |
+| 04     | Zsh Deploy    | Deploy zsh (install, omz, plugins, configs)                          |
+| 05     | Git Deploy    | Deploy git configs (.gitconfig, company profiles)                    |
+| 06     | Claude Deploy | Deploy Claude Code CLI + configs (CLAUDE.md, rules, skills, agents)  |
+| 07     | Finalize      | Final cleanup and shell reload prompt (runs after all)               |
 
 ### Idempotent Design
 
@@ -254,7 +260,7 @@ All scripts are designed to be **idempotent** — they can be run multiple times
 
 - If zsh is already installed, `04-deploy-zsh.zsh` skips installation
 - If Oh-My-Zsh exists, it skips that step too
-- If Cline CLI is already installed, `06-deploy-cline.zsh` skips installation
+- If the Claude Code CLI is already installed, `06-deploy-claude.zsh` skips installation
 - Each deploy script handles its full domain (installation + configuration)
 
 ## 🤝 Dev Notes

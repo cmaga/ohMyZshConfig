@@ -23,31 +23,36 @@ zstyle ':omz:update' mode auto
 # Initialization
 source $ZSH/oh-my-zsh.sh
 
-# Lazy direnv - chpwd only + initial load, 5s kill timeout via perl alarm
+# Lazy direnv - chpwd only + initial load, 5s kill timeout via perl alarm.
+# Function names intentionally omit the underscore prefix: Claude Code's shell
+# snapshot (~/.claude/shell-snapshots/snapshot-zsh-*.sh, re-sourced for every
+# Bash tool invocation) captures top-level function definitions but filters
+# out underscore-prefixed ones. Underscore names here would strand the chpwd
+# hook, so direnv never activates inside Claude Code's Bash tool.
 if command -v direnv &>/dev/null; then
-  _direnv_export() {
+  direnv_export() {
     eval "$(perl -e 'alarm 5; exec @ARGV' -- direnv export zsh 2>/dev/null)"
   }
 
-  _lazy_direnv_hook() {
+  lazy_direnv_hook() {
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
       if [[ -f "$dir/.envrc" ]]; then
-        _direnv_export
+        direnv_export
         return
       fi
       dir="${dir:h}"
     done
     if [[ -n "$DIRENV_DIR" ]]; then
-      _direnv_export
+      direnv_export
     fi
   }
 
   typeset -ag chpwd_functions
-  if [[ -z "${chpwd_functions[(r)_lazy_direnv_hook]+1}" ]]; then
-    chpwd_functions=( _lazy_direnv_hook ${chpwd_functions[@]} )
+  if [[ -z "${chpwd_functions[(r)lazy_direnv_hook]+1}" ]]; then
+    chpwd_functions=( lazy_direnv_hook ${chpwd_functions[@]} )
   fi
-  [[ "$PWD" != "$HOME" ]] && _lazy_direnv_hook
+  [[ "$PWD" != "$HOME" ]] && lazy_direnv_hook
 fi
 
 # User configuration
@@ -56,42 +61,48 @@ alias aconf="vim $HOME/.oh-my-zsh/custom/aliases.zsh"
 # NVM Configuration
 export NVM_DIR="$HOME/.nvm"
 
-# Lazy NVM loader - defers sourcing nvm.sh until first use
-_nvm_lazy_load() {
-  _NVM_LAZY_SH="$1"
-  _NVM_LAZY_COMP="$2"
-
-  _nvm_load() {
-    unset -f nvm node npm npx pnpm yarn _nvm_load 2>/dev/null
-    [ -s "$_NVM_LAZY_SH" ] && source "$_NVM_LAZY_SH"
-    [ -n "$_NVM_LAZY_COMP" ] && [ -s "$_NVM_LAZY_COMP" ] && source "$_NVM_LAZY_COMP"
-    unset _NVM_LAZY_SH _NVM_LAZY_COMP
-  }
-
-  nvm()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command nvm "$@"; }
-  node() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command node "$@"; }
-  npm()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command npm "$@"; }
-  npx()  { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command npx "$@"; }
-  pnpm() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command pnpm "$@"; }
-  yarn() { unset -f nvm node npm npx pnpm yarn; _nvm_load 2>/dev/null; command yarn "$@"; }
-}
-
 # Claude default model shell env
 export ANTHROPIC_MODEL="sonnet"
 
 # OS-specific configurations
 case "$OSTYPE" in
 darwin*)
-    # macOS specific settings
-    _nvm_lazy_load "/opt/homebrew/opt/nvm/nvm.sh" "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+    # Lazy nvm - defers sourcing nvm.sh until first node/npm/etc call. Eager
+    # sourcing invokes `node --version` on every shell startup, and the first
+    # cold-cache launch of any Developer-ID-signed binary on macOS can take
+    # minutes while syspolicyd runs full certificate validation. Non-underscore
+    # names so shims + init helper survive Claude Code's shell-snapshot filter
+    # (see direnv block above). Shims unset themselves before sourcing so nvm.sh
+    # can't re-enter them while loading.
+    nvm_lazy_init() {
+      unset -f nvm node npm npx pnpm yarn nvm_lazy_init
+      [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh"
+      [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && source "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+    }
+    nvm()  { nvm_lazy_init; command nvm "$@"; }
+    node() { nvm_lazy_init; command node "$@"; }
+    npm()  { nvm_lazy_init; command npm "$@"; }
+    npx()  { nvm_lazy_init; command npx "$@"; }
+    pnpm() { nvm_lazy_init; command pnpm "$@"; }
+    yarn() { nvm_lazy_init; command yarn "$@"; }
 
     # Add macOS specific paths
     export PATH="$HOME/.local/bin:$PATH"
     ;;
 
 linux*)
-    # Linux specific settings
-    _nvm_lazy_load "$NVM_DIR/nvm.sh" "$NVM_DIR/bash_completion"
+    # Lazy nvm - see darwin* branch for rationale
+    nvm_lazy_init() {
+      unset -f nvm node npm npx pnpm yarn nvm_lazy_init
+      [ -s "$HOME/.nvm/nvm.sh" ] && source "$HOME/.nvm/nvm.sh"
+      [ -s "$HOME/.nvm/bash_completion" ] && source "$HOME/.nvm/bash_completion"
+    }
+    nvm()  { nvm_lazy_init; command nvm "$@"; }
+    node() { nvm_lazy_init; command node "$@"; }
+    npm()  { nvm_lazy_init; command npm "$@"; }
+    npx()  { nvm_lazy_init; command npx "$@"; }
+    pnpm() { nvm_lazy_init; command pnpm "$@"; }
+    yarn() { nvm_lazy_init; command yarn "$@"; }
     ;;
     
 msys*|cygwin*|mingw*)
@@ -158,10 +169,30 @@ msys*|cygwin*|mingw*)
     ;;
     
 *)
-    # Unknown OS, try common locations
-    _nvm_lazy_load "$NVM_DIR/nvm.sh" "$NVM_DIR/bash_completion"
+    # Unknown OS fallback - lazy nvm, see darwin* branch for rationale
+    nvm_lazy_init() {
+      unset -f nvm node npm npx pnpm yarn nvm_lazy_init
+      [ -s "$HOME/.nvm/nvm.sh" ] && source "$HOME/.nvm/nvm.sh"
+      [ -s "$HOME/.nvm/bash_completion" ] && source "$HOME/.nvm/bash_completion"
+    }
+    nvm()  { nvm_lazy_init; command nvm "$@"; }
+    node() { nvm_lazy_init; command node "$@"; }
+    npm()  { nvm_lazy_init; command npm "$@"; }
+    npx()  { nvm_lazy_init; command npx "$@"; }
+    pnpm() { nvm_lazy_init; command pnpm "$@"; }
+    yarn() { nvm_lazy_init; command yarn "$@"; }
     ;;
 esac
+
+# Prewarm macOS code-signature validation cache once per boot, in background.
+# See src/storage/scripts/prewarm-cache.zsh for rationale. /tmp is cleared on
+# reboot so its sentinel naturally scopes to "once per boot."
+if [[ "$OSTYPE" == darwin* ]] && [[ ! -e /tmp/.zshrc-cache-prewarmed ]]; then
+  touch /tmp/.zshrc-cache-prewarmed
+  _prewarm="$HOME/.oh-my-zsh/custom/scripts/prewarm-cache.zsh"
+  [[ -x "$_prewarm" ]] && ( "$_prewarm" >/dev/null 2>&1 ) &!
+  unset _prewarm
+fi
 
 # Source custom aliases if file exists
 [ -f "$HOME/.oh-my-zsh/custom/aliases.zsh" ] && source "$HOME/.oh-my-zsh/custom/aliases.zsh"

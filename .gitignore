@@ -9,3 +9,6 @@ src/storage/claude/skills/*/dependencies/repos/*/
 # These are created at runtime in target projects
 src/storage/claude/skills/*/artifacts/*
 !src/storage/claude/skills/*/artifacts/.gitkeep
+
+# tasks locks for claude
+.claude/scheduled_tasks.lock
