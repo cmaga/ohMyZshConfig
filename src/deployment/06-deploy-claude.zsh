@@ -114,6 +114,24 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         fi
     fi
 
+    # Deploy executable hook scripts to ~/.claude/hooks/
+    HOOKS_SCRIPTS_SOURCE="$CLAUDE_CONFIG_SOURCE/hooks"
+    HOOKS_SCRIPTS_DEST="$CLAUDE_DIR/hooks"
+    if [ -d "$HOOKS_SCRIPTS_SOURCE" ]; then
+        script_count=$(find "$HOOKS_SCRIPTS_SOURCE" -name "*.sh" -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$script_count" -gt 0 ]; then
+            print_status "info" "Deploying Claude hook scripts..."
+            mkdir -p "$HOOKS_SCRIPTS_DEST" || error "Failed to create Claude hooks directory"
+            for src in "$HOOKS_SCRIPTS_SOURCE"/*.sh; do
+                [ -f "$src" ] || continue
+                dest="$HOOKS_SCRIPTS_DEST/$(basename "$src")"
+                cp "$src" "$dest" || error "Failed to copy $(basename "$src")"
+                chmod +x "$dest" || error "Failed to chmod +x $(basename "$src")"
+            done
+            print_status "success" "Hook scripts deployed to $HOOKS_SCRIPTS_DEST ($script_count files)"
+        fi
+    fi
+
     # Deploy hooks (merge into ~/.claude/settings.json)
     HOOKS_SOURCE="$CLAUDE_CONFIG_SOURCE/hooks.json"
     SETTINGS_DEST="$CLAUDE_DIR/settings.json"
@@ -131,14 +149,70 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
                 echo '{}' > "$SETTINGS_DEST"
             fi
 
-            jq -s '.[0] * {"hooks": .[1].hooks}' "$SETTINGS_DEST" "$HOOKS_SOURCE" > "${SETTINGS_DEST}.tmp" \
+            # Substitute $HOME in hook command paths at deploy time so the
+            # deployed settings.json has absolute paths and does not depend
+            # on Claude Code shell-expanding variables at hook invocation.
+            hooks_resolved=$(mktemp)
+            sed "s|\\\$HOME|$HOME|g" "$HOOKS_SOURCE" > "$hooks_resolved"
+
+            # Concat-plus-dedupe merge: per-event arrays are concatenated and
+            # deduplicated by exact JSON stringification. Repo entries always
+            # present; manual additions survive re-deploy.
+            jq -s '
+              .[0] as $existing
+              | .[1].hooks as $incoming
+              | $existing
+              | .hooks = (
+                  reduce ($incoming | keys_unsorted[]) as $event (($existing.hooks // {});
+                    .[$event] = ((.[$event] // []) + $incoming[$event] | unique_by(. | tostring))
+                  )
+                )
+            ' "$SETTINGS_DEST" "$hooks_resolved" > "${SETTINGS_DEST}.tmp" \
                 && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
-                || error "Failed to merge hooks into settings.json"
+                || { rm -f "$hooks_resolved"; error "Failed to merge hooks into settings.json"; }
+            rm -f "$hooks_resolved"
 
             print_status "success" "Hooks deployed to $SETTINGS_DEST"
         else
             print_status "info" "hooks.json has no hooks — skipping hooks deployment"
         fi
+    fi
+
+    # Merge BashTool timeout env vars into ~/.claude/settings.json.
+    # Idempotent: same keys overwritten with same values on re-deploy.
+    if command_exists jq; then
+        if [ ! -f "$SETTINGS_DEST" ]; then
+            echo '{}' > "$SETTINGS_DEST"
+        fi
+        print_status "info" "Setting BashTool timeout env vars..."
+        jq '.env = ((.env // {}) + {"BASH_DEFAULT_TIMEOUT_MS":"600000","BASH_MAX_TIMEOUT_MS":"3600000"})' \
+            "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
+            && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
+            || error "Failed to merge BashTool timeout env vars into settings.json"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m)"
+    else
+        print_status "warning" "jq not found — skipping BashTool timeout env merge"
+    fi
+
+    # Clean up legacy runaway-shell-watchdog LaunchAgent + hook script.
+    # Removed 2026-04-15 after the Round 2 investigation reattributed the
+    # mid-session `syspolicyd` saturation to Cline Kanban's hook fan-out
+    # rather than LLM-generated busy loops. See docs/terminal-hangs.md.
+    if [[ "$(detect_os)" == "macos" ]]; then
+        legacy_plist_label="com.cmagana.runaway-shell-watchdog"
+        legacy_plist_path="$HOME/Library/LaunchAgents/${legacy_plist_label}.plist"
+        if launchctl list 2>/dev/null | grep -q "$legacy_plist_label"; then
+            print_status "info" "Unloading legacy $legacy_plist_label LaunchAgent..."
+            launchctl unload "$legacy_plist_path" 2>/dev/null || true
+        fi
+        if [ -f "$legacy_plist_path" ]; then
+            rm -f "$legacy_plist_path" \
+              && print_status "success" "Removed $legacy_plist_path"
+        fi
+    fi
+    if [ -f "$HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh" ]; then
+        rm -f "$HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh" \
+          && print_status "success" "Removed legacy $HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh"
     fi
 
     print_status "success" "Claude Code configurations deployed successfully!"
@@ -152,6 +226,8 @@ echo "  - CLAUDE.md -> $CLAUDE_DIR/CLAUDE.md"
 echo "  - Rules -> $CLAUDE_DIR/rules/"
 echo "  - Skills -> $CLAUDE_SKILLS_DEST"
 echo "  - Agents -> $CLAUDE_AGENTS_DEST"
+echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
+echo "  - BashTool timeouts -> $SETTINGS_DEST (env)"
 
 print_status "success" "Claude Code deployment complete!"

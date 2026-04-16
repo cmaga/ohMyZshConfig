@@ -50,7 +50,7 @@ make setup
 Runs in 7 phases:
 
 1. **Phase 0** — Sets script permissions and configures git hooks path
-2. **Phase 1** — Simple dependencies (git, curl)
+2. **Phase 1** — Simple dependencies (git, curl, jq)
 3. **Phase 2** — Company setup (company directories + SSH key generation)
 4. **Phase 3** — Zsh deployment (installs zsh, sets default shell, installs Oh-My-Zsh, plugins, deploys configs)
 5. **Phase 4** — Git deployment (deploys git configs)
@@ -206,8 +206,9 @@ ohMyZshConfig/
 ├── src/
 │   ├── storage/                # Configuration files (what gets deployed)
 │   │   ├── zsh/
-│   │   │   ├── .zshrc          # Main Zsh configuration
-│   │   │   └── aliases.zsh     # Platform-specific aliases
+│   │   │   ├── .zshrc              # Main Zsh configuration
+│   │   │   ├── aliases.zsh         # Platform-specific aliases
+│   │   │   └── jira-wrapper.zsh    # jira() function: per-project config + ~/.netrc token lookup
 │   │   ├── git/
 │   │   │   ├── .gitconfig      # Main git configuration
 │   │   │   ├── gitconfig-gsi   # GSI-specific git settings
@@ -218,8 +219,6 @@ ohMyZshConfig/
 │   │   │   ├── skills/         # Custom skills with optional dependencies
 │   │   │   ├── agents/         # Subagent definitions
 │   │   │   └── hooks.json      # Merged into ~/.claude/settings.json at deploy time
-│   │   ├── direnv/
-│   │   │   └── direnv.toml     # direnv configuration (deployed to ~/.config/direnv/)
 │   │   └── scripts/            # User utility scripts (deployed to ~/.oh-my-zsh/custom/scripts/)
 │   │       └── ssh-key-generator.zsh
 │   └── deployment/             # Deployment scripts (how things get deployed)
@@ -233,7 +232,7 @@ ohMyZshConfig/
 │       │   └── windows/
 │       │       ├── windows-bootstrap-1.ps1 # PowerShell entry point
 │       │       └── 01-bootstrap.sh
-│       ├── 02-simple-deps.zsh          # Simple dependencies (git, curl)
+│       ├── 02-simple-deps.zsh          # Simple dependencies (git, curl, jq)
 │       ├── 03-company-setup.zsh        # Company directories & SSH key generation
 │       ├── 04-deploy-zsh.zsh           # Deploy zsh (install, omz, plugins, configs)
 │       ├── 05-deploy-git.zsh           # Deploy git configs (.gitconfig, company profiles)

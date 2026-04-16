@@ -50,7 +50,7 @@ lint: ## Format files and run lint checks
 	@printf "$(BLUE)Running lint checks...$(NC)\n"
 	@printf "\n"
 	@printf "$(BLUE)Checking zsh syntax...$(NC)\n"
-	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/aliases.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
+	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/*.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
 		if [ -f "$$file" ]; then \
 			printf "  Checking $$file...\n"; \
 			if zsh -n "$$file"; then \

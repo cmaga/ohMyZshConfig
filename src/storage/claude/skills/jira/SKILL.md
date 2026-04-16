@@ -17,12 +17,20 @@ Run this check at the start of **every invocation** to detect setup state and ro
 
 ### Detection
 
-Check these items in order (all paths are relative to the project root):
+Check these items in order (all paths are relative to the project root
+unless stated otherwise):
 
 1. **jira-cli installed?** — `command -v jira`
-2. **API token available?** — `<project-root>/.envrc` exists with `JIRA_API_TOKEN`
-3. **Skill config exists?** — `<project-root>/.claude/skills/jira/config.json`
-4. **jira-cli config exists?** — file exists at the path specified by `$JIRA_CONFIG_FILE` (read from `.envrc`)
+2. **Skill config exists?** — `<project-root>/.claude/skills/jira/config.json`
+3. **jira-cli config exists?** — `<project-root>/.claude/skills/jira/.jira-config.yml`
+4. **API token available in `~/.netrc`?** — an entry whose `machine`
+   matches the bare host of the `server:` value in `.jira-config.yml`.
+   Verify:
+
+   ```bash
+   server=$(awk '/^[[:space:]]*server:/ {sub(/^[[:space:]]*server:[[:space:]]*/, ""); gsub(/[[:space:]"'\'']/, ""); sub(/^https?:\/\//, ""); sub(/\/$/, ""); print; exit}' .claude/skills/jira/.jira-config.yml)
+   awk -v m="$server" '$1=="machine" && $2==m {found=1} END {exit !found}' ~/.netrc
+   ```
 
 ### Routing
 
@@ -73,46 +81,41 @@ Create `<project-root>/.claude/skills/jira/config.json` using the collected valu
 Use the template at [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json)
 as the structure, substituting the user's values.
 
-### Step 4: Create .envrc
+### Step 4: Add API token to ~/.netrc
 
-Create `<project-root>/.envrc` with:
+The `jira()` zsh wrapper (deployed by this dotfiles repo) reads the API
+token from `~/.netrc`, keyed by the Atlassian host. Append a block:
 
-```bash
-export JIRA_API_TOKEN="<token-from-user>"
-export JIRA_CONFIG_FILE="$PWD/.claude/skills/jira/.jira-config.yml"
+```
+machine acme.atlassian.net
+  login user@example.com
+  password <api-token>
 ```
 
-Add `.envrc` to `.gitignore`:
+Use the **bare host** (no `https://`, no trailing slash) as the
+`machine` value — it must match what the wrapper extracts from the
+`server:` field in `.jira-config.yml` after stripping the scheme.
+
+Ensure correct permissions:
 
 ```bash
-grep -q '^\\.envrc$' .gitignore || echo '.envrc' >> .gitignore
+[ -f ~/.netrc ] || touch ~/.netrc
+chmod 600 ~/.netrc
 ```
 
-Load the environment:
-
-```bash
-# If direnv is installed:
-direnv allow
-
-# Otherwise:
-source .envrc
-```
-
-Verify both vars are set:
-
-```bash
-echo "TOKEN=${JIRA_API_TOKEN:+set}" && echo "CONFIG=${JIRA_CONFIG_FILE:+set}"
-```
+`~/.netrc` is strictly user-local. Never track it in any repo.
 
 ### Step 5: Initialize jira-cli
 
-Ensure `.envrc` is loaded first, then run:
+Run `jira init` with `JIRA_CONFIG_FILE` set for the invocation only — no
+shell export, no `.envrc`:
 
 ```bash
-jira init
+JIRA_CONFIG_FILE="$PWD/.claude/skills/jira/.jira-config.yml" jira init
 ```
 
-`jira init` reads `JIRA_CONFIG_FILE` and writes its config directly to that path.
+`jira init` reads `JIRA_CONFIG_FILE` and writes its config directly to
+that path.
 
 During init, the following prompts appear. Enter the values collected in Step 2:
 
@@ -136,7 +139,68 @@ test -f "$JIRA_CONFIG_FILE" && echo "OK" || echo "MISSING"
 jira me
 ```
 
-If this returns the user's account info, setup is complete.
+If this returns the user's account info, setup is complete. The `jira`
+command here is the shell wrapper — it looks up the per-project config
+and token automatically; no env vars need to be exported.
+
+## Commit recommendation
+
+- **Commit** `.claude/skills/jira/config.json` and
+  `.claude/skills/jira/.jira-config.yml` to the repo. Neither contains
+  secrets. Committing them makes the skill work transparently in
+  worktrees and for other teammates on the same project.
+- **Never commit** `~/.netrc`. It lives only in the user's home.
+
+## Working inside a worktree
+
+If the skill is invoked inside a worktree (Cline Kanban spawns these)
+and the worktree does not contain
+`.claude/skills/jira/.jira-config.yml` (e.g. the file was gitignored in
+the source repo or the worktree predates the commit that adds these
+files), the config lives in the main checkout.
+
+Find the main checkout:
+
+```bash
+git worktree list | awk 'NR==1 {print $1}'
+```
+
+The first entry is the main working directory. Copy the two files from
+there into the current worktree so future `jira` invocations work
+without navigation:
+
+```bash
+main=$(git worktree list | awk 'NR==1 {print $1}')
+mkdir -p .claude/skills/jira
+cp "$main/.claude/skills/jira/.jira-config.yml" .claude/skills/jira/
+cp "$main/.claude/skills/jira/config.json"       .claude/skills/jira/
+```
+
+The token in `~/.netrc` is already user-global, so no token copy is
+needed.
+
+## Migration from direnv-based setup
+
+Projects set up before this change kept the token in
+`<project-root>/.envrc` and pointed jira-cli at
+`.claude/skills/jira/.jira-config.yml` via `JIRA_CONFIG_FILE`. To move to
+the netrc flow:
+
+1. Read the token value out of `<project-root>/.envrc`.
+2. Read the server host out of `.claude/skills/jira/.jira-config.yml`
+   (or `config.json`'s `server` field), stripped of scheme and trailing
+   slash.
+3. Append to `~/.netrc`:
+   ```
+   machine <bare-host>
+     login <email>
+     password <token-from-.envrc>
+   ```
+   Ensure `chmod 600 ~/.netrc`.
+4. **Leave `.envrc` in place.** It holds information you may still
+   need, and the new wrapper ignores it. Do not delete it as part of
+   this migration.
+5. Confirm with `jira me` in the project dir.
 
 ## Execute Commands
 

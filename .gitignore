@@ -12,3 +12,15 @@ src/storage/claude/skills/*/artifacts/*
 
 # tasks locks for claude
 .claude/scheduled_tasks.lock
+
+# Scratch area for hang-investigation load-gen workers.
+# Each subdir contains a dummy .envrc + generated worker output.
+# Never committed.
+/testing_grounds/
+
+# Runtime outputs from scripts/bench-startup.zsh:
+#  - bench-samples/ contains macOS sample(1) dumps, often empty for short spawns
+#  - bench-sys.log is a per-sample sys-state log, regenerated each run
+# bench-results.log IS tracked (historical benchmark record - see docs/terminal-hangs.md).
+/scripts/bench-samples/
+/scripts/bench-sys.log

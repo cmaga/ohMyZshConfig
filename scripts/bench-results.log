@@ -64,3 +64,291 @@ Avg: 1.009s
 Median: 1.018s
 Raw: 0.931,0.936,0.949,0.982,0.988,0.990,1.007,1.007,1.010,1.017,1.019,1.029,1.031,1.032,1.036,1.037,1.039,1.043,1.050,1.057
 
+--- smoke-home ---
+Timestamp: 2026-04-14 15:33:42
+Mode: sequential
+TargetDir: /Users/cmagana
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 2
+Completed: 2
+Timed out: 0
+Min: 0.089s
+Max: 0.442s
+Avg: 0.266s
+Median: 0.266s
+Raw: 0.089,0.442
+
+--- smoke-direnv-python ---
+Timestamp: 2026-04-14 15:33:48
+Mode: direnv-only
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 60s
+Spawned: 3
+Completed: 3
+Timed out: 0
+Min: 0.030s
+Max: 0.040s
+Avg: 0.034s
+Median: 0.032s
+Raw: 0.030,0.032,0.040
+
+--- smoke-project ---
+Timestamp: 2026-04-14 15:33:49
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 2
+Completed: 2
+Timed out: 0
+Min: 0.122s
+Max: 0.140s
+Avg: 0.131s
+Median: 0.131s
+Raw: 0.122,0.140
+
+--- idle-home ---
+Timestamp: 2026-04-14 15:46:50
+Mode: sequential
+TargetDir: /Users/cmagana
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.086s
+Max: 0.108s
+Avg: 0.091s
+Median: 0.089s
+Raw: 0.086,0.087,0.087,0.087,0.089,0.090,0.091,0.092,0.093,0.108
+
+--- idle-project-min ---
+Timestamp: 2026-04-14 15:46:52
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.121s
+Max: 0.129s
+Avg: 0.124s
+Median: 0.123s
+Raw: 0.121,0.121,0.122,0.122,0.123,0.124,0.124,0.125,0.127,0.129
+
+--- idle-project-heavy ---
+Timestamp: 2026-04-14 15:46:53
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/heavy
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.125s
+Max: 0.135s
+Avg: 0.129s
+Median: 0.128s
+Raw: 0.125,0.127,0.127,0.127,0.127,0.129,0.129,0.131,0.133,0.135
+
+--- idle-direnv-only-min ---
+Timestamp: 2026-04-14 15:46:53
+Mode: direnv-only
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 30s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.030s
+Max: 0.034s
+Avg: 0.031s
+Median: 0.031s
+Raw: 0.030,0.030,0.031,0.031,0.031,0.031,0.031,0.032,0.032,0.034
+
+--- idle-project-nodirenv ---
+Timestamp: 2026-04-14 15:47:06
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: true
+Purge: false
+Timeout: 30s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.088s
+Max: 0.096s
+Avg: 0.091s
+Median: 0.090s
+Raw: 0.088,0.089,0.089,0.090,0.090,0.090,0.092,0.092,0.093,0.096
+
+--- loadcal-home ---
+Timestamp: 2026-04-14 15:49:16
+Mode: sequential
+TargetDir: /Users/cmagana
+NoDirenv: false
+Purge: false
+Timeout: 60s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.150s
+Max: 0.181s
+Avg: 0.161s
+Median: 0.159s
+Raw: 0.150,0.155,0.159,0.160,0.181
+
+--- loadcal-project-min ---
+Timestamp: 2026-04-14 15:49:33
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 60s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.279s
+Max: 0.438s
+Avg: 0.362s
+Median: 0.372s
+Raw: 0.279,0.341,0.372,0.382,0.438
+
+--- loadcal-project-nodirenv ---
+Timestamp: 2026-04-14 15:49:48
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: true
+Purge: false
+Timeout: 60s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.157s
+Max: 0.193s
+Avg: 0.172s
+Median: 0.169s
+Raw: 0.157,0.161,0.169,0.180,0.193
+
+--- loaded-home ---
+Timestamp: 2026-04-14 15:50:49
+Mode: sequential
+TargetDir: /Users/cmagana
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.182s
+Max: 2.837s
+Avg: 1.952s
+Median: 2.354s
+Raw: 0.182,1.759,2.354,2.627,2.837
+
+--- loaded-project-min ---
+Timestamp: 2026-04-14 15:51:08
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.593s
+Max: 0.900s
+Avg: 0.723s
+Median: 0.717s
+Raw: 0.593,0.686,0.717,0.720,0.900
+
+--- loaded-project-nodirenv ---
+Timestamp: 2026-04-14 15:51:25
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: true
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.276s
+Max: 0.359s
+Avg: 0.324s
+Median: 0.314s
+Raw: 0.276,0.314,0.314,0.357,0.359
+
+--- loaded-project-heavy ---
+Timestamp: 2026-04-14 15:51:35
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/heavy
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.697s
+Max: 0.799s
+Avg: 0.750s
+Median: 0.738s
+Raw: 0.697,0.718,0.738,0.798,0.799
+
+--- loaded-home-v2 ---
+Timestamp: 2026-04-14 15:51:53
+Mode: sequential
+TargetDir: /Users/cmagana
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.265s
+Max: 0.347s
+Avg: 0.296s
+Median: 0.288s
+Raw: 0.265,0.285,0.288,0.295,0.347
+
+--- loaded-direnv-only-min ---
+Timestamp: 2026-04-14 15:51:54
+Mode: direnv-only
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 5
+Completed: 5
+Timed out: 0
+Min: 0.079s
+Max: 0.115s
+Avg: 0.093s
+Median: 0.094s
+Raw: 0.079,0.084,0.094,0.095,0.115
+
+--- loaded-project-min-samples ---
+Timestamp: 2026-04-14 15:54:14
+Mode: sequential
+TargetDir: /Users/cmagana/dev/personal/ohMyZshConfig/testing_grounds/python
+NoDirenv: false
+Purge: false
+Timeout: 120s
+Spawned: 10
+Completed: 10
+Timed out: 0
+Min: 0.592s
+Max: 0.963s
+Avg: 0.751s
+Median: 0.778s
+Raw: 0.592,0.596,0.630,0.740,0.770,0.786,0.801,0.811,0.817,0.963
+

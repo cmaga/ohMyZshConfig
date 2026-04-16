@@ -15,17 +15,16 @@ STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 # Source paths
 ZSHRC_SOURCE="${STORAGE_DIR}/zsh/.zshrc"
 ALIASES_SOURCE="${STORAGE_DIR}/zsh/aliases.zsh"
+JIRA_WRAPPER_SOURCE="${STORAGE_DIR}/zsh/jira-wrapper.zsh"
 SCRIPTS_SOURCE="${STORAGE_DIR}/scripts"
-DIRENV_TOML_SOURCE="${STORAGE_DIR}/direnv/direnv.toml"
 PLUGINS_FILE="${PROJECT_ROOT}/plugins.txt"
 
 # Destination paths
 ZSHRC_DEST="$HOME/.zshrc"
 ALIASES_DEST="$OMZ_DIR/custom/aliases.zsh"
+JIRA_WRAPPER_DEST="$OMZ_DIR/custom/jira-wrapper.zsh"
 SCRIPTS_DEST="$OMZ_DIR/custom/scripts"
 PLUGINS_DIR="$OMZ_DIR/custom/plugins"
-DIRENV_CONFIG_DIR="$HOME/.config/direnv"
-DIRENV_TOML_DEST="$DIRENV_CONFIG_DIR/direnv.toml"
 
 
 # Function to check and install zsh if its not present
@@ -240,21 +239,19 @@ deploy_configs() {
     # Check if source files exist
     [ -f "$ZSHRC_SOURCE" ] || error "Source .zshrc not found at $ZSHRC_SOURCE"
     [ -f "$ALIASES_SOURCE" ] || error "Source aliases.zsh not found at $ALIASES_SOURCE"
-    
+    [ -f "$JIRA_WRAPPER_SOURCE" ] || error "Source jira-wrapper.zsh not found at $JIRA_WRAPPER_SOURCE"
+
     # Deploy .zshrc
     log "Deploying .zshrc from $ZSHRC_SOURCE to $ZSHRC_DEST"
     cp "$ZSHRC_SOURCE" "$ZSHRC_DEST" || error "Failed to deploy .zshrc"
-    
+
     # Deploy aliases.zsh
     log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
     cp "$ALIASES_SOURCE" "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
-    
-    # Deploy direnv config
-    if [ -f "$DIRENV_TOML_SOURCE" ]; then
-        log "Deploying direnv.toml to $DIRENV_TOML_DEST"
-        mkdir -p "$DIRENV_CONFIG_DIR"
-        cp "$DIRENV_TOML_SOURCE" "$DIRENV_TOML_DEST" || error "Failed to deploy direnv.toml"
-    fi
+
+    # Deploy jira-wrapper.zsh (omz auto-sources $OMZ_DIR/custom/*.zsh)
+    log "Deploying jira-wrapper.zsh from $JIRA_WRAPPER_SOURCE to $JIRA_WRAPPER_DEST"
+    cp "$JIRA_WRAPPER_SOURCE" "$JIRA_WRAPPER_DEST" || error "Failed to deploy jira-wrapper.zsh"
 
     # Deploy utility scripts directory
     if [ -d "$SCRIPTS_SOURCE" ]; then
@@ -308,7 +305,7 @@ main() {
     info "Deployed files:"
     echo "  - .zshrc -> $ZSHRC_DEST"
     echo "  - aliases.zsh -> $ALIASES_DEST"
-    [ -f "$DIRENV_TOML_SOURCE" ] && echo "  - direnv.toml -> $DIRENV_TOML_DEST"
+    echo "  - jira-wrapper.zsh -> $JIRA_WRAPPER_DEST"
     if [ -d "$SCRIPTS_SOURCE" ]; then
         info "Deployed scripts:"
         for script in "$SCRIPTS_SOURCE"/*; do

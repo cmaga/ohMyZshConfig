@@ -23,38 +23,6 @@ zstyle ':omz:update' mode auto
 # Initialization
 source $ZSH/oh-my-zsh.sh
 
-# Lazy direnv - chpwd only + initial load, 5s kill timeout via perl alarm.
-# Function names intentionally omit the underscore prefix: Claude Code's shell
-# snapshot (~/.claude/shell-snapshots/snapshot-zsh-*.sh, re-sourced for every
-# Bash tool invocation) captures top-level function definitions but filters
-# out underscore-prefixed ones. Underscore names here would strand the chpwd
-# hook, so direnv never activates inside Claude Code's Bash tool.
-if command -v direnv &>/dev/null; then
-  direnv_export() {
-    eval "$(perl -e 'alarm 5; exec @ARGV' -- direnv export zsh 2>/dev/null)"
-  }
-
-  lazy_direnv_hook() {
-    local dir="$PWD"
-    while [[ "$dir" != "/" ]]; do
-      if [[ -f "$dir/.envrc" ]]; then
-        direnv_export
-        return
-      fi
-      dir="${dir:h}"
-    done
-    if [[ -n "$DIRENV_DIR" ]]; then
-      direnv_export
-    fi
-  }
-
-  typeset -ag chpwd_functions
-  if [[ -z "${chpwd_functions[(r)lazy_direnv_hook]+1}" ]]; then
-    chpwd_functions=( lazy_direnv_hook ${chpwd_functions[@]} )
-  fi
-  [[ "$PWD" != "$HOME" ]] && lazy_direnv_hook
-fi
-
 # User configuration
 alias aconf="vim $HOME/.oh-my-zsh/custom/aliases.zsh"
 
@@ -72,8 +40,10 @@ darwin*)
     # cold-cache launch of any Developer-ID-signed binary on macOS can take
     # minutes while syspolicyd runs full certificate validation. Non-underscore
     # names so shims + init helper survive Claude Code's shell-snapshot filter
-    # (see direnv block above). Shims unset themselves before sourcing so nvm.sh
-    # can't re-enter them while loading.
+    # (the snapshot at ~/.claude/shell-snapshots/snapshot-zsh-*.sh, re-sourced
+    # for every BashTool invocation, captures top-level function definitions
+    # but filters out underscore-prefixed ones). Shims unset themselves before
+    # sourcing so nvm.sh can't re-enter them while loading.
     nvm_lazy_init() {
       unset -f nvm node npm npx pnpm yarn nvm_lazy_init
       [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh"
@@ -183,16 +153,6 @@ msys*|cygwin*|mingw*)
     yarn() { nvm_lazy_init; command yarn "$@"; }
     ;;
 esac
-
-# Prewarm macOS code-signature validation cache once per boot, in background.
-# See src/storage/scripts/prewarm-cache.zsh for rationale. /tmp is cleared on
-# reboot so its sentinel naturally scopes to "once per boot."
-if [[ "$OSTYPE" == darwin* ]] && [[ ! -e /tmp/.zshrc-cache-prewarmed ]]; then
-  touch /tmp/.zshrc-cache-prewarmed
-  _prewarm="$HOME/.oh-my-zsh/custom/scripts/prewarm-cache.zsh"
-  [[ -x "$_prewarm" ]] && ( "$_prewarm" >/dev/null 2>&1 ) &!
-  unset _prewarm
-fi
 
 # Source custom aliases if file exists
 [ -f "$HOME/.oh-my-zsh/custom/aliases.zsh" ] && source "$HOME/.oh-my-zsh/custom/aliases.zsh"

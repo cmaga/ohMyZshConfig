@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A cross-platform (macOS / Linux / Windows via Git Bash) dotfiles deployment system for Oh-My-Zsh, git, direnv, and Claude Code configuration. It deploys *from* `src/storage/` *into* the user's home directory using a numbered pipeline of zsh scripts driven by a `Makefile`.
+A cross-platform (macOS / Linux / Windows via Git Bash) dotfiles deployment system for Oh-My-Zsh, git, and Claude Code configuration. It deploys *from* `src/storage/` *into* the user's home directory using a numbered pipeline of zsh scripts driven by a `Makefile`.
 
 This repo previously targeted Cline as the AI assistant — that migration to Claude Code is complete at the system level. Project-level Cline artifacts (`.clinerules/`, `.cline-project/`) are being removed separately.
 
@@ -43,7 +43,7 @@ Shared library every deploy script sources. Use these instead of reinventing:
 
 ### Zsh deployment (`04-deploy-zsh.zsh`)
 
-Installs zsh → `chsh` to zsh → installs Oh-My-Zsh → installs/updates every plugin listed in `plugins.txt` (format: `username/repo`, one per line, `#` for comments) → copies `src/storage/zsh/.zshrc` → `~/.zshrc`, `aliases.zsh` → `$OMZ_DIR/custom/aliases.zsh`, `src/storage/scripts/*` → `$OMZ_DIR/custom/scripts/`, `src/storage/direnv/direnv.toml` → `~/.config/direnv/direnv.toml`.
+Installs zsh → `chsh` to zsh → installs Oh-My-Zsh → installs/updates every plugin listed in `plugins.txt` (format: `username/repo`, one per line, `#` for comments) → copies `src/storage/zsh/.zshrc` → `~/.zshrc`, `aliases.zsh` → `$OMZ_DIR/custom/aliases.zsh`, `jira-wrapper.zsh` → `$OMZ_DIR/custom/jira-wrapper.zsh`, `src/storage/scripts/*` → `$OMZ_DIR/custom/scripts/`.
 
 Adding plugins: append to `plugins.txt`, then `plugins=(…)` array in `src/storage/zsh/.zshrc`, then `make deploy-zsh`.
 
@@ -55,13 +55,15 @@ Installs `@anthropic-ai/claude-code` via npm (skipped on Windows), then deploys 
 - `rules/*.md` → `~/.claude/rules/`.
 - `skills/<name>/` → `~/.claude/skills/<name>/` via `rsync --exclude=dependencies/repos/ --exclude=artifacts/` (with a manual `find | cp` fallback). After copying, if `<skill>/dependencies/scripts/update-repo.zsh` exists, it runs to clone/update repo dependencies.
 - `agents/*.md` → `~/.claude/agents/`.
-- `hooks.json` is **merged** into `~/.claude/settings.json` via `jq -s '.[0] * {"hooks": .[1].hooks}'` (requires `jq`). Empty `hooks` is skipped.
+- `hooks/*.sh` → `~/.claude/hooks/` with `chmod +x` on each destination.
+- `hooks.json` is **merged** into `~/.claude/settings.json` via a concat-plus-dedupe jq expression (requires `jq`). Per-event hook arrays (`PreToolUse`, `PostToolUse`, etc.) are concatenated and deduplicated by exact JSON stringification, so repo-managed entries stay authoritative but manual additions survive re-deploy. Empty `hooks` is skipped.
+- `BASH_DEFAULT_TIMEOUT_MS` (10 min) and `BASH_MAX_TIMEOUT_MS` (60 min) are merged into `~/.claude/settings.json` under `env` so runaway BashTool calls can't run unbounded. A companion `deny-busy-loops` PreToolUse hook blocks known no-yield loop shapes as a narrow safety rail. The deploy script also cleans up a legacy `com.cmagana.runaway-shell-watchdog` LaunchAgent if present on macOS. See `docs/terminal-hangs.md` for the full investigation.
 
 Skills have a conventional structure: `SKILL.md` (required), optional `dependencies/` (templates/docs/scripts, with `repos/` gitignored and fetched at deploy time), optional `modes/`, `evals/`, `human/`, `artifacts/` (runtime-only, gitignored except `.gitkeep`).
 
 ### Platform handling in `.zshrc`
 
-`src/storage/zsh/.zshrc` has a `case "$OSTYPE"` block with branches for `darwin*`, `linux*`, and `msys*|cygwin*|mingw*`. The Windows branch does nvm-windows PATH wiring (via `cygpath`) and auto-starts/loads `ssh-agent` from `~/.ssh/agent.env`. macOS/Linux rely on system keychain. A lazy direnv hook (`chpwd_functions`) runs with a 5s perl-alarm timeout so a hung direnv can't block the shell.
+`src/storage/zsh/.zshrc` has a `case "$OSTYPE"` block with branches for `darwin*`, `linux*`, and `msys*|cygwin*|mingw*`. The Windows branch does nvm-windows PATH wiring (via `cygpath`) and auto-starts/loads `ssh-agent` from `~/.ssh/agent.env`. macOS/Linux rely on system keychain.
 
 Machine-specific overrides (intentional): `~/.zshrc.local` and `~/.zshrc.$(hostname)` are sourced at the end if present — do not overwrite them.
 
