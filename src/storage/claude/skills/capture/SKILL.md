@@ -1,162 +1,116 @@
 ---
-name: knowledge-vault
-description: >
-  Interact with the centralized Graphify knowledge vault at ~/vault/.
-  Use this skill BEFORE making architectural decisions, modifying core systems,
-  proposing design changes, or when encountering unfamiliar modules.
-  Also use when debugging cross-cutting concerns, investigating why a past decision
-  was made, or when you've made an error and want to check if constraints exist.
-  Trigger on: architecture questions, "check the vault", "what does the graph say",
-  design decisions, unfamiliar modules, cross-project dependencies, constraint checks,
-  or any question about how systems relate to each other.
-  Do NOT use for simple file edits, formatting, tests, or when the answer is already
-  in your current file context.
+name: capture
+description: Add durable knowledge (architectural decisions, non-obvious constraints, cross-project patterns) to the Graphify vault at ~/vault/. Triggers on explicit requests ("capture this", "add to vault", "save this") or when the current session produced knowledge worth preserving that is not already in code or git. Queries the vault for placement, writes an Obsidian-style note to the right location (project or brain), and runs a graphify incremental update. Do NOT use for orientation reads — the knowledge-vault rule handles those via GRAPH_REPORT.md / wiki/.
 ---
 
-# Knowledge Vault
+# Capture
 
-A centralized Graphify-powered knowledge graph serving all projects. The vault lives
-at `~/vault/` and is maintained separately from any individual codebase.
+Write new, durable knowledge into the centralized Graphify vault at `~/vault/`. Only knowledge that is non-obvious and won't rot in a commit message — not task narratives, status updates, or things the code already expresses.
 
-This skill has two parts:
+CLI syntax lives in [`references/graphify-cli.md`](references/graphify-cli.md). Use this file for the workflow; jump to the reference when you need command details.
 
-1. **This file** — when and how to use the vault (read this first, always)
-2. **`references/graphify-cli.md`** — full Graphify CLI reference (read when you need command details)
-
-## Vault Structure
+## Vault layout
 
 ```
 ~/vault/
-├── projects/
-│   ├── symagedocs/       # SymageDocs project graph (Obsidian notes + graph output)
-│   ├── kratos/           # Kratos project graph
-│   └── <project>/        # Additional projects follow the same pattern
-├── brain/                # Cross-project knowledge (shared patterns, decisions, constraints)
-└── graphify-out/         # Global graph output (merged across all projects)
-    ├── GRAPH_REPORT.md   # God nodes, communities, surprising connections
-    ├── graph.json        # Raw graph data (queryable via CLI)
-    └── memory/           # Saved query results (feedback loop)
+├── projects/<repo>/     # Obsidian notes + graphify-out/ for one repo
+├── brain/               # Cross-project knowledge
+├── graphify-out/        # Global merged graph
+└── .declined-projects   # Repos the user opted out of (per-machine, gitignored)
 ```
 
-## Project Mapping
+Project mapping is identity: `~/dev/<repo>` → `~/vault/projects/<repo>/`.
 
-| Repo       | Vault Path                   | Source Path      |
-| ---------- | ---------------------------- | ---------------- |
-| symagedocs | ~/vault/projects/symagedocs/ | ~/dev/symagedocs |
-| kratos     | ~/vault/projects/kratos/     | ~/dev/kratos     |
+## When to trigger
 
-## When to Use This Skill
+Capture when:
 
-### ALWAYS query the vault before:
+- User says "capture this", "add to vault", "save this", "graphify this"
+- The session produced a decision plus its rationale ("we chose X over Y because Z")
+- A non-obvious constraint, invariant, or gotcha surfaced
+- A cross-module or cross-project relationship came up that is invisible from imports alone
 
-- **Proposing or modifying architecture** — check god nodes and community structure first
-- **Changing core modules** (auth, database, API layers, deployment) — check for constraints
-- **Making a decision that was already made** — the graph stores rationale nodes explaining WHY past decisions were made; check before re-deciding
-- **Cross-project work** — use `brain/` and cross-project edges to understand shared patterns
+Do NOT capture:
 
-### Query the vault when:
+- Implementation details already visible in the code
+- Task state, status updates, "what I just did" — git log and PRs hold those
+- Content already in the vault (step 2 checks)
 
-- **Encountering an unfamiliar module** — `graphify explain` before reading source code
-- **Debugging cross-cutting concerns** — `graphify path` to trace relationships between concepts
-- **You've made an error** — check if a constraint or rationale exists that you missed
-- **You need to understand dependencies** — query to see what depends on what before changing it
+## Preflight
 
-### Do NOT use the vault for:
+1. `command -v graphify` → if missing, **HARD STOP** (see Edge cases).
+2. `~/vault/` exists → if missing, **HARD STOP**.
+3. `~/vault/projects/<repo>/` exists for the current project → if missing, see Edge cases before proceeding.
 
-- Simple file edits, formatting, linting, or test fixes
-- The answer is already visible in your current file context
-- You already queried this session for the same topic
-- Pure implementation tasks with no architectural implications
+## Workflow
 
-## How to Query
+### 1. Extract candidate knowledge
 
-You have access to `graphify` as a CLI tool. Use it directly via bash.
+Pull only the durable pieces from the current context:
 
-### Primary Query Commands
+- Decision + rationale
+- Hidden constraint or invariant
+- Non-obvious relationship between concepts
 
-```bash
-# Natural language question — BFS traversal, token-capped
-# Use for: broad "what is X connected to?" questions
-graphify query "how does authentication work in this project" --budget 1500
+If nothing fits, stop. Do not invent knowledge to capture.
 
-# DFS traversal — traces a specific path deeply
-# Use for: "how does X reach Y?" or dependency chain questions
-graphify query "error handling flow from API to database" --dfs --budget 1500
+### 2. Query the vault for placement
 
-# Shortest path between two concepts
-# Use for: understanding how two specific things relate
-graphify path "AuthModule" "DatabaseService"
+Before writing, query the graph to avoid duplicates and find wikilink targets. See [`references/graphify-cli.md`](references/graphify-cli.md#query--traversal) for flags and budgets.
 
-# Plain-language explanation of a single concept and all its connections
-# Use for: quick orientation on an unfamiliar module before reading source
-graphify explain "PlaidIntegration"
-```
+- `graphify explain "<concept>"` — does a node already exist?
+- `graphify query "<nearby topic>" --budget 500` — what community does this sit in?
+- `graphify path "<A>" "<B>"` — is there already a relationship between candidates?
 
-### Choosing the Right Command
+Decide based on results:
 
-| Question Pattern                       | Command              | Why                                             |
-| -------------------------------------- | -------------------- | ----------------------------------------------- |
-| "What is X connected to?"              | `query` (BFS)        | Broad context, nearest neighbors first          |
-| "How does X reach/affect Y?"           | `query --dfs`        | Traces a specific chain deeply                  |
-| "How are X and Y related?"             | `path`               | Shortest path with edge types                   |
-| "What is X? I haven't seen it before." | `explain`            | All connections + source locations              |
-| "What are the most important modules?" | Read GRAPH_REPORT.md | God nodes section lists highest-degree concepts |
-| "What's the overall architecture?"     | Read GRAPH_REPORT.md | Communities section shows module clusters       |
+| Result                            | Action                                          |
+| --------------------------------- | ----------------------------------------------- |
+| Node exists, same meaning         | Update the existing Obsidian note               |
+| Node exists, related but distinct | New note, wikilink to the existing node         |
+| No match, project-specific        | New note under `~/vault/projects/<repo>/`       |
+| No match, pattern spans projects  | New note under `~/vault/brain/`                 |
+| Already captured verbatim         | Stop                                            |
 
-### Reading Graph Output
+### 3. Write the note
 
-Query results include:
+Obsidian-compatible markdown, one concept per file:
 
-- **Node labels** — human-readable concept names
-- **Edge relations** — `calls`, `implements`, `references`, `shares_data_with`, `rationale_for`, `semantically_similar_to`, etc.
-- **Confidence tags** — `EXTRACTED` (explicit in source), `INFERRED` (reasonable inference), `AMBIGUOUS` (uncertain)
-- **confidence_score** — 0.0–1.0 numeric confidence
-- **source_file** and **source_location** — where in the codebase the relationship was found
+- Title = the concept name (becomes the graph node label)
+- 2–4 sentences stating the knowledge
+- `[[wikilinks]]` to neighbors identified in step 2
+- If it's a decision: capture date (today) and a one-line rationale
 
-When citing vault findings in your response, reference the `source_file` and `source_location` so the user can verify.
+Keep it compact. Multiple concepts → multiple files.
 
-### Token Budget
+### 4. Re-index the graph
 
-Always use `--budget` to cap query output and avoid flooding your context:
+Incremental update so the new note merges into `graph.json` and `GRAPH_REPORT.md`. See [`references/graphify-cli.md`](references/graphify-cli.md#incremental-update).
 
-- `--budget 1500` — good default for most questions
-- `--budget 3000` — use for complex cross-cutting questions
-- `--budget 500` — use for quick lookups
+- Project-level: `graphify ~/dev/<repo> --update --obsidian --obsidian-dir ~/vault/projects/<repo>/`
+- Brain-level: `graphify ~/vault/brain --update`
 
-## Orientation Workflow
+## Edge cases
 
-You have NO memory between sessions. At the start of every session where this skill
-triggers, orient yourself before doing any work:
+### Project has no vault yet
 
-1. **Read the report first:**
-
+1. Check `~/vault/.declined-projects`. If the repo name is listed, silently skip — do not prompt.
+2. Otherwise ask once: "Build a Graphify vault for `<repo>`? (yes / no / not now)"
+3. **yes** → full build, then resume at step 2 of the main workflow:
    ```bash
-   cat ~/vault/graphify-out/GRAPH_REPORT.md
+   graphify ~/dev/<repo> --mode deep --obsidian --obsidian-dir ~/vault/projects/<repo>/
    ```
+4. **no** → append `<repo>` to `~/vault/.declined-projects` (create the file if missing). Also ensure `.declined-projects` is listed in `~/vault/.gitignore` (create the gitignore if missing) — the registry is per-machine and must never be committed. Capture aborts.
+5. **not now** → capture aborts without writing to the registry. The question recurs on next trigger.
 
-   Focus on: God Nodes (highest-degree concepts), Communities (module clusters), Surprising Connections.
+### `graphify` CLI unavailable
 
-2. **Query specific concepts** as you encounter them during implementation.
+**HARD STOP.** Tell the user graphify is required and capture cannot proceed. Do not write notes that won't be indexed — orphan notes rot.
 
-## If graphify CLI is unavailable
+### `~/vault/` root missing
 
-**HARD STOP.** Do not attempt to work around a missing graphify installation.
-Tell the user that graphify is required and the vault cannot be queried without it.
-Do not fall back to reading raw files, browsing Obsidian notes, or parsing graph.json manually.
-The vault is only useful when queried through graphify — raw file reads lose the graph structure
-that makes this valuable.
+**HARD STOP.** The vault is managed separately from any repo. Tell the user.
 
-## Full CLI Reference
+## Full CLI reference
 
-For the complete list of all graphify commands (build, update, export, add content, hooks, MCP server, etc.), read:
-
-```
-references/graphify-cli.md
-```
-
-Read this when you need to:
-
-- Build or rebuild the vault (`graphify <path> --update --obsidian`)
-- Add external content (`graphify add <url>`)
-- Start an MCP server (`graphify --mcp`)
-- Understand any command not covered in the query section above
+Command syntax, flags, output formats, MCP server: [`references/graphify-cli.md`](references/graphify-cli.md).

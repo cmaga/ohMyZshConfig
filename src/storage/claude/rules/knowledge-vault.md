@@ -1,19 +1,16 @@
-## Knowledge Vault
+# Knowledge Vault
 
-Some projects that you will work on will have a knowledge vault, that acts a repository of knowledge for a project.
-Although, not all projects have a knowledge vault. The name of the vault always matches the name of the repository.
-The path to the vault is '~/dev/vault'. Projects are located in company directories.
+A centralized Graphify vault lives at `~/vault/`:
 
-- symagedocs -> symagedocs
-- papermodels -> papermodels
-  Project knowledge vault: ../../vault/projects/kratos/
-  Cross-project knowledge: ../../vault/brain/
+- `~/vault/projects/<repo>/` — per-project graph + Obsidian notes
+- `~/vault/brain/` — cross-project knowledge
+- `~/vault/graphify-out/` — global merged graph
 
-Before making architectural decisions or modifying core systems, consult the vault if it exists.
+Vault directory names match repo names (`~/dev/<repo>` → `~/vault/projects/<repo>/`).
 
-A global graphify knowledge graph is available at ~/vault/graphify-out/.
+## Usage
 
-Rules:
-
-- Before answering architecture or codebase questions, read ~/vault/graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If ~/vault/graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- Before architectural work, read `~/vault/projects/<repo>/graphify-out/GRAPH_REPORT.md`. If `~/vault/projects/<repo>/graphify-out/wiki/index.md` exists, navigate it instead of raw files.
+- For cross-project questions, read `~/vault/graphify-out/GRAPH_REPORT.md`.
+- To add new knowledge to a vault, invoke the `capture` skill.
+- If the current project has no vault yet, `capture` will offer to build one on first trigger.
