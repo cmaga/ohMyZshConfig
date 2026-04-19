@@ -134,6 +134,7 @@ These apply to every context-injection file regardless of type.
 3. Is this already default LLM behavior? Remove
 4. Duplicates another instruction? Consolidate
 5. Would this work with Haiku, not just Opus?
+6. For skills: does the `description` field name auto-trigger phrases? If yes, `disable-model-invocation` must be `false` or absent. If no, `true`. Description and flag must agree — mismatch = bug.
 
 ### Type-Specific Reference Files
 

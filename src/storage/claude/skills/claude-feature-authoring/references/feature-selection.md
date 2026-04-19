@@ -127,10 +127,11 @@ Ask: "How much context does this need? Does it need conversation history?"
 - It should always be loaded, not triggered by relevance
 - It's project-wide conventions, not task-specific knowledge
 
-**Add `disable-model-invocation: true` if:**
+**Decide `disable-model-invocation` by whether mutations are gated, not by the mere presence of side effects:**
 
-- It has side effects (deploys, PRs, mutations)
-- User should explicitly invoke it, not auto-trigger
+- Unguarded (skill mutates state without user review) → `true`; require slash invocation
+- Gated (workflow has an explicit user-approval step before any mutation) → `false` is fine; the gate is the safety, not the invocation mode
+- Consistency rule: if the `description` lists auto-trigger phrases, the flag must be `false` or absent — otherwise the skill advertises triggering it cannot fulfill
 
 ### "I want a Hook for..."
 
@@ -172,9 +173,9 @@ START
 │                    ├─ Yes → Do you need parallelism?
 │                    │         ├─ Yes → Agent Team
 │                    │         └─ No → Subagent
-│                    └─ No → Should user explicitly invoke it?
-│                             ├─ Yes (side effects) → Skill (manual)
-│                             └─ No (auto-trigger) → Skill
+│                    └─ No → Are mutations unguarded (no user-approval gate before side effects)?
+│                             ├─ Yes → Skill with disable-model-invocation: true (slash-only)
+│                             └─ No → Skill (auto-trigger; any gate provides the safety)
 ```
 
 ## Confirming the Choice

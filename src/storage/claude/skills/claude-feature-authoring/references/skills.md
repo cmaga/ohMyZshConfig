@@ -15,7 +15,9 @@ Before handing off to skill-creator, document:
 
 If feature selection determined this is a workflow command (procedures with side effects like deploys, PRs, migrations), include these requirements in the spec:
 
-- Set `disable-model-invocation: true` — user must explicitly invoke via `/command-name`
+- Decide `disable-model-invocation` by whether mutations are gated, not by the mere presence of side effects:
+  - Unguarded — skill mutates state without user review → `true`; require slash invocation via `/command-name`
+  - Gated — workflow has an explicit user-approval step before any mutation → `false` is fine; the gate is the safety, not the invocation mode
 - Instructions must be numbered sequential steps
 - Each step that mutates state must include inline verification (e.g., run tests after each change)
 - Name every command that modifies state explicitly — no vague "push and create a PR"
