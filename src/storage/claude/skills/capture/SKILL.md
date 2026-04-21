@@ -1,25 +1,17 @@
 ---
 name: capture
-description: Add durable knowledge (architectural decisions, non-obvious constraints, cross-project patterns) to the Graphify vault at ~/vault/. Triggers on explicit requests ("capture this", "add to vault", "save this") or when the current session produced knowledge worth preserving that is not already in code or git. Queries the vault for placement, writes an Obsidian-style note to the right location (project or brain), and runs a graphify incremental update. Do NOT use for orientation reads — the knowledge-vault rule handles those via GRAPH_REPORT.md / wiki/.
+description: Add durable knowledge (architectural decisions, non-obvious constraints, cross-project patterns) to the knowledge vault at ~/dev/vault/. Triggers on explicit requests ("capture this", "add to vault", "save this") or when the current session produced knowledge worth preserving that is not already in code or git. Writes an Obsidian-style note to the correct vault path and commits to the vault repo. Do NOT use for orientation reads — those are handled by the knowledge-vault rule and the SessionStart hook.
 ---
 
 # Capture
 
-Write new, durable knowledge into the centralized Graphify vault at `~/vault/`. Only knowledge that is non-obvious and won't rot in a commit message — not task narratives, status updates, or things the code already expresses.
+Write new durable knowledge into `~/dev/vault/`. Only content that is
+non-obvious and won't rot in a commit message — not task narratives, status
+updates, or facts the code itself expresses.
 
-CLI syntax lives in [`references/graphify-cli.md`](references/graphify-cli.md). Use this file for the workflow; jump to the reference when you need command details.
-
-## Vault layout
-
-```
-~/vault/
-├── projects/<repo>/     # Obsidian notes + graphify-out/ for one repo
-├── brain/               # Cross-project knowledge
-├── graphify-out/        # Global merged graph
-└── .declined-projects   # Repos the user opted out of (per-machine, gitignored)
-```
-
-Project mapping is identity: `~/dev/<repo>` → `~/vault/projects/<repo>/`.
+The vault has its own git-backed rebuild automation: committing to the vault
+triggers a background graph rebuild via `post-commit` hook. This skill's job
+is **write the note and commit**. It does not invoke graphify.
 
 ## When to trigger
 
@@ -34,83 +26,102 @@ Do NOT capture:
 
 - Implementation details already visible in the code
 - Task state, status updates, "what I just did" — git log and PRs hold those
-- Content already in the vault (step 2 checks)
+- Content already in the vault (grep first; see step 2)
 
 ## Preflight
 
-1. `command -v graphify` → if missing, **HARD STOP** (see Edge cases).
-2. `~/vault/` exists → if missing, **HARD STOP**.
-3. `~/vault/projects/<repo>/` exists for the current project → if missing, see Edge cases before proceeding.
+1. `~/dev/vault/` exists → if missing, **HARD STOP**. Tell the user the vault is managed separately.
+2. `~/dev/vault/projects.json` exists → if missing, **HARD STOP**. It maps repo basenames to vault paths.
 
 ## Workflow
 
 ### 1. Extract candidate knowledge
 
-Pull only the durable pieces from the current context:
+Pull only durable pieces from the current context:
 
 - Decision + rationale
 - Hidden constraint or invariant
 - Non-obvious relationship between concepts
 
-If nothing fits, stop. Do not invent knowledge to capture.
+If nothing fits, stop. Do not invent content.
 
-### 2. Query the vault for placement
+### 2. Check for duplicates
 
-Before writing, query the graph to avoid duplicates and find wikilink targets. See [`references/graphify-cli.md`](references/graphify-cli.md#query--traversal) for flags and budgets.
+Grep the vault for the concept name and adjacent terms:
 
-- `graphify explain "<concept>"` — does a node already exist?
-- `graphify query "<nearby topic>" --budget 500` — what community does this sit in?
-- `graphify path "<A>" "<B>"` — is there already a relationship between candidates?
+```bash
+grep -r -l -i "<concept>" ~/dev/vault/ --include='*.md'
+```
 
-Decide based on results:
+Decide:
 
-| Result                            | Action                                          |
-| --------------------------------- | ----------------------------------------------- |
-| Node exists, same meaning         | Update the existing Obsidian note               |
-| Node exists, related but distinct | New note, wikilink to the existing node         |
-| No match, project-specific        | New note under `~/vault/projects/<repo>/`       |
-| No match, pattern spans projects  | New note under `~/vault/brain/`                 |
-| Already captured verbatim         | Stop                                            |
+| Result                          | Action                                   |
+| ------------------------------- | ---------------------------------------- |
+| Exact concept already captured  | Stop                                     |
+| Related note exists             | New note, add `[[wikilink]]` to it       |
+| No match, project-specific      | New note under the project's vault path  |
+| No match, spans projects        | New note under `~/dev/vault/brain/`      |
 
-### 3. Write the note
+### 3. Resolve placement
+
+For project-specific knowledge, resolve the current repo to its vault path:
+
+```bash
+repo=$(basename "$(git rev-parse --show-toplevel)")
+rel=$(jq -r --arg k "$repo" '.[$k] // empty' ~/dev/vault/projects.json)
+```
+
+Behavior by `rel` result:
+
+- Non-empty → target is `~/dev/vault/<rel>/<category>/`
+- Empty and knowledge is cross-project → target is `~/dev/vault/brain/<category>/`
+- Empty and knowledge is project-specific → see "Project not yet indexed" edge case
+
+Categories:
+
+- Per-project: `architecture/`, `constraints/`, `decisions/`, `customers/`, `domain/`, `plan/`, `research/`
+- Brain: `patterns/`, `principles/`, `tools/`
+
+Create the subdirectory if it doesn't exist.
+
+### 4. Write the note
 
 Obsidian-compatible markdown, one concept per file:
 
-- Title = the concept name (becomes the graph node label)
+- Filename: kebab-case concept name (e.g., `decision-fast-bulk-queue-split.md`)
+- Title heading = the concept name (becomes the graph node label)
 - 2–4 sentences stating the knowledge
-- `[[wikilinks]]` to neighbors identified in step 2
-- If it's a decision: capture date (today) and a one-line rationale
+- `[[wikilinks]]` to related notes identified in step 2
+- For a decision: add a `> **Why:**` block with one-line rationale and today's date
 
 Keep it compact. Multiple concepts → multiple files.
 
-### 4. Re-index the graph
+### 5. Commit to the vault
 
-Incremental update so the new note merges into `graph.json` and `GRAPH_REPORT.md`. See [`references/graphify-cli.md`](references/graphify-cli.md#incremental-update).
+```bash
+git -C ~/dev/vault add <new-file-paths>
+git -C ~/dev/vault commit -m "capture: <concept>"
+```
 
-- Project-level: `graphify ~/dev/<repo> --update --obsidian --obsidian-dir ~/vault/projects/<repo>/`
-- Brain-level: `graphify ~/vault/brain --update`
+The vault's `post-commit` hook triggers a background graph rebuild. Do not wait for it.
 
 ## Edge cases
 
-### Project has no vault yet
+### Note already exists with same meaning
 
-1. Check `~/vault/.declined-projects`. If the repo name is listed, silently skip — do not prompt.
-2. Otherwise ask once: "Build a Graphify vault for `<repo>`? (yes / no / not now)"
-3. **yes** → full build, then resume at step 2 of the main workflow:
-   ```bash
-   graphify ~/dev/<repo> --mode deep --obsidian --obsidian-dir ~/vault/projects/<repo>/
-   ```
-4. **no** → append `<repo>` to `~/vault/.declined-projects` (create the file if missing). Also ensure `.declined-projects` is listed in `~/vault/.gitignore` (create the gitignore if missing) — the registry is per-machine and must never be committed. Capture aborts.
-5. **not now** → capture aborts without writing to the registry. The question recurs on next trigger.
+Update the existing note in place. Commit with `capture: update <concept>`.
 
-### `graphify` CLI unavailable
+### Project not yet indexed
 
-**HARD STOP.** Tell the user graphify is required and capture cannot proceed. Do not write notes that won't be indexed — orphan notes rot.
+If the current repo isn't in `projects.json` but the knowledge is clearly
+project-specific, ask the user once:
 
-### `~/vault/` root missing
+> Add `personal/<repo>/` to the vault? (yes / no / not now)
 
-**HARD STOP.** The vault is managed separately from any repo. Tell the user.
+- **yes** → create `~/dev/vault/personal/<repo>/_index.md` with a minimal stub (title, one-line purpose, empty Knowledge Map), add `"<repo>": "personal/<repo>"` to `projects.json`, then proceed with step 3.
+- **no** → capture aborts. Do not write anywhere.
+- **not now** → capture aborts. Question recurs on next trigger.
 
-## Full CLI reference
+### Vault or `projects.json` missing
 
-Command syntax, flags, output formats, MCP server: [`references/graphify-cli.md`](references/graphify-cli.md).
+HARD STOP. Tell the user — do not try to create either from this skill.

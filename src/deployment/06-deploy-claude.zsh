@@ -45,6 +45,84 @@ fi
 
 echo
 
+# CLAUDE.md merge markers. Content BETWEEN the markers in ~/.claude/CLAUDE.md
+# is owned by this repo and replaced on each deploy. Content OUTSIDE the
+# markers is user-owned (or written by other tools like `graphify install`)
+# and preserved across deploys; a warning fires whenever drift is preserved so
+# the user knows the on-system file has content not captured in storage.
+CLAUDE_MD_BEGIN='<!-- deploy-begin: global-claude-md -->'
+CLAUDE_MD_END='<!-- deploy-end: global-claude-md -->'
+
+merge_claude_md() {
+    local src="$1"
+    local dst="$2"
+
+    # Case 1: fresh install — wrap source in markers and write.
+    if [ ! -f "$dst" ]; then
+        {
+            echo "$CLAUDE_MD_BEGIN"
+            cat "$src"
+            echo "$CLAUDE_MD_END"
+        } > "$dst" || return 1
+        return 0
+    fi
+
+    # Always back up before touching.
+    cp "$dst" "${dst}.bak" || return 1
+
+    local tmp
+    tmp=$(mktemp) || return 1
+
+    # Case 2: no markers in dst — first migration. Wrap source at top, keep
+    # existing dst content as drift below.
+    if ! grep -qF "$CLAUDE_MD_BEGIN" "$dst"; then
+        {
+            echo "$CLAUDE_MD_BEGIN"
+            cat "$src"
+            echo "$CLAUDE_MD_END"
+            echo ""
+            cat "$dst"
+        } > "$tmp" || { rm -f "$tmp"; return 1; }
+        mv "$tmp" "$dst"
+        warn "CLAUDE.md had on-system content not managed by this repo. Preserved below the deploy-managed block in $dst. Backup: ${dst}.bak. Review and consider moving durable pieces into $src."
+        return 0
+    fi
+
+    # Case 3: markers present — splice source between them, preserve the rest.
+    awk -v begin="$CLAUDE_MD_BEGIN" -v end="$CLAUDE_MD_END" -v srcf="$src" '
+        $0 == begin {
+            print
+            while ((getline line < srcf) > 0) print line
+            close(srcf)
+            in_block = 1
+            next
+        }
+        $0 == end {
+            print
+            in_block = 0
+            next
+        }
+        !in_block { print }
+    ' "$dst" > "$tmp" || { rm -f "$tmp"; return 1; }
+    mv "$tmp" "$dst"
+
+    # Detect drift: any non-blank line in the merged file that sits outside
+    # the managed block.
+    local drift
+    drift=$(awk -v begin="$CLAUDE_MD_BEGIN" -v end="$CLAUDE_MD_END" '
+        $0 == begin { in_block = 1; next }
+        $0 == end { in_block = 0; next }
+        !in_block && NF > 0 { found = 1 }
+        END { exit (found ? 0 : 1) }
+    ' "$dst" && echo "yes" || echo "")
+
+    if [ -n "$drift" ]; then
+        warn "CLAUDE.md has content outside the deploy-managed block in $dst. Preserved. Backup of pre-merge state: ${dst}.bak. Review and consider moving durable pieces into $src."
+    fi
+
+    return 0
+}
+
 # Deploy Claude Code configurations
 if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     print_status "info" "Deploying Claude Code configurations..."
@@ -55,11 +133,14 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     mkdir -p "$CLAUDE_SKILLS_DEST" || error "Failed to create Claude Skills directory"
     mkdir -p "$CLAUDE_AGENTS_DEST" || error "Failed to create Claude Agents directory"
 
-    # Deploy CLAUDE.md (global rules)
+    # Deploy CLAUDE.md (global rules) — marker-based merge, not overwrite.
+    # Source content is wrapped between deploy-managed markers; anything in
+    # the live file outside those markers is preserved and surfaces a warning.
     if [ -f "$CLAUDE_CONFIG_SOURCE/CLAUDE.md" ]; then
         print_status "info" "Deploying global CLAUDE.md..."
-        cp "$CLAUDE_CONFIG_SOURCE/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md" || error "Failed to deploy CLAUDE.md"
-        print_status "success" "CLAUDE.md deployed to $CLAUDE_DIR/CLAUDE.md"
+        merge_claude_md "$CLAUDE_CONFIG_SOURCE/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md" \
+            || error "Failed to merge CLAUDE.md"
+        print_status "success" "CLAUDE.md merged into $CLAUDE_DIR/CLAUDE.md"
     fi
 
     # Deploy rules (modular rule files)
