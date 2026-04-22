@@ -9,7 +9,7 @@ Single orchestrated flow for ticket-driven and manual implementation work. The p
 
 ## Critical Rules
 
-- Never merge a PR. The user merges.
+- Never automatically merge a PR. The user merges or asks you to merge.
 - All tiers run in an isolated worktree. Create it before any file modification.
 - Classification is Claude-proposed, user-confirmed. Never proceed without confirmation.
 
@@ -17,13 +17,13 @@ Single orchestrated flow for ticket-driven and manual implementation work. The p
 
 Parse the user's message on invocation.
 
-| Input                   | Route to                                                 |
-| ----------------------- | -------------------------------------------------------- |
-| `take <TICKET>`         | Fetch ticket, classify, route to tier mode               |
-| `take <TICKET> <tier>`  | Fetch ticket, skip classification, route to tier mode    |
-| `new take`              | Scoping conversation, create ticket, route to `deep.md`  |
-| `cleanup <TICKET>`      | Route to `modes/cleanup.md`                              |
-| `cleanup`               | Route to `modes/cleanup.md` (infer ticket from context)  |
+| Input                  | Route to                                                |
+| ---------------------- | ------------------------------------------------------- |
+| `take <TICKET>`        | Fetch ticket, classify, route to tier mode              |
+| `take <TICKET> <tier>` | Fetch ticket, skip classification, route to tier mode   |
+| `new take`             | Scoping conversation, create ticket, route to `deep.md` |
+| `cleanup <TICKET>`     | Route to `modes/cleanup.md`                             |
+| `cleanup`              | Route to `modes/cleanup.md` (infer ticket from context) |
 
 ## Entry: prepare ticket
 
@@ -43,30 +43,23 @@ Parse the user's message on invocation.
 
 ### Tier definitions
 
-| Tier     | When                                                             |
-| -------- | ---------------------------------------------------------------- |
-| `small`  | Bug fix, config change, typo, isolated single-file change        |
-| `medium` | New feature, moderate refactor, 2-5 files                        |
-| `deep`   | Architectural, cross-module, 5+ files, or any `new take` flow    |
+| Tier     | When                                                          |
+| -------- | ------------------------------------------------------------- |
+| `small`  | Bug fix, config change, typo, isolated single-file change     |
+| `medium` | New feature, moderate refactor, 2-5 files                     |
+| `deep`   | Architectural, cross-module, 5+ files, or any `new take` flow |
 
 ## Enter worktree
 
 After ticket is confirmed and tier is set:
 
-1. Call `EnterWorktree` with a worktree name derived from the ticket: `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
-2. Verify you are now inside the worktree: run `git rev-parse --show-toplevel` and confirm the path matches.
-3. Write state to `~/.claude/state/dev-workflow/<TICKET>.json`:
+1.  Call `EnterWorktree` with a worktree name derived from the ticket: `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
+2.  Verify you are now inside the worktree: run `git rev-parse --show-toplevel` and confirm the path matches.
+3.  Ensure `.claude-artifacts/` is gitignored for this repo. Idempotent one-liner:
 
-        {
-          "ticket": "STAX-123",
-          "tier": "medium",
-          "worktree": "<absolute path>",
-          "branch": "<branch name>",
-          "planFile": ".claude/dev-workflow/plan.md",
-          "prNumber": null
-        }
+        F="$(git rev-parse --git-common-dir)/info/exclude"; grep -qxF '.claude-artifacts/' "$F" || echo '.claude-artifacts/' >> "$F"
 
-4. Route to the tier's mode file.
+4.  Route to the tier's mode file.
 
 ## Progressive format
 
@@ -85,11 +78,11 @@ Every tier mode ends here before returning control.
 2. Produce a report:
    - **What changed** — file list with one-line purpose each
    - **Deviations from plan** — if any
-   - **User verification checklist** — specific things only the user can judge (behavior, UX, business logic correctness)
-3. Create PR via the `git-provider` skill. Record `prNumber` in the state file.
-4. Transition ticket to "in review" via the `jira` skill. Verify the transition succeeded by re-fetching the ticket status.
-5. Offer: "Want `code-review-agent` to review the PR now?"
-6. Tell the user: `cleanup <TICKET>` after the PR is merged.
+   - **Verification** — do everything you can to test and verify the change yourself. If you cannot verify something, list it here with one line on why it needs the user.
+3. Create PR via the `git-provider` skill.
+4. Transition ticket to "in review" via the `jira` skill.
+5. Run `code-review-agent` against the PR. If it returns findings, auto-fix what you can, commit as `address code review findings`, and push. One pass only.
+6. Final message: summarize any findings that need user decision, remind them to run `cleanup <TICKET>` after merge, and end with the PR URL on its own line.
 
 ## Modes
 

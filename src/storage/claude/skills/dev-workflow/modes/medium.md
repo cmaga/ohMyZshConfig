@@ -19,7 +19,7 @@ Features and moderate refactors. Parent plans, `worker-agent` subagents implemen
 
 ### 2. Write the plan
 
-Write `.claude/dev-workflow/plan.md` inside the worktree. Required sections:
+Write `.claude-artifacts/dev-workflow/plan.md` inside the worktree. Required sections:
 
 - **Context** — what and why, 2-3 sentences
 - **Files** — exhaustive list of paths to modify

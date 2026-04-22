@@ -47,15 +47,15 @@ Present findings as a prioritized list with file:line references.
 | `description`     | string                                           | —         | When Claude should delegate to this agent             |
 | `tools`           | comma-separated                                  | all       | Restricts available tools (omit to inherit all)       |
 | `disallowedTools` | comma-separated                                  | none      | Deny list — inverse of `tools`                        |
-| `model`           | `sonnet`, `opus`, `haiku`, `inherit`, or full ID | `inherit` | Model powering the subagent (e.g., `claude-opus-4-6`) |
+| `model`           | `sonnet`, `opus`, `haiku`, `inherit`                                     | `inherit` | Prefer aliases — they auto-resolve to the latest version              |
 | `memory`          | `user`, `project`, `local`, or omit              | none      | Persistent learning across sessions                   |
 | `maxTurns`        | number                                           | —         | Limit agentic loop iterations                         |
-| `skills`          | list                                             | —         | Skills preloaded at startup (full content injected)   |
-| `permissionMode`  | string                                           | —         | Controls permission prompt handling                   |
-| `mcpServers`      | list                                             | —         | MCP servers the subagent can access                   |
-| `effort`          | string                                           | —         | Reasoning effort level                                |
+| `skills`          | list of skill names                              | —         | Skills preloaded at startup (full content injected)   |
+| `permissionMode`  | `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan` | — | Controls permission prompt handling |
+| `mcpServers`      | list of MCP server names                         | —         | MCP servers the subagent can access                   |
+| `effort`          | `low`, `medium`, `high`, `xhigh`, `max`          | —         | Override session reasoning effort (model-dependent)   |
 | `background`      | boolean                                          | `false`   | Run concurrently without blocking                     |
-| `isolation`       | string                                           | —         | Isolation level for the subagent                      |
+| `isolation`       | `worktree`                                       | —         | Run subagent in isolated git worktree                 |
 | `hooks`           | object                                           | —         | Lifecycle hooks scoped to subagent                    |
 
 **Plugin subagents** do not support `hooks`, `mcpServers`, or `permissionMode` — these fields are silently ignored.

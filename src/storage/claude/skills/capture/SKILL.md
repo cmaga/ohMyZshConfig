@@ -116,9 +116,9 @@ Update the existing note in place. Commit with `capture: update <concept>`.
 If the current repo isn't in `projects.json` but the knowledge is clearly
 project-specific, ask the user once:
 
-> Add `personal/<repo>/` to the vault? (yes / no / not now)
+> Add `companies/personal/<repo>/` to the vault? (yes / no / not now)
 
-- **yes** → create `~/dev/vault/personal/<repo>/_index.md` with a minimal stub (title, one-line purpose, empty Knowledge Map), add `"<repo>": "personal/<repo>"` to `projects.json`, then proceed with step 3.
+- **yes** → create `~/dev/vault/companies/personal/<repo>/_index.md` with a minimal stub (title, one-line purpose, empty Knowledge Map), add `"<repo>": "companies/personal/<repo>"` to `projects.json`, then proceed with step 3.
 - **no** → capture aborts. Do not write anywhere.
 - **not now** → capture aborts. Question recurs on next trigger.
 

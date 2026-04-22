@@ -8,7 +8,7 @@ Repo-to-vault mapping is `~/dev/vault/projects.json`.
     ~/dev/vault/
       projects.json                         repo-basename → vault-path
       companies/<company>/<project>/        per-project notes
-      personal/<repo>/                      personal-project notes
+      companies/personal/<repo>/            personal-project notes
       brain/{patterns,principles,tools}/    cross-project knowledge
       graphify-out/GRAPH_REPORT.md          graph-topology analysis
       graphify-out/wiki/                    navigable wiki

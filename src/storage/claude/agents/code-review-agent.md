@@ -3,6 +3,7 @@ name: code-review-agent
 description: Reviews completed implementation work for completeness, architecture, code quality, and test/build health. Use after an executor finishes implementing a ticket.
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: max
 memory: project
 ---
 
