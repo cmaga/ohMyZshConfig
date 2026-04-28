@@ -7,13 +7,6 @@
           { "type": "command", "command": "$HOME/.claude/hooks/deny-busy-loops.sh" }
         ]
       }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "$HOME/.claude/hooks/vault-orient.sh" }
-        ]
-      }
     ]
   }
 }

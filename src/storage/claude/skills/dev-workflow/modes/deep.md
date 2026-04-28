@@ -22,14 +22,14 @@ Architectural or cross-module changes, and every `new take` flow. Iterative scop
 
 Call `EnterPlanMode`.
 
-Draft the plan with these sections:
+Draft the plan using [../templates/plan-template.md](../templates/plan-template.md) as the structure. Target 100-300 lines. Past 500 means you have over-specified — cut.
 
-- **Context** — what and why
-- **Architecture notes** — boundaries, patterns to follow, patterns to avoid
-- **Task breakdown** — one card per worker. Each has: scope, files, steps, constraints, done criteria
-- **Test plan** — unit and programmatic tests the parent will write inline after workers finish
+The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is the contract with workers. The mechanics (Files, Tasks, Tests) are the execution plan. Add an Architecture notes subsection under the mechanics half if patterns or boundaries need calling out.
 
-Iterate with the user. Continue using the progressive format — high level first, drill down on request.
+- Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
+- Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Resolve every hit with the user before exiting plan mode.
+
+Iterate with the user using the progressive format — high level first, drill down on request.
 
 ### 3. QA planning
 
@@ -60,7 +60,7 @@ Call `ExitPlanMode`.
 
 - One `worker-agent` per task.
 - Run in parallel where tasks touch disjoint files.
-- Each worker gets only its task section from the plan.
+- Pass each worker its task card inline (the T-N block from the plan), not the whole plan. The worker can read `plan.md` if it needs to disambiguate.
 
 ### 7. Parent review, tests, and build
 

@@ -19,12 +19,12 @@ Features and moderate refactors. Parent plans, `worker-agent` subagents implemen
 
 ### 2. Write the plan
 
-Write `.claude-artifacts/dev-workflow/plan.md` inside the worktree. Required sections:
+Write `.claude-artifacts/dev-workflow/plan.md` inside the worktree using [../templates/plan-template.md](../templates/plan-template.md) as the structure. Target 50-150 lines.
 
-- **Context** — what and why, 2-3 sentences
-- **Files** — exhaustive list of paths to modify
-- **Tasks** — numbered. Each has: scope, files, steps, constraints, done criteria
-- **Tests** — unit and programmatic tests the parent will add inline after workers finish
+The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is the contract with workers. The mechanics (Files, Tasks, Tests) are the execution plan.
+
+- Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
+- Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Grep the plan for it and resolve every hit with the user before dispatching.
 
 Present the plan to the user and wait for approval before dispatching.
 
@@ -32,7 +32,7 @@ Present the plan to the user and wait for approval before dispatching.
 
 - One `worker-agent` per task.
 - Run workers in parallel when their tasks touch disjoint files.
-- Give each worker only its task section from the plan, not the whole plan.
+- Pass each worker its task card inline (the T-N block from the plan), not the whole plan. The worker can read `plan.md` if it needs to disambiguate.
 
 ### 4. Parent review and tests
 

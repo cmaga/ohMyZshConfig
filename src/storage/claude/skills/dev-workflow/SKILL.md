@@ -12,6 +12,7 @@ Single orchestrated flow for ticket-driven and manual implementation work. The p
 - Never automatically merge a PR. The user merges or asks you to merge.
 - All tiers run in an isolated worktree. Create it before any file modification.
 - Classification is Claude-proposed, user-confirmed. Never proceed without confirmation.
+- Research before locking. Solutions are guesses — yours and the user's both. Before any plan or fix is final, name the question you'd most want confidence in, then go answer it. Bring back what you found.
 
 ## Trigger routing
 
@@ -69,6 +70,16 @@ Use this format during all scoping and review conversations with the user. The u
 - List the top-level changes as bullets. Do not expand them.
 - Ask the user which bullets they want expanded before going deeper.
 - Every multi-point response ends with a `### Summary` section listing decisions made and open questions.
+
+## Research before you lock in
+
+Solutions are guesses. The difference between yours and the user's is shape, not certainty: they bring intuition and context, you bring breadth and search speed. Research is how either of you moves from guess to actual answer.
+
+Before any plan or fix is final, look it up. Start by naming the question you'd most want a confident answer to — that's usually harder than it sounds, and it's where most of the value is. Then go find that answer. Wherever it lives — docs, release notes, a community thread, a blog post, the source — what matters is that you can say what you didn't know and now do.
+
+Bring it back into the conversation with what you think it means. You pick from real options, together.
+
+This is allowed to be curious. If a solution feels clean, that's interesting, not authoritative — clean solutions are sometimes right and sometimes training-data echoes. The research tells you which. The output you're aiming for is a solution you'd be proud of, not one you're defending.
 
 ## Shared exit
 

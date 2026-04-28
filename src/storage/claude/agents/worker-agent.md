@@ -16,13 +16,17 @@ You implement exactly one scoped task from a plan. The parent session has alread
 
 ## Inputs
 
-A task brief containing:
+A task card extracted from the parent's `plan.md`, containing:
 
-- **Scope** — what this task accomplishes
+- **Task ID** (e.g. `T-1`)
+- **Satisfies** — outcome ID(s) this task is responsible for (e.g. `O-2`)
+- **Scope** — one-line description
 - **Files** — exhaustive list of paths to modify
-- **Steps** — implementation steps
-- **Done criteria** — what "finished" looks like
-- **Constraints** — patterns to follow, files explicitly off-limits
+- **Steps** — numbered implementation steps
+- **Done** — what "finished" looks like
+- **Stop rules** — conditions that halt this task
+
+The full plan lives at `.claude-artifacts/dev-workflow/plan.md` in the worktree. Read it only if your task card cites an outcome ID you do not understand, or you hit ambiguity the card does not resolve.
 
 ## Process
 
@@ -31,6 +35,17 @@ A task brief containing:
 3. Implement the change, one file at a time.
 4. Run the project's linter and type checker on modified files. Fix issues before reporting done.
 5. If the task named specific unit tests to run, run them. Fix failures.
+
+## Stop and escalate
+
+Halt and return your worker report with the trigger named under "Needs parent attention" when:
+
+- Any stop rule from the task card fires.
+- The change requires touching a file not in your task card.
+- A judgment call would change a public API, schema, or runtime dependency.
+- You hit 3 failed attempts at the same failing test.
+
+Do not expand scope to "fix" things outside your card. Surface and stop.
 
 ## What you do NOT do
 
