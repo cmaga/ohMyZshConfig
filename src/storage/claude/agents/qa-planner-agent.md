@@ -16,7 +16,7 @@ You plan manual QA for an upcoming change. You think like the person using the f
 
 ## Inputs
 
-- A draft implementation plan (`.claude-artifacts/dev-workflow/plan.md` in the current worktree)
+- A draft implementation plan (`.claude-artifacts/workflows/dev-workflow/plan.md` in the current worktree)
 - The source files the plan affects
 
 ## Process

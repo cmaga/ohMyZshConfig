@@ -26,19 +26,21 @@ If feature selection determined this is a workflow command (procedures with side
 
 Any feature that writes files — skills, workflow commands, hooks, subagents — must declare at what point of a project/session/worktree lifecycle its artifacts are allowed to exist. Pick the narrowest scope that outlives the need.
 
-| Lifecycle | Path                                        | Dies when            | Example                |
-| --------- | ------------------------------------------- | -------------------- | ---------------------- |
-| Worktree  | `<worktree>/.claude-artifacts/<feature>/…`  | Worktree removed     | Implementation plan    |
-| Project   | `<main-repo>/.claude-artifacts/<feature>/…` | Manual / project end | Long-lived cache       |
-| User      | `~/.claude-artifacts/<feature>/…`           | Explicit user action | Cross-project prefs    |
-| Ephemeral | Session context only, never on disk         | Session ends         | Scratch state          |
+Artifact paths always include a `<type>` segment so provenance is obvious from the directory tree. Valid types: `skills`, `workflows`, `rules`, `hooks`, `agents`. A workflow command writes under `workflows/`, even though it is packaged in the same `skills/` source tree.
+
+| Lifecycle | Path                                                  | Dies when            | Example                |
+| --------- | ----------------------------------------------------- | -------------------- | ---------------------- |
+| Worktree  | `<worktree>/.claude-artifacts/<type>/<feature>/…`     | Worktree removed     | Implementation plan    |
+| Project   | `<main-repo>/.claude-artifacts/<type>/<feature>/…`    | Manual / project end | Long-lived cache       |
+| User      | `~/.claude-artifacts/<type>/<feature>/…`              | Explicit user action | Cross-project prefs    |
+| Ephemeral | Session context only, never on disk                   | Session ends         | Scratch state          |
 
 Rules:
 
 - Never write runtime artifacts under `.claude/` or `~/.claude/` — those paths are reserved for Claude configuration and trigger permission prompts.
 - Project-scoped artifacts must be gitignored. Append `.claude-artifacts/` to `$(git rev-parse --git-common-dir)/info/exclude` at feature entry — idempotent, untracked, shared across worktrees.
 - Cleanup is the responsibility of whoever invalidates the lifecycle. Worktree teardown removes worktree-scoped artifacts for free; project- and user-scoped artifacts need explicit cleanup commands.
-- Declare the chosen lifecycle explicitly in the feature's SKILL.md (or equivalent) so future readers know without guessing.
+- Declare the chosen lifecycle and type explicitly in the feature's SKILL.md (or equivalent) so future readers know without guessing.
 
 ## Handoff
 

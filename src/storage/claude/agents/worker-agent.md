@@ -26,7 +26,7 @@ A task card extracted from the parent's `plan.md`, containing:
 - **Done** — what "finished" looks like
 - **Stop rules** — conditions that halt this task
 
-The full plan lives at `.claude-artifacts/dev-workflow/plan.md` in the worktree. Read it only if your task card cites an outcome ID you do not understand, or you hit ambiguity the card does not resolve.
+The full plan lives at `.claude-artifacts/workflows/dev-workflow/plan.md` in the worktree. Read it only if your task card cites an outcome ID you do not understand, or you hit ambiguity the card does not resolve.
 
 ## Process
 

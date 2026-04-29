@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude finalize lint
+.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -88,7 +88,7 @@ lint: ## Format files and run lint checks
 	@printf "\n"
 	@printf "$(GREEN)All lint checks passed!$(NC)\n"
 
-deploy: deploy-zsh deploy-git deploy-claude finalize ## Deploy all configs (zsh, git, claude)
+deploy: deploy-zsh deploy-git deploy-claude deploy-automations finalize ## Deploy all configs (zsh, git, claude, automations)
 
 deploy-zsh: ## Deploy zsh configs (.zshrc, aliases.zsh, custom scripts)
 	@printf "$(BLUE)Deploying zsh configuration files...$(NC)\n"
@@ -113,6 +113,14 @@ deploy-claude: ## Deploy Claude Code configs (CLAUDE.md, rules, skills, agents)
 		exit 1; \
 	fi
 	@"$(DEPLOYMENT_DIR)/06-deploy-claude.zsh"
+
+deploy-automations: ## Register launchd jobs for skill-bundled and standalone automations (macOS)
+	@printf "$(BLUE)Deploying automations...$(NC)\n"
+	@if [ ! -f "$(DEPLOYMENT_DIR)/08-deploy-automations.zsh" ]; then \
+		printf "$(RED)src/deployment/08-deploy-automations.zsh not found$(NC)\n"; \
+		exit 1; \
+	fi
+	@"$(DEPLOYMENT_DIR)/08-deploy-automations.zsh"
 
 finalize: ## Final cleanup and shell reload prompt
 	@"$(DEPLOYMENT_DIR)/07-finalize.zsh"
@@ -148,7 +156,10 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "$(BLUE)Phase 5: Claude Code Deployment$(NC)\n"
 	@$(MAKE) deploy-claude
 	@printf "\n"
-	@printf "$(BLUE)Phase 6: Finalization$(NC)\n"
+	@printf "$(BLUE)Phase 6: Automation Deployment$(NC)\n"
+	@$(MAKE) deploy-automations
+	@printf "\n"
+	@printf "$(BLUE)Phase 7: Finalization$(NC)\n"
 	@$(MAKE) finalize
 	@printf "\n"
 	@printf "$(GREEN)Complete System Setup Finished!$(NC)\n"
@@ -158,4 +169,5 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "  - $(YELLOW)make deploy-zsh$(NC) - Deploy zsh (includes plugins if needed)\n"
 	@printf "  - $(YELLOW)make deploy-git$(NC) - Deploy git configs\n"
 	@printf "  - $(YELLOW)make deploy-claude$(NC) - Deploy Claude Code configs\n"
+	@printf "  - $(YELLOW)make deploy-automations$(NC) - Register launchd jobs for automations\n"
 	@printf "  - $(YELLOW)make lint$(NC) - Validate configuration before commits\n"

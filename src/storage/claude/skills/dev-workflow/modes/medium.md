@@ -19,7 +19,7 @@ Features and moderate refactors. Parent plans, `worker-agent` subagents implemen
 
 ### 2. Write the plan
 
-Write `.claude-artifacts/dev-workflow/plan.md` inside the worktree using [../templates/plan-template.md](../templates/plan-template.md) as the structure. Target 50-150 lines.
+Write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktree using [../templates/plan-template.md](../templates/plan-template.md) as the structure. Target 50-150 lines.
 
 The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is the contract with workers. The mechanics (Files, Tasks, Tests) are the execution plan.
 

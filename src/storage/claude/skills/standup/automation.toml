@@ -1,0 +1,8 @@
+# Standup automation config.
+# Edit repo_path when you switch active projects.
+# Only `cron`, `repo_path`, and `enabled` are read by the deploy script.
+# Format is intentionally minimal so a regex parser in zsh can read it.
+
+enabled = true
+cron = "30 12 * * 1-5"
+repo_path = "/Users/cmagana/dev/gsi/symage/symdocs/symdocs"

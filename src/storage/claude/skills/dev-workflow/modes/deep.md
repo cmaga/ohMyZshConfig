@@ -52,7 +52,7 @@ Present findings. The user accepts, adjusts, or overrides each. Update the plan 
 
 ### 5. Finalize plan
 
-Write the final plan to `.claude-artifacts/dev-workflow/plan.md` in the worktree.
+Write the final plan to `.claude-artifacts/workflows/dev-workflow/plan.md` in the worktree.
 
 Call `ExitPlanMode`.
 
