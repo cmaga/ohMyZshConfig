@@ -3,5 +3,6 @@
   "files.associations": {
     "**/agents/*.yaml": "plaintext",
     "**/agents/*.yml": "plaintext"
-  }
+  },
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }

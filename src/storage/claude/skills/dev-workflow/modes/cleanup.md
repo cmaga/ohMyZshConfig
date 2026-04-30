@@ -38,7 +38,7 @@ In order:
 
 1. If currently inside the worktree, call `ExitWorktree`.
 2. Remove the worktree: `git worktree remove <path>`. If it fails because of leftover changes, surface the error and ask the user whether to `--force`. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
-3. Delete the local branch: `git branch -d <branch>`. If the branch is not fully merged locally, report and ask before `-D`.
+3. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Step 2 already verified `MERGED` via `gh`, which is the source of truth.
 
 ### 5. Report
 

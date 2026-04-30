@@ -60,6 +60,36 @@ Present findings as a prioritized list with file:line references.
 
 **Plugin subagents** do not support `hooks`, `mcpServers`, or `permissionMode` — these fields are silently ignored.
 
+## Input Contract
+
+Parents pass context to subagents **inline in the invocation prompt**. The agent body must describe what the parent passes — never assume the subagent will read files to assemble its own context.
+
+When a subagent runs inside a workflow that persists artifacts (e.g., `.claude-artifacts/<workflow>/plan.md`), the agent body may mention that path as a **fallback for disambiguation** — never as the primary input.
+
+Rules:
+
+- Inline content from the parent is the contract. The path is a convenience.
+- Document the inline payload in an `## Inputs` (or `## Your inputs`) section near the top of the body.
+- Mention a fallback path only if the agent is workflow-bound. Skill-agnostic agents stay path-free.
+- Never hardcode workflow paths in agents intended to be reusable outside that workflow.
+
+Why: subagents are reusable across callers. Coupling the body to a caller's filesystem layout locks the agent to one workflow and breaks on rename. Inline content also lets the parent trim, highlight, and annotate what the subagent sees — capacity the parent loses if the subagent reads from disk on its own.
+
+Example body section:
+
+```markdown
+## Inputs
+
+The parent passes you the following inline:
+- The proposed plan or diff
+- The list of affected files
+
+If a workflow persists the plan to a known path, you may read it as a fallback
+when inline content is ambiguous. Treat the parent's prompt as authoritative.
+```
+
+Mirroring rule for the parent: when invoking a subagent, embed the relevant context in the prompt. Pass the path only as supplementary, never as the only input.
+
 ## Tool Access
 
 By default, subagents inherit all tools from the main conversation, including MCP tools. Use `tools` to restrict or `disallowedTools` to deny specific tools.

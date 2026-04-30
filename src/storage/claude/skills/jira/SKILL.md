@@ -251,12 +251,16 @@ plain text suitable for parsing.
 
 Not all flags work on all commands. Use only the flags valid for each command type:
 
-| Flag           | `issue list` | `issue view` | `issue create` | `issue move` | `issue comment add` |
-| -------------- | :----------: | :----------: | :------------: | :----------: | :-----------------: |
-| `--plain`      |     Yes      |     Yes      |       No       |      No      |         No          |
-| `--no-headers` |     Yes      |      No      |       No       |      No      |         No          |
-| `--raw`        |     Yes      |      No      |       No       |      No      |         No          |
-| `--no-input`   |      No      |      No      |      Yes       |      No      |         No          |
+Source of truth: `jira <subcommand> --help`. The table below was rebuilt from
+that output — if you suspect a cell is wrong, run `--help` and trust it over
+this table.
+
+| Flag           | `issue list` | `issue view` | `issue create` | `issue edit` | `issue move` | `issue comment add` | `issue worklog add` |
+| -------------- | :----------: | :----------: | :------------: | :----------: | :----------: | :-----------------: | :-----------------: |
+| `--plain`      |     Yes      |     Yes      |       No       |      No      |      No      |         No          |         No          |
+| `--no-headers` |     Yes      |      No      |       No       |      No      |      No      |         No          |         No          |
+| `--raw`        |     Yes      |     Yes      |      Yes       |      No      |      No      |         No          |         No          |
+| `--no-input`   |      No      |      No      |      Yes       |     Yes      |      No      |         Yes         |         Yes         |
 
 ### Label Usage
 
@@ -298,6 +302,10 @@ jira issue move {ticketId} "{transitions.inProgress}"
 
 **Create issue:**
 
+> **MANDATORY — both rules required to prevent session hangs:**
+> - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
+> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
+
 ```bash
 jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -l{label} --no-input
 ```
@@ -312,10 +320,48 @@ cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary
 
 Include `-l{label}` for each label in `config.labels`. Omit if the array is empty.
 
-**Add comment:**
+**Edit issue:**
+
+> **MANDATORY — both rules required to prevent session hangs:**
+> - Pass `--no-input`. Without it, jira-cli drops into an interactive editor or prompt and blocks the session.
+> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 
 ```bash
-jira issue comment add {ticketId} "Comment text"
+jira issue edit {ticketId} -s "New summary" --no-input
+```
+
+To remove a label, prefix with `-`: `--label -oldlabel --label newlabel`.
+
+**Add comment:**
+
+> **MANDATORY — both rules required to prevent session hangs (this command has hung Claude sessions before):**
+> - Pass `--no-input`. Without it, jira-cli shows "Are you sure you want to submit?" and blocks indefinitely with nothing on stdin.
+> - Set Bash tool `timeout: 60000` (60s ceiling). A healthy comment write completes in well under a second; if it exceeds 60s, investigate — do NOT retry without `--no-input`.
+
+```bash
+jira issue comment add {ticketId} "Comment text" --no-input
+```
+
+For multi-line or long comments, pipe via stdin (still pass `--no-input`, still cap timeout):
+
+```bash
+cat /tmp/comment.txt | jira issue comment add {ticketId} --no-input
+```
+
+**Add worklog:**
+
+> **MANDATORY — both rules required to prevent session hangs:**
+> - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
+> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
+
+```bash
+jira issue worklog add {ticketId} "2h 30m" --no-input
+```
+
+With a comment:
+
+```bash
+jira issue worklog add {ticketId} "2h 30m" --comment "Implementation work" --no-input
 ```
 
 ## Full CLI Reference

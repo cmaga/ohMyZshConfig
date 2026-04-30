@@ -6,7 +6,7 @@ Architectural or cross-module changes, and every `new take` flow. Iterative scop
 
 - Use the progressive format from [../SKILL.md](../SKILL.md) for the entire scoping and review phases.
 - Plan mode holds the user's attention. Do not exit plan mode until the plan is final.
-- The `code-review-agent` reviews the draft plan before workers dispatch. The user accepts, adjusts, or overrides each finding.
+- The `plan-review-agent` reviews the draft plan before workers dispatch. The user accepts, adjusts, or overrides each finding.
 - Test-planning is inline by the parent. QA-planning is delegated to `qa-planner-agent`.
 
 ## Process
@@ -42,7 +42,7 @@ Append the agent's returned `## QA Plan` section to the plan verbatim.
 
 ### 4. Architecture review gate
 
-Invoke the `code-review-agent` subagent against the draft plan and affected files. Ask for:
+Invoke the `plan-review-agent` subagent against the draft plan and affected files. Ask for:
 
 - Architecture fit with existing patterns
 - Missing edge cases

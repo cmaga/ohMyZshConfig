@@ -12,6 +12,9 @@ case "$OSTYPE" in
     alias unrealed='DEVELOPER_DIR="/Applications/Xcode-16.2.0.app/Contents/Developer" open "/Users/Shared/Epic Games/UE_5.5/Engine/Binaries/Mac/UnrealEditor.app"'
     alias symage='DEVELOPER_DIR="/Applications/Xcode-16.2.0.app/Contents/Developer" open "/Users/Shared/Epic Games/UE_5.5/Engine/Binaries/Mac/UnrealEditor.app" --args "/Users/cmagana/dev/work/symage/unreal/Symage/Symage.uproject"'
 
+    # Manual Harvest timesheet update (Friday cron usually handles this)
+    alias timesheet="$HOME/.local/share/cmagana-automations/timesheet/harvest-update.zsh"
+
     ;;
   linux*)
     # Linux specific aliases
