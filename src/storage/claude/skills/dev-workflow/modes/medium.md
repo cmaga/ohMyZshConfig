@@ -26,7 +26,7 @@ The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is t
 - Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Grep the plan for it and resolve every hit with the user before dispatching.
 
-Present the plan to the user and wait for approval before dispatching.
+Render the [Pre-dispatch gate](../SKILL.md#pre-dispatch-gate) and wait for approval before dispatching.
 
 ### 3. Dispatch workers
 

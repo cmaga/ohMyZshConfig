@@ -31,16 +31,18 @@ Parse the user's message on invocation.
 ### Path A — ticket ID provided (`take <TICKET>`)
 
 1. Fetch via the `jira` skill.
-2. Present ticket title and description in 2-3 lines.
-3. Propose a tier with one sentence of reasoning.
-4. User confirms or overrides.
+2. Transition the ticket to "In Progress" via the `jira` skill. Skip silently if it is already in that state.
+3. Present ticket title and description in 2-3 lines.
+4. Propose a tier with one sentence of reasoning.
+5. User confirms or overrides.
 
 ### Path B — no ticket (`new take`)
 
 1. Ask what the user wants to work on.
 2. Scope progressively (see **Progressive format** below).
 3. Once scope is clear, create the ticket via the `jira` skill.
-4. Route directly to `modes/deep.md`. No classification.
+4. Transition the new ticket to "In Progress" via the `jira` skill.
+5. Route directly to `modes/deep.md`. No classification.
 
 ### Tier definitions
 
@@ -70,6 +72,7 @@ Use this format during all scoping and review conversations with the user. The u
 - List the top-level changes as bullets. Do not expand them.
 - Ask the user which bullets they want expanded before going deeper.
 - Every multi-point response ends with a `### Summary` section listing decisions made and open questions.
+- Exception: the [Pre-dispatch gate](#pre-dispatch-gate) translates the plan into prose for the user. The "do not expand" and `### Summary` rules do not apply there.
 
 ## Research before you lock in
 
@@ -80,6 +83,32 @@ Before any plan or fix is final, look it up. Start by naming the question you'd 
 Bring it back into the conversation with what you think it means. You pick from real options, together.
 
 This is allowed to be curious. If a solution feels clean, that's interesting, not authoritative — clean solutions are sometimes right and sometimes training-data echoes. The research tells you which. The output you're aiming for is a solution you'd be proud of, not one you're defending.
+
+## Pre-dispatch gate
+
+The moment before workers dispatch is the user's highest-leverage decision point. Translate the plan into prose the user can act on without opening the plan file. Plain language. No internal vocabulary — no `O-1`, no "the controller", no template labels.
+
+Three beats, in order:
+
+- **The problem** — what is broken or what the user can't do today. If a non-engineer in the room couldn't follow it, rewrite.
+- **The fix** — concrete changes. Name files and what changes in each (`` `main.ts` — turn on raw-body mode ``). Name the test that proves it. If you made judgment calls while planning, fold them in here as "I chose X over Y because Z" — never as a separate jargon bullet.
+- **Where we are** — one sentence: plan is written, nothing has changed yet, waiting on the user.
+
+End with a binary ask: `go` to dispatch, anything else to hold. The two paths must be obvious; the user should not have to invent a third.
+
+If `[NEEDS CLARIFICATION]` survives planning, surface it here as one open question — do not bury it.
+
+Do not append the progressive-format `### Summary` here — the gate is the summary.
+
+### Example
+
+> **The bug:** Clerk sends webhooks. The server checks they're real with a signature. Right now the check is broken — it's comparing the signature against a re-typed copy of the message instead of the original. Will fail in prod.
+>
+> **The fix:** One-line change in `main.ts` (turn on raw-body mode), one-line change in the webhook controller (`@Body` → `@RawBody`), plus a real test that signs a fake Clerk message and verifies it goes through.
+>
+> **Where we are:** I wrote the plan. Nothing has been changed yet. I'm waiting on you to say "go" before I dispatch a worker to do those three edits.
+>
+> Reply with "go" and I'll do it. Or "not now" and I'll stop.
 
 ## Shared exit
 

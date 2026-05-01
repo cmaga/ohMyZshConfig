@@ -54,7 +54,7 @@ Present findings. The user accepts, adjusts, or overrides each. Update the plan 
 
 Write the final plan to `.claude-artifacts/workflows/dev-workflow/plan.md` in the worktree.
 
-Call `ExitPlanMode`.
+Render the [Pre-dispatch gate](../SKILL.md#pre-dispatch-gate). On user approval, call `ExitPlanMode`.
 
 ### 6. Dispatch workers
 
