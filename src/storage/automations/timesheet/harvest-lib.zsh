@@ -115,10 +115,12 @@ resolve_project_task() {
 }
 
 # --- Date helpers (BSD date on macOS) ---
-sunday_mmdd()    { date -v-Sun '+%m-%d'; }
-weekday_iso()    { date -v-Sun -v+${1}d '+%Y-%m-%d'; }
-weekday_mmdd()   { date -v-Sun -v+${1}d '+%m-%d'; }
-weekday_short()  { date -v-Sun -v+${1}d '+%a'; }
+# WEEK_OFFSET_DAYS shifts the resolved week (e.g. -7 = previous week) for backfills.
+: ${WEEK_OFFSET_DAYS:=+0}
+sunday_mmdd()    { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" '+%m-%d'; }
+weekday_iso()    { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%Y-%m-%d'; }
+weekday_mmdd()   { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%m-%d'; }
+weekday_short()  { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%a'; }
 
 # --- Standup paragraph extraction ---
 # Args: standup_file day_short day_mmdd. Prints the paragraph (may be empty).

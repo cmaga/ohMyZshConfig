@@ -37,11 +37,6 @@ fi
 
 log() { print -- "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
-TODAY_DAY=$(date '+%a')
-case "$TODAY_DAY" in
-    Sat|Sun) log "skip: weekend ($TODAY_DAY)"; exit 0 ;;
-esac
-
 log "running harvest-update.zsh weekly"
 update_exit=0
 "$SCRIPT_DIR/harvest-update.zsh" weekly || update_exit=$?

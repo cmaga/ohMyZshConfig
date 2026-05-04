@@ -6,7 +6,7 @@
 # Format is intentionally minimal so a regex parser in zsh can read it.
 
 enabled = true
-cron = "59 23 * * 5"
+cron = "0 14 * * 5"
 repo_path = "/Users/cmagana/dev/gsi/symage/symdocs/symdocs"
 project_name = "Symage R&D"
 task_name = "All Software Development"

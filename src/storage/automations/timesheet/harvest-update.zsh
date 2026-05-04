@@ -29,10 +29,12 @@ if [[ -z "$REPO_PATH" || -z "$PROJECT_NAME" || -z "$TASK_NAME" ]]; then
     exit 1
 fi
 
-TODAY_DOW=$(date '+%w')
-if [[ "$TODAY_DOW" == "0" || "$TODAY_DOW" == "6" ]]; then
-    echo "Timesheet writes cover weekdays only."
-    exit 0
+if [[ "$MODE" == "daily" ]]; then
+    TODAY_DOW=$(date '+%w')
+    if [[ "$TODAY_DOW" == "0" || "$TODAY_DOW" == "6" ]]; then
+        echo "Timesheet writes cover weekdays only."
+        exit 0
+    fi
 fi
 
 require_credentials || exit 1
