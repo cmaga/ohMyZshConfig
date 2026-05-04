@@ -44,4 +44,4 @@ After every worker reports done:
 - Run the test suite. Fix failures.
 - Run the build. Fix failures.
 
-### 5. Route to the shared exit in [../SKILL.md](../SKILL.md).
+### 5. Route to wrap-up in [../SKILL.md](../SKILL.md).

@@ -17,4 +17,4 @@ Trivial changes. The parent session implements in one pass. No subagents, no pla
 4. Implement the change directly.
 5. Run the project's linter and type checker on modified files. Fix issues.
 6. If the ticket implies a test, run it. Fix failures.
-7. Route to the shared exit in [../SKILL.md](../SKILL.md).
+7. Route to wrap-up in [../SKILL.md](../SKILL.md).

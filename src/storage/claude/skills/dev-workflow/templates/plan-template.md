@@ -8,11 +8,12 @@ The mechanics (bottom half) is the parent's execution plan.
 Tier guidance:
   - small:  no plan.md. Ticket body is the contract; parent verbalizes intent
             in 1-2 sentences before implementing.
-  - medium: full template, target 50-150 lines.
-  - deep:   full template, target 100-300 lines. Past 500 means over-specified.
+  - medium: full template; drop Architecture notes / QA Plan if trivial.
+  - deep:   full template including Architecture notes and QA Plan.
 
-Delete sections that do not apply. Empty headers are forbidden — they teach
-workers that fields are noise.
+Length is whatever the workers need — the user reads the chat brief, not the
+file. Delete sections that do not apply. Empty headers are forbidden — they
+teach workers that fields are noise.
 
 During scoping, mark unresolved ambiguity inline as [NEEDS CLARIFICATION: ...].
 Parent greps the plan for it and resolves every hit before dispatching workers.

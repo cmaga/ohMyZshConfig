@@ -88,19 +88,53 @@ This is allowed to be curious. If a solution feels clean, that's interesting, no
 
 The moment before workers dispatch is the user's highest-leverage decision point. Translate the plan into prose the user can act on without opening the plan file. Plain language. No internal vocabulary — no `O-1`, no "the controller", no template labels.
 
-Three beats, in order:
+The chat brief is not the plan. The plan file is for workers and the `plan-review-agent` and can be 400 lines. The chat brief is for the user and tops out around 30 lines — past that the user rubber-stamps and the gate stops working.
+
+### Small / medium tier — three beats
+
+In order:
 
 - **The problem** — what is broken or what the user can't do today. If a non-engineer in the room couldn't follow it, rewrite.
 - **The fix** — concrete changes. Name files and what changes in each (`` `main.ts` — turn on raw-body mode ``). Name the test that proves it. If you made judgment calls while planning, fold them in here as "I chose X over Y because Z" — never as a separate jargon bullet.
 - **Where we are** — one sentence: plan is written, nothing has changed yet, waiting on the user.
 
+### Deep tier — five beats
+
+A multi-task plan needs more redirect surface than three beats can carry. In order:
+
+- **Why** — what the user can't do today. One sentence. Same standard as the small/medium "The problem".
+- **Approach** — what we're building, 2-3 sentences. Names patterns and integration points, not files. (File-by-file detail lives in `plan.md`.)
+- **Judgment calls — push back here** — 3-6 bullets, each one a decision a human might overrule (library choice, pattern, scope cut, deferral). Skip the mechanical or predetermined ones. This is the bullet list where the user actually steers.
+- **Tasks** — one line per worker task, title only. No file lists, no steps, no code. Format: `T-N  short verb-led title`. Aim under 12 tasks; if more, regroup.
+- **Risks** — 1-2 lines. The cross-cutting hazards a single worker can't see (shared-type churn, cascading prop changes, migration ordering).
+
+Skip "Where we are" — at deep tier the user is technical and the binary ask carries that meaning implicitly.
+
+### Both tiers
+
 End with a binary ask: `go` to dispatch, anything else to hold. The two paths must be obvious; the user should not have to invent a third.
 
-If `[NEEDS CLARIFICATION]` survives planning, surface it here as one open question — do not bury it.
+If `[NEEDS CLARIFICATION]` survives planning, surface it as one open question above the binary ask — do not bury it.
 
 Do not append the progressive-format `### Summary` here — the gate is the summary.
 
-### Example
+The lead + binary-ask shape is also used at the first scoping message in deep mode (see [modes/deep.md](modes/deep.md)). Different binary ask (*agree on framing* vs. *go to dispatch*), same structure: context above the lead, decision at the bottom of the terminal where the cursor lands.
+
+### What does NOT belong in chat
+
+These live in `plan.md` and stay there:
+
+- File inventories (paths the workers will touch)
+- Numbered steps inside task cards
+- Code snippets, type definitions, grep verifications
+- The full QA Plan (link to it; do not paste)
+- Outcomes formatted as `O-1` / `O-2` — translate to plain language
+
+Reference the plan path (`.claude-artifacts/workflows/dev-workflow/plan.md`) so the user can open it. Never paste it.
+
+### Examples
+
+**Small tier — bug fix:**
 
 > **The bug:** Clerk sends webhooks. The server checks they're real with a signature. Right now the check is broken — it's comparing the signature against a re-typed copy of the message instead of the original. Will fail in prod.
 >
@@ -110,25 +144,81 @@ Do not append the progressive-format `### Summary` here — the gate is the summ
 >
 > Reply with "go" and I'll do it. Or "not now" and I'll stop.
 
-## Shared exit
+**Deep tier — multi-task feature:**
+
+> **KRAT-186 — Real data in 6 budgeting screens**
+>
+> **Why:** Paying customers see fake demo data on Accounts, Transactions, Categories, Overview, and Recurrings.
+>
+> **Approach:** Wire each screen to `/financial/*` via four new hooks (`useTransactions`, `useCategories`, `useOverview`, `useRecurrings`) and one new GET endpoint (`/financial/categories`). Mock-data files stay alive for the demo-mode ticket.
+>
+> **Judgment calls — push back here:**
+>
+> - Plain `useState` / `useEffect` hooks, NOT TanStack Query (matches `use-accounts.ts`)
+> - All money in cents, format at the render boundary via a new `formatCents()` util
+> - Net worth chart = "coming soon" placeholder (no historical balance data exists)
+> - Mutations (review / edit) explicitly out of scope — read path only
+>
+> **Tasks (8):**
+>
+> ```
+> T-0  formatCents util
+> T-1  GET /financial/categories endpoint
+> T-2  Delete duplicate types in shared/api/financial.ts + fix legacy callers
+> T-3  4 new API clients + 4 new hooks
+> T-4  Wire accounts-page.tsx
+> T-5  Wire transactions-list-page.tsx
+> T-6  Wire categories-page.tsx + CategoryBadge prop change
+> T-7  Wire overview/dashboard-page.tsx + chart helpers
+> T-8  Wire recurrings-page.tsx
+> ```
+>
+> **Risks:** T-2 touches shared types — `pnpm build` from repo root will surface breaks. T-6's CategoryBadge prop change cascades to all callers (worker greps first).
+>
+> Plan: `.claude-artifacts/workflows/dev-workflow/plan.md`. Reply `go` to dispatch, or push back on any judgment call.
+
+## Wrap-up
 
 Every tier mode ends here before returning control.
 
-1. Parent reviews worker output against the plan and existing patterns.
-2. Produce a report:
-   - **What changed** — file list with one-line purpose each
-   - **Deviations from plan** — if any
-   - **Verification** — do everything you can to test and verify the change yourself. If you cannot verify something, list it here with one line on why it needs the user.
-3. Create PR via the `git-provider` skill.
-4. Transition ticket to "in review" via the `jira` skill.
-5. Run `code-review-agent` against the PR. If it returns findings, auto-fix what you can, commit as `address code review findings`, and push. One pass only.
-6. Final message: summarize any findings that need user decision, remind them to run `cleanup <TICKET>` after merge, and end with the PR URL on its own line.
+1. Create PR via the `git-provider` skill.
+2. Transition ticket to "in review" via the `jira` skill.
+3. Run `code-review-agent` against the diff. If it returns findings, auto-fix what you can, commit as `address code review findings`, and push. One pass only.
+4. Render the [Exit report](#exit-report) as the final message.
+
+### Exit report
+
+Mirror the plain-language voice of the [Pre-dispatch gate](#pre-dispatch-gate). No internal vocabulary (`O-1`, "the controller", "the spec"), no template labels, no diff-stat banner. Same shape across small, medium, and deep — only length varies.
+
+Five beats, in order:
+
+- **What this fixes** — the problem in the user's language, with one concrete example if it helps it land. If a non-engineer couldn't follow it, rewrite.
+- **How it's fixed** — the mechanism, 1–3 sentences. Name a thing only when naming it is the clearest way to say what changed. No file roll-call, no per-outcome checklist.
+- **Deviations from plan** — if any. Omit the heading if none.
+- **How it was verified** — concrete evidence of the visible outcome beyond tests and build: rendered PDFs/images/screens read with the Read tool, UI flows driven end-to-end, scripts whose output you inspected. Default assumption: you can verify everything yourself except look-and-feel. Omit if tests and build are sufficient on their own.
+- **What only you can verify** — look-and-feel only: visual taste, UX feel, copy. If `code-review-agent` flagged a user decision (scope cut, bundled commit), surface it here too. Omit the heading if none.
+
+Build, tests, and a clean review pass are preconditions for being here. Do not list them. If something failed, fix it before exiting — that's not a report, it's a deviation.
+
+End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
+
+### Exit report example
+
+> **What this fixes:** Authenticated users could change other users' data by passing someone else's id in the URL (`/users/SOMEONE_ELSE/preferences`). Now they can only change their own.
+>
+> **How it's fixed:** Routes read identity from the authenticated session instead of the URL. The per-route ownership guard and the path parameter it policed are both gone. Frontend callers updated to match.
+>
+> **How it was verified:** Drove the login → settings-update flow against the dev server end-to-end; the unauthorized-id case now 403s where it previously succeeded.
+>
+> Run `cleanup KRAT-188` after merge.
+>
+> https://github.com/example/repo/pull/123
 
 ## Modes
 
 - [modes/small.md](modes/small.md) — parent one-shots in the worktree
 - [modes/medium.md](modes/medium.md) — plan, dispatch workers, parent review
-- [modes/deep.md](modes/deep.md) — iterative scoping, plan mode, QA planner, review gate, workers, parent review
+- [modes/deep.md](modes/deep.md) — iterative scoping, QA planner, review gate, workers, parent review
 - [modes/cleanup.md](modes/cleanup.md) — post-merge teardown
 
 ## What this skill does NOT do
