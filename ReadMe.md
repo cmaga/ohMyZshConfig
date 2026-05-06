@@ -122,6 +122,42 @@ Features:
 
 Both the Linux/macOS system setup and the Windows PowerShell script install [Claude Code](https://claude.ai) CLI automatically. It is available as `claude` after setup completes.
 
+### `oc` shortcut
+
+Defined in `src/storage/zsh/aliases.zsh`:
+
+```zsh
+alias oc='claude --dangerously-skip-permissions --model default'
+```
+
+Runs Claude Code with permission prompts disabled and the default model selected. Note: this shadows the `cc` C-compiler symlink on Unix when using `cc` — we use `oc` to avoid the conflict. (Use `\cc` or `command cc` if you ever need the actual compiler.)
+
+### VS Code keybinding for `oc`
+
+Bind `cmd+;` to spawn a fresh integrated terminal and run `oc` in it. Add to `~/Library/Application Support/Code/User/keybindings.json` (Command Palette → "Preferences: Open Keyboard Shortcuts (JSON)"):
+
+```json
+{
+  "key": "cmd+;",
+  "command": "runCommands",
+  "args": {
+    "commands": [
+      "workbench.action.terminal.new",
+      {
+        "command": "workbench.action.terminal.sendSequence",
+        "args": { "text": "oc\u000D" }
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- **Why `runCommands` (chained), not just `sendSequence`?** `sendSequence` types literal characters into whatever terminal is focused — if that terminal is already running Claude Code, the text gets typed into Claude's input prompt instead of launching a new session. Chaining `terminal.new` first guarantees a fresh shell prompt every time.
+- **Why `cmd+;`?** It's free of VS Code defaults and macOS system reservations. `cmd+\` was the original pick but it's bound to "Split Editor" in VS Code by default. Other free options: `cmd+'`, `cmd+shift+a`, `cmd+shift+y`.
+- **Tradeoff:** every press spawns a new terminal panel — close idle ones with `cmd+w` while focused on the terminal.
+
 ## Claude Code Configuration Management
 
 The repository includes centralized Claude Code configuration management:
