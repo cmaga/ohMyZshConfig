@@ -7,7 +7,7 @@ Plans run hundreds of lines. The user already approved the solution during scopi
 1. **Recap** — one line on the agreed solution
 2. **Implementation** — systems and components, not files or code
 3. **Callouts** — decisions worth flagging, risks, things out of scope
-4. **Plan path** — one line link
+4. **Plan path** — one-line **absolute** path to `plan.md` inside the worktree, derived as `$(git rev-parse --show-toplevel)/.claude-artifacts/workflows/dev-workflow/plan.md`. The user's IDE CWD is the main repo, not the worktree, so a relative path won't resolve when they click it.
 5. **Binary ask** — `go` or push back
 
 Plain language. No `O-1`, no file paths, no code snippets. Aim for 5-15 lines. Past that the brief is doing the plan's job and the user starts rubber-stamping.
