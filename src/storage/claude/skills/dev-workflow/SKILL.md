@@ -11,8 +11,8 @@ Single orchestrated flow for ticket-driven and manual implementation work. The p
 
 - Never automatically merge a PR. The user merges or asks you to merge.
 - All tiers run in an isolated worktree. Create it before any file modification.
-- Classification is Claude-proposed, user-confirmed. Never proceed without confirmation.
-- Treat tickets as hypotheses/recommended work. The prescribed fix is a guess until verified.
+- Classification is Claude-proposed, user-confirmed.
+- Keep discussions with the user simple and high level unless they ask for more information. THIS IS **CRUCIAL**! Otherwise you waste time where they keep having to ask you to explain or they just rubber stamp.
 
 ## Trigger routing
 
@@ -47,14 +47,53 @@ Whether or not there's a ticket, investigate first and fully understand the prob
    - Collect information from the codebase.
    - Ask the user relevant business or product questions.
 3. **Re-state the problem.** Re-state in simple terms based on what you've learned. Confirm with the user to refine.
-4. **Pick a solution.** Every problem can be solved multiple ways; the goal is the best one.
-   1. Investigate multiple options. Prefer solutions that prevent future mistakes, are self-documenting, and adhere to project architecture and convention — but challenge suboptimal designs and tech debt.
-   2. Do online research for best practices and read docs on the relevant tech.
-   3. Once you have a recommended solution, ask: "Is this the cleanest fix I can think of? Is this beautiful code I'd be proud of writing?" Iterate.
-   4. Verify your recommendation. Your recommendation carries real weight. If a solution feels clean, that's interesting, not authoritative — clean solutions are sometimes right and sometimes training-data echoes (a Stripe-style event ID for a Plaid webhook, a TanStack Query pattern in a `useState` codebase). The verification tells you which. Name the assumption you'd most want a confident answer to, go answer it, and bring back what you found and what you think it means.
-   5. Use the [solution template](templates/solution-template.md) to present the recommendation and any considered alternatives.
-5. **Propose a tier** per the table above with one-sentence rationale. The user responds with `go` or names the tier they want.
-6. **Create the ticket** *(`new take` only — skip if a ticket was provided)*. Use the `jira` skill to capture the scoped problem.
+4. **Investigate solutions.** Sketch ≥2 viable approaches before recommending one. Prefer solutions that prevent future mistakes, are self-documenting, and adhere to project architecture and convention — but challenge suboptimal designs and tech debt. Read docs and similar implementations. Then verify the assumption you'd most want a confident answer to — clean solutions are sometimes training-data echoes (a Stripe-style event ID for a Plaid webhook, a TanStack Query pattern in a `useState` codebase); verification tells you which.
+
+5. **Present recommendation + tier.** Post this exact block to chat. Every field filled. No preamble — start with the `### Notes` header. Do not advance to step 6 until the user replies `go` or names a tier.
+
+   Detail above, action below: the terminal cursor lands at the bottom, so the call-to-action must be the last line. Bold is unreliable across terminals; this template uses `###` headers for sections and `##` for the Tier+Confidence line so the decision is the largest text on screen.
+
+   Rules: one line per bullet. No inline parentheticals — push to Notes. Confidence is a bare number; explain any gap as a `Confidence gap:` Notes bullet.
+
+   ```
+   ### Notes
+   - <judgment call, risk, open question, scope-creep note — one line each>
+   - Confidence gap: <what's holding back the missing points>
+
+   ### Alternatives
+   - <Option A>. Skip: <one-line reason>.
+   - <Option B>. Skip: <one-line reason>.
+   (Or, only if truly N/A: "no alternatives — <one-line reason>".)
+
+   ---
+
+   ### Problem
+   <what the user can't do today. One sentence.>
+
+   ### Recommendation
+   <what we'd build, 1-2 sentences. Patterns and integration points, not files.>
+
+   ## Tier: <small | medium | deep>  ·  Confidence: <1-10>/10
+   <one-sentence rationale>
+
+   ▶ Reply `go` to proceed, or name a different tier.
+   ```
+
+   If the user pushes back and iteration continues, keep this trimmed footer on every reply so the state stays at their cursor:
+
+   ```
+   ### Problem
+   <one sentence, revised if framing shifted>
+
+   ### Recommendation
+   <1-2 sentences>
+
+   ## Confidence: <n>/10
+
+   ▶ Reply `go` to proceed, or push back.
+   ```
+
+6. **Create the ticket** _(`new take` only — skip if a ticket was provided)_. Use the `jira` skill to capture the scoped problem.
 7. **Transition the ticket** to "In Progress" via the `jira` skill.
 8. **Enter the worktree.**
    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).

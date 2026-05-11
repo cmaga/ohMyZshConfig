@@ -49,4 +49,4 @@ One line:
 
 ### 6. Rename terminal
 
-rename the terminal to `DONE`.
+/rename DONE

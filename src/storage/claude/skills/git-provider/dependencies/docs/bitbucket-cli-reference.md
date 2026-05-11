@@ -219,9 +219,11 @@ bb pr activity list {pr-id}
 ### Get Repository Info
 
 ```bash
-bb repo get -o json
-bb repo get --repository workspace/repo-slug -o json
+bb repo get {slug} -o json
+bb repo get {slug} --workspace {workspace} -o json
 ```
+
+Note: `bb repo get` requires the repo slug as a positional arg — there is no "current repo" default.
 
 ## Branches
 

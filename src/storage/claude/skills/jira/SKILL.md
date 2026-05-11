@@ -7,6 +7,11 @@ description: JIRA ticket management using jira-cli. Use whenever the user wants 
 
 Manage JIRA tickets using jira-cli by ankitpokhrel.
 
+## Generic Jira Guidance
+
+- If jira tickets need to be linked or are related this needs to be done explicitly through jira. Adding tickets to descriptions is not enough.
+- When creating a ticket try to keep it problem and outcome oriented, provide enough context so that anyone can read the ticket and know exactly what needs to be done and leave the implementation up to them. The exception is if we have done our due diligence the user, is asked and explicitly decides to provide a recommended implementation.
+
 ## Pre-flight Check
 
 Run this check at the start of **every invocation** to detect setup state and route accordingly.
@@ -46,110 +51,106 @@ Then stop. Do not proceed with any jira commands.
 
 ## Setup Mode
 
-Setup mode is triggered when the user explicitly asks to set up or configure jira
-(e.g. "set up jira", "jira setup", "configure jira for this project").
+Trigger phrases: "set up jira", "jira setup", "configure jira", "initialize the jira skill".
 
-Walk through these steps conversationally, asking the user for each piece of information.
+**Two rules, non-negotiable:**
+
+1. Do not run `jira init`. The deployed `jira()` zsh wrapper hard-fails on any `jira` invocation until `.jira-config.yml` exists, so init cannot bootstrap through it. Claude writes `.jira-config.yml` directly.
+2. Do not ask the user to paste commands via `!`. Once Claude has the values, Claude writes the files itself.
+
+Goal: one round of questions, then done. Everything else is derived from the environment.
 
 ### Step 1: Install jira-cli
 
-Skip if `command -v jira` succeeds.
+```bash
+command -v jira || brew install jira-cli
+```
+
+### Step 2: Silent discovery
+
+Run these in parallel and absorb the results — no intermediate prompts to the user:
 
 ```bash
-brew install jira-cli
+# Atlassian hosts already known to ~/.netrc
+awk '/^machine .*atlassian\.net/ {print $2}' ~/.netrc 2>/dev/null
+
+# Sibling jira-cli configs in peer projects (template source for Step 4)
+find ~/dev -maxdepth 5 -path '*/.claude/skills/jira/.jira-config.yml' 2>/dev/null
+
+# Identity hints
+git config user.email; git config user.name; whoami
 ```
 
-Verify: `command -v jira`
-
-### Step 2: Collect Configuration
-
-Ask the user for each of these values conversationally. Present each question one at a time
-or in a natural grouping:
-
-- **server**: Atlassian URL (e.g., `https://company.atlassian.net`)
-- **email**: Login email
-- **installationType**: Usually "cloud"
-- **username**: For branch naming (e.g., cmagana)
-- **projectKey**: JIRA project key (e.g., STAX)
-- **labels**: Default label filters (empty array if none)
-- **transitions**: Status names for their board (backlog, inProgress, inReview, done, etc.)
-- **API token**: Direct the user to https://id.atlassian.com/manage-profile/security/api-tokens to create one, then ask them to paste it
-
-### Step 3: Write Skill Config
-
-Create `<project-root>/.claude/skills/jira/config.json` using the collected values.
-Use the template at [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json)
-as the structure, substituting the user's values.
-
-### Step 4: Add API token to ~/.netrc
-
-The `jira()` zsh wrapper (deployed by this dotfiles repo) reads the API
-token from `~/.netrc`, keyed by the Atlassian host. Append a block:
-
-```
-machine acme.atlassian.net
-  login user@example.com
-  password <api-token>
-```
-
-Use the **bare host** (no `https://`, no trailing slash) as the
-`machine` value — it must match what the wrapper extracts from the
-`server:` field in `.jira-config.yml` after stripping the scheme.
-
-Ensure correct permissions:
+For each discovered Atlassian host, extract login and token with this **canonical recipe** — do not roll your own awk; a sloppy variant produced a phantom 401 in a past session:
 
 ```bash
-[ -f ~/.netrc ] || touch ~/.netrc
-chmod 600 ~/.netrc
+HOST=<discovered-host>
+awk -v host="$HOST" '
+  $1=="machine" {f=($2==host)?1:0; next}
+  f && $1=="login"    {print "login=" $2}
+  f && $1=="password" {print "password=" $2}
+' ~/.netrc
 ```
 
-`~/.netrc` is strictly user-local. Never track it in any repo.
-
-### Step 5: Initialize jira-cli
-
-Run `jira init` with `JIRA_CONFIG_FILE` set for the invocation only — no
-shell export, no `.envrc`:
+Then validate the token before trusting it:
 
 ```bash
-JIRA_CONFIG_FILE="$PWD/.claude/skills/jira/.jira-config.yml" jira init
+curl -s -o /dev/null -w "%{http_code}\n" -u "${EMAIL}:${TOKEN}" \
+  "https://${HOST}/rest/api/3/myself"
+# 200 = good. 401 = bad token; treat as "no token" and proceed to Step 5.
 ```
 
-`jira init` reads `JIRA_CONFIG_FILE` and writes its config directly to
-that path.
+If a sibling `.jira-config.yml` matches the discovered host, read it — it becomes the template in Step 4.
 
-During init, the following prompts appear. Enter the values collected in Step 2:
+### Step 3: Ask once
 
-| Prompt              | What to enter                                         |
-| ------------------- | ----------------------------------------------------- |
-| Installation type   | Select "Cloud" (or the value from `installationType`) |
-| Link to Jira server | Enter the `server` URL                                |
-| Login email         | Enter the `email`                                     |
-| Default board       | Select the appropriate board for the project          |
-| Default project     | Enter the `projectKey`                                |
+Show a short summary of what was discovered (host, email, username, sibling template, token status), then issue a **single `AskUserQuestion` call** for only what could not be derived. Standard minimum:
 
-After init completes, verify the config was written:
+- **Project key** — user types via "Other" (e.g., `EN`, `STAX`)
+- **Transitions preset** — offer:
+  - `To Do / In Progress / In Review / Done`
+  - `Backlog / Selected for Development / In Progress / In Review / Done`
+  - Other (user types a custom mapping)
+
+Add a server-confirmation question **only if** discovery found multiple Atlassian hosts or none. Do not ask for server/email/username/labels when discovery answered them — default `labels` to `[]` and `username` to `$(whoami)`; the user can edit `config.json` later.
+
+### Step 4: Write configs directly
+
+Fetch the board id once the project key is known:
 
 ```bash
-test -f "$JIRA_CONFIG_FILE" && echo "OK" || echo "MISSING"
+curl -s -u "${EMAIL}:${TOKEN}" \
+  "https://${HOST}/rest/agile/1.0/board?projectKeyOrId=${PROJECT_KEY}" \
+  | jq '.values[0] | {id, name, type}'
 ```
 
-### Step 6: Verify Connection
+Then write both files:
+
+- `<project-root>/.claude/skills/jira/config.json` — structure from [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json), values from discovery + user answers.
+- `<project-root>/.claude/skills/jira/.jira-config.yml` — if a sibling config was found, copy it and swap `project.key`, `project.type`, and `board.{id,name,type}`. If not, fetch issue types from `${HOST}/rest/api/3/issuetype` and assemble the YAML from scratch.
+
+Do not write the token into either file. It lives only in `~/.netrc`.
+
+### Step 5: Add token to ~/.netrc (only if Step 2 found none or it 401'd)
+
+1. Direct the user to https://id.atlassian.com/manage-profile/security/api-tokens to create one.
+2. Append to `~/.netrc`, using the **bare host** (no scheme, no trailing slash) so it matches what the wrapper looks up:
+   ```
+   machine <bare-host>
+     login <email>
+     password <token>
+   ```
+3. `[ -f ~/.netrc ] || touch ~/.netrc && chmod 600 ~/.netrc`
+
+`~/.netrc` is user-local. Never commit it.
+
+### Step 6: Verify
 
 ```bash
 jira me
 ```
 
-If this returns the user's account info, setup is complete. The `jira`
-command here is the shell wrapper — it looks up the per-project config
-and token automatically; no env vars need to be exported.
-
-## Commit recommendation
-
-- **Commit** `.claude/skills/jira/config.json` and
-  `.claude/skills/jira/.jira-config.yml` to the repo. Neither contains
-  secrets. Committing them makes the skill work transparently in
-  worktrees and for other teammates on the same project.
-- **Never commit** `~/.netrc`. It lives only in the user's home.
+Returning the user's email means setup is complete.
 
 ## Working inside a worktree
 
@@ -303,6 +304,7 @@ jira issue move {ticketId} "{transitions.inProgress}"
 **Create issue:**
 
 > **MANDATORY — both rules required to prevent session hangs:**
+>
 > - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
 > - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 
@@ -323,6 +325,7 @@ Include `-l{label}` for each label in `config.labels`. Omit if the array is empt
 **Edit issue:**
 
 > **MANDATORY — both rules required to prevent session hangs:**
+>
 > - Pass `--no-input`. Without it, jira-cli drops into an interactive editor or prompt and blocks the session.
 > - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 
@@ -335,6 +338,7 @@ To remove a label, prefix with `-`: `--label -oldlabel --label newlabel`.
 **Add comment:**
 
 > **MANDATORY — both rules required to prevent session hangs (this command has hung Claude sessions before):**
+>
 > - Pass `--no-input`. Without it, jira-cli shows "Are you sure you want to submit?" and blocks indefinitely with nothing on stdin.
 > - Set Bash tool `timeout: 60000` (60s ceiling). A healthy comment write completes in well under a second; if it exceeds 60s, investigate — do NOT retry without `--no-input`.
 
@@ -351,6 +355,7 @@ cat /tmp/comment.txt | jira issue comment add {ticketId} --no-input
 **Add worklog:**
 
 > **MANDATORY — both rules required to prevent session hangs:**
+>
 > - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
 > - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 

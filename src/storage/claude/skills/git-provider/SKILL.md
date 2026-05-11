@@ -14,33 +14,53 @@ git remote -v | grep -qE "github\.com" && PROVIDER="github"
 git remote -v | grep -qE "bitbucket\.org" && PROVIDER="bitbucket"
 ```
 
-## Pre-Flight Check (GitHub Only)
+The Bitbucket match is a substring, so SSH host aliases like `bitbucket.org-ms` still match.
 
-Only run this section if `PROVIDER="github"`.
+## Pre-Flight Check
 
-### 1. Verify Authentication
+Run **exactly one** branch below based on `PROVIDER`. Do not run the other provider's check — it's irrelevant noise.
 
-```bash
-gh auth status 2>&1
-```
+### Branch: `PROVIDER="github"`
 
-**If auth fails:** Route to [gh-setup mode](modes/gh-setup.md) for interactive authentication.
+1. **Verify authentication:**
 
-### 2. Auto-Switch Account by Directory
+   ```bash
+   gh auth status 2>&1
+   ```
 
-Git conditional includes already map directories to user.name. Use that directly:
+   If auth fails → route to [gh-setup mode](modes/gh-setup.md).
 
-| Directory Path | Account (from `git config user.name`) |
-| -------------- | ------------------------------------- |
-| `~/dev/gsi/`   | cmagana-gsi                           |
-| `~/dev/ms/`    | cmagana-ms                            |
-| _default_      | cmaga                                 |
+2. **Auto-switch account by directory.** Git conditional includes already map directories to `user.name`:
 
-```bash
-EXPECTED=$(git config user.name)
-CURRENT=$(gh auth status 2>&1 | sed -n 's/.*account \([^ ]*\).*/\1/p' || true)
-[[ "$CURRENT" != "$EXPECTED" ]] && gh auth switch --user "$EXPECTED"
-```
+   | Directory Path | Account (from `git config user.name`) |
+   | -------------- | ------------------------------------- |
+   | `~/dev/gsi/`   | cmagana-gsi                           |
+   | `~/dev/ms/`    | cmagana-ms                            |
+   | _default_      | cmaga                                 |
+
+   ```bash
+   EXPECTED=$(git config user.name)
+   CURRENT=$(gh auth status 2>&1 | sed -n 's/.*account \([^ ]*\).*/\1/p' || true)
+   [[ "$CURRENT" != "$EXPECTED" ]] && gh auth switch --user "$EXPECTED"
+   ```
+
+### Branch: `PROVIDER="bitbucket"`
+
+1. **Verify a profile exists:**
+
+   ```bash
+   bb profile which 2>&1
+   ```
+
+   If no default profile → route to [bb-setup mode](modes/bb-setup.md).
+
+2. **Verify the profile can reach this repo** (catches scope/workspace mismatches, which `profile which` won't). Run from inside the repo — `bb` auto-detects from `git remote`:
+
+   ```bash
+   bb branch list -o json --page-length 1 >/dev/null 2>&1
+   ```
+
+   If this fails → route to [bb-setup mode](modes/bb-setup.md) (Update Profile flow).
 
 ## Operations
 
@@ -92,9 +112,10 @@ Use `dependencies/templates/pr-body.md` with placeholders:
 
 ## Modes
 
-| Mode                          | Purpose                   |
-| ----------------------------- | ------------------------- |
-| [gh-setup](modes/gh-setup.md) | GitHub CLI authentication |
+| Mode                          | Purpose                      |
+| ----------------------------- | ---------------------------- |
+| [gh-setup](modes/gh-setup.md) | GitHub CLI authentication    |
+| [bb-setup](modes/bb-setup.md) | Bitbucket CLI authentication |
 
 ## CLI References
 
