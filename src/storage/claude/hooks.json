@@ -7,6 +7,14 @@
           { "type": "command", "command": "$HOME/.claude/hooks/deny-busy-loops.sh" }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/clear-symdocs-claude-md.sh" }
+        ]
+      }
     ]
   }
 }
