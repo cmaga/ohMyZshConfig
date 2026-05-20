@@ -95,16 +95,16 @@ These apply to every context-injection file regardless of type.
 
 - Attention biases toward periphery (top + bottom of file)
 - Middle of the file gets least attention
-- For files >100 lines, repeat critical rules at the bottom
+- For files >100 lines where the workflow doesn't already restate them, repeat critical rules at the bottom
 
 #### Structure Template
 
 ```md
 # [Purpose - one line]
 
-## Critical Rules
+## Critical Rules (optional)
 
-[1-3 non-negotiable constraints. Top of file = highest attention]
+[Cross-cutting invariants only — rules that apply across steps or outside the linear flow. If a rule maps to a single Workflow step, put it in that step. Omit this section entirely if every non-negotiable is already encoded in Workflow.]
 
 ## Context
 
@@ -133,8 +133,9 @@ These apply to every context-injection file regardless of type.
 2. Can deterministic tasks use a script instead of instructions?
 3. Is this already default LLM behavior? Remove
 4. Duplicates another instruction? Consolidate
-5. Would this work with Haiku, not just Opus?
-6. For skills: does the `description` field name auto-trigger phrases? If yes, `disable-model-invocation` must be `false` or absent. If no, `true`. Description and flag must agree — mismatch = bug.
+5. Does Critical Rules paraphrase steps in Workflow? Move the rule into the step or delete it — never duplicate across sections
+6. Would this work with Haiku, not just Opus?
+7. For skills: does the `description` field name auto-trigger phrases? If yes, `disable-model-invocation` must be `false` or absent. If no, `true`. Description and flag must agree — mismatch = bug.
 
 ### Type-Specific Reference Files
 
