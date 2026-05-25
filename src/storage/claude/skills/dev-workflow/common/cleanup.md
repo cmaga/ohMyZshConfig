@@ -46,7 +46,3 @@ In order:
 One line:
 
     Cleaned up <TICKET>: ticket done, worktree removed, branch <name> deleted.
-
-### 6. Rename terminal
-
-/rename DONE
