@@ -29,9 +29,6 @@ alias aconf="vim $HOME/.oh-my-zsh/custom/aliases.zsh"
 # NVM Configuration
 export NVM_DIR="$HOME/.nvm"
 
-# Claude default model shell env
-export ANTHROPIC_MODEL="sonnet"
-
 # OS-specific configurations
 case "$OSTYPE" in
 darwin*)

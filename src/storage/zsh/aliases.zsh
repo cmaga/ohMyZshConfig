@@ -53,7 +53,7 @@ alias gskipped='git ls-files -v | grep "^S"'
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 
 # Claude Code - skip permission prompts, default model
-alias oc='claude --dangerously-skip-permissions --model default'
+alias oc='claude --dangerously-skip-permissions'
 
 # Task Planner - launch plan execution via Claude Code CLI
 TASK_PLANNER_LAUNCHER="$HOME/.cline/skills/task-planner/scripts/launch.zsh"

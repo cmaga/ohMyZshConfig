@@ -13,6 +13,7 @@ Capture and maintain durable project knowledge under `docs/project-knowledge/`. 
 - **Quality over throughput.** A bad note with a good wikilink poisons the graph forever. If the input does not clearly belong in the vault, refuse to capture it.
 - **Bidirectional wikilinks.** Every new note links out to >=1 existing note. >=1 existing note links back. Orphans must not be allowed.
 - **Conventions are inviolable.** ADR-NNN numbering, prefixed kebab-case filenames, frontmatter present. Refuse to write malformed notes.
+- **Currency lives at the top.** A decision's current standing goes in `status` frontmatter and a `> Status:` banner as the first body line — never only in a Links footer. An agent reads the title and first lines and stops; a staleness signal below the fold does not exist for the reader. See [`templates/adr.md`](templates/adr.md).
 - **Pick, don't poll.** When two buckets seem to fit, pick the more specific one and explain the choice in the handoff. Do not stall the user with a question.
 
 ## Buckets and templates
@@ -32,7 +33,7 @@ Capture and maintain durable project knowledge under `docs/project-knowledge/`. 
 7. **Draft the new note** with frontmatter (see [`templates/frontmatter.md`](templates/frontmatter.md)), body, and outbound `[[wikilinks]]` woven into the prose where they belong (not piled in a "Related" footer). For ADRs, follow [`templates/adr.md`](templates/adr.md). Write to `$ROOT/docs/project-knowledge/<bucket>/<filename>.md`.
 8. **Capture the reusable surface.** Identify each load-bearing reusable symbol owned by this subsystem and list it under `## Reusable surface` in the new note. Apply the bar, entry format, and absence-case rule in [`references/buckets.md`](references/buckets.md). Verify each entry by grepping the symbol at the named path (`grep -nE '\b<Symbol>\b' $ROOT/<path>`); fix or drop entries that don't resolve.
 9. **Verify code claims.** For every function name, file path, command, or behavior the draft asserts, confirm against the current codebase. If the code has drifted from the claim, fix the draft or surface the discrepancy to the user before continuing.
-10. **Edit each inbound target** to add a reciprocal `[[new-note]]` reference in the section that earned the link.
+10. **Edit the notes this one touches.** (a) *Reciprocal links* — add a `[[new-note]]` reference to each inbound target in the section that earned the link. (b) *Demote what you overturn* — if this note re-decides, deprecates, or overturns an existing decision, then in the **same change set** demote that decision: set its `status` (`superseded` / `deprecated` / `amended`), add its `> Status:` banner naming this note, set `superseded_by:` for a supersede, and update its line in `_index.md`. Demoting the old decision is the same reciprocal discipline as linking; a new decision that silently leaves the old one reading as current is the exact failure this prevents.
 11. **Update `$ROOT/docs/project-knowledge/_index.md`** if the note is hub-level — a new component, ADR class, or major constraint. One-line entry under the appropriate Knowledge Map section.
 12. **Update `$ROOT/docs/project-knowledge/glossary.md`** if the note introduces a project-specific term not yet defined.
 13. **Verify.** Run the checks in the Verification section below. Fix any failures before handoff. Substitute the actual filename for `NEW`. **DO NOT SKIP ANY BULLET**
@@ -42,6 +43,8 @@ Capture and maintain durable project knowledge under `docs/project-knowledge/`. 
     - New filename matches the bucket convention (e.g. `architecture-*.md` for architecture, bare kebab-case for components, `ADR-NNN-*.md` for decisions, `policy-*.md` for policies).
     - Frontmatter parses as valid YAML and includes `type`, `status`, `created`. Decisions also include `superseded_by` when applicable; constraints include `severity`; policies include `steward` and `review_cadence`.
     - For ADRs only: body contains `## Context`, `## Decision`, `## Consequences` headings.
+    - Currency: every decision with `status` of `superseded`, `deprecated`, or `amended` carries a `> Status:` line as its first body element naming the relevant note(s), and every `superseded_by: [[ADR-X]]` resolves to an existing file.
+    - Run the currency lint on the new and edited notes: `bash ~/.claude/skills/capture-documentation/scripts/lint-vault-currency.sh $ROOT/docs/project-knowledge <changed-files>`. Fix every `FAIL` before handoff; `WARN` is advisory.
     - For each in-scope new note (components/, architecture/, domain/, constraint/), `grep -n '^## Reusable surface' $ROOT/docs/project-knowledge/<bucket>/NEW.md` returns a hit, or the section is present with the absence-case stanza and an explicit reason.
     - For each entry under `## Reusable surface`, `grep -nE '\b<Symbol>\b' $ROOT/<path>` returns at least one match.
 
@@ -62,7 +65,9 @@ Capture and maintain durable project knowledge under `docs/project-knowledge/`. 
 - Updating `_index.md` for every note. Only hub-level additions warrant index entries.
 - Glossary entries for generic technical terms. The glossary is for project-specific ubiquitous language only.
 - Asking the user to disambiguate two buckets. Pick the more specific one and explain in the handoff.
-- Deleting or rewriting existing notes wholesale. If a decision is superseded, mark with `superseded_by:` in frontmatter and add the new ADR; do not delete.
+- Deleting or rewriting existing notes wholesale. A decision's record is immutable history. To change a decision, either supersede it (new ADR + demote the old one per step 10) or, for same-question refinement, append a dated `## Amendment` block. Never rewrite a Decision's verdict under its old number — that makes one ADR mean different things across git history and rots every `per ADR-NNN` reference.
+- Shipping a note that overturns or erodes an existing decision while leaving that decision reading as current (`status: active`, no `> Status:` banner). Demote it in the same change (step 10b).
+- Re-stating another note's decision as standalone present-tense fact. Link and attribute (`per [[ADR-NNN]], ...`) instead of re-arguing the verdict; the rationale has one home, the note that owns it.
 - Forcing a fit. If the input is ephemeral or doesn't match a bucket, refuse with a one-line reason.
 
 ## Verification
