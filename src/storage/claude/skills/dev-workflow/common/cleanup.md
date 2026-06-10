@@ -7,6 +7,7 @@ Post-merge teardown for a completed ticket. Invoked when the user says `cleanup 
 - Never proceed unless `gh pr view` reports `MERGED`. If the PR is any other state, abort with the current state in the message.
 - Cleanup is idempotent. If a resource is already gone, continue without error.
 - `--force` removal of a worktree is allowed only after step 2 confirms `MERGED`. Never `--force` on an unmerged worktree.
+- Main-checkout gate: before the step 4 pull or any other write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock the cleanup.
 
 ## Process
 
@@ -39,7 +40,8 @@ In order:
 1. If currently inside the worktree, call `ExitWorktree` with `discard_changes: true`. Step 2 verified `MERGED` via `gh` — local git treats squash/rebase-merged branches as dirty even though the work is in main.
 2. Remove the worktree: `git worktree remove --force <path>`. Same reasoning as step 1. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
 3. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Step 2 already verified `MERGED` via `gh`, which is the source of truth.
-4. Kill any shells still running
+4. Update local main: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, run `git pull --ff-only`.
+5. Kill any shells still running
 
 ### 5. Report
 

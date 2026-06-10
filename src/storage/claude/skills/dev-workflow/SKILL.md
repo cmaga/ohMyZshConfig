@@ -33,7 +33,7 @@ Whether or not there's a ticket, investigate first and fully understand the prob
 
 The scoping process to begin to load the correct context for both the user and the session. All steps must be done sequentially.
 
-1. **Codebase update** Always pull the latest version of main first to make sure we're up to date on the latest changes.
+1. **Codebase update** In the main checkout, run `git status --porcelain`. If it prints anything, stop: this is the main-checkout gate (see Critical Rules). When it prints nothing, run `git pull --ff-only`.
 2. **Transition the ticket** to "In Progress" via the `jira` skill.
 3. **Understanding The Ticket** If a ticket was provided, read it and its information via the `jira` skill. Otherwise use the user-provided context. Then gather context:
    1. Verify the problem exists in code. If mis-represented, ignore how the ticket is written and do your own investigation.
@@ -124,6 +124,7 @@ Architectural or cross-module change. Adds QA planning and an architecture revie
 ## Critical Rules
 
 - Never automatically merge a PR. The user merges or asks you to merge.
+- Main-checkout gate: before any pull or write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock yourself; all work happens in worktrees, so a dirty main checkout is an anomaly only the user can triage.
 - All tiers run in an isolated worktree. Create it before any file modification.
 - Classification is Claude-proposed, user-confirmed.
 - Keep discussions with the user simple and high level unless they ask for more information. THIS IS **CRUCIAL**! Otherwise you waste time where they keep having to ask you to explain or they just rubber stamp.
