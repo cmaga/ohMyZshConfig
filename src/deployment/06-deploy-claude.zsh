@@ -275,6 +275,26 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         print_status "warning" "jq not found — skipping BashTool timeout env merge"
     fi
 
+    # Register the jCodemunch MCP server at user scope (available in every
+    # project). ~/.claude.json is machine-local and not version-controlled, so
+    # this is the repo's reproducible hook for the registration rather than
+    # relying on `jcodemunch-mcp init` per machine. Indexing stays a deliberate
+    # per-repo action (`jcodemunch index`); this only makes the tools available.
+    # Idempotent: drop any existing user-scope entry, then re-add. Local-scope
+    # registrations in individual project dirs are left untouched.
+    if command_exists claude; then
+        print_status "info" "Registering jcodemunch MCP server (user scope)..."
+        claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
+        if claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1; then
+            print_status "success" "jcodemunch MCP registered at user scope"
+            command_exists uvx || print_status "warning" "uvx not on PATH; install uv or the jcodemunch server will fail to start at launch"
+        else
+            print_status "warning" "Failed to register jcodemunch MCP. Add manually: claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp"
+        fi
+    else
+        print_status "warning" "claude CLI not available, skipping jcodemunch MCP registration"
+    fi
+
     # Clean up legacy runaway-shell-watchdog LaunchAgent + hook script.
     # Removed 2026-04-15 after the Round 2 investigation reattributed the
     # mid-session `syspolicyd` saturation to Cline Kanban's hook fan-out
@@ -310,5 +330,6 @@ echo "  - Agents -> $CLAUDE_AGENTS_DEST"
 echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
 echo "  - BashTool timeouts -> $SETTINGS_DEST (env)"
+echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
 
 print_status "success" "Claude Code deployment complete!"
