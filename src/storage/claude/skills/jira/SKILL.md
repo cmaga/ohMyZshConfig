@@ -333,7 +333,11 @@ Include `-l{label}` for each label in `config.labels`. Omit if the array is empt
 jira issue edit {ticketId} -s "New summary" --no-input
 ```
 
-To remove a label, prefix with `-`: `--label -oldlabel --label newlabel`.
+To remove a label, prefix the value with `-` and attach it with `=`:
+`--label=-oldlabel --label newlabel`. The `=` form is mandatory for
+removals: with a space (`--label -oldlabel`) the CLI parses `-oldlabel`
+as a flag, leaves `--label` empty, and hangs on an interactive prompt
+even with `--no-input` (this hung a session for two hours on 2026-06-10).
 
 **Add comment:**
 
