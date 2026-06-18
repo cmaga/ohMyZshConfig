@@ -5,88 +5,57 @@ description: End-to-end implementation workflow. Use when the user says "take <T
 
 # Dev Workflow
 
-Single orchestrated flow for ticket-driven and manual implementation work. The parent session is opus; implementation workers are sonnet. Scoping is done first, tiers are for implementation.
+Single orchestrated flow for ticket-driven and manual implementation work. Each of the following should be tracked as a task so the user at a glance can see what part of this process we are in.
 
-## Trigger routing
+**All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
-Parse the user's message on invocation.
+## Step 1: Understanding The Problem
 
-| Input              | Route to                                                                                       |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| `take <TICKET>`    | Scoping → tier sequence                                                                        |
-| `new take`         | Scoping → ticket creation → tier sequence                                                      |
-| `cleanup [TICKET]` | [common/cleanup.md](common/cleanup.md) (infer ticket if missing, ask if it cannot be inferred) |
+1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. (Assign the ticket to me as well if not done so already).
+2. Restate intent with zero implementation nouns from the ticket. If the ticket says "add a smoke test," my one-sentence intent must not contain "test," "smoke," or any suite name. Force the mechanism out so it can't sneak in as a requirement. ("Continuously assure the deployed sample-pack endpoint serves a real artifact.") Every implementation noun the ticket carries is a hypothesis that must beaten by online research before it is adopted.
+3. Once you understand the problem explain it to the user. There may be some back and fourth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial** your framing of the intent and problem space must be approved by the user before proceeding.
+4. Scrutinize whether you think this ticket is worth doing or not.
 
-## Scoping
-
-Whether or not there's a ticket, investigate first and fully understand the problem. Even when the ticket prescribes a fix, treat that as a hypothesis.
-
-### Tier definitions
-
-| Tier     | When                                                      |
-| -------- | --------------------------------------------------------- |
-| `small`  | Bug fix, config change, typo, isolated single-file change |
-| `medium` | New feature, moderate refactor, 2-5 files                 |
-| `deep`   | Architectural, multi-system, new design pattern, 5+ files |
-
-### Scoping Process
-
-The scoping process to begin to load the correct context for both the user and the session. All steps must be done sequentially.
+## Step 2: Verify the problem
 
 1. **Codebase update** In the main checkout, run `git status --porcelain`. If it prints anything, stop: this is the main-checkout gate (see Critical Rules). When it prints nothing, run `git pull --ff-only`.
+2. Use `ultracode` to do the following in parallel:
+   - **Verify the problem exists in code** Do your own investigation.
+   - **Read relevant documentation** Be careful, documentation could be out of date.
+   - **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
+   - **Is this needed?** What are the business-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep. If you have reason to beleive this should not be done, stop here and report back to the user with a simple high level explanation.
+
+## Step 3: High Level Solution Research
+
+The goal at this point is to using our understanding or the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless. To do this you need to gather multiple solution options and pick one.
+
+1. Ask the user what solution they are leaning towards. Leverage their unique perspective and creativity as an option NOT as something set in stone, yet.
+2. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem.
+3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user. Do not proceed to the next step until the user approves the high level approach/solution by saying `go`.
+
+## Step 4: Implementation Routing
+
+Recommend an implemetation tier based on the following
+
+| Tier     | When                                                       |
+| -------- | ---------------------------------------------------------- |
+| `small`  | Bug fix, config change, typo, isolated single-file change  |
+| `medium` | New feature, moderate refactor                             |
+| `deep`   | Architectural, multi-system, new design pattern, high risk |
+
+The user should reply with `yes` or the tier they want instead.
+
+## Step 5: Workspace Setup
+
+1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
 2. **Transition the ticket** to "In Progress" via the `jira` skill.
-3. **Understanding The Ticket** If a ticket was provided, read it and its information via the `jira` skill. Otherwise use the user-provided context. Then gather context:
-   1. Verify the problem exists in code. If mis-represented, ignore how the ticket is written and do your own investigation.
-   2. Read relevant documentation
-   3. Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring?
-4. **Is this needed?** The ticket regardless of how convincingly it is written is not always needed. What are the higher-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep.
-5. **Share the problem scope** Start the conversation with the user. Progress into it slowly.
-   1. Start by saying here is what the ticket says we should do and present a very simple summary. Once they understand move to the next step.
-   2. Describe if you think the ticket is worth doing as written? should it be changed? should it not be done at all? This will be decided conversationally by the user.
-6. **Solution Research** Now that we have decided this is a problem worth solving we need to dive into the best way to solve this problem.
-   1. What is the immediate best solution you can think of?
-   2. Refine your best solution based on online research, what are industry standards/best practice for the problem space.
-   3. Are there any alternatives worth considering? Challenge assumptions you have made that you have not verified exhaustively.
-   4. Ask the user how they would like to solve this. Leverage their expertise and creativity, consider it against the solution you're leaning toward, consider it an option at this stage, not a command.
-   5. Synthesize all the data you collected and decide on an approach you think would be best.
-7. **Present Recommendation** Post this exact block to chat. The goal is for the user to glance quickly at the conversation, remember the problem, and begin to evaluate the solution. There will likely be some back and forth, refining the solution.
+3. **Enter the worktree.**
+   - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
+   - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
 
-   ```md
-   ### Notes
+## Step 5: Per Tier Implementation
 
-   - <judgment call, risk, open question, scope-creep note — one line each>
-   - Confidence gap: <what's holding back the missing points>
-
-   ### Alternatives
-
-   - <Option A>. Skip: <one-line reason>.
-   - <Option B>. Skip: <one-line reason>.
-     (Or, only if truly N/A: "no alternatives — <one-line reason>".)
-
-   ---
-
-   ### Problem
-
-   <what the user can't do today. One sentence.>
-
-   ### Recommendation
-
-   <what we'd build, simple and high level. Patterns and integration points, not files.>
-
-   ## Confidence: <1-10>/10
-
-   <one-sentence rationale>
-   ```
-
-8. Recommend a tier based on the user-chosen solution.
-9. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
-10. **Enter the worktree.**
-    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
-    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
-
-## Tier sequences
-
-Run the sequence for the confirmed tier. Each step links to its procedure file.
+Run the sequence for the confirmed tier. Each step links to its procedure file. Track each step as a sub-task.
 
 ### Small
 
@@ -101,7 +70,7 @@ The parent implements in one pass. No subagents, no plan file.
 
 Parent plans, `worker-agent` subagents implement, parent reviews. The plan must name every file and every step — workers do not make scoping decisions.
 
-1. [Investigate](common/investigate.md)
+1. [Scope](common/scope.md)
 2. [Plan](common/plan.md)
 3. [Present plan](common/plan-presentation.md)
 4. [Dispatch workers](common/worker-dispatch.md) — parallel when files are disjoint
@@ -110,9 +79,9 @@ Parent plans, `worker-agent` subagents implement, parent reviews. The plan must 
 
 ### Deep
 
-Architectural or cross-module change. Adds QA planning and an architecture review gate before workers dispatch.
+Similar to medium tier but Adds QA planning and an architecture review gate before workers dispatch. `Opus` workers instead of sonnet.
 
-1. [Investigate](common/investigate.md)
+1. [Scope](common/scope.md)
 2. [Plan](common/plan.md)
 3. **QA planning.** Invoke `qa-planner-agent` with the draft plan and the user-facing surfaces it affects (UI, API, CLI). Append the agent's `## QA Plan` section to the plan verbatim.
 4. **Architecture review.** Invoke `plan-review-agent` against the draft plan and affected files. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls as `[NEEDS CLARIFICATION]` in the plan.
@@ -125,6 +94,4 @@ Architectural or cross-module change. Adds QA planning and an architecture revie
 
 - Never automatically merge a PR. The user merges or asks you to merge.
 - Main-checkout gate: before any pull or write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock yourself; all work happens in worktrees, so a dirty main checkout is an anomaly only the user can triage.
-- All tiers run in an isolated worktree. Create it before any file modification.
-- Classification is Claude-proposed, user-confirmed.
 - Keep discussions with the user simple and high level unless they ask for more information. THIS IS **CRUCIAL**! Otherwise you waste time where they keep having to ask you to explain or they just rubber stamp.

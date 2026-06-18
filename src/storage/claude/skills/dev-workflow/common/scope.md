@@ -1,4 +1,4 @@
-# Investigate
+# Scope
 
 - Identify what changes are required to implement the chosen solution.
 - Identify affected files — search symbols, read neighbors.
