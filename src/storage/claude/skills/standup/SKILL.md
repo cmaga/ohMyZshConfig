@@ -12,7 +12,7 @@ Manage daily standup summaries for the active project. Files live at `<repo>/.cl
 
 - Modes are `show` and `write`. Each takes `daily` or `weekly`. Bare `/standup` defaults to `show daily`.
 - The active repo lives in `automation.toml` next to this file. All operations target that repo's `.claude-artifacts/workflows/standup/`.
-- A ticket gets a bullet if I committed to it **or** authored a Jira comment on it in the window. Both sources feed the same entry.
+- A ticket feeds the summary if I committed to it **or** authored a Jira comment on it in the window. Both sources feed the same entry.
 - Lifecycle: project-scoped, workflow type. Cleanup of files older than two weeks is handled by `dependencies/scripts/run.zsh`.
 
 ## Modes
@@ -66,22 +66,20 @@ Otherwise:
 
 If a `jira` call fails for any reason other than missing config, log the failure to stderr and continue with whatever was gathered — never block the entry on Jira.
 
-### Bullet rules
+### Summary rules
 
-Audience is non-engineers in standup — write so a product manager understands without context.
+Audience is non-engineers in standup — this is a spoken update, not a ticket dump. Write 1-3 first-person sentences describing what I actually did, grouped by theme rather than one line per ticket.
 
-- One bullet per ticket, keyed off the union of commit-derived and comment-derived tickets.
-- Shape: `- TICKET-### — what shipped, moved, or was decided, in plain language.`
-- Commit-driven: summarize what the commit subjects accomplished.
-- Comment-only: summarize the substance of my comment(s) — the decision, finding, blocker, or handoff. A comment "we're killing this; root cause is on their side" becomes `- TICKET-### — decided not to pursue; root cause is on their side.`
-- Both sources on one ticket: lead with the commit verb, fold in comment substance only if it adds info the commit doesn't.
-- Translate tool and library names into what they do. `ruff` → "Python linter", `hypothesis` → "property-based test library", `rsync` → "file sync tool". Describe the effect, not the tool.
-- Drop PR numbers, version numbers, file paths, function names, and other engineer-only identifiers.
-- Commits with no Jira key: group under a final `- Misc — …` bullet, or omit if trivial.
+- Cluster related tickets into a single thread of work. Several commits or comments across tickets that serve one goal become one phrase ("fixed and deployed new smoke tests for common pain points like GA4"), not three separate items.
+- Separate shipped from in-progress. Lead with what landed, then what's still underway ("…and I'm working on annotating two forms"). Judge which is which from ticket status and commit verbs; when unsure, describe it as in-progress.
+- Comment-only tickets contribute the substance of my comment — the decision, finding, blocker, or handoff — folded into the narrative.
+- Plain language: describe the effect, not the mechanism. Translate tool and library names into what they do, but a short clarifying parenthetical is fine when it helps ("smoke tests (AWS Synthetics)", "Python linter").
+- No ticket IDs, PR numbers, version numbers, file paths, or function names in the prose — it gets read aloud.
+- Trivial commits (formatting, typo fixes, merges) earn no mention unless they were the day's actual work.
 
-After the bullets, on a new line, add a single `**Heads-up:**` line when the day's work will land on other people. Triggers: new alarms or pages going live, breaking API/schema/config changes, shared-dependency bumps, deploy windows starting, anything someone else needs to know before their next workday. Omit the line entirely when there is nothing to flag — never write "Heads-up: none."
+After the summary, on a new line, add a single `**Heads-up:**` line when the day's work will land on other people. Triggers: new alarms or pages going live, breaking API/schema/config changes, shared-dependency bumps, deploy windows starting, anything someone else needs to know before their next workday. Omit the line entirely when there is nothing to flag — never write "Heads-up: none."
 
-If no commits and no in-window comments, the entry is a single bullet: `- No activity since last standup.`
+If no commits and no in-window comments, the entry is: `No activity since last standup.`
 
 ## File format
 
@@ -89,13 +87,12 @@ Filename `MM-DD-week.md` (Sunday-anchored). One block per weekday:
 
 ```
 ## Mon 04-29
-- STAX-1431 — fixed a flaky nightly test that was masking real failures
-- STAX-1256 — locked third-party automation steps to specific versions so a hijacked one cannot run in our pipeline
+Fixed and deployed new smoke tests (AWS Synthetics) covering common pain points like GA4, and I'm working on annotating two intake forms.
 
 **Heads-up:** new CloudWatch alarm for credit drift goes live tomorrow — on-call may see a Jira ticket auto-filed if it trips overnight.
 
 ## Tue 04-30
-- STAX-1282 — turned an existing warning log into a real alarm with a daily summary ticket
+Turned a noisy warning log into a real alarm with a daily summary ticket, and started pinning our third-party automation steps to fixed versions.
 ```
 
 ## Write workflow
@@ -112,3 +109,10 @@ Filename `MM-DD-week.md` (Sunday-anchored). One block per weekday:
 1. Resolve the same path.
 2. If the file is missing, or `show daily` and today's block is absent, ask `Create today's entry now? [y/N]`. On yes, run the write workflow for the same scope.
 3. Otherwise print the requested scope verbatim from disk.
+4. In an interactive session, after printing today's block on `show daily`, invite refinements (see Conversational editing). Skip this on `show weekly` and on the headless automation path.
+
+## Conversational editing
+
+Interactive sessions only — never on the headless `write daily` automation path, which keeps stdout clean.
+
+After showing today's entry, close with one line: `Want to tweak it? Tell me what's off.` If I reply with a correction — "I haven't deployed yet, still testing", "drop the forms, that's tomorrow", "merge the last two into one" — rewrite today's block to match, save it back to the week file, and reprint the updated block. Keep taking edits until I'm done. Only today's block changes; leave other days untouched.
