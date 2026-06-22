@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # Shared helpers for the timesheet automation.
-# Sourced by harvest-update.zsh, harvest-show.zsh, and run.zsh.
+# Sourced by harvest-post.zsh, reconcile.zsh, and run.zsh.
 
 HARVEST_BASE="https://api.harvestapp.com/v2"
 HARVEST_UA="cmagana-timesheet/1.0 (hichris12009@gmail.com)"
@@ -114,28 +114,24 @@ resolve_project_task() {
     fi
 }
 
-# --- Date helpers (BSD date on macOS) ---
-# WEEK_OFFSET_DAYS shifts the resolved week (e.g. -7 = previous week) for backfills.
-: ${WEEK_OFFSET_DAYS:=+0}
-sunday_mmdd()    { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" '+%m-%d'; }
-weekday_iso()    { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%Y-%m-%d'; }
-weekday_mmdd()   { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%m-%d'; }
-weekday_short()  { date -v-Sun -v"${WEEK_OFFSET_DAYS}d" -v+${1}d '+%a'; }
+# --- Hours / date utilities ---
 
-# --- Standup paragraph extraction ---
-# Args: standup_file day_short day_mmdd. Prints the paragraph (may be empty).
-standup_paragraph() {
-    local file="$1" day_short="$2" day_mmdd="$3"
-    [[ -f "$file" ]] || return 0
-    awk -v hdr="## $day_short $day_mmdd" '
-        $0 == hdr { in_block = 1; next }
-        in_block && /^## / { exit }
-        in_block { lines[++n] = $0 }
-        END {
-            while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
-            start = 1
-            while (start <= n && lines[start] ~ /^[[:space:]]*$/) start++
-            for (i = start; i <= n; i++) print lines[i]
-        }
-    ' "$file"
+# Ceil a decimal-hours value up to the nearest 0.25. "8.1" -> "8.25", "8" -> "8.00".
+round_up_quarter() {
+    awk -v h="$1" 'BEGIN { q = h * 4; iq = int(q); if (q > iq + 1e-9) iq++; printf "%.2f", iq / 4 }'
+}
+
+# The just-ended Sun-Sat week as "START END" (YYYY-MM-DD), for the Sunday cron:
+# start = 7 days ago (last Sunday), end = yesterday (Saturday).
+prev_week_range() {
+    print -- "$(date -v-7d '+%Y-%m-%d') $(date -v-1d '+%Y-%m-%d')"
+}
+
+# Find the time-entry id for a date under the resolved project/task (empty if none).
+# Requires PROJECT_ID / TASK_ID set via resolve_project_task.
+entry_id_for_date() {
+    local d="$1" body
+    body=$(harvest_api GET "/time_entries?from=${d}&to=${d}") || return 1
+    print -r -- "$body" | jq -r --argjson p "$PROJECT_ID" --argjson t "$TASK_ID" \
+        'first(.time_entries[] | select(.project.id == $p and .task.id == $t) | .id) // empty'
 }

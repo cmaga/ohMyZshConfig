@@ -1,118 +1,126 @@
 ---
 name: standup
-description: Read or write the user's daily standup summary in the active repo's .claude-artifacts/workflows/standup/ directory.
+description: Draft the daily standup summary, capture post-standup items and notes, and post reviewed time entries to Harvest. Manual weekday ritual; slash-invoked only.
 disable-model-invocation: true
 ---
 
 # Standup
 
-Manage daily standup summaries for the active project. Files live at `<repo>/.claude-artifacts/workflows/standup/MM-DD-week.md`, where `MM-DD` is the Sunday that starts the week.
+Draft a plain-language summary of recent work, let me review and tweak it, and on `done` post it to Harvest as that day's time entry. The standup file (summary + post-standup + notes, for the meeting) lives at `<repo>/.claude-artifacts/workflows/standup/MM-DD-week.md`, Sunday-anchored.
 
 ## Critical Rules
 
-- Modes are `show` and `write`. Each takes `daily` or `weekly`. Bare `/standup` defaults to `show daily`.
-- The active repo lives in `automation.toml` next to this file. All operations target that repo's `.claude-artifacts/workflows/standup/`.
-- A ticket feeds the summary if I committed to it **or** authored a Jira comment on it in the window. Both sources feed the same entry.
-- Lifecycle: project-scoped, workflow type. Cleanup of files older than two weeks is handled by `dependencies/scripts/run.zsh`.
+- This posts **real (unsubmitted) Harvest entries**. In interactive mode nothing is posted until I type `done`.
+- Fill every **unposted day from yesterday back to the most recent day already in Harvest** — normally just yesterday, more if I missed days. Skip days with no activity.
+- Entry hours are a **7h placeholder**; the Sunday reconciler sets final hours. Never post hours ≥8 — that value is the manual-entry marker.
+- Post through `$HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh` — it resolves Harvest credentials and the project/task.
+- `auto` mode is headless (the Sunday reconciler calls it): gather and post without review, and **never overwrite a day that already has a note**.
 
 ## Modes
 
-| Invocation                     | Behavior                                                                                              |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `/standup` or `/standup show daily`  | Print today's block. Missing → ask to create, fall through to `write daily` on yes.             |
-| `/standup show weekly`         | Print the full current-week file. Missing → ask to create, fall through to `write weekly` on yes.     |
-| `/standup write daily`         | Generate today's entry, replace today's block.                                                        |
-| `/standup write weekly`        | For each weekday Mon-today, fill any missing blocks. Existing blocks are untouched.                   |
+| Invocation              | Behavior                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `/standup`              | Draft summaries for all unposted days (last entry → yesterday), show them, take tweaks; post on `done`. |
+| `/standup YYYY-MM-DD`   | Same, for one specific day (manual backfill).                                              |
+| `/standup auto`         | Headless: gather and post all unposted days, no review. The Sunday reconciler calls this.  |
+| `/standup show [weekly]`| Print summaries (+ post-standup + notes) from the file. No gathering, no posting.          |
 
-Write operations refuse on Saturday/Sunday with `Standups cover weekdays only.`
+## Which days to fill
 
-## Generating the entry
+1. Resolve `repo_path` from `automation.toml` next to this file.
+2. Look at the last ~10 days ending **yesterday**. A day is **unposted** if Harvest has no entry for it yet (the reconciler's `harvest-post.zsh` checks this; you can also list recent entries to see the gap).
+3. Fill each unposted day that has activity. Leave days that already have an entry untouched — `harvest-post.zsh` without `--force` preserves them, so reviewed and manual days are never clobbered.
 
-### Window
+Normally only yesterday is unposted. If I missed standups, the gap (e.g., Monday + Tuesday) all fills at once, each reviewable. On Sunday the reconciler's `auto` run fills Friday + Saturday this way.
 
-"Since the last standup":
+## Gathering a day's work
 
-- Tue-Fri: since 1pm yesterday
-- Mon: since 1pm Friday
-
-Compute the window start as an absolute `YYYY-MM-DD HH:MM` timestamp — JQL needs it in that form.
-
-### Source 1: git commits
+For day `D` (`YYYY-MM-DD`):
 
 ```sh
-git --no-pager -C <repo_path> log --since="<window>" --author="$(git -C <repo_path> config user.email)" --no-merges --pretty=format:'%h %s'
+git --no-pager -C <repo_path> log --since="D 00:00:00" --until="D 23:59:59" --author="$(git -C <repo_path> config user.email)" --no-merges --pretty=format:'%h %s'
 ```
 
-### Source 2: Jira comments I authored
+If `<repo_path>/.claude/skills/jira/config.json` exists, also gather Jira activity dated `D` — comments I authored on `D` and tickets I resolved on `D` (read `projectKey`/`email` from that config; JQL `resolved >= "D 00:00" AND resolved <= "D 23:59"`). Skip Jira silently if the config is missing. If a Jira call fails, log to stderr and continue with commits.
 
-Skip this source silently if `<repo_path>/.claude/skills/jira/config.json` is missing — the project isn't jira-configured. Fall back to commits only.
+If a day has no commits and no Jira activity, it has no entry — skip it.
 
-Otherwise:
+## Summary rules
 
-1. Read `projectKey` and `email` from that config.
-2. List candidate tickets:
+Audience is non-engineers in standup — a spoken update, not a ticket dump. Write 1-3 first-person sentences describing what I did that day, grouped by theme rather than one line per ticket.
 
-   ```sh
-   jira issue list -p {projectKey} -q '(assignee = currentUser() OR reporter = currentUser() OR watcher = currentUser()) AND updated >= "<window-start>"' --plain --no-headers
-   ```
-
-3. For each candidate, fetch recent comments:
-
-   ```sh
-   jira issue view {ticketId} --comments 10 --plain
-   ```
-
-4. Keep only comments authored by `email` whose timestamp falls inside the window. The result is `{ticket → [my-comments-in-window]}`. A ticket lands here even with zero commits.
-
-If a `jira` call fails for any reason other than missing config, log the failure to stderr and continue with whatever was gathered — never block the entry on Jira.
-
-### Summary rules
-
-Audience is non-engineers in standup — this is a spoken update, not a ticket dump. Write 1-3 first-person sentences describing what I actually did, grouped by theme rather than one line per ticket.
-
-- Cluster related tickets into a single thread of work. Several commits or comments across tickets that serve one goal become one phrase ("fixed and deployed new smoke tests for common pain points like GA4"), not three separate items.
-- Separate shipped from in-progress. Lead with what landed, then what's still underway ("…and I'm working on annotating two forms"). Judge which is which from ticket status and commit verbs; when unsure, describe it as in-progress.
-- Comment-only tickets contribute the substance of my comment — the decision, finding, blocker, or handoff — folded into the narrative.
-- Plain language: describe the effect, not the mechanism. Translate tool and library names into what they do, but a short clarifying parenthetical is fine when it helps ("smoke tests (AWS Synthetics)", "Python linter").
-- No ticket IDs, PR numbers, version numbers, file paths, or function names in the prose — it gets read aloud.
+- Cluster related tickets into a single thread of work, not three separate items.
+- Plain language: describe the effect, not the mechanism. Translate tool names into what they do; a short clarifying parenthetical is fine ("smoke tests (AWS Synthetics)").
+- No ticket IDs, PR numbers, version numbers, file paths, or function names.
 - Trivial commits (formatting, typo fixes, merges) earn no mention unless they were the day's actual work.
 
-After the summary, on a new line, add a single `**Heads-up:**` line when the day's work will land on other people. Triggers: new alarms or pages going live, breaking API/schema/config changes, shared-dependency bumps, deploy windows starting, anything someone else needs to know before their next workday. Omit the line entirely when there is nothing to flag — never write "Heads-up: none."
+## Interactive flow (`/standup` or `/standup <date>`)
 
-If no commits and no in-window comments, the entry is: `No activity since last standup.`
+1. Determine the unposted day(s) and gather each.
+2. Draft each day's summary and print it, newest first:
+
+   ```
+   ## Wed 06-17
+   Fixed the GA4 deploy check and shipped two new library forms.
+   ```
+
+3. Take my tweaks conversationally (see Conversational editing), including post-standup items and notes.
+4. On **`done`**, for each day: write its block to the week file, then post to Harvest:
+
+   ```sh
+   $HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh <D> --note "<summary>" --force
+   ```
+
+   `--force` makes my reviewed note authoritative. Hours stay at the placeholder (or my manual value, untouched). Print what was posted.
+
+## Auto flow (`/standup auto`, headless)
+
+For each unposted day with activity: gather, draft the summary, write the file block, and post **without `--force`**:
+
+```sh
+$HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh <D> --note "<summary>"
+```
+
+Fill-only: it sets the note only if the day has none, so a reviewed note is never overwritten. No prompts, no edit invite — keep stdout to one status line per day.
+
+## Post-standup and Notes (interactive only)
+
+Two user-authored sections per block, below the summary, in this order:
+
+- **Post standup** — questions or points to raise at standup.
+- **Notes** — free-form notes captured during standup.
+
+I fill them on request; they are never auto-generated and never posted to Harvest.
+
+## Conversational editing (interactive only)
+
+After showing the draft, close with: `Want to tweak it? Tell me what's off, or "done" to post.` Then:
+
+- Corrections ("I haven't deployed yet", "merge the last two") rewrite that day's summary.
+- "bring up …" / "ask about …" appends a bullet to **Post standup**.
+- "note: …" appends a bullet to **Notes**.
+- **`done`** writes the file and posts to Harvest (see Interactive flow step 4).
+
+Only the days in this session change; leave other days untouched.
 
 ## File format
 
-Filename `MM-DD-week.md` (Sunday-anchored). One block per weekday:
+Filename `MM-DD-week.md` (Sunday-anchored). One block per day:
 
 ```
-## Mon 04-29
-Fixed and deployed new smoke tests (AWS Synthetics) covering common pain points like GA4, and I'm working on annotating two intake forms.
+## Wed 06-17
+Fixed the GA4 deploy check and shipped two new library forms.
 
-**Heads-up:** new CloudWatch alarm for credit drift goes live tomorrow — on-call may see a Jira ticket auto-filed if it trips overnight.
+**Post standup:**
+- ask whether the canary should page on-call or just file a ticket
 
-## Tue 04-30
-Turned a noisy warning log into a real alarm with a daily summary ticket, and started pinning our third-party automation steps to fixed versions.
+**Notes:**
+- signup form has two hidden fields to confirm with design
 ```
 
-## Write workflow
-
-1. Resolve `repo_path` from `automation.toml`.
-2. Ensure `.claude-artifacts/` is in `$(git -C <repo_path> rev-parse --git-common-dir)/info/exclude` (append if absent — idempotent).
-3. Compute current Sunday MM-DD → `<repo_path>/.claude-artifacts/workflows/standup/MM-DD-week.md`.
-4. Generate the entry per the rules above.
-5. Replace today's `## Day MM-DD` block, or insert in chronological order if absent. For `write weekly`, only insert blocks for days that have no existing entry.
-6. Print the written entry to stdout. Keep stdout clean — no decorative output. The launchd trigger (`run.zsh`) captures stdout.
+`auto` mode writes only the summary line (no post-standup/notes).
 
 ## Show workflow
 
-1. Resolve the same path.
-2. If the file is missing, or `show daily` and today's block is absent, ask `Create today's entry now? [y/N]`. On yes, run the write workflow for the same scope.
-3. Otherwise print the requested scope verbatim from disk.
-4. In an interactive session, after printing today's block on `show daily`, invite refinements (see Conversational editing). Skip this on `show weekly` and on the headless automation path.
-
-## Conversational editing
-
-Interactive sessions only — never on the headless `write daily` automation path, which keeps stdout clean.
-
-After showing today's entry, close with one line: `Want to tweak it? Tell me what's off.` If I reply with a correction — "I haven't deployed yet, still testing", "drop the forms, that's tomorrow", "merge the last two into one" — rewrite today's block to match, save it back to the week file, and reprint the updated block. Keep taking edits until I'm done. Only today's block changes; leave other days untouched.
+1. Resolve the path. If the file or the requested block is missing, say so.
+2. `show` prints today's summary (+ its post-standup/notes if present); `show weekly` prints each day's `## Day MM-DD` header and summary. Read verbatim from the file — no gathering, no posting.
