@@ -12,18 +12,36 @@ Manage JIRA tickets using jira-cli by ankitpokhrel.
 - If jira tickets need to be linked or are related this needs to be done explicitly through jira. Adding tickets to descriptions is not enough.
 - When creating a ticket try to keep it problem and outcome oriented, provide enough context so that anyone can read the ticket and know exactly what needs to be done and leave the implementation up to them. The exception is if we have done our due diligence the user, is asked and explicitly decides to provide a recommended implementation.
 
-## Pre-flight Check
+## Configuration Gate
 
-Run this check at the start of **every invocation** to detect setup state and route accordingly.
+Setup establishes four prerequisites — jira-cli installed, `config.json`,
+`.jira-config.yml`, and a token in `~/.netrc`. Once setup completes these hold,
+so do **not** re-run the full battery on every invocation.
 
 > **Path convention:** All file paths in this skill are relative to the **project root**
 > (the git repository root / current working directory where Claude is invoked).
 > They are NOT relative to the skill definition directory (`~/.claude/skills/jira/`).
 
-### Detection
+### Normal path
 
-Check these items in order (all paths are relative to the project root
-unless stated otherwise):
+Reading `<project-root>/.claude/skills/jira/config.json` is already mandatory
+before any command (see "Load Config"). That read **is** the gate:
+
+- **Config loads** → proceed. Trust that setup wired up the rest.
+- **Config missing** → the project was never set up. Hard stop and route to setup
+  (message below). Don't run the detection battery first.
+
+### On command failure
+
+If a jira command then fails — `jira: command not found`, "config not found",
+an auth error / HTTP 401, or a hang despite `--no-input` — run the **Full
+detection battery** below to pinpoint the missing prerequisite, then route to setup.
+
+### Full detection battery (setup verification & failure diagnosis only)
+
+Not for routine invocations. Run during setup's final verify, or to diagnose a
+command failure above. Check in order (paths relative to the project root unless
+stated otherwise):
 
 1. **jira-cli installed?** — `command -v jira`
 2. **Skill config exists?** — `<project-root>/.claude/skills/jira/config.json`
@@ -37,12 +55,10 @@ unless stated otherwise):
    awk -v m="$server" '$1=="machine" && $2==m {found=1} END {exit !found}' ~/.netrc
    ```
 
-### Routing
+### Routing to setup
 
-**If ALL checks pass** → Load config, execute commands (see "Execute Commands" below).
-
-**If ANY check fails** → Hard stop. Do not attempt workarounds or fallbacks. Report which
-check(s) failed and tell the user:
+Hard stop. Do not attempt workarounds or fallbacks. Report what's missing and tell
+the user:
 
 > "Jira is not fully configured for this project. Invoke this skill in setup mode
 > (e.g. 'set up jira' or 'jira setup') to complete configuration."
@@ -222,7 +238,8 @@ Before running any command, read `<project-root>/.claude/skills/jira/config.json
 - `baseBranch` -- use as the base ref when creating feature branches
 - `prTemplate` -- interpolate `{ticketId}` and use as the PR description body
 
-Do not run any jira command without first reading this file.
+Do not run any jira command without first reading this file. If it's missing, stop
+and route to setup (see "Configuration Gate") — that absence is the gate.
 
 ### Config Reference
 
@@ -378,7 +395,8 @@ jira issue worklog add {ticketId} "2h 30m" --comment "Implementation work" --no-
 For complete command documentation, see:
 [dependencies/docs/jira-cli-reference.md](dependencies/docs/jira-cli-reference.md)
 
-## Pre-flight Check (repeat for attention)
+## Configuration Gate (repeat for attention)
 
-Always run the detection check at the top of this file before executing commands.
-If any check fails, hard stop and direct the user to setup mode.
+Do not run the full detection battery on every invocation. Loading `config.json`
+is the gate: if it loads, proceed; if it's missing, route to setup. Run the
+detection battery only when a command fails or during setup verification.
