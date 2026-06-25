@@ -11,7 +11,7 @@ Single orchestrated flow for ticket-driven and manual implementation work. Each 
 
 ## Step 1: Understanding The Problem
 
-1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. (Assign the ticket to me as well if not done so already).
+1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. (Assign the ticket to me as well if not done so already). If the ticket is blocked or parked. STOP immediately and notfiy the user.
 2. Restate intent with zero implementation nouns from the ticket. If the ticket says "add a smoke test," my one-sentence intent must not contain "test," "smoke," or any suite name. Force the mechanism out so it can't sneak in as a requirement. ("Continuously assure the deployed sample-pack endpoint serves a real artifact.") Every implementation noun the ticket carries is a hypothesis that must beaten by online research before it is adopted.
 3. Once you understand the problem explain it to the user. There may be some back and fourth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial** your framing of the intent and problem space must be approved by the user before proceeding.
 4. Scrutinize whether you think this ticket is worth doing or not.
