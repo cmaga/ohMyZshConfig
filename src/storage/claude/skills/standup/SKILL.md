@@ -11,6 +11,7 @@ Draft a plain-language summary of recent work, let me review and tweak it, and o
 ## Critical Rules
 
 - This posts **real (unsubmitted) Harvest entries**. In interactive mode nothing is posted until I type `done`.
+- Submitted/locked Harvest days are **never modified**, even with `--force` — `harvest-post.zsh` and the reconciler skip them.
 - Fill every **unposted day from yesterday back to the most recent day already in Harvest** — normally just yesterday, more if I missed days. Skip days with no activity.
 - Entry hours are a **7h placeholder**; the Sunday reconciler sets final hours. Never post hours ≥8 — that value is the manual-entry marker.
 - Post through `$HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh` — it resolves Harvest credentials and the project/task.

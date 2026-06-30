@@ -4,7 +4,9 @@
 #
 #   - Manual days (>= 8h): rounded UP to the nearest .25 and locked (never redistributed).
 #   - Auto days (< 8h): hours distributed to make the week hit the target, weighted by
-#     each day's note length with deterministic per-day jitter, capped at 7.75h.
+#     each day's note length with deterministic per-day jitter, capped at 7.75h. If every
+#     auto day hits the cap and the week still falls short, the longest-note day absorbs
+#     the remainder (and may exceed 7.75h).
 #
 # Idempotent: auto days always stay < 8, manual >= 8, so the split is stable; the jitter
 # is derived from the date, so re-runs converge to the same numbers. Never submits.
@@ -36,9 +38,9 @@ log "week ${START}..${END}, target ${TARGET}h"
 
 body=$(harvest_api GET "/time_entries?from=${START}&to=${END}") || { echo "reconcile: fetch failed" >&2; exit 1; }
 
-# date|id|hours|notelen for our project/task
+# date|id|hours|notelen|is_locked for our project/task
 entries=$(print -r -- "$body" | jq -r --argjson p "$PROJECT_ID" --argjson t "$TASK_ID" \
-    '.time_entries[] | select(.project.id == $p and .task.id == $t) | "\(.spent_date)|\(.id)|\(.hours)|\(.notes|length)"')
+    '.time_entries[] | select(.project.id == $p and .task.id == $t) | "\(.spent_date)|\(.id)|\(.hours)|\(.notes|length)|\(.is_locked)"')
 
 if [[ -z "$entries" ]]; then
     log "no entries in range; nothing to reconcile"
@@ -48,8 +50,14 @@ fi
 # --- partition: manual (>=8) locked+rounded, auto (<8) to be distributed ---
 locked_sum=0
 typeset -a AUTO_IN   # "id notelen datenum" per auto day
-while IFS='|' read -r d id hrs nlen; do
+while IFS='|' read -r d id hrs nlen locked; do
     [[ -z "$id" ]] && continue
+    if [[ "$locked" == "true" ]]; then
+        # Submitted/approved day: immutable. Count its hours toward the target and never PATCH it.
+        log "locked $d ${hrs}h (skipped)"
+        locked_sum=$(( locked_sum + hrs ))
+        continue
+    fi
     if (( hrs >= 8 )); then
         rounded=$(round_up_quarter "$hrs")
         if (( rounded != hrs )); then
@@ -81,7 +89,7 @@ if (( RQ <= 0 )); then
     exit 0
 fi
 if (( RQ > CAP * ndays )); then
-    log "WARNING: need ${remaining}h across ${ndays} auto day(s) but cap is 7.75h each; will fall short"
+    log "cap-bound: ${remaining}h across ${ndays} auto day(s) exceeds 7.75h each; overflow goes to the longest-note day"
 fi
 
 # --- distribute RQ quarters across auto days, weighted by notelen + per-day jitter ---
@@ -108,6 +116,13 @@ dist=$(print -l -- "${AUTO_IN[@]}" | awk -v RQ="$RQ" -v CAP="$CAP" -v FLOOR="$FL
                 if (best<0) break
                 q[best]--; sumq--
             }
+        }
+        # cap-saturation fallback: every auto day pegged at the cap and still short,
+        # so pour the remainder into the longest-note day (it may exceed the cap).
+        if (sumq < RQ) {
+            best=-1; bw=-1
+            for (i=1;i<=n;i++) if (w[i]>bw) { bw=w[i]; best=i }
+            if (best>=0) { q[best]+=RQ-sumq; sumq=RQ }
         }
         for (i=1;i<=n;i++) printf "%s %d\n", id[i], q[i]
         printf "SUMQ %d\n", sumq

@@ -55,8 +55,13 @@ if [[ -z "$id" ]]; then
     exit 0
 fi
 
-# Entry exists. Decide whether to touch the note.
-existing_note=$(harvest_api GET "/time_entries/${id}" | jq -r '.notes // ""')
+# Entry exists. One GET; a locked (submitted/approved) entry is never touched, even with --force.
+entry=$(harvest_api GET "/time_entries/${id}")
+if [[ "$(print -r -- "$entry" | jq -r '.is_locked')" == "true" ]]; then
+    echo "skip   $DATE (locked)"
+    exit 0
+fi
+existing_note=$(print -r -- "$entry" | jq -r '.notes // ""')
 if [[ "$FORCE" -ne 1 && -n "$existing_note" ]]; then
     echo "skip   $DATE (note present)"
     exit 0
