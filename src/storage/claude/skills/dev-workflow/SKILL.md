@@ -5,7 +5,17 @@ description: End-to-end implementation workflow. Use when the user says "take <T
 
 # Dev Workflow
 
-Single orchestrated flow for ticket-driven and manual implementation work. Each of the following should be tracked as a task so the user at a glance can see what part of this process we are in.
+Single orchestrated flow for ticket-driven and manual implementation work.
+
+**Before Step 1, call `TodoWrite` to create the status list seeded with these exact items, then keep it current** — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+
+1. Understand the problem
+2. Verify the problem
+3. High-level solution research
+4. Implementation routing
+5. Workspace setup
+6. Implementation
+7. Exit
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
@@ -53,9 +63,9 @@ The user should reply with `yes` or the tier they want instead.
    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
 
-## Step 5: Per Tier Implementation
+## Step 6: Per Tier Implementation
 
-Run the sequence for the confirmed tier. Each step links to its procedure file. Track each step as a sub-task.
+Run the sequence for the confirmed tier. Each step links to its procedure file. Mark the Implementation item `in_progress`; add the tier's steps as sub-items of it.
 
 ### Small
 
