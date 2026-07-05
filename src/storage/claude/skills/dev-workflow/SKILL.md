@@ -7,7 +7,7 @@ description: End-to-end implementation workflow. Use when the user says "take <T
 
 Single orchestrated flow for ticket-driven and manual implementation work.
 
-**Before Step 1, call `TodoWrite` to create the status list seeded with these exact items, then keep it current** — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+**Before Step 1, call `TaskCreate` for each of these exact items to seed the status list, then keep it current with `TaskUpdate`** — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
 
 1. Understand the problem
 2. Verify the problem
@@ -42,6 +42,7 @@ The goal at this point is to using our understanding or the problem and the busi
 1. Ask the user what solution they are leaning towards. Leverage their unique perspective and creativity as an option NOT as something set in stone, yet.
 2. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem.
 3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user. Do not proceed to the next step until the user approves the high level approach/solution by saying `go`.
+- When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
 
 ## Step 4: Implementation Routing
 
@@ -65,7 +66,7 @@ The user should reply with `yes` or the tier they want instead.
 
 ## Step 6: Per Tier Implementation
 
-Run the sequence for the confirmed tier. Each step links to its procedure file. Mark the Implementation item `in_progress`; add the tier's steps as sub-items of it.
+Run the sequence for the confirmed tier. Each step links to its procedure file. Mark the Implementation item `in_progress`; add the tier's steps as their own tasks via `TaskCreate`.
 
 ### Small
 

@@ -84,11 +84,14 @@ expand scope by helpful inference, and only this reliably stops them.
 One card per worker. T-N IDs cite outcome IDs.
 Cards are extracted and passed inline to workers; workers open this file
 only if they hit ambiguity.
+After = dispatch ordering only: list any card this one must run after
+(it consumes that card's output, or shares a file with it). none = wave 1.
 -->
 
 ### T-1: <scope>
 
 - **Satisfies**: O-?
+- **After**: <T-x | none>
 - **Files**: <list>
 - **Steps**: <numbered>
 - **Done**: <criterion>
