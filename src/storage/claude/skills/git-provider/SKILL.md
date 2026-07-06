@@ -46,13 +46,14 @@ Run **exactly one** branch below based on `PROVIDER`. Do not run the other provi
 
 ### Branch: `PROVIDER="bitbucket"`
 
-1. **Verify a profile exists:**
+1. **Auto-switch profile by workspace.** `bb` has no per-repo profile mapping — it uses the global default unless `--profile` is passed. Convention: **profile name == workspace slug** (e.g. workspace `gsi` → profile `gsi`). Derive the workspace from the remote and make its profile the active default:
 
    ```bash
-   bb profile which 2>&1
+   WS=$(git remote get-url origin | sed -E 's#\.git$##; s#^.*bitbucket\.org[^:/]*[:/]##' | cut -d/ -f1)
+   bb profile use "$WS" >/dev/null 2>&1 || echo "no profile named '$WS'"
    ```
 
-   If no default profile → route to [bb-setup mode](modes/bb-setup.md).
+   If no profile named `$WS` exists → route to [bb-setup mode](modes/bb-setup.md) (Add Profile flow; name the profile `$WS`).
 
 2. **Verify the profile can reach this repo** (catches scope/workspace mismatches, which `profile which` won't). Run from inside the repo — `bb` auto-detects from `git remote`:
 

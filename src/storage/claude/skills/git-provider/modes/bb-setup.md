@@ -28,18 +28,52 @@ bb profile which
 
 ## Add Profile
 
-Ask the user which credential type they want to use:
+> **Naming convention:** name the profile after its workspace slug (workspace `gsi` → profile `gsi`). The parent skill's Bitbucket pre-flight auto-selects a profile by running `bb profile use <workspace>`, so the names must match for multi-workspace setups to route correctly.
 
-| Option                            | Description                                                                                                       |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Workspace/Repo Access Token       | Recommended. Bitbucket-issued token scoped to a single workspace or repo. No password rotation, finer-grained.    |
-| App Password + Username           | Legacy. User-scoped, requires both `--user` and `--password`. Use when access tokens aren't available.            |
+Pick a credential type by what admin rights the user has:
 
-### Option A — Access Token
+| Option                       | When to use                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Atlassian API token (scoped) | **Default.** User-scoped, needs no workspace/repo admin. This is the replacement for app passwords.                  |
+| Workspace/Repo Access Token  | When the user is an admin of the workspace (or the specific repo). Not tied to a user; finer-grained.               |
+
+> **App passwords are deprecated** — no new ones can be created (since 2025-09-09) and existing ones stop working 2026-06-09. Do not use them.
+
+Both examples omit `--default`: the parent skill's pre-flight runs `bb profile use <workspace>` on every call, so the active profile is chosen per-repo. Setting `--default` here would only fight that.
+
+### Option A — Atlassian API token with scopes (recommended, no admin needed)
+
+1. **Create the token** at `https://id.atlassian.com/manage-profile/security/api-tokens`:
+   - Click **"Create API token with scopes"** — **not** the plain "Create API token" button (that makes a Jira/Confluence token that 401s on Bitbucket).
+   - Name + expiry → **Next**.
+   - Select **Bitbucket** as the app → **Next**.
+   - Scopes: `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` → **Next** → **Create**.
+   - Copy the token (`ATATT…`, shown once).
+
+2. **Create the profile.** The API basic-auth username is the **Atlassian account email**, not the Bitbucket username:
+
+   ```bash
+   bb profile create \
+     --name "{workspace}" \
+     --user "{atlassian-email}" \
+     --password "{api-token}" \
+     --default-workspace "{workspace}"
+   ```
+
+   Validate before trusting it (email + token via basic auth):
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" -u "{atlassian-email}:{api-token}" \
+     "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo}"   # 200 = good
+   ```
+
+   > API tokens expire. When one lapses `bb` returns 401 — regenerate via the same "with scopes" flow and `bb profile update {workspace} --password "{new-token}"`.
+
+### Option B — Workspace/Repo Access Token (requires admin)
 
 1. **Create an access token** at:
-   - Workspace token: `https://bitbucket.org/{workspace}/workspace/settings/access-tokens` *(replace `{workspace}`)*
-   - Repository token: `https://bitbucket.org/{workspace}/{repo}/admin/access-tokens`
+   - Workspace token *(needs workspace admin)*: `https://bitbucket.org/{workspace}/workspace/settings/access-tokens`
+   - Repository token *(needs repo admin)*: `https://bitbucket.org/{workspace}/{repo}/admin/access-tokens`
 
    Required scopes: `pullrequest`, `pullrequest:write`, `repository`, `repository:write`.
 
@@ -47,30 +81,12 @@ Ask the user which credential type they want to use:
 
    ```bash
    bb profile create \
-     --name "{profile-name}" \
+     --name "{workspace}" \
      --access-token "{token}" \
-     --default-workspace "{workspace}" \
-     --default
+     --default-workspace "{workspace}"
    ```
 
-   Token is stored in the keychain via the `bitbucket-cli` vault key by default.
-
-### Option B — App Password
-
-1. **Create an app password** at `https://bitbucket.org/account/settings/app-passwords/`.
-
-   Required permissions: Repositories (Read/Write), Pull requests (Read/Write).
-
-2. **Create the profile:**
-
-   ```bash
-   bb profile create \
-     --name "{profile-name}" \
-     --user "{bitbucket-username}" \
-     --password "{app-password}" \
-     --default-workspace "{workspace}" \
-     --default
-   ```
+   Token (`ATCTT…`) is stored in the keychain via the `bitbucket-cli` vault key by default.
 
 ## Update Profile
 
@@ -94,7 +110,7 @@ bb branch list -o json --page-length 1 | jq -r '.[0].name // "(no branches)"'
 
 Notes:
 - `bb user get` and `bb repo get` both require an explicit arg; don't use them as auth probes.
-- Access tokens are not tied to a user, so `bb` profiles created via `--access-token` have a blank `USER` column in `bb profile list`. That's normal.
+- Access tokens (`ATCTT…`, Option B) are not tied to a user, so those profiles have a blank `USER` column in `bb profile list`. API-token and app-password profiles (Option A) show the email/username in `USER`. Both are normal.
 
 If both verify steps succeed, return to the parent skill flow.
 
@@ -102,8 +118,11 @@ If both verify steps succeed, return to the parent skill flow.
 
 | Symptom                                                                | Fix                                                                                              |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `may not have access to this repository`                               | Token/app-password lacks repo scope, or wrong `--default-workspace`. Recreate via Update Profile. |
+| `may not have access to this repository`                               | Token lacks repo scope, or wrong `--default-workspace`. Recreate via Update Profile.             |
+| `401` with an `ATATT…` token that works against Jira                   | The token has no Bitbucket scopes — it's a plain/Jira token. Recreate via **"Create API token with scopes"** → select **Bitbucket** (Option A). |
+| `401` on a profile that used to work                                   | The API token expired. Regenerate and `bb profile update {workspace} --password "{new-token}"`. |
+| App-password page warns it's being removed                             | Expected — app passwords are deprecated (gone 2026-06-09). Use Option A (API token with scopes). |
 | `bb user get` works but `bb repo get` fails inside the repo            | Workspace mismatch. The repo's workspace differs from the profile's `--default-workspace`.       |
-| `bb profile list` shows USER blank with an `ATCTT…` token              | Access-token profile. Normal — `USER` is only set for app-password profiles.                     |
+| `git push/pull`: `Could not resolve hostname bitbucket.org-{alias}`    | Git transport, not `bb`. The remote uses an SSH host alias missing from `~/.ssh/config`. Point the remote at a defined alias: `git remote set-url origin git@{defined-alias}:{workspace}/{repo}.git`, or add the `Host` block. |
 | `bb` not found after `brew install`                                    | Add Homebrew to PATH or `brew link gildas/tap/bitbucket-cli`.                                    |
 | Keychain prompts on every command                                      | Allow `bb` to always access the `bitbucket-cli` keychain item, or recreate with `--no-vault`.    |
