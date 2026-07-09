@@ -1,26 +1,22 @@
 # Exit report
 
-Maintain plain language. No internal vocabulary (`O-1`, "the controller", "the spec"), no template labels, no diff-stat banner.
+The user skims this to decide whether to merge and what's still theirs to do. Everything else is in the PR — don't re-narrate the diff.
 
-Five beats, in order:
+**≤ 8 lines. Lead with the outcome in one sentence.** Longer means you're reporting instead of summarizing.
 
-- **What this fixes** — the problem in the user's language, with one concrete example if it helps it land. If a non-engineer couldn't follow it, rewrite.
-- **How it's fixed** — the mechanism, 1–3 sentences. Name a thing only when naming it is the clearest way to say what changed. No file roll-call, no per-outcome checklist.
-- **Deviations from plan** — if any. Omit the heading if none.
-- **How it was verified** — concrete evidence of the visible outcome beyond tests and build: rendered PDFs/images/screens read with the Read tool, UI flows driven end-to-end, scripts whose output you inspected. Default assumption: you can verify everything yourself except look-and-feel. Omit if tests and build are sufficient on their own.
-- **What only you can verify** — look-and-feel only: visual taste, UX feel, copy. If the review pass left PLAUSIBLE findings as PR comments, point at them here too. Omit the heading if none.
-
-Build, tests, and a clean review pass are preconditions for being here. Do not list them. If something failed, fix it before exiting — that's not a report, it's a deviation.
+- **Line 1 (required):** what the user can now do, or the decision that's theirs — in their words, not the ticket's.
+- **Then only what changes their next move:** a deviation from plan, a caveat that limits the result, how the visible outcome was confirmed if it isn't obvious, or the one thing only they can verify (look-and-feel, a taste/business call). Skip any that don't apply.
+- Plain language. No internal vocabulary, no section labels, no diff-stat.
+- Build, tests, and a clean review are preconditions for being here — never list them. If one failed you're not exiting, you're fixing it.
+- If the review left PLAUSIBLE findings as PR comments, say so in one clause.
 
 End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 
-### Exit report example
+### Example
 
-> **What this fixes:** Authenticated users could change other users' data by passing someone else's id in the URL (`/users/SOMEONE_ELSE/preferences`). Now they can only change their own.
+> **You can now change only your own data** — passing someone else's id in the URL 403s where it used to succeed. Routes read identity from the session, so the ownership guard is gone.
 >
-> **How it's fixed:** Routes read identity from the authenticated session instead of the URL. The per-route ownership guard and the path parameter it policed are both gone. Frontend callers updated to match.
->
-> **How it was verified:** Drove the login → settings-update flow against the dev server end-to-end; the unauthorized-id case now 403s where it previously succeeded.
+> Nothing for you to check by hand; two low-severity notes are on the PR for triage.
 >
 > Run `cleanup KRAT-188` after merge.
 >
