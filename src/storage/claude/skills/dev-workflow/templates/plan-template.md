@@ -45,6 +45,19 @@ expand scope by helpful inference, and only this reliably stops them.
 
 -
 
+## Reuse contract
+
+<!--
+From the Step-3 codebase-fit pass, plus the `## Reusable surface` entries of
+any vault component notes this plan touches. Symbols workers must use instead
+of re-implementing, and logic to promote rather than copy. Parent review
+rejects diffs that re-implement anything listed. Delete only when the change
+adds no new components.
+-->
+
+- Use `<symbol>` (`<file>`) for <purpose>
+- Promote `<function>` from `<script>` to `<destination>`; retarget existing callers
+
 ## Autonomy
 
 **Workers may decide:**

@@ -40,8 +40,18 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 The goal at this point is to using our understanding or the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless. To do this you need to gather multiple solution options and pick one.
 
 1. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared during Step 1.
-2. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4). Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply.
+2. **Codebase fit** — if the leading solution adds new components or code, map it onto this repo before presenting (use `ultracode` when the surface is large). A solution that only names new things is unfinished:
+   - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern.
+   - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing.
+   - Adversarially verify the placement and reuse claims against real code (file:line) — a "reuse X" claim whose symbol doesn't actually fit the new shape is the classic failure this catches.
+3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4). Present the codebase-fit map (placement + reuse) with it. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply.
 - When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
+  - **The artifact is for the user** — a decision-maker, not the implementing engineer or an LLM. The worker just absorbed the codebase's jargon; its job is to translate that jargon, not pass it through.
+  - Before writing, list every domain term the solution touches, gloss each in one plain-English line, then write from the glosses — this forced-translation step is load-bearing; "write plainly" alone gets ignored under load.
+  - Plain English, short sentences, for a smart reader who doesn't live in our vocabulary. Diagram and table labels are plain too, not just body text.
+  - Never cite a decision, ticket, or code symbol by its code (no `ADR-004`, `TICKET-123`, `ClassName`) — describe it in words, e.g. "an earlier go/no-go test." The user can't cross-reference on the fly.
+  - Define every unavoidable domain term in plain words the first time it appears.
+  - Reread as the user before publishing; cut any term left undefined. Same register as the [chat brief](common/plan-presentation.md): "Plain language. No `O-1`, no file paths, no code snippets."
 
 ## Step 4: Implementation Routing
 

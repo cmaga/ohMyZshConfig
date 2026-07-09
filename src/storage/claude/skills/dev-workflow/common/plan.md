@@ -9,4 +9,5 @@ Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktre
 The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is the contract with workers. The mechanics (Files, Tasks, Tests) are the execution plan.
 
 - Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
+- Fill `## Reuse contract` from the Step-3 codebase-fit pass and the `## Reusable surface` sections of vault component notes the plan touches — workers don't discover reuse on their own.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Resolve each with the user as it's discovered — don't batch them up to the end.
