@@ -23,7 +23,7 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 
 1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. (Assign the ticket to me as well if not done so already). If the ticket is blocked or parked. STOP immediately and notfiy the user.
 2. Restate intent with zero implementation nouns from the ticket. If the ticket says "add a smoke test," my one-sentence intent must not contain "test," "smoke," or any suite name. Force the mechanism out so it can't sneak in as a requirement. ("Continuously assure the deployed sample-pack endpoint serves a real artifact.") Every implementation noun the ticket carries is a hypothesis that must beaten by online research before it is adopted.
-3. Once you understand the problem explain it to the user. There may be some back and fourth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial** your framing of the intent and problem space must be approved by the user before proceeding.
+3. Once you understand the problem explain it to the user. There may be some back and fourth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial** your framing of the intent and problem space must be approved by the user before proceeding. Invite the user to share any solution direction they already have in mind so it can seed the research.
 4. Scrutinize whether you think this ticket is worth doing or not.
 
 ## Step 2: Verify the problem
@@ -39,14 +39,13 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 
 The goal at this point is to using our understanding or the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless. To do this you need to gather multiple solution options and pick one.
 
-1. Ask the user what solution they are leaning towards. Leverage their unique perspective and creativity as an option NOT as something set in stone, yet.
-2. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem.
-3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user. Do not proceed to the next step until the user approves the high level approach/solution by saying `go`.
+1. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared during Step 1.
+2. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4). Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply.
 - When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
 
 ## Step 4: Implementation Routing
 
-Recommend an implemetation tier based on the following
+Reference for the tier recommended and confirmed with the solution in Step 3:
 
 | Tier     | When                                                       |
 | -------- | ---------------------------------------------------------- |
@@ -54,7 +53,7 @@ Recommend an implemetation tier based on the following
 | `medium` | New feature, moderate refactor                             |
 | `deep`   | Architectural, multi-system, new design pattern, high risk |
 
-The user should reply with `yes` or the tier they want instead.
+No separate confirmation here — the tier was approved with the solution in Step 3. Route to the confirmed tier's sequence in Step 6.
 
 ## Step 5: Workspace Setup
 
