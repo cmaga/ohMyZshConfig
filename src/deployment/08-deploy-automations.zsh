@@ -124,6 +124,51 @@ EOF
     fi
 }
 
+# Render and load a KeepAlive launchd agent — a long-running daemon (e.g. an
+# SSM tunnel), not a scheduled job. Relaunched whenever it exits (drop, reboot,
+# transient error), throttled so an unreachable target can't tight-loop.
+# Args: name run_script
+register_keepalive_plist() {
+    local name="$1"
+    local run_script="$2"
+
+    local label="com.cmagana.$name"
+    local plist="$LAUNCH_AGENTS_DIR/$label.plist"
+
+    cat > "$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$label</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>$run_script</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>15</integer>
+    <key>StandardOutPath</key>
+    <string>$LOG_DIR/$name.log</string>
+    <key>StandardErrorPath</key>
+    <string>$LOG_DIR/$name.log</string>
+</dict>
+</plist>
+EOF
+
+    launchctl unload "$plist" 2>/dev/null || true
+    if launchctl load "$plist" 2>/dev/null; then
+        print_status "success" "Registered KeepAlive agent '$label'"
+    else
+        print_status "warning" "launchctl load failed for $plist"
+    fi
+}
+
 # Disabled automation: tear down any existing plist for this name.
 unregister_plist() {
     local name="$1"
@@ -143,6 +188,7 @@ process_automation() {
     local toml="$3"
 
     local enabled=$(toml_bool enabled "$toml")
+    local keepalive=$(toml_bool keepalive "$toml")
     local cron=$(toml_string cron "$toml")
     local repo_path=$(toml_string repo_path "$toml")
 
@@ -151,16 +197,22 @@ process_automation() {
         return 0
     fi
 
-    if [[ -z "$cron" || -z "$repo_path" || "$repo_path" == "/CHANGEME" ]]; then
-        print_status "warning" "Automation '$name' has incomplete automation.toml — skipping"
-        return 0
-    fi
-
     if [ ! -f "$run_script" ]; then
         print_status "warning" "Automation '$name' has automation.toml but no run.zsh at $run_script — skipping"
         return 0
     fi
     chmod +x "$run_script" 2>/dev/null || true
+
+    # KeepAlive daemon — no cron; relaunched whenever it exits.
+    if [[ "$keepalive" == "true" ]]; then
+        register_keepalive_plist "$name" "$run_script"
+        return 0
+    fi
+
+    if [[ -z "$cron" || -z "$repo_path" || "$repo_path" == "/CHANGEME" ]]; then
+        print_status "warning" "Automation '$name' has incomplete automation.toml — skipping"
+        return 0
+    fi
 
     register_plist "$name" "$run_script" "$cron"
 }
