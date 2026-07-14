@@ -21,7 +21,7 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 
 ## Step 1: Understanding The Problem
 
-1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. (Assign the ticket to me as well if not done so already). If the ticket is blocked or parked. STOP immediately and notfiy the user.
+1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. If the ticket is blocked or parked, STOP immediately and notify the user. Otherwise, assign it to me and transition it to "In Progress" right away via the jira skill — move it as soon as work starts, not later. (A `new take` has no ticket yet; it gets assigned and transitioned when created in Step 5.)
 2. Restate intent with zero implementation nouns from the ticket. If the ticket says "add a smoke test," my one-sentence intent must not contain "test," "smoke," or any suite name. Force the mechanism out so it can't sneak in as a requirement. ("Continuously assure the deployed sample-pack endpoint serves a real artifact.") Every implementation noun the ticket carries is a hypothesis that must beaten by online research before it is adopted.
 3. Once you understand the problem explain it to the user. There may be some back and fourth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial** your framing of the intent and problem space must be approved by the user before proceeding. Invite the user to share any solution direction they already have in mind so it can seed the research.
 4. Scrutinize whether you think this ticket is worth doing or not.
@@ -69,7 +69,7 @@ No separate confirmation here — the tier was approved with the solution in Ste
 ## Step 5: Workspace Setup
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
-2. **Transition the ticket** to "In Progress" via the `jira` skill.
+2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
 3. **Enter the worktree.**
    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
