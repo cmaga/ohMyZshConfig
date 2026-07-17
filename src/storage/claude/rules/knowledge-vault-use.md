@@ -22,4 +22,5 @@ Start at [`docs/project-knowledge/_index.md`](docs/project-knowledge/_index.md) 
 
 ### Writing/Editing and Initial Setup
 
-- All changes to the knowledge vault **MUST** go through the capture documentation skill.
+- All changes to the knowledge vault **MUST** go through the `vault-scribe-agent` subagent. Dispatch it with a content brief — the facts, numbers, and why — then review the content summary it returns and approve or reply with tweaks. The agent owns all vault mechanics.
+- For a quick manual capture, invoking the capture-documentation skill inline is acceptable — same rules, same handoff.

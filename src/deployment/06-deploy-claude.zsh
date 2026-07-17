@@ -259,20 +259,33 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         fi
     fi
 
-    # Merge BashTool timeout env vars into ~/.claude/settings.json.
+    # Merge BashTool timeout and cost-tracker telemetry env vars into ~/.claude/settings.json.
+    # Telemetry: every session pushes OpenTelemetry metrics (tokens, cost by
+    # model/agent/effort/skill) via OTLP http to the local VictoriaMetrics sink
+    # run by the cost-tracker automation (src/storage/automations/cost-tracker/).
+    # The endpoint ends in /opentelemetry so the SDK's /v1/metrics suffix lands
+    # on VictoriaMetrics' ingestion path.
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
             echo '{}' > "$SETTINGS_DEST"
         fi
-        print_status "info" "Setting BashTool timeout env vars..."
-        jq '.env = ((.env // {}) + {"BASH_DEFAULT_TIMEOUT_MS":"600000","BASH_MAX_TIMEOUT_MS":"3600000"})' \
+        print_status "info" "Setting BashTool timeout and telemetry env vars..."
+        jq '.env = ((.env // {}) + {
+                "BASH_DEFAULT_TIMEOUT_MS":"600000",
+                "BASH_MAX_TIMEOUT_MS":"3600000",
+                "CLAUDE_CODE_ENABLE_TELEMETRY":"1",
+                "OTEL_METRICS_EXPORTER":"otlp",
+                "OTEL_EXPORTER_OTLP_PROTOCOL":"http/protobuf",
+                "OTEL_EXPORTER_OTLP_ENDPOINT":"http://127.0.0.1:8428/opentelemetry",
+                "OTEL_METRIC_EXPORT_INTERVAL":"60000"
+            })' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
-            || error "Failed to merge BashTool timeout env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m)"
+            || error "Failed to merge env vars into settings.json"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); telemetry -> 127.0.0.1:8428"
     else
-        print_status "warning" "jq not found — skipping BashTool timeout env merge"
+        print_status "warning" "jq not found — skipping env merge"
     fi
 
     # Register the jCodemunch MCP server at user scope (available in every
@@ -329,7 +342,7 @@ echo "  - Skills -> $CLAUDE_SKILLS_DEST"
 echo "  - Agents -> $CLAUDE_AGENTS_DEST"
 echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
-echo "  - BashTool timeouts -> $SETTINGS_DEST (env)"
+echo "  - BashTool timeouts + telemetry env -> $SETTINGS_DEST (env)"
 echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
 
 print_status "success" "Claude Code deployment complete!"
