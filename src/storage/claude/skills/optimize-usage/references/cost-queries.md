@@ -11,7 +11,9 @@ curl -s http://127.0.0.1:8428/health
 curl -s 'http://127.0.0.1:8428/api/v1/label/__name__/values' | jq -r '.data[]' | grep -i claude
 ```
 
-Substitute the discovered names into the queries below (shown as `claude_code_cost_usage` / `claude_code_token_usage`).
+Substitute the discovered names into the queries below (verified 2026-07-17: `claude_code_cost_usage_USD_total` / `claude_code_token_usage_tokens_total`).
+
+Instant queries ignore samples younger than 30s (`-search.latencyOffset`) — an empty result on fresh data means wait, not missing data.
 
 ## Queries
 
@@ -21,14 +23,14 @@ curl -s 'http://127.0.0.1:8428/api/v1/query' --data-urlencode 'query=<PromQL>'
 
 | What | PromQL |
 |---|---|
-| Total draw, last 7d | `sum(increase(claude_code_cost_usage[7d]))` |
-| By model | `sum by (model) (increase(claude_code_cost_usage[7d]))` |
-| Main session vs subagents | `sum by (query_source) (increase(claude_code_cost_usage[7d]))` |
-| By agent (worker/review/fan-out) | `sum by (agent_name) (increase(claude_code_cost_usage[7d]))` |
-| By effort | `sum by (effort) (increase(claude_code_cost_usage[7d]))` |
-| By skill | `sum by (skill_name) (increase(claude_code_cost_usage[7d]))` |
-| Tokens by type | `sum by (type) (increase(claude_code_token_usage[7d]))` |
-| Daily draw series | `/api/v1/query_range` with `query=sum(increase(claude_code_cost_usage[1d]))`, `step=1d` |
+| Total draw, last 7d | `sum(increase(claude_code_cost_usage_USD_total[7d]))` |
+| By model | `sum by (model) (increase(claude_code_cost_usage_USD_total[7d]))` |
+| Main session vs subagents | `sum by (query_source) (increase(claude_code_cost_usage_USD_total[7d]))` |
+| By agent (worker/review/fan-out) | `sum by (agent_name) (increase(claude_code_cost_usage_USD_total[7d]))` |
+| By effort | `sum by (effort) (increase(claude_code_cost_usage_USD_total[7d]))` |
+| By skill | `sum by (skill_name) (increase(claude_code_cost_usage_USD_total[7d]))` |
+| Tokens by type | `sum by (type) (increase(claude_code_token_usage_tokens_total[7d]))` |
+| Daily draw series | `/api/v1/query_range` with `query=sum(increase(claude_code_cost_usage_USD_total[1d]))`, `step=1d` |
 
 ## Lever cost from queries
 
