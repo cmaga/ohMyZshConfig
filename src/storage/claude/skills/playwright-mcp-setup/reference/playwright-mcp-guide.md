@@ -130,7 +130,21 @@ rm -rf "$TMP"
 
 Launch with the same browser/`channel` that created the profile — `channel: "chrome"` for the MCP default (your installed Google Chrome). A mismatched engine can't decrypt the profile's OS-keychain-encrypted cookies. Run it where `playwright` is importable (the project, or a dir with `npm i playwright`).
 
+**OAuth-only identity (no interactive login possible).** If the seed identity signs in only through an OAuth provider — no password set — neither path above works: the provider (Google, notably) refuses OAuth inside an automation-controlled browser with "This browser or app may not be secure," and an `--isolated` setup has no persistent profile to extract from. Confirm the dead end before working around it — query the provider for the identity's auth factors (Clerk: `GET /v1/users`, check `password_enabled` and whether the email verified `from_oauth_google`). Then mint a session out-of-band: most providers expose a backend sign-in-token / ticket API that a browser redeems into a full session with no credentials.
+
+```sh
+# Clerk: mint a token from the Backend API, redeem it as a ticket in the browser.
+# POST https://api.clerk.com/v1/sign_in_tokens  {user_id, expires_in_seconds}  (Bearer <secret key>)
+# then navigate to  <sign-in-route>?__clerk_ticket=<token>  — the stock <SignIn /> redeems it.
+```
+
+Drive it in a throwaway Playwright browser, poll the provider's signed-in signal (Clerk: `__client_uat` non-zero) rather than `networkidle`, then `context.storageState({path})`. No repo code, no route, no stored credentials — the token is a one-off backend call minted and spent in seconds. This is not the same as shipping a dev-only sign-in route into the app; nothing is added to the codebase.
+
 Either way: `chmod 600` the file. The `<project>.json` then feeds every worktree's `--storage-state`.
+
+### An authenticated seed is necessary, not sufficient
+
+A valid session only clears the login wall. If the app has a **post-auth gate** — a terms/policy acceptance interstitial, an onboarding step, an email-verification wall — a freshly seeded identity still gets redirected there, because that gate is server-side row state (a DB column), invisible in the cookie seed and unaffected by re-seeding. Clear it once per identity through the app (accept the terms, finish onboarding) or by writing the row directly; then the seed sails through. Diagnose by *where* the drive lands: the sign-in route means the seed is stale; any other interstitial means auth succeeded and an app gate stopped you — re-seeding is the wrong fix.
 
 ## Ports and worktrees
 
@@ -151,5 +165,7 @@ Rule of thumb: exercising the code under test → Playwright MCP; anything else 
 
 - **"Browser is already in use, use --isolated"** — a persistent profile is locked by another instance. Switch that server to `--isolated`; seed the login with `--storage-state`.
 - **A verify run lands on the login page** — storage-state missing/expired, or isolated with no seed. Re-export the seed (SKILL.md step 3).
+- **A verify run lands on a terms/onboarding page (not login)** — auth succeeded; a post-auth gate is blocking. That gate is server-side row state, not seed state — re-seeding won't touch it. Clear it once per identity (guide: "An authenticated seed is necessary, not sufficient").
+- **"This browser or app may not be secure" on the OAuth provider** — Google and others block OAuth in automation-controlled browsers, so an interactive login can't complete. Seed via a backend sign-in token instead (guide: "OAuth-only identity").
 - **`${HOME}` appears literally in the browser path** — it's set in `~/.claude.json`, which doesn't expand env vars. Use an absolute path there, or move the override to `.mcp.json`.
 - **Login persists but only one browser works** — a fixed `--user-data-dir`. Remove it; use `--isolated` + `--storage-state`.
