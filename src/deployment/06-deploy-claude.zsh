@@ -259,31 +259,27 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         fi
     fi
 
-    # Merge BashTool timeout and cost-tracker telemetry env vars into ~/.claude/settings.json.
-    # Telemetry: every session pushes OpenTelemetry metrics (tokens, cost by
-    # model/agent/effort/skill) via OTLP http to the local VictoriaMetrics sink
-    # run by the cost-tracker automation (src/storage/automations/cost-tracker/).
-    # The endpoint ends in /opentelemetry so the SDK's /v1/metrics suffix lands
-    # on VictoriaMetrics' ingestion path.
+    # Merge BashTool timeout env vars into ~/.claude/settings.json, and strip the
+    # retired cost-tracker telemetry vars (removed 2026-07-21: the tracker's agent
+    # attribution could not measure per-lever slices and the pipeline was not worth
+    # its maintenance; lever costs now come from the optimize-usage benchmark plus
+    # published research).
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
             echo '{}' > "$SETTINGS_DEST"
         fi
-        print_status "info" "Setting BashTool timeout and telemetry env vars..."
+        print_status "info" "Setting BashTool timeout env vars..."
         jq '.env = ((.env // {}) + {
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
-                "BASH_MAX_TIMEOUT_MS":"3600000",
-                "CLAUDE_CODE_ENABLE_TELEMETRY":"1",
-                "OTEL_METRICS_EXPORTER":"otlp",
-                "OTEL_EXPORTER_OTLP_PROTOCOL":"http/protobuf",
-                "OTEL_EXPORTER_OTLP_ENDPOINT":"http://127.0.0.1:8428/opentelemetry",
-                "OTEL_METRIC_EXPORT_INTERVAL":"60000"
-            })' \
+                "BASH_MAX_TIMEOUT_MS":"3600000"
+            }) | del(.env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
+                     .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
+                     .env.OTEL_METRIC_EXPORT_INTERVAL)' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); telemetry -> 127.0.0.1:8428"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m)"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi

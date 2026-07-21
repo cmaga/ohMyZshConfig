@@ -7,15 +7,17 @@ description: End-to-end implementation workflow. Use when the user says "take <T
 
 Single orchestrated flow for ticket-driven and manual implementation work.
 
-**Before Step 1, call `TaskCreate` for each of these exact items to seed the status list, then keep it current with `TaskUpdate`** — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+## Prerequisites (before Step 1)
 
-1. Understand the problem
-2. Verify the problem
-3. High-level solution research
-4. Implementation routing
-5. Workspace setup
-6. Implementation
-7. Exit
+1. **Task tracking.** Call `TaskCreate` for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+   1. Understand the problem
+   2. Verify the problem
+   3. High-level solution research
+   4. Implementation routing
+   5. Workspace setup
+   6. Implementation
+   7. Exit
+2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind every `kind: "skill"` lever to the all-caps form of its key — currently `RESEARCH_FANOUT_MODEL` and `CODE_FANOUT_MODEL`. A value of `inherit` or a missing file means no pin: omit the `model` opt wherever the alias is used. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
@@ -29,22 +31,23 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 ## Step 2: Verify the problem
 
 1. **Codebase update** In the main checkout, run `git status --porcelain`. If it prints anything, stop: this is the main-checkout gate (see Critical Rules). When it prints nothing, run `git pull --ff-only`.
-2. Use `ultracode` to do the following in parallel:
-   - **Verify the problem exists in code** Do your own investigation.
-   - **Read relevant documentation** Be careful, documentation could be out of date.
-   - **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
-   - **Is this needed?** What are the business-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep. If you have reason to beleive this should not be done, stop here and report back to the user with a simple high level explanation.
+2. Investigate the following yourself — this is the case file the rest of the workflow consumes, and the threads feed each other, so keep the primary evidence in your own context and chase leads across threads as they appear. (A genuinely isolated read may still be delegated.)
+   1. **Verify the problem exists in code** Do your own investigation.
+   2. **Read relevant documentation** Be careful, documentation could be out of date.
+   3. **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
+   4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation.
 
 ## Step 3: High Level Solution Research
 
-The goal at this point is to using our understanding or the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless. To do this you need to gather multiple solution options and pick one.
+The goal at this point is to use your understanding of the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless that you can be proud of. To do this you need to gather multiple solution options and pick one.
 
-1. Use `ultracode` to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared during Step 1.
-2. **Codebase fit** — if the leading solution adds new components or code, map it onto this repo before presenting (use `ultracode` when the surface is large). A solution that only names new things is unfinished:
+1. Use `ultracode` (fan-out agents on `RESEARCH_FANOUT_MODEL`) to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared during Step 1.
+2. **Codebase fit** — if the leading solution adds new components or code, map it onto this repo before presenting (use `ultracode`, fan-out agents on `CODE_FANOUT_MODEL`, when the surface is large). A solution that only names new things is unfinished:
    - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern.
    - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing.
    - Adversarially verify the placement and reuse claims against real code (file:line) — a "reuse X" claim whose symbol doesn't actually fit the new shape is the classic failure this catches.
 3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4). Present the codebase-fit map (placement + reuse) with it. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply.
+
 - **Data-presentation checkpoint.** If the solution introduces a new way to display information the user reads to make a decision — a chart, panel, metric/KPI, event feed, or a new state/severity treatment — and the visual form isn't obvious, offer a mock-data, locally-runnable prototype as an explicit go/no-go alongside the recommendation. It is cheap to iterate, and the approved shape pins the data contract the backend must serve, so it belongs here, before planning and worktree setup. Standard controls and cosmetic changes are exempt: a button, toggle, menu item, relabel, or color change needs no prototype.
 - When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
   - **The artifact is for the user** — a decision-maker, not the implementing engineer or an LLM. The worker just absorbed the codebase's jargon; its job is to translate that jargon, not pass it through.
@@ -100,7 +103,7 @@ Parent plans, `worker-agent` subagents implement, parent reviews. The plan must 
 
 ### Deep
 
-Similar to medium tier but Adds QA planning and an architecture review gate before workers dispatch. `Opus` workers instead of sonnet.
+Similar to medium tier but adds QA planning and an architecture review gate before workers dispatch.
 
 1. [Scope](common/scope.md)
 2. [Plan](common/plan.md)

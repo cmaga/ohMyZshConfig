@@ -1,0 +1,54 @@
+{
+  "updated": "2026-07-21",
+  "levers": {
+    "session_model": {
+      "value": "opus",
+      "kind": "runtime",
+      "native": "~/.claude/settings.json model"
+    },
+    "session_effort": {
+      "value": "xhigh",
+      "kind": "runtime",
+      "native": "~/.claude/settings.json effortLevel"
+    },
+    "review_model": {
+      "value": "opus",
+      "kind": "runtime",
+      "native": "agents/{code-review,plan-review,qa-planner,security-expert}-agent.md model:"
+    },
+    "review_effort": {
+      "value": "max",
+      "kind": "runtime",
+      "native": "agents/code-review-agent.md effort:; the other three inherit"
+    },
+    "worker_model": {
+      "value": "sonnet",
+      "kind": "runtime",
+      "native": "agents/worker-agent.md model:"
+    },
+    "worker_effort": {
+      "value": "inherit",
+      "kind": "runtime",
+      "native": "agents/worker-agent.md effort: (unset)"
+    },
+    "vault_scribe_model": {
+      "value": "sonnet",
+      "kind": "runtime",
+      "native": "agents/vault-scribe-agent.md model:"
+    },
+    "research_fanout_model": {
+      "value": "sonnet",
+      "kind": "skill",
+      "readers": [
+        "dev-workflow SKILL.md Step 3.1"
+      ]
+    },
+    "code_fanout_model": {
+      "value": "inherit",
+      "kind": "skill",
+      "readers": [
+        "dev-workflow SKILL.md Step 3.2"
+      ]
+    }
+  }
+}

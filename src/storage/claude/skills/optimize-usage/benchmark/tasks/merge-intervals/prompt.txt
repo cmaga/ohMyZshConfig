@@ -1,0 +1,1 @@
+Implement the merge() function in intervals.py per its docstring, then run `python3 check.py` to confirm. All checks must pass. Do not edit check.py.

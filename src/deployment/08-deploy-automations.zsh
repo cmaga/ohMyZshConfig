@@ -250,4 +250,20 @@ if [ -d "$STANDALONE_SOURCE" ]; then
     done
 fi
 
+# Retired automations: unload and remove anything previously registered that is not in source
+for name in cost-tracker; do
+    label="com.cmagana.$name"
+    plist="$LAUNCH_AGENTS_DIR/$label.plist"
+    if launchctl list 2>/dev/null | grep -q "$label"; then
+        print_status "info" "Unloading retired $label..."
+        launchctl unload "$plist" 2>/dev/null || true
+    fi
+    if [ -f "$plist" ]; then
+        rm -f "$plist" && print_status "success" "Removed $plist"
+    fi
+    if [ -d "$STANDALONE_DEST/$name" ]; then
+        rm -rf "$STANDALONE_DEST/$name" && print_status "success" "Removed $STANDALONE_DEST/$name"
+    fi
+done
+
 print_status "success" "Automation deployment complete!"

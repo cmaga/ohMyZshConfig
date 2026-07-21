@@ -1,0 +1,1 @@
+Run `python3 check.py` in this directory. Some checks fail. Fix the bugs in mathkit.py so that every check passes. Do not edit check.py.

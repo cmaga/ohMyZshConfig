@@ -1,0 +1,1 @@
+This directory has stats.py with three unimplemented functions and check.py that tests them. Implement the functions in stats.py so every check passes. Follow the docstrings exactly, including the error and edge-case behavior. Do not edit check.py.
