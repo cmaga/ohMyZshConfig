@@ -9,7 +9,7 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 
 ## Prerequisites (before Step 1)
 
-1. **Task tracking.** Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, this session has no task list: skip this item and mark step transitions in prose instead. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+1. **Task tracking.** Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, that is a known Anthropic-side bug (the `tengu_vellum_ash` model gate strips the task tools on current models) — it is expected, already diagnosed, and not worth investigating or working around. Say so in one line, skip this item, mark step transitions in prose instead, and carry on with the workflow. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
    1. Understand the problem
    2. Verify the problem
    3. High-level solution research
