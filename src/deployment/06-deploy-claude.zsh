@@ -265,11 +265,13 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # its maintenance; lever costs now come from the optimize-usage benchmark plus
     # published research).
     # DISABLE_GROWTHBOOK was set here on 2026-07-22 to dodge the server-side
-    # `tengu_vellum_ash` gate that disabled the task-list tools; Anthropic cleared
-    # that flag the same day. It is deleted rather than merely omitted so machines
-    # that took the interim deploy get it stripped — it also turned off bridge
-    # attestation enforcement, malformed-tool-use retry, ultraplan, and push
-    # notifications, since it forces every feature flag to its compiled default.
+    # `tengu_vellum_ash` gate that disables the task-list tools, then removed: it
+    # forces EVERY feature flag to its compiled default (66 flags measured), which
+    # also turns off bridge attestation enforcement, malformed-tool-use retry,
+    # ultraplan, and push notifications. That trade is not worth a status
+    # checklist. The gate oscillates on Anthropic's side — do not re-add this on
+    # the strength of a short empty-flag reading. It is deleted rather than merely
+    # omitted so machines that took the interim deploy get it stripped.
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
