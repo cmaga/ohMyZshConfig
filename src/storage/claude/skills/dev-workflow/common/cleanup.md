@@ -37,11 +37,20 @@ Invoke the `jira` skill to transition the ticket to `transitions.done`. Trust th
 
 In order:
 
-1. If currently inside the worktree, call `ExitWorktree` with `discard_changes: true`. Step 2 verified `MERGED` via `gh` — local git treats squash/rebase-merged branches as dirty even though the work is in main.
-2. Remove the worktree: `git worktree remove --force <path>`. Same reasoning as step 1. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
-3. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Step 2 already verified `MERGED` via `gh`, which is the source of truth.
-4. Update local main: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, run `git pull --ff-only`.
-5. Kill any shells still running
+1. If currently inside the worktree, call `ExitWorktree` with `discard_changes: true`. Section 2 (Verify merge) confirmed `MERGED` via `gh` — local git treats squash/rebase-merged branches as dirty even though the work is in main.
+2. Release anything the worktree left running. If `<path>/.claude-artifacts/teardown.sh` exists, run it:
+
+       bash <path>/.claude-artifacts/teardown.sh
+
+   Projects that provision per-worktree resources — containers, background servers, tunnels — record their own undo commands there as they start them. Run it before step 3; removing the worktree deletes the file.
+
+   If the file does not exist, skip without comment. Most projects provision nothing.
+
+   Report failures but do not stop on them: a resource that is already gone is the expected case, not an error. Never substitute your own cleanup commands for the file's contents, and never widen the scope — no `docker system prune`, no `docker volume prune`, nothing that could reach another worktree or another project. Concurrent worktrees are running their own resources.
+3. Remove the worktree: `git worktree remove --force <path>`. Same reasoning as step 1. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
+4. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Section 2 (Verify merge) already confirmed `MERGED` via `gh`, which is the source of truth.
+5. Update local main: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, run `git pull --ff-only`.
+6. Kill any shells still running
 
 ### 5. Report
 
