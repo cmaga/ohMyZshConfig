@@ -9,7 +9,7 @@ Single orchestrated flow for ticket-driven and manual implementation work.
 
 ## Prerequisites (before Step 1)
 
-1. **Task tracking.** Call `TaskCreate` for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+1. **Task tracking.** Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, this session has no task list: skip this item and mark step transitions in prose instead. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
    1. Understand the problem
    2. Verify the problem
    3. High-level solution research
@@ -79,7 +79,7 @@ No separate confirmation here — the tier was approved with the solution in Ste
 
 ## Step 6: Per Tier Implementation
 
-Run the sequence for the confirmed tier. Each step links to its procedure file. Mark the Implementation item `in_progress`; add the tier's steps as their own tasks via `TaskCreate`.
+Run the sequence for the confirmed tier. Each step links to its procedure file. If task tracking is active, mark the Implementation item `in_progress` and add the tier's steps as their own tasks via `TaskCreate`.
 
 ### Small
 
