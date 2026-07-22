@@ -137,6 +137,7 @@ These apply to every context-injection file regardless of type.
 5. Does Critical Rules paraphrase steps in Workflow? Move the rule into the step or delete it — never duplicate across sections
 6. Would this work with Haiku, not just Opus?
 7. For skills: does the `description` field name auto-trigger phrases? If yes, `disable-model-invocation` must be `false` or absent. If no, `true`. Description and flag must agree — mismatch = bug.
+8. Does the feature start anything that outlives a step — container, background server, tunnel? It must name the resource after the worktree and record its undo command as it starts it, or the resource leaks past the worktree. See Provisioned Resources in [references/skills.md](references/skills.md).
 
 ### Type-Specific Reference Files
 
