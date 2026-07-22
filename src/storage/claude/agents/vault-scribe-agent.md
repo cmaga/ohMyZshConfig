@@ -2,7 +2,7 @@
 name: vault-scribe-agent
 description: Writes and maintains knowledge-vault notes under docs/project-knowledge/. Dispatch with a content brief (the facts, numbers, and why) whenever durable project knowledge needs capturing. Owns all vault mechanics and returns a content-only summary for the caller to approve or tweak.
 disallowedTools: WebFetch, WebSearch
-model: sonnet
+model: opus
 skills:
   - capture-documentation
 ---

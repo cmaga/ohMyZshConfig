@@ -2,7 +2,7 @@
 name: code-review-agent
 description: Hunts correctness bugs in the branch diff at a given tier (small/medium/deep). Findings-only — returns verified findings as JSON and never edits files. Use after implementation work is complete.
 tools: Read, Grep, Glob, Bash, Agent
-model: opus
+model: fable
 effort: max
 memory: project
 ---
