@@ -264,12 +264,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # attribution could not measure per-lever slices and the pipeline was not worth
     # its maintenance; lever costs now come from the optimize-usage benchmark plus
     # published research).
-    # DISABLE_GROWTHBOOK turns off the remote feature-flag service so every gate
-    # falls back to its compiled-in default. Needed because the server-side
-    # `tengu_vellum_ash` list names claude-opus-4-8 / claude-sonnet-5 /
-    # claude-fable-5, and the task-list tools (TaskCreate/TaskUpdate, and the
-    # legacy TodoWrite) are disabled whenever the session model matches it —
-    # which is every current model, so dev-workflow loses its status list.
+    # DISABLE_GROWTHBOOK was set here on 2026-07-22 to dodge the server-side
+    # `tengu_vellum_ash` gate that disabled the task-list tools; Anthropic cleared
+    # that flag the same day. It is deleted rather than merely omitted so machines
+    # that took the interim deploy get it stripped — it also turned off bridge
+    # attestation enforcement, malformed-tool-use retry, ultraplan, and push
+    # notifications, since it forces every feature flag to its compiled default.
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
@@ -278,15 +278,15 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         print_status "info" "Setting BashTool timeout env vars..."
         jq '.env = ((.env // {}) + {
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
-                "BASH_MAX_TIMEOUT_MS":"3600000",
-                "DISABLE_GROWTHBOOK":"1"
-            }) | del(.env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
+                "BASH_MAX_TIMEOUT_MS":"3600000"
+            }) | del(.env.DISABLE_GROWTHBOOK,
+                     .env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
                      .env.OTEL_METRIC_EXPORT_INTERVAL)' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m), GrowthBook disabled"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m)"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi
