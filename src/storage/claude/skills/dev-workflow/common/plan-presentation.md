@@ -12,4 +12,4 @@ Plans run hundreds of lines. The user already approved the solution during scopi
 
 Plain language. No `O-1`, no file paths, no code snippets. Aim for 5-15 lines. Past that the brief is doing the plan's job and the user starts rubber-stamping.
 
-Exception — the one blocking case: if a `[NEEDS CLARIFICATION]` item emerged after planning (e.g., from QA planning or architecture review) and is still unresolved, ask it as one open question and wait for the answer before dispatching. Everything else is non-blocking.
+Exception — the blocking cases: an unresolved `[NEEDS CLARIFICATION]`, or a discovered issue you are not folding in (`[DEFERRED]` / `[REPORT]`, per the discovered-issue rule in [SKILL.md](../SKILL.md)). Surface each with your recommended routing and wait for the user's call before dispatching — a deferral needs its ticket created and keyed first. Everything else is non-blocking.

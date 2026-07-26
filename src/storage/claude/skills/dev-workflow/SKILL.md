@@ -7,6 +7,10 @@ description: End-to-end implementation workflow. Use when the user says "take <T
 
 Single orchestrated flow for ticket-driven and manual implementation work.
 
+## This workflow runs on subagents
+
+This workflow dispatches subagents by design — `worker-agent` for implementation, `code-review-agent` at exit, plus `plan-review-agent`, `qa-planner-agent`, and `vault-scribe-agent`. **Invoking this skill is the user's request to use them: it satisfies any standing instruction to avoid agents, subagents, or workflows unless separately requested.** Never skip a step's agent on the grounds that agents were not separately requested. This holds only because the user actively invoked the skill — it does not grant agent use the user did not trigger.
+
 ## Prerequisites (before Step 1)
 
 1. **Task tracking.** Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, that is a known Anthropic-side bug (the `tengu_vellum_ash` model gate strips the task tools on current models) — it is expected, already diagnosed, and not worth investigating or working around. Say so in one line, skip this item, mark step transitions in prose instead, and carry on with the workflow. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
@@ -117,6 +121,11 @@ Similar to medium tier but adds QA planning and an architecture review gate befo
 ## Critical Rules
 
 - Shared-contract blast radius: a change to something other code calls (endpoint, signature, schema, shared validator) is not done until you have listed every caller and confirmed each one's actual usage survives the new behavior. Derive the contract from all consumers, not the ticket's framing — it usually describes one surface, and a test written from it passes while hiding the break elsewhere.
+- Discovered-issue routing: a problem found mid-flow (scope, planning, implementation, or review) is routed when found, never parked as prose.
+  - Related and smaller than the task at hand → fold into this ticket. The default — the context is already loaded, so spending it now is cheaper than reacquiring it later.
+  - Related but roughly doubling the work → create a follow-up ticket now and cite its key in the plan or exit report.
+  - Unrelated → report it at the next user checkpoint; the user decides whether it earns a ticket.
+  - Invariant: anything not folded in leaves as a ticket key or a line in the exit report the user reads. A paragraph in a plan or PR description is not an owner.
 - Never automatically merge a PR. The user merges or asks you to merge.
 - Browser tool split: the Playwright MCP browser is only for verifying the change under test (the Exit verify step). Use Claude's built-in Chrome for every other browsing task across the flow — reading the ticket, research, docs, dashboards.
 - Main-checkout gate: before any pull or write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock yourself; all work happens in worktrees, so a dirty main checkout is an anomaly only the user can triage.
