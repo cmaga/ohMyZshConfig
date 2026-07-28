@@ -49,7 +49,7 @@ In order:
    Report failures but do not stop on them: a resource that is already gone is the expected case, not an error. Never substitute your own cleanup commands for the file's contents, and never widen the scope — no `docker system prune`, no `docker volume prune`, nothing that could reach another worktree or another project. Concurrent worktrees are running their own resources.
 3. Remove the worktree: `git worktree remove --force <path>`. Same reasoning as step 1. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
 4. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Section 2 (Verify merge) already confirmed `MERGED` via `gh`, which is the source of truth.
-5. Update local main: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, run `git pull --ff-only`.
+5. Update the local base branch: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, check out the base branch and run `git pull --ff-only`; skip the pull if the branch has no upstream.
 6. Kill any shells still running
 
 ### 5. Report
