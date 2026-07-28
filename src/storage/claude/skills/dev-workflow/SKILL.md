@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup [TICKET]" to tear down after a PR is merged. Handles small/medium/deep tiers with worker subagents, parent review, PR creation, ticket transition, and worktree cleanup.
+description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup [TICKET]" to tear down after a PR is merged. Handles small/medium/deep/ultra tiers with worker subagents, parent review, PR creation, ticket transition, and worktree cleanup. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code.
 ---
 
 # Dev Workflow
