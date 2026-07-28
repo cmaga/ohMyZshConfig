@@ -41,6 +41,7 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
    2. **Read relevant documentation** Be careful, documentation could be out of date.
    3. **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
    4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation.
+3. **Descends from a spec?** If the ticket names a system in one, that `S-N` section is the contract for this run — read it, plus the principles it traces to, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
 
 ## Step 3: High Level Solution Research
 
@@ -51,7 +52,7 @@ The goal at this point is to use your understanding of the problem and the busin
    - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern.
    - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing.
    - Adversarially verify the placement and reuse claims against real code (file:line) — a "reuse X" claim whose symbol doesn't actually fit the new shape is the classic failure this catches.
-3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4), following [Present recommendation](common/recommendation-presentation.md). The codebase-fit map (placement + reuse) informs the recommendation but does not go in the brief — carry it into `plan.md`. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply. If the surface is too unsettled to converge on one solution — the signal for `ultra` — say so rather than forcing a choice, recommend that tier, and carry the research into `ultra` instead of a solution brief.
+3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4), following [Present recommendation](common/recommendation-presentation.md). The codebase-fit map (placement + reuse) informs the recommendation but does not go in the brief — carry it into `plan.md`. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply. `ultra` is normally the user's explicit call, but recommend it when the surface is too unsettled to converge on one solution — say so rather than forcing a choice, and carry the research into it instead of a solution brief. Infer the same from how Steps 1 and 3 went: many rounds of back-and-forth, framing that keeps moving, or a user visibly still building their own grip on a complex system all say the target behavior is not settled enough to plan against.
 
 - **Data-presentation checkpoint.** If the solution introduces a new way to display information the user reads to make a decision — a chart, panel, metric/KPI, event feed, or a new state/severity treatment — and the visual form isn't obvious, offer a mock-data, locally-runnable prototype as an explicit go/no-go alongside the recommendation. It is cheap to iterate, and the approved shape pins the data contract the backend must serve, so it belongs here, before planning and worktree setup. Standard controls and cosmetic changes are exempt: a button, toggle, menu item, relabel, or color change needs no prototype.
 - When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
@@ -122,11 +123,10 @@ Similar to medium tier but adds QA planning and an architecture review gate befo
 
 ### Ultra
 
-The target behavior is settled as a spec before anything is planned. This tier ends in a decomposition, not a PR of code.
+The target behavior is settled as a spec, organized into independently deployable systems, before anything is coded. This tier ends in tickets, not a PR of code.
 
 1. [Write the spec](common/ultra.md)
-2. **Decomposition checkpoint.** With the user, split the spec into follow-on work: one ticket, or several sequenced by the spec's deploy order. Create them via the `jira` skill, each linked to the ultra ticket and naming the spec sections it implements.
-3. Each follow-on ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md).
+2. Each system's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Systems run in the spec's deploy order.
 
 ## Critical Rules
 
