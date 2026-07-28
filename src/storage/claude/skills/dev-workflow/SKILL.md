@@ -22,6 +22,7 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
    6. Implementation
    7. Exit
 2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind every `kind: "skill"` lever to the all-caps form of its key — currently `RESEARCH_FANOUT_MODEL` and `CODE_FANOUT_MODEL`. A value of `inherit` or a missing file means no pin: omit the `model` opt wherever the alias is used. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
+3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
@@ -34,7 +35,7 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
 
 ## Step 2: Verify the problem
 
-1. **Codebase update** In the main checkout, run `git status --porcelain`. If it prints anything, stop: this is the main-checkout gate (see Critical Rules). When it prints nothing, run `git pull --ff-only`.
+1. **Codebase update** In the main checkout, run `git status --porcelain`. If it prints anything, stop: this is the main-checkout gate (see Critical Rules). When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream.
 2. Investigate the following yourself — this is the case file the rest of the workflow consumes, and the threads feed each other, so keep the primary evidence in your own context and chase leads across threads as they appear. (A genuinely isolated read may still be delegated.)
    1. **Verify the problem exists in code** Do your own investigation.
    2. **Read relevant documentation** Be careful, documentation could be out of date.
@@ -50,7 +51,7 @@ The goal at this point is to use your understanding of the problem and the busin
    - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern.
    - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing.
    - Adversarially verify the placement and reuse claims against real code (file:line) — a "reuse X" claim whose symbol doesn't actually fit the new shape is the classic failure this catches.
-3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4), following [Present recommendation](common/recommendation-presentation.md). The codebase-fit map (placement + reuse) informs the recommendation but does not go in the brief — carry it into `plan.md`. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply.
+3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4), following [Present recommendation](common/recommendation-presentation.md). The codebase-fit map (placement + reuse) informs the recommendation but does not go in the brief — carry it into `plan.md`. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply. If the surface is too unsettled to converge on one solution — the signal for `ultra` — say so rather than forcing a choice, recommend that tier, and carry the research into `ultra` instead of a solution brief.
 
 - **Data-presentation checkpoint.** If the solution introduces a new way to display information the user reads to make a decision — a chart, panel, metric/KPI, event feed, or a new state/severity treatment — and the visual form isn't obvious, offer a mock-data, locally-runnable prototype as an explicit go/no-go alongside the recommendation. It is cheap to iterate, and the approved shape pins the data contract the backend must serve, so it belongs here, before planning and worktree setup. Standard controls and cosmetic changes are exempt: a button, toggle, menu item, relabel, or color change needs no prototype.
 - When the recommended solution spans several high-level, cross-system changes, dispatch a `sonnet` worker to render an architecture Artifact (current vs. proposed, data flow, affected systems) and present it alongside the recommendation. Keep rendering on the worker, never the parent — it's token-heavy and mechanical.
@@ -70,6 +71,7 @@ Reference for the tier recommended and confirmed with the solution in Step 3:
 | `small`  | Bug fix, config change, typo, isolated single-file change  |
 | `medium` | New feature, moderate refactor                             |
 | `deep`   | Architectural, multi-system, new design pattern, high risk |
+| `ultra`  | Target behavior is itself unsettled and must be agreed as a spec before it can be planned |
 
 No separate confirmation here — the tier was approved with the solution in Step 3. Route to the confirmed tier's sequence in Step 6.
 
@@ -117,6 +119,14 @@ Similar to medium tier but adds QA planning and an architecture review gate befo
 6. [Dispatch workers](common/worker-dispatch.md) — parallel when files are disjoint
 7. [Parent review](common/parent-review.md)
 8. [Exit](common/exit.md)
+
+### Ultra
+
+The target behavior is settled as a spec before anything is planned. This tier ends in a decomposition, not a PR of code.
+
+1. [Write the spec](common/ultra.md)
+2. **Decomposition checkpoint.** With the user, split the spec into follow-on work: one ticket, or several sequenced by the spec's deploy order. Create them via the `jira` skill, each linked to the ultra ticket and naming the spec sections it implements.
+3. Each follow-on ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md).
 
 ## Critical Rules
 
