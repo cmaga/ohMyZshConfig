@@ -24,19 +24,19 @@ Steps 2-7 are a loop. Adversarial review that changes strategy returns to step 2
 5. **Probe in the background.** When a question needs real data — a third party's actual API behavior, an existing system's real numbers — dispatch it as a background workflow and keep discussing the next point. Queue the result in the tracker and take it up when it lands.
    - High-level brainstorming is messy. The user will forget things, branch into tangents, and attack whichever piece surfaces in their mind first. That is expected. Guiding them back to the order the system actually flows in is your job, not theirs.
 
-6. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then confirm the template's wiring holds: every **Traces to** populated, no **Behavior** describing how a thing is built, every system deployable alone, **After** resolving to one settled order, and every supporting change naming the systems that require it.
+6. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then confirm the template's wiring holds: every chunk deployable alone, the Needs lines resolving to one settled deploy order, no chunk body describing how a thing is built, and every chunk closing with its Tests.
 
 7. **Adversarial review.** Edge cases are where systems die, and planning generates assumptions faster than data retires them. This step asks what can actually happen at each strategic piece, and whether the spec accounts for it.
    - **Attack lenses** — one agent per lens, each playing an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec as written does not stop it, and the smallest change that closes it.
    - **Precedent research** — for each mechanism the spec invents, hunt the named established equivalent (fan out on `RESEARCH_FANOUT_MODEL`). "Bet so you survive" is Kelly sizing; adopting the named mechanism inherits its literature, its known failure modes, and its parameter guidance.
    - **Verify before reporting.** Check every finding against the document text. Kill the ones the spec already covers and the ones that are speculative rather than reachable. Present only survivors.
-   - Each surviving hole becomes a named scenario in its system's **Tests** — that field is what makes the spec testable before a line of code exists.
+   - Each surviving hole becomes a named scenario in its chunk's **Tests** — that section is what makes the spec testable before a line of code exists.
    - **Route by size.** Minor tightening folds in directly. Anything altering the strategy returns to step 2 and is discussed one finding at a time, each folded in only on the user's word.
-   - On the third pass, nothing returns to step 2. Findings that still matter become tickets against the systems they touch, and the spec ships.
+   - On the third pass, nothing returns to step 2. Findings that still matter become tickets against the chunks they touch, and the spec ships.
 
 ## Wrap-up
 
-1. Present the spec: what it decided, the systems in deploy order, and what is still open — counting open questions and awaiting-a-deployment items separately, since only the first kind is actionable now. Plain language, 5-15 lines, with the absolute path to the document.
+1. Present the spec: what it decided, the chunks in deploy order, and what is still open — counting open questions and awaiting-a-deployment items separately, since only the first kind is actionable now. Plain language, 5-15 lines, with the absolute path to the document.
 2. Create the PR for the spec via the `git-provider` skill.
 3. Transition the ultra ticket via the `jira` skill.
-4. Create one ticket per system via the `jira` skill, plus one for each supporting change that several systems share, each linked to the ultra ticket and naming its section rather than copying it. A system still awaiting an earlier deployment gets a stub ticket stating the outcome it must produce. Anything living only in the spec is invisible work.
+4. Create one ticket per chunk via the `jira` skill, each linked to the ultra ticket and naming its C-N section rather than copying it. A chunk still awaiting an earlier deployment gets a stub ticket stating the outcome it must produce. Anything living only in the spec is invisible work.

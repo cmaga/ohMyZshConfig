@@ -1,6 +1,6 @@
 # Lever inventory
 
-Last updated: 2026-07-16 · Method updated: 2026-07-21
+Last updated: 2026-07-29 · Method updated: 2026-07-21
 
 > Cost column: benchmark ratios for rows 1-2, family price-ratio estimates for the rest
 > — the pt figures and chart below are stale pending the first full benchmark run (see
@@ -27,6 +27,8 @@ pie title Max saving per lever (pt of total draw — pre-benchmark estimate, pen
 | 6 | Worker effort | `agents/worker-agent.md` `effort:` | max<br>xhigh<br>high<br>medium<br>low | max -0<br>xhigh -1.3pt<br>high -2.8pt<br>medium -2.8pt<br>low -2.8pt | 10 |
 | 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 3.1 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read/summarize; sonnet ~price-ratio cheap, safe | 8 |
 | 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 3.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |
+| 7c | Review fan-out model | `lever-state.json` `review_fanout_model` — read by `agents/code-review-agent.md` for the `model` opt on its finder and disproof subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — detection happens here; a finder's miss is caught by nothing downstream | 45 |
+| 7d | Review fan-out effort | `lever-state.json` `review_fanout_effort` — same agents, `effort` opt | inherit (session)<br>max<br>xhigh<br>high<br>medium<br>low | est. — disproof is single-claim and near effort-flat; open-ended finding is not | 25 |
 | 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)

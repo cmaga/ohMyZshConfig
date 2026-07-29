@@ -21,7 +21,7 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
    5. Workspace setup
    6. Implementation
    7. Exit
-2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind every `kind: "skill"` lever to the all-caps form of its key — currently `RESEARCH_FANOUT_MODEL` and `CODE_FANOUT_MODEL`. A value of `inherit` or a missing file means no pin: omit the `model` opt wherever the alias is used. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
+2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind the `kind: "skill"` levers this workflow uses — `RESEARCH_FANOUT_MODEL` and `CODE_FANOUT_MODEL` — to the all-caps form of their keys. A value of `inherit` or a missing file means no pin: omit the `model` opt wherever the alias is used. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
 3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
@@ -41,7 +41,7 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
    2. **Read relevant documentation** Be careful, documentation could be out of date.
    3. **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
    4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Is the ticket a symptom of a larger problem? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation.
-3. **Descends from a spec?** If the ticket names a system in one, that `S-N` section is the contract for this run — read it, plus the principles it traces to, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
+3. **Descends from a spec?** If the ticket names a chunk in one, that `C-N` section is the contract for this run — read it, plus the chunks its Needs line names, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
 
 ## Step 3: High Level Solution Research
 
@@ -123,10 +123,10 @@ Similar to medium tier but adds QA planning and an architecture review gate befo
 
 ### Ultra
 
-The target behavior is settled as a spec, organized into independently deployable systems, before anything is coded. This tier ends in tickets, not a PR of code.
+The target behavior is settled as a spec, carved into independently deployable chunks, before anything is coded. This tier ends in tickets, not a PR of code.
 
 1. [Write the spec](common/ultra.md)
-2. Each system's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Systems run in the spec's deploy order.
+2. Each chunk's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Chunks run in the spec's deploy order.
 
 ## Critical Rules
 

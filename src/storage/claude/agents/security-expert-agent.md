@@ -2,7 +2,7 @@
 name: security-expert-agent
 description: Reviews draft plans and code for security vulnerabilities. Use when analyzing implementation plans, reviewing code changes, or auditing for auth/input/data exposure issues.
 tools: Read, Grep, Glob
-model: fable
+model: opus
 memory: project
 ---
 

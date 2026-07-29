@@ -2,7 +2,7 @@
 name: plan-review-agent
 description: Reviews a draft implementation plan for architecture fit, missing edge cases, and risk concentrations. Use during planning, before workers dispatch.
 tools: Read, Grep, Glob
-model: fable
+model: opus
 memory: project
 ---
 

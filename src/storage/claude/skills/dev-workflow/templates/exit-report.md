@@ -10,7 +10,7 @@ The user skims this to decide whether to merge and what's still theirs to do. Ev
 - Build, tests, and a clean review are preconditions for being here — never list them. If one failed you're not exiting, you're fixing it.
 - List every deferred item and unfixed review finding with its disposition — the follow-up ticket key, or one line flagging it for the user's decision. This is where "nothing left as prose" is enforced: a finding with no home here has none.
 
-End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
+End with `Run cleanup <TICKET> after merge. Run internalize <TICKET> when you want to read what shipped.` then the PR URL on its own line.
 
 ### Example
 
@@ -18,6 +18,6 @@ End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 >
 > Nothing for you to check by hand; one edge case I couldn't fold in without doubling the ticket is filed as KRAT-190.
 >
-> Run `cleanup KRAT-188` after merge.
+> Run `cleanup KRAT-188` after merge. Run `internalize KRAT-188` when you want to read what shipped.
 >
 > https://github.com/example/repo/pull/123

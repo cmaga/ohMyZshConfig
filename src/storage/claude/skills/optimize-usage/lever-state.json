@@ -1,18 +1,18 @@
 {
-  "updated": "2026-07-22",
+  "updated": "2026-07-29",
   "levers": {
     "session_model": {
-      "value": "opus",
+      "value": "fable",
       "kind": "runtime",
       "native": "~/.claude/settings.json model"
     },
     "session_effort": {
-      "value": "xhigh",
+      "value": "high",
       "kind": "runtime",
       "native": "~/.claude/settings.json effortLevel"
     },
     "review_model": {
-      "value": "fable",
+      "value": "opus",
       "kind": "runtime",
       "native": "agents/{code-review,plan-review,qa-planner,security-expert}-agent.md model:"
     },
@@ -48,6 +48,20 @@
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 3.2"
+      ]
+    },
+    "review_fanout_model": {
+      "value": "opus",
+      "kind": "skill",
+      "readers": [
+        "agents/code-review-agent.md Subagent settings"
+      ]
+    },
+    "review_fanout_effort": {
+      "value": "xhigh",
+      "kind": "skill",
+      "readers": [
+        "agents/code-review-agent.md Subagent settings"
       ]
     }
   }

@@ -7,88 +7,62 @@ common/ultra.md.
 Written to the project's drafts directory (`docs/drafts/` unless the project
 uses another).
 
-dev-workflow reads this at Step 2: a ticket names its system by S-N id and
-that section is the contract for the run. Keep the ids and field names
-exactly as written here — they are the lookup.
+The body is free-form: write the document the content wants, as prose that
+reads the way the system works end to end. The template demands exactly one
+structural thing — the work is carved into chunks.
 
-Delete sections that do not apply. Empty headers are forbidden.
+A chunk is a named unit of work one ticket delivers. It deploys on its own,
+in the spec's declared order, and its section must let a reader answer three
+things: what it does when it is live, what it needs deployed before it, and
+how it is proven. A chunk does not have to be a user-facing capability:
+shared infrastructure other chunks ride on is a chunk in its own right — the
+means of a strategy, not a strategy.
+
+dev-workflow reads this at Step 2: a ticket names its chunk by C-N id and
+that section is the contract for the run. The C-N ids, each chunk's Needs
+line, and its closing Tests heading are the lookup surface — keep those
+exactly as written here. Everything else, including how many chunks there
+are and what order the document presents them in, is open.
+
+Number a chunk's subsections by its id — C-1's sections are 1.1, 1.2, …;
+C-2's are 2.x — so a prose ref like "section 1.9" names its chunk by
+itself.
 -->
 
 ## Context
 
 <!--
 Why this spec exists, and why now. If it follows a failure, what the failure
-was and what it cost, in the plainest terms available. A reader who has never
+was and what it cost, in the plainest terms available — lessons learned
+belong here as prose, not as a numbered rule list. A reader who has never
 seen the system should finish this section knowing what is being built.
 -->
 
-## Principles
+## C-1: <name>
+
+Needs: <C-x | none>
 
 <!--
-The non-negotiables every system answers to. After a failure these are the
-lessons it taught; greenfield, the invariants the system must hold.
-A system tracing to none of these is either unmotivated or this list is short.
--->
+Free-form body, end to end: a reader should be able to follow the chunk the
+way the live system executes it. Where the chunk bets on a premise about the
+world, state in prose the observation that would prove the premise wrong.
+Never how it is built — a sentence naming a file, class, function, library,
+or ticket key does not belong in a spec; the run's own plan names those.
 
-- P-1:
-- P-2:
-
-## Systems
-
-<!--
-One subsection per system: a cohesive unit of work that deploys on its own and
-can be tested end to end. Each becomes one ticket and one dev-workflow run.
-
-Where the boundaries fall is the user's call. A unit that cannot deploy alone
-is not a system — merge it into the one it needs.
-
-How many systems there are, their order, and how each Behavior is organized
-internally are all open. The ids and field names are not.
--->
-
-### S-1: <name>
-
-- **After**: <S-x | none>
-- **Traces to**: <P-x>
-- **Behavior**: <what this system does and why, in whatever shape fits it. Never how it is built — a sentence naming a file, class, function, library, or ticket key does not belong in a spec; the run's own plan names those.>
-- **Falsifier**: <the observation that would prove the premise wrong. "We sell to casual flow" is a belief; "if our fills at a price lose while the public tape's trades at that price win, the premise is dead" is a spec.>
-- **Holds while unshipped**: <what must stay true of this system while the ones after it are not yet deployed. Omit for the last system.>
-
-#### Tests
-
-<!--
-How this system is exercised end to end, then one named scenario per edge
-case. Surviving findings from the adversarial gate land here.
-
-Last thing in the system's section. It is the longest part by far and reads
-as a closing argument, not a bullet.
--->
-
-<!--
-Unresolved items sit inline in the system they belong to, labelled:
+Unresolved items sit inline where they belong, labelled:
 
   **Open question:** undecided, needs the user's call.
-  **Awaiting S-x:** cannot be decided until that system ships and produces the
-  evidence. Expect the rest of the section to be thin, and say why.
+  **Awaiting C-x:** cannot be decided until that chunk ships and produces
+  the evidence.
 
 The task tracker is the index — no rollup section here.
 -->
 
-## Supporting changes
+### Tests
 
 <!--
-Infrastructure the systems require that is not strategy in its own right — no
-premise, no falsifier, nothing to be wrong about. It exists because a system
-needs it, and it is here so it does not get smuggled into a Behavior field or
-lost entirely.
-
-One required by a single system rides that system's ticket. One shared by
-several gets its own ticket and becomes an After dependency for each system
-that needs it.
+Last thing in every chunk: how it is exercised end to end, then one named
+scenario per edge case. Surviving findings from the adversarial gate land
+here. It is the longest part by far and reads as a closing argument, not a
+bullet.
 -->
-
-### SC-1: <name>
-
-- **Required by**: <S-x, S-y>
-- **Provides**: <what it must do, in behavior terms>
-- **Ticket**: <own key | rides S-x>
