@@ -133,8 +133,9 @@ The target behavior is settled as a spec, carved into independently deployable c
 - Shared-contract blast radius: a change to something other code calls (endpoint, signature, schema, shared validator) is not done until you have listed every caller and confirmed each one's actual usage survives the new behavior. Derive the contract from all consumers, not the ticket's framing — it usually describes one surface, and a test written from it passes while hiding the break elsewhere.
 - Discovered-issue routing: a problem found mid-flow (scope, planning, implementation, or review) is routed when found, never parked as prose.
   - Related and smaller than the task at hand → fold into this ticket. The default — the context is already loaded, so spending it now is cheaper than reacquiring it later.
-  - Related but roughly doubling the work → create a follow-up ticket now and cite its key in the plan or exit report.
-  - Unrelated → report it at the next user checkpoint; the user decides whether it earns a ticket.
+  - Anything else → search first, then propose it to the user with your recommendation. They decide whether it earns a ticket.
+  - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every candidate that looks close. Search the component and file names too — the same defect gets described three different ways. An existing ticket ends the matter: cite its key, say it is already covered, propose nothing.
+  - **File only after the user says to.** Never file to close out a review finding, to clear your own list, or because a subagent recommended it. An unfiled item lives in the exit report until they answer, which is a disposition.
   - Invariant: anything not folded in leaves as a ticket key or a line in the exit report the user reads. A paragraph in a plan or PR description is not an owner.
 - Never automatically merge a PR. The user merges or asks you to merge.
 - Browser tool split: the Playwright MCP browser is only for verifying the change under test (the Exit verify step). Use Claude's built-in Chrome for every other browsing task across the flow — reading the ticket, research, docs, dashboards.
