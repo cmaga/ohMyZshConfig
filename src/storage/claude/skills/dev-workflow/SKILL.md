@@ -47,11 +47,14 @@ This workflow dispatches subagents by design — `worker-agent` for implementati
 
 The goal at this point is to use your understanding of the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless that you can be proud of. To do this you need to gather multiple solution options and pick one.
 
+Fan out only over sets you enumerate yourself — never per-item over a set a subagent produced. Bound the subagent's output first, then batch what's left.
+
 1. Use `ultracode` (fan-out agents on `RESEARCH_FANOUT_MODEL`) to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared during Step 1.
 2. **Codebase fit** — if the leading solution adds new components or code, map it onto this repo before presenting (use `ultracode`, fan-out agents on `CODE_FANOUT_MODEL`, when the surface is large). A solution that only names new things is unfinished:
-   - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern.
-   - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing.
-   - Adversarially verify the placement and reuse claims against real code (file:line) — a "reuse X" claim whose symbol doesn't actually fit the new shape is the classic failure this catches.
+   - Placement: each new piece names the existing analog/pattern it follows and its exact home; a piece with no clean home is a finding to present, not a silent new pattern. Cap each fit agent at 8 placements, ranked by risk.
+   - Reuse: name the existing symbols each piece reuses or extends, and existing logic to promote out of scripts/duplicates instead of re-implementing. Cap each fit agent at 8 reuse claims, ranked by risk.
+   - Adversarially verify placements and reuse claims against real code (file:line) — one verifier per fit area, with that area's claims batched, not one verifier per claim. Claims within an area are interdependent: a batched verifier catches contradictions between them and avoids N agents re-reading the same file. Escalate to multiple independent skeptics only for claims that trip the shared-contract blast-radius rule (Critical Rules).
+   - Do not assume existing code structure is perfect, do not adhere to a bad pattern. If it feels bad its probably bad and worth investigating/refactoring.
 3. Synthesize - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively and then present this solution to the user along with the implementation tier you recommend (see Step 4), following [Present recommendation](common/recommendation-presentation.md). The codebase-fit map (placement + reuse) informs the recommendation but does not go in the brief — carry it into `plan.md`. Do not proceed until the user approves both the approach and the tier by saying `go`; they can name a different tier in the same reply. `ultra` is normally the user's explicit call, but recommend it when the surface is too unsettled to converge on one solution — say so rather than forcing a choice, and carry the research into it instead of a solution brief. Infer the same from how Steps 1 and 3 went: many rounds of back-and-forth, framing that keeps moving, or a user visibly still building their own grip on a complex system all say the target behavior is not settled enough to plan against.
 
 - **Data-presentation checkpoint.** If the solution introduces a new way to display information the user reads to make a decision — a chart, panel, metric/KPI, event feed, or a new state/severity treatment — and the visual form isn't obvious, offer a mock-data, locally-runnable prototype as an explicit go/no-go alongside the recommendation. It is cheap to iterate, and the approved shape pins the data contract the backend must serve, so it belongs here, before planning and worktree setup. Standard controls and cosmetic changes are exempt: a button, toggle, menu item, relabel, or color change needs no prototype.
@@ -67,11 +70,11 @@ The goal at this point is to use your understanding of the problem and the busin
 
 Reference for the tier recommended and confirmed with the solution in Step 3:
 
-| Tier     | When                                                       |
-| -------- | ---------------------------------------------------------- |
-| `small`  | Bug fix, config change, typo, isolated single-file change  |
-| `medium` | New feature, moderate refactor                             |
-| `deep`   | Architectural, multi-system, new design pattern, high risk |
+| Tier     | When                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------- |
+| `small`  | Bug fix, config change, typo, isolated single-file change                                 |
+| `medium` | New feature, moderate refactor                                                            |
+| `deep`   | Architectural, multi-system, new design pattern, high risk                                |
 | `ultra`  | Target behavior is itself unsettled and must be agreed as a spec before it can be planned |
 
 No separate confirmation here — the tier was approved with the solution in Step 3. Route to the confirmed tier's sequence in Step 6.
@@ -140,4 +143,5 @@ The target behavior is settled as a spec, carved into independently deployable c
 - Never automatically merge a PR. The user merges or asks you to merge.
 - Browser tool split: the Playwright MCP browser is only for verifying the change under test (the Exit verify step). Use Claude's built-in Chrome for every other browsing task across the flow — reading the ticket, research, docs, dashboards.
 - Main-checkout gate: before any pull or write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock yourself; all work happens in worktrees, so a dirty main checkout is an anomaly only the user can triage.
+- Fan-out size check: before dispatching a fan-out (`ultra code`), compute the agent count and reconcile it against the session's workflow size guideline. Over the guideline, batch into fewer agents — never drop coverage to fit the number.
 - Every user-facing checkpoint obeys its brief file — [recommendation](common/recommendation-presentation.md), [plan](common/plan-presentation.md) — including the line caps. A long message gets rubber-stamped, not read. THIS IS **CRUCIAL**!

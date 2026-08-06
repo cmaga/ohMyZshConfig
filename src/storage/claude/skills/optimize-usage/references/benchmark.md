@@ -13,7 +13,7 @@ Harness lives in [`../benchmark/`](../benchmark/). Read its [README](../benchmar
 ```sh
 cd <skill>/benchmark
 ./test-guards.zsh        # deterministic self-test, no session cost — run first
-./run-suite.zsh 5        # 5 reps/cell; prints the summary table
+./run-suite.zsh 5 -P 4   # 5 reps/cell through 4 parallel workers (default); -P 1 = serial
 ```
 
 - Metric = `total_cost_usd` from `claude -p --output-format json`. Per-model weights
@@ -21,8 +21,14 @@ cd <skill>/benchmark
   proportional to session-limit draw. It is a limit proxy, not a bill.
 - Output: per-cell cost, CV, turns, and `cost/turn`; plus each lever position's cost as
   a ratio vs the opus/high baseline, averaged across tasks.
-- Cost of a run: ~7 cells x N reps x 3 tasks. At CV ~16%, **N=5-7 resolves a 25% effect.**
+- Cost of a run: 8 cells x N reps x 3 tasks (the 7-cell 2026-08-04 run measured $32 at
+  N=5). At the measured CV of ~18%, **n≈9/cell resolves a 25% effect; N=5 resolves ~40%.**
   Each cell burns real session limit — run when you have headroom, not near a limit.
+- One invocation of a 5-rep suite at `-P 4` (~40 min) fits the 60-min Bash cap that
+  forced the 2026-08-04 run into five sequential 1-rep invocations. Jobs write per-job
+  TSV fragments merged at the end; `summarize.py` is unchanged. On the first parallel
+  suite, sanity-check CV against the 2026-08-04 sequential run and the `ccreate` column
+  for a cache-write burst before treating results as comparable.
 
 ## What it covers
 
@@ -42,12 +48,16 @@ the usage-capture pipeline (cost tracker + session-log analysis) was retired 202
 its agent attribution could not measure per-lever slices, and it was not worth the
 maintenance — so levers are ranked by ratio and impact, not pt-of-total-draw.
 
-## Findings that overturned the old table (2026-07-18, 30-run pilot, 3 tasks)
+## Findings (2026-08-04 full run — 105 runs, N=5/cell, all pass; bound: claude-opus-5, claude-sonnet-5, claude-fable-5, claude-haiku-4-5)
 
-- Model cost does NOT track the API price ratio: opus is ~1x sonnet per unit work, not
-  2.5x. The old "opus barely cheaper than fable, sonnet much cheaper" spacing is wrong.
-- Which model is cheapest is task-dependent (opus wins at debugging, sonnet at
-  spec-implementation); the average across tasks is the figure that predicts limit draw.
-- haiku is ~-80% vs sonnet, robust across tasks.
-- Session effort is a real cost lever (max is ~+48% over high) — a cost fact, distinct
-  from the quality claim that the steps are near-equivalent.
+- fable is ~2.1x opus per unit work — the one model step that tracks its API price ratio.
+- sonnet measures 0.86x opus (directional — below this run's resolution), far shallower
+  than its 0.6x price ratio: model cost still does not track price in general.
+- haiku is ~0.18x opus, robust across tasks.
+- Effort on opus: max +22%, xhigh +11% (directional), low -26% vs high. The pilot's
+  "max +48%" (2026-07-18, 30 runs, pre-Opus-5 binding) did not replicate. medium had
+  no cell in this run (added 2026-08-06; unmeasured until the next suite).
+- Cheapest model stays task-dependent (sonnet per-task 0.97/0.67/0.95); the cross-task
+  average is the figure that predicts limit draw.
+- Sonnet cost accounting verified against the standard price schedule, not the intro
+  rates that expire 2026-08-31 — the ratio will not jump when they do.

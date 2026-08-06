@@ -32,6 +32,11 @@ turns. Lever effect = per-turn price x turn count; this harness measures both.
   cell list one position later, so every cell takes every run position and cache-warm/
   cold drift cannot align with one cell. (Measured: the tool-def cache block is a flat
   ~13K tokens/run; run-to-run cost variance is driven by turn count, not warmth.)
+- Parallel pool with per-job fragments. Jobs launch in rotated order, `-P` at a time;
+  each appends to its own TSV fragment, merged in launch order afterward — the
+  alternative, concurrent appends to one shared file, loses rows silently. Same-model
+  jobs in flight together can each pay a cache write where serial paid once (cents —
+  visible in the `ccreate` column).
 
 ## Files
 
@@ -46,7 +51,10 @@ turns. Lever effect = per-turn price x turn count; this harness measures both.
   `BENCH_SOLVER='cat > mathkit.py <<PY ...fixed source... PY
   echo "{}"' ./run-cell.zsh fix-bugs claude-haiku-4-5-20251001 high 1` — see
   test-guards.zsh for four working solvers.
-- `run-suite.zsh [reps]` — interleaved grid over all tasks x cells; prints the summary.
+- `run-suite.zsh [reps] [-P workers]` — interleaved grid over all tasks x cells through
+  a parallel worker pool (default 4 workers; `-P 1` = serial); per-job TSV fragments
+  merged in launch order into one timestamped results file; prints the summary with a
+  `[k/total]` counter per completed job.
 - `summarize.py` — per-cell table, cross-task lever effects, CV, N-needed.
 - `test-guards.zsh` — deterministic self-test of all four grading outcomes
   (pass/overfit/cheated/fail) with no Claude call and no session cost. Run it first.
