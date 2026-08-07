@@ -20,13 +20,16 @@ Every function body is exactly the unimplemented throw, in the language's idiom 
 
 ## The drift line
 
-Anything inside a body that is not the throw is a violation. Before presenting, grep the scaffold diff for function bodies and confirm every one is the throw.
+**A body is a violation when it contains behavior the tests will check.** Declarations, schema, and wiring are structure even when they live inside a function — migration DDL and the composition root (what gets constructed with what, what order middleware sits in) are scaffold, and leaving them out pushes real design decisions into bodies you will not read.
 
-The three shapes it drifts into:
+Everything else is the throw. Before presenting, grep the scaffold diff for function bodies and confirm each one either is the throw or is structure by the line above.
+
+The four shapes it drifts into:
 
 - Control flow "to show the intent"
 - The happy path only
 - Constants with invented values — a value the ticket or spec settled is scaffold; a value you chose is a body
+- A body that returns a closure containing the throw. The outer body is not a throw, and it reads as compliant at a glance
 
 ## Done means it runs
 
@@ -46,7 +49,9 @@ The scaffold must allow the work to split into disjoint file sets, one per worke
 
 ## Editing existing code
 
-When the change modifies existing code and adds no structure, there is nothing to scaffold. Start from the integration tests instead: add or modify the tests covering the flow being changed, and treat those as the design artifact.
+Most tickets change existing code rather than adding modules. Scaffold whatever the change adds or moves at the interface level, however small — a new helper's signature, a changed signature, a widened type. That set is usually a handful of lines.
+
+Sometimes it is empty: a pure body rewrite behind an unchanged signature has no structure to draw. That is a normal outcome, not a separate path. Record `## Scaffold: none — no interface changed` in the plan and carry on; the tests still come before the code, they just bind to a surface that already existed.
 
 If the project has no integration suite at all, stop. Recommend building one as its own piece of work, or ask the user whether to skip it for this ticket. Do not proceed silently without one.
 
@@ -57,6 +62,8 @@ Open the worktree in the user's editor first. They are about to read code, not a
     code "$(git rev-parse --show-toplevel)"
 
 If `code` is not on `PATH`, say so in one line and give the absolute worktree path instead. Never install anything to make this work.
+
+Call `advisor` on the scaffold before showing it. This is the cheapest artifact in the run and everything downstream inherits it, so it is the one place a stronger read pays for itself ([archetypes](../references/archetypes.md)).
 
 Then list the scaffold files by path and present the four questions the user is answering. Work through their corrections in the code with them:
 

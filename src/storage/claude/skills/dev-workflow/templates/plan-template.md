@@ -14,8 +14,10 @@ forbidden — they teach workers that fields are noise.
 Large tier: qa-planner-agent appends a ## QA Plan section after the parent
 finishes drafting. Do not pre-create it.
 
-During planning, mark unresolved ambiguity inline as [NEEDS CLARIFICATION: ...].
-Parent greps the plan for it and resolves every hit before dispatching workers.
+During planning, mark inline: [NEEDS CLARIFICATION: ...] for unresolved
+ambiguity, [DEFERRED: ... → ticket] for a related problem too large to fold
+in, [REPORT: ...] for an unrelated one. The parent greps for all three and
+resolves every hit with the user before dispatching workers.
 -->
 
 ## Objective
@@ -50,6 +52,9 @@ expand scope by helpful inference, and only this reliably stops them.
 <!--
 The commit the scaffold landed in, and one line on what it establishes.
 Workers read the code, not a description of it.
+
+A ticket that only edits existing bodies behind unchanged signatures has
+nothing to scaffold. Write `none — no interface changed` and move on.
 -->
 
 - Commit: `<sha>`
@@ -117,15 +122,16 @@ Cards are extracted and passed inline to workers; workers open this file
 only if they hit ambiguity.
 Model = chosen by archetype (references/archetypes.md) and passed as the
 dispatch model opt.
-After = dispatch ordering only: list any card this one must run after
-(it consumes that card's output, or shares a file with it). none = wave 1.
+After = dispatch ordering only: list every card this one must run after
+(it consumes that card's output, or shares a file with it). Comma-separate
+multiple blockers; none = wave 1.
 -->
 
 ### T-1: <scope>
 
 - **Satisfies**: O-?
-- **Model**: <haiku | sonnet | opus>
-- **After**: <T-x | none>
+- **Model**: <haiku | sonnet | opus>  (never fable — that is the `advisor` tool)
+- **After**: <T-x | T-x, T-y | none>
 - **Files**: <list>
 - **Steps**: <numbered>
 - **Done**: <criterion>

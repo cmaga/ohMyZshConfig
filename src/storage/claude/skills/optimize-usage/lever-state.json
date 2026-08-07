@@ -45,6 +45,11 @@
       "kind": "runtime",
       "native": "agents/tester-agent.md model:"
     },
+    "advisor_model": {
+      "value": "fable",
+      "kind": "runtime",
+      "native": "~/.claude/settings.json advisorModel"
+    },
     "worker_effort": {
       "value": "inherit",
       "kind": "runtime",

@@ -18,7 +18,9 @@ Unit tests belong to the workers. The tester never writes them: they bind to int
 
 ## The gate
 
-Every test must run and fail on the unimplemented throw. A test that errors during import or collection is not a failing test — the scaffold is incomplete, fix it before continuing.
+Every test must run and fail **for a reason you can name** — on the unimplemented throw where the scaffold added one, on the current wrong behavior where it did not.
+
+A test that errors during import or collection is not a failing test. You cannot tell whether it is valid, so fix that before continuing.
 
 Commit the tests before dispatching workers.
 

@@ -26,9 +26,12 @@ Last updated: 2026-08-06 · Method updated: 2026-07-21
 | 7d | Review fan-out effort | `lever-state.json` `review_fanout_effort` — same agents, `effort` opt | inherit (session)<br>max<br>xhigh<br>high<br>medium<br>low | est. — disproof is single-claim and near effort-flat; open-ended finding is not | 25 |
 | 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
 | 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per medium/large ticket | 50 |
+| 10 | Advisor model | `~/.claude/settings.json` `advisorModel` (live) | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; currently fable, the only place fable is spent | 40 |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)
 
-Excluded — do not re-add: fast mode, advisor model, context ceiling, skill frontmatter overrides, alwaysThinkingEnabled (thinking already defaults on across current models), fallbackModel (availability, not cost).
+Excluded — do not re-add: fast mode, context ceiling, skill frontmatter overrides, alwaysThinkingEnabled (thinking already defaults on across current models), fallbackModel (availability, not cost).
+
+Advisor model was on this list and came off it (2026-08-07): dev-workflow now routes every fable call through the `advisor` tool rather than dispatching fable workers, so `advisorModel` governs all fable spend and is the position that controls it.
 
 Per-card model is still excluded **as a lever** — the parent picks each card's model at dispatch, which is a workflow mechanic, not a config position. Rows 5a/5b are the tunable part: the policy those per-card picks default to. Do not flag the mechanic as an unregistered lever on a refresh pass.

@@ -55,6 +55,8 @@ Halt and return your worker report with the trigger named under "Needs parent at
 - You believe a committed test is wrong. Say which test and why, and stop. Never work around it, and never edit it.
 - You hit 3 failed attempts at the same failing test.
 
+Before escalating a judgment call, call `advisor` — it sees your whole transcript and often resolves the question outright, so the escalation never has to happen. Escalate if it does not.
+
 Do not expand scope to "fix" things outside your card. Surface and stop.
 
 Stopping is not dying. The parent reads your report, decides, and resumes you with its answer — you keep everything you have read and every decision you have made. So stop cleanly and leave your work in place: do not write a handover summary for a replacement, do not undo what you have done, and do not try to finish the task around the blocker.

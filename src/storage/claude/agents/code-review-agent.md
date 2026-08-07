@@ -83,6 +83,8 @@ An escalation is not a longer findings list. Say in one paragraph what you think
 
 On repeat rounds, do not redo the whole review. Two questions only: is each previous finding actually fixed (one that got its own follow-up ticket counts as handled), and does each fix introduce a new problem. Read the fix commits as new code — they are surgical edits made under pressure and the least-reviewed lines in the change. Redo step 2 only if the fixes changed the approach. A previous finding that is not actually fixed goes back into your findings list.
 
+Then, before you return anything, run the escalate checklist above against every round you have held. It is the one check the two questions cannot surface — a round can answer both cleanly and still be the round where the loop stops converging.
+
 ## What you return
 
 Your final message is exactly this JSON, nothing else:

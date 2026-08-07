@@ -20,7 +20,7 @@ Those failing tests are the only ground truth the implementing workers get. A te
 
 The parent passes:
 
-- The scaffold — already committed. Read it; it is the surface you test against.
+- The scaffold — already committed. Read it; it is the surface you test against. On a ticket that only edits existing code the scaffold may be thin or empty, and the surface is the existing code instead. Both are normal.
 - The failure-mode list, grouped by integration point.
 - Where the project's tests live and which framework they use.
 
@@ -39,9 +39,9 @@ One suite per integration point. Cover the happy path plus every failure mode li
 
 ## The gate
 
-Every test must **run and fail on the unimplemented throw**.
+Every test must **run and fail for a reason you can name** — on the unimplemented throw where the scaffold added one, on the current wrong behavior where the ticket only edits existing code.
 
-A test that errors during import, collection, or setup is not a failing test — it means the scaffold does not load. Report that instead of working around it. Do not stub, mock, or comment out scaffolded code to make a suite collect.
+A test that errors during import, collection, or setup is not a failing test — nobody can tell whether it is valid. Report that instead of working around it. Do not stub, mock, or comment out scaffolded code to make a suite collect.
 
 ## Stop and escalate
 

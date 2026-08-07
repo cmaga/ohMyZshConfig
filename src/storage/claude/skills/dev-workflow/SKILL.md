@@ -21,7 +21,7 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
    5. Workspace setup
    6. Implementation
    7. Exit
-2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind the `kind: "skill"` levers this workflow uses — `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `MECHANICAL_WORKER_MODEL`, and `JUDGMENT_WORKER_MODEL` — to the all-caps form of their keys. A value of `inherit` or a missing file means no pin: omit the `model` opt wherever the alias is used. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
+2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind the `kind: "skill"` levers this workflow uses — `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `MECHANICAL_WORKER_MODEL`, and `JUDGMENT_WORKER_MODEL` — to the all-caps form of their keys. A value of `inherit`, a key absent from the file, or a missing file all mean no pin: omit the `model` opt wherever that alias is used and let the agent's own default stand. Never invent a value for an absent key. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
 3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value.
 4. **Main-checkout gate.** In the main checkout, run `git status --porcelain`. If it prints anything, stop, show the user the dirty files, and wait for their decision — never stash, commit, or discard main-checkout changes to unblock yourself. When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream.
 
@@ -38,7 +38,7 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
    1. **Verify the problem exists in code** Do your own investigation.
    2. **Read relevant documentation** Be careful, documentation could be out of date.
    3. **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
-   4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation.
+   4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation. Before reporting, undo what Step 1 did: move the ticket back to its previous status and unassign it. Leaving it In Progress tells the board someone is working on it. Do not transition it to anything opinionated — Blocked or Won't Do is the user's call, made with the reason in hand.
 2. **Descends from a spec?** If the ticket names a chunk in one, that `C-N` section is the contract for this run — read it, plus the chunks its Needs line names, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
 
 ## Step 3: User brief
@@ -54,12 +54,13 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
 1. Use `ultracode` (fan-out agents on `RESEARCH_FANOUT_MODEL`) to do deep online research on industry standards, best practices, and clean solutions to the type of problem. Weigh any solution direction the user shared.
 2. **Codebase fit** - Not all solutions are a good fit for the codebase. Determine which solution is the best fit for the current codebase or if we need to change the codebase instead, mapping the leading one onto this repo: where each new piece lives, and which existing symbols it reuses rather than re-implements. Fan out on `CODE_FANOUT_MODEL` when that surface is too large for one agent, and verify every placement and reuse claim against real code at `file:line` before trusting it — a wrong reuse claim is the failure this step exists to catch. Never assume existing project conventions are perfect, do not adhere to a bad pattern even if it is project convention.
 3. **Synthesize** - Given all of the context you've gathered converge on a single recommended solution. Make sure to challenge any assumptions you've made exhaustively.
+   - Unless the research says the target behavior is not settled enough to converge. Then do not pick a solution: recommend `ultra`, present what you found and what is still unknown, and carry the research into the spec. Agreeing a solution now would close the conversation ultra exists to open.
 4. **Implementation Routing** Determine a recommended implementation tier
    | Tier | When | Where the user is |
    | -------- | ----------------------------------------------------------------------------------------- | ------------------------ |
    | `small` | The whole change states in a sentence and one worker can do it against an obvious check | Intent only |
    | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the PR |
-   | `large` | New structure, or a boundary moves that the user needs to see | In the scaffold |
+   | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
 5. **Present** - By this point a lot of time will have passed so summarize the high level goal/problem and the approach to solving the problem, again, as simply and concise as possible. With the recommended implementation tier at the end. For complex solutions with multiple pieces present each point one by one so each can be discussed and understood by the user one at a time. When they are ready to move from one to the next they will say "next". Once a consensus is reached on the solution space the user will say "go" and you can begin implementation. **Note** it is crucial that the user fully understand the problem and solution and is not just rubber stamping. You have access to the following tools to help the user with understanding as well as with your planning.
    - UI artifact prototypes for ambiguous/large UI changes (mocked data)
@@ -84,7 +85,7 @@ Run the sequence for the confirmed tier. Each step links to its procedure file. 
 
 ### Medium
 
-The full pipeline, unattended. The user approved the approach and sees the PR; nothing between waits for them unless there is a major issue.
+The full pipeline, unattended. The user approved the approach and sees the PR. The only thing that stops for them is an unresolved marker in the plan ([plan](common/plan.md)).
 
 1. [Scope](common/scope.md)
 2. [Shape](common/shape.md) — post and continue

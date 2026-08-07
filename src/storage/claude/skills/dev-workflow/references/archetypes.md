@@ -7,13 +7,16 @@ Picking an agent configuration is one question: **what is the simplest configura
 | haiku  | An intern on coffee. Fast, tireless, no judgment.                                          | 1             | Work a test verifies mechanically. It will iterate against a red test as many times as it takes. Cheaply and quickly |
 | sonnet | An entry-to-mid level engineer who rushes and does exactly what it was told, nothing more. | 3             | Complete cards. Anything requiring it to notice something unstated will be missed.                                   |
 | opus   | A senior engineer.                                                                         | 5             | Judgment, ambiguity, work that spans modules.                                                                        |
-| fable  | An outsourced senior. Far more expensive.                                                  | 10            | Use only as an advisor on the most critical, load bearing code paths.                                                |
+| fable  | An outsourced senior. Far more expensive.                                                  | 10            | Advice only, on the most critical load-bearing code paths — reached through the `advisor` tool, never dispatched as a worker. |
 
 Costs are per-token price ratios normalized to haiku — the same figures as `optimize-usage`'s lever table expressed against a different baseline. Update both together.
 
 ## Applying it
 
-- **The archetype is how you decide and how you explain. It is never what you dispatch.** Every card records a real model id — `haiku`, `sonnet`, `opus`, or `fable` — and that id is what goes in the `model` opt. An archetype name or an alias name never reaches a dispatch call.
+- **The archetype is how you decide and how you explain. It is never what you dispatch.** Every card records a real model id — `haiku`, `sonnet`, or `opus` — and that id is what goes in the `model` opt. An archetype name or an alias name never reaches a dispatch call.
+- **Fable is never a card model.** You reach it through the `advisor` tool, which is already wired to it (`advisorModel` in settings). Dispatching a fable worker is not the advisor role — it is just an expensive worker. Call `advisor` instead:
+  - The parent calls it on the scaffold before showing the user. Cheapest artifact in the run, highest leverage on everything downstream.
+  - A worker on a genuinely ambiguous card calls it before escalating. Often it resolves the judgment call and the escalation never has to happen.
 - Name the archetype, not the model, when recommending to the user: "this punishes someone who does exactly what they were told and nothing more" is reviewable; "sonnet on the deduplicator" is not.
 - Every task card carries a model. Mechanical work with a test behind it defaults to `MECHANICAL_WORKER_MODEL`; work needing judgment defaults to `JUDGMENT_WORKER_MODEL`. Resolve the alias to its model id when you write the card — the card must read `opus`, not `JUDGMENT_WORKER_MODEL`.
 - Those two aliases are budget defaults owned by `optimize-usage`. A card may name a stronger model than its default when the task genuinely warrants it; say why on the card. The lever is a default, not a ceiling.
