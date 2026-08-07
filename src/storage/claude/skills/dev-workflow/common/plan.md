@@ -1,14 +1,27 @@
 # Plan
 
+Dispatch mechanics only. The design lives in the scaffold — do not re-describe it here.
+
 Before writing the plan file, ensure `.claude-artifacts/` is gitignored for this repo. Idempotent — safe to re-run:
 
     F="$(git rev-parse --git-common-dir)/info/exclude"; grep -qxF '.claude-artifacts/' "$F" || echo '.claude-artifacts/' >> "$F"
 
 Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktree using [../templates/plan-template.md](../templates/plan-template.md) as the structure.
 
-The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules) is the contract with workers. The mechanics (Files, Tasks, Tests) are the execution plan.
-
+- Take `## Files` from the scaffold, not from guesses — the files already exist.
+- Partition those files disjointly across task cards. If they will not partition, the boundaries are wrong: return to [scaffold](scaffold.md).
 - Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
-- Fill `## Reuse contract` from the Step-3 codebase-fit pass and the `## Reusable surface` sections of vault component notes the plan touches — workers don't discover reuse on their own.
+- Give every card a model, recorded on the card and chosen by [archetype](../references/archetypes.md): work a committed test verifies defaults to `MECHANICAL_WORKER_MODEL`, work needing judgment to `JUDGMENT_WORKER_MODEL`.
+- Fill `## Reuse contract` from the [shape](shape.md) gate's reuse lines and the `## Reusable surface` sections of vault component notes the plan touches.
+- Carry each failure mode that is only observable inside a body onto the card that owns that body.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Resolve each with the user as it's discovered — don't batch them up to the end.
-- Mark a problem you find but are not folding in as `[DEFERRED: ... → ticket]` (related, too large) or `[REPORT: ...]` (unrelated), per the discovered-issue rule in [SKILL.md](../SKILL.md). Surface each at [plan presentation](plan-presentation.md) with your recommended routing and resolve before dispatch: name the existing ticket that already covers it, or ask the user whether to file one and write the key they approve. A deferral with no ticket key and no answer does not ship.
+- Mark a problem you find but are not folding in as `[DEFERRED: ... → ticket]` (related, too large) or `[REPORT: ...]` (unrelated), per the discovered-issue rule in [SKILL.md](../SKILL.md).
+
+## The plan is not finished while anything is open
+
+Before the plan is done, grep it for `[NEEDS CLARIFICATION]`, `[DEFERRED]`, and `[REPORT]`. Every hit goes to the user with your recommended routing, and you wait.
+
+- A clarification needs their answer written into the plan.
+- A deferral or report needs the key of an existing ticket that already covers it, or their word to file a new one and the key you then wrote.
+
+A deferral with no ticket key and no answer does not ship. This is the only thing in planning that stops for the user — if the grep comes back empty, say nothing and carry on.

@@ -1,17 +1,17 @@
 # <TICKET> — <short title>
 
 <!--
-Plan file used by medium and deep tiers. Small tier does not write a plan.
+Dispatch plan used by medium and large tiers. Small tier does not write one.
 
-The intent header (Objective, Outcomes, Out of scope, Autonomy, Stop rules)
-is the contract with workers. The mechanics (Files, Tasks, Tests) are the
-parent's execution plan.
+The design is NOT here — it is the committed scaffold. This file exists to
+split scaffolded work across workers and to hold the contract they execute
+under. Never restate architecture, module boundaries, or interfaces here.
 
-Length is whatever the workers need — the user reads the plan-presentation
-summary, not the file. Delete sections that do not apply. Empty headers are
+Length is whatever the workers need — the user does not read this file; they
+saw the shape gate. Delete sections that do not apply. Empty headers are
 forbidden — they teach workers that fields are noise.
 
-Deep tier: qa-planner-agent appends a ## QA Plan section after the parent
+Large tier: qa-planner-agent appends a ## QA Plan section after the parent
 finishes drafting. Do not pre-create it.
 
 During planning, mark unresolved ambiguity inline as [NEEDS CLARIFICATION: ...].
@@ -45,14 +45,32 @@ expand scope by helpful inference, and only this reliably stops them.
 
 -
 
+## Scaffold
+
+<!--
+The commit the scaffold landed in, and one line on what it establishes.
+Workers read the code, not a description of it.
+-->
+
+- Commit: `<sha>`
+
+## Tests
+
+<!--
+Integration tests are already written and committed by tester-agent, and are
+red. List their paths so workers know what they are iterating against.
+Workers write their own unit tests; those are not listed here.
+-->
+
+- `<path>` — covers <integration point>
+
 ## Reuse contract
 
 <!--
-From the Step-3 codebase-fit pass, plus the `## Reusable surface` entries of
+From the shape gate's reuse lines, plus the `## Reusable surface` entries of
 any vault component notes this plan touches. Symbols workers must use instead
 of re-implementing, and logic to promote rather than copy. Parent review
-rejects diffs that re-implement anything listed. Delete only when the change
-adds no new components.
+rejects diffs that re-implement anything listed.
 -->
 
 - Use `<symbol>` (`<file>`) for <purpose>
@@ -62,15 +80,15 @@ adds no new components.
 
 **Workers may decide:**
 
-- Internal naming and module structure within their assigned files
-- Test scaffolding shape
+- Internal implementation inside the bodies they own
+- Their own unit tests
 - Minor refactors to code they are already touching
 
 **Workers must escalate:**
 
+- Any change to a scaffolded signature, type, or schema
+- A tester test they believe is wrong
 - New runtime dependency
-- Schema or migration change
-- Public API contract change
 - Touching files outside their task card
 - Any outcome that becomes ambiguous on a judgment call
 
@@ -87,7 +105,7 @@ adds no new components.
 
 ## Files
 
-<!-- Exhaustive list of paths the workers will touch. -->
+<!-- Exhaustive list of paths the workers will touch, taken from the scaffold. -->
 
 -
 
@@ -97,6 +115,8 @@ adds no new components.
 One card per worker. T-N IDs cite outcome IDs.
 Cards are extracted and passed inline to workers; workers open this file
 only if they hit ambiguity.
+Model = chosen by archetype (references/archetypes.md) and passed as the
+dispatch model opt.
 After = dispatch ordering only: list any card this one must run after
 (it consumes that card's output, or shares a file with it). none = wave 1.
 -->
@@ -104,13 +124,8 @@ After = dispatch ordering only: list any card this one must run after
 ### T-1: <scope>
 
 - **Satisfies**: O-?
+- **Model**: <haiku | sonnet | opus>
 - **After**: <T-x | none>
 - **Files**: <list>
 - **Steps**: <numbered>
 - **Done**: <criterion>
-
-## Tests
-
-<!-- Unit and programmatic tests parent writes inline after workers finish. -->
-
--

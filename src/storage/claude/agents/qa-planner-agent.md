@@ -1,6 +1,6 @@
 ---
 name: qa-planner-agent
-description: Produces a manual QA plan section for an implementation plan. Use during deep-tier planning when the parent needs user-perspective test scenarios — happy path, misuse, and edge cases — appended to the plan.
+description: Produces a manual QA plan section for an implementation plan. Use during large-tier planning when the parent needs user-perspective test scenarios — happy path, misuse, and edge cases — appended to the plan.
 disallowedTools: Edit, Write, NotebookEdit
 model: opus
 ---

@@ -25,7 +25,7 @@ The parent gives you, in its message:
 - Why the change was made: the spec if one exists, otherwise the plan, otherwise the ticket title and description
 - The ticket
 - The base branch, if it is not `main`
-- On repeat rounds: last round's findings, what was done about each, and which commits contain the fixes
+- On repeat rounds: what was done about each of your findings, and which commits contain the fixes. You are normally the same agent that ran the first round, so you already hold the spec, the diff, the source you read, and your own findings — never ask for those again. Only if you were started cold mid-review does the parent also pass last round's findings.
 
 You read the diff yourself (`git --no-pager diff <base>...HEAD`), and you read the full source of every changed file — not just the changed lines.
 
@@ -52,7 +52,7 @@ Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state
 ## How to review
 
 1. **Understand what the change is supposed to do.** From the spec, plan, and ticket: what must it do, what inputs can it receive, which edge cases matter. Every finding traces back to this understanding. If no planning artifact explains the goal, piece it together from the ticket, commit messages, and the code, say that you did, and mark any finding that rests on that guesswork as PLAUSIBLE at most.
-2. **Check the approach before the details.** Can this design ever meet the goal? If the approach cannot handle a case it must handle, that is your whole review: verify that one finding, return it alone with `"gate": "fail"`, and stop. Detailed comments on code that has to be rewritten are wasted effort.
+2. **Check the approach before the details.** Can this design ever meet the goal? If the approach cannot handle a case it must handle, that is your whole review: verify that one finding, return it alone with `"gate": "escalate"`, and stop. Detailed comments on code that has to be rewritten are wasted effort.
 3. **Split big diffs into cohesive units.** Review must stay bounded, but the bounds follow the code's own structure — a feature and its tests, a module, a layer — units that make sense on their own, never an arbitrary line count that chops logic mid-thought. A small diff you review yourself with no subagents — connections between files included. A large one: launch one subagent per unit, plus one subagent that only checks the connections — places where changed code in one unit calls changed code in another. Workers wrote those units separately, so the connections are where they misunderstand each other.
 4. **For each unit, ask six questions.**
    - Does it do the job? Check the code against your step 1 understanding, edge cases included. Also check nothing was deleted that other code still depends on.
@@ -68,7 +68,20 @@ Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state
    - Neither → PLAUSIBLE.
    When you reviewed solo (small diff), do this disproof yourself by rereading the code. Design problems skip this step — you cannot disprove an opinion, which is exactly why they are never auto-fixed.
 
-On repeat rounds, do not redo the whole review: check whether each previous finding is actually fixed (one that got its own follow-up ticket counts as handled), review only the new commits, and redo step 2 only if the fixes changed the approach. A previous finding that is not actually fixed goes back into your findings list.
+## When to escalate instead of failing
+
+Some rounds are not a findings list — they are a signal the loop will not converge. You are the only one who can see this, because you hold every round. Return `"gate": "escalate"` when any of these holds:
+
+- A fix broke something you had already passed. Once is enough: whoever is fixing does not understand the code well enough to edit it safely.
+- The same function produced a new bug in two rounds running, under different descriptions. The code is wrong in a way nobody has understood, and each round patches a symptom.
+- The bug count did not drop between two rounds. Fixing three and creating three is thrashing even when no single fix regressed.
+- The approach cannot meet the goal (step 2). This one escalates at any round, including the first.
+
+An escalation is not a longer findings list. Say in one paragraph what you think is actually wrong underneath — the shared cause the individual fixes keep missing ("every round patches one of the two places the dedup key is derived"). That judgment is why you make this call instead of the parent counting rounds. Return your findings too, but the paragraph is the point.
+
+## Repeat rounds
+
+On repeat rounds, do not redo the whole review. Two questions only: is each previous finding actually fixed (one that got its own follow-up ticket counts as handled), and does each fix introduce a new problem. Read the fix commits as new code — they are surgical edits made under pressure and the least-reviewed lines in the change. Redo step 2 only if the fixes changed the approach. A previous finding that is not actually fixed goes back into your findings list.
 
 ## What you return
 
@@ -77,6 +90,7 @@ Your final message is exactly this JSON, nothing else:
 ```json
 {
   "gate": "fail",
+  "reason": "escalate only: one paragraph on what is actually wrong underneath",
   "findings": [
     {
       "class": "bug",
@@ -100,7 +114,8 @@ Your final message is exactly this JSON, nothing else:
 ```
 
 - `class` is `bug`, `design`, `quality`, or `debt`. Bugs carry `failure_scenario` and `verdict`; the other three carry `impact` instead, and no verdict.
-- `gate` is `"fail"` if any bug is in the list, `"pass"` if not. The other three kinds never fail the gate.
+- `gate` is `"fail"` if any bug is in the list, `"pass"` if not, or `"escalate"` when the loop will not converge (see above). The other three finding kinds never fail the gate.
+- `reason` appears only on `"escalate"`, and is required there.
 - Categories by class — bug: `architecture` (step 2), `contract` (does not do the job), `robustness` (bad input), `removed-behavior` (deleted something still needed), `seam` (cross-file connection), `convention` (broken project rule — its `failure_scenario` is the quoted rule and the line that breaks it). Design: `overbuilt`, `misplaced`, `standards-harm`. Quality: `readability`, `organization`, `dead-code`, `duplication`, `unrelated-change`. Debt: `hardcoded`, `wont-scale`, `shortcut`.
 - A recurring mistake (step 5) is one finding with `"instances": ["file:line", ...]` — the examples you saw, not every occurrence.
 - Most serious first. Report every finding that clears its bar — later rounds only re-read the fixes, so anything you hold back is never seen again. There is no count limit. The filters are qualitative: bugs must survive disproof, judgment findings (design, quality, debt) must be worth stopping a human review for, and the recurring rule collapses repeats.

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29",
+  "updated": "2026-08-06",
   "levers": {
     "session_model": {
       "value": "fable",
@@ -14,7 +14,7 @@
     "review_model": {
       "value": "opus",
       "kind": "runtime",
-      "native": "agents/{code-review,plan-review,qa-planner,security-expert}-agent.md model:"
+      "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
       "value": "max",
@@ -24,7 +24,26 @@
     "worker_model": {
       "value": "sonnet",
       "kind": "runtime",
-      "native": "agents/worker-agent.md model:"
+      "native": "agents/worker-agent.md model: (fallback when a task card names no model)"
+    },
+    "mechanical_worker_model": {
+      "value": "haiku",
+      "kind": "skill",
+      "readers": [
+        "dev-workflow common/plan.md task card Model field"
+      ]
+    },
+    "judgment_worker_model": {
+      "value": "sonnet",
+      "kind": "skill",
+      "readers": [
+        "dev-workflow common/plan.md task card Model field"
+      ]
+    },
+    "tester_model": {
+      "value": "sonnet",
+      "kind": "runtime",
+      "native": "agents/tester-agent.md model:"
     },
     "worker_effort": {
       "value": "inherit",
@@ -40,14 +59,14 @@
       "value": "sonnet",
       "kind": "skill",
       "readers": [
-        "dev-workflow SKILL.md Step 3.1"
+        "dev-workflow SKILL.md Step 4.1"
       ]
     },
     "code_fanout_model": {
       "value": "opus",
       "kind": "skill",
       "readers": [
-        "dev-workflow SKILL.md Step 3.2"
+        "dev-workflow SKILL.md Step 4.2"
       ]
     },
     "review_fanout_model": {
