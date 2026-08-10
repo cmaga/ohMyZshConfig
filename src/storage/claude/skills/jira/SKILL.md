@@ -329,8 +329,9 @@ jira issue list -p {projectKey} --plain --no-headers
 ### Mutating Commands
 
 > **MANDATORY — applies to every `issue create`, `issue edit`, `issue comment add`,
-> and `issue worklog add` below. Both rules are required to prevent session hangs;
-> a missing `--no-input` has hung sessions for hours.**
+> `issue worklog add`, and `epic create`, here or in the full CLI reference. Both
+> rules are required to prevent session hangs; a missing `--no-input` has hung
+> sessions for hours.**
 >
 > - Pass `--no-input`. Without it, jira-cli prompts for missing fields, opens an
 >   editor, or asks "Are you sure you want to submit?" and blocks indefinitely
