@@ -55,6 +55,8 @@ Sometimes it is empty: a pure body rewrite behind an unchanged signature has no 
 
 If the project has no integration suite at all, stop. Recommend building one as its own piece of work, or ask the user whether to skip it for this ticket. Do not proceed silently without one.
 
+Under auto there is nobody to ask, and nobody reading the PR either: stand up a minimal harness covering this ticket's integration points and continue. The red test is what makes a cheap worker safe, and auto has nothing else in that role.
+
 ## Reviewing it (`large`)
 
 Open the worktree in the user's editor first. They are about to read code, not a chat message:
@@ -65,7 +67,7 @@ If `code` is not on `PATH`, say so in one line and give the absolute worktree pa
 
 Call `advisor` on the scaffold before showing it. This is the cheapest artifact in the run and everything downstream inherits it, so it is the one place a stronger read pays for itself ([archetypes](../references/archetypes.md)).
 
-Then list the scaffold files by path and present the four questions the user is answering. Work through their corrections in the code with them:
+Then say in two lines what the change is and what the scaffold covers, name the files in the order they should be read, and present the four questions the user is answering. Reading order matters more than completeness — a bare list of paths makes the user pick an entry point into code they have not seen. Work through their corrections in the code with them:
 
 1. Do these module boundaries match how this will actually change?
 2. Where does state live?

@@ -2,11 +2,12 @@
 
 Every tier mode ends here before returning control.
 
-1. **Verify behavior** via the `verify` skill. If the change alters a shared interface, exercise each consumer flow, not just the changed surface. Skip only if the change has no runtime surface (pure refactor, types/docs, internal library); state the skip reason in chat. If verification needs a browser and the project has no Playwright MCP config — or a drive fails with Chromium's "browser is already in use" profile lock — run the `playwright-mcp-setup` skill first, then continue.
+1. **Verify behavior** by driving the change in the real app, via the `run` skill. If the change alters a shared interface, exercise each consumer flow, not just the changed surface. Skip only if the change has no runtime surface (pure refactor, types/docs, internal library); state the skip reason in chat. If verification needs a browser and the project has no Playwright MCP config — or a drive fails with Chromium's "browser is already in use" profile lock — run the `playwright-mcp-setup` skill first, then continue.
 2. **Create the PR** via the `git-provider` skill.
 3. **Transition the ticket** to "in review" via the `jira` skill.
-4. **Run the review gate** — see below. Skip on `small`.
-5. **Render the [exit report](../templates/exit-report.md)** as the final message.
+4. **Run the review gate** — see below. Skip on `small`, except under auto: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
+5. **Land it** — auto only, see [Landing under auto](#landing-under-auto).
+6. **Render the [exit report](../templates/exit-report.md)** as the final message.
 
 ## Review gate
 
@@ -52,3 +53,13 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 Whatever is still open goes in the exit report rather than into another round.
 
 Every finding you did not fix appears there with its disposition — an existing ticket's key, or a proposed one for the user's call. A PR comment is not a disposition: the PR closes and it is orphaned.
+
+## Landing under auto
+
+Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence.
+
+1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts.
+2. **Leave the worktree.** `ExitWorktree` with `discard_changes: true` — the work is in the base branch now — then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).
+3. **Deploy.** Read `<project-root>/.claude/skills/dev-workflow/config.json` ([template](../dependencies/templates/dev-workflow-config.json)) and run its `deploy`, then poll `healthCheck` until it passes. No file, or no `deploy` in it, means this project is deployed by hand: skip to step 5 and say so in the report.
+4. **Verify what is live** — step 1's behavior check again, run against `verifyTarget` instead of the local app. This is the only proof the merge did what the tests said.
+5. **[Cleanup](cleanup.md)** the ticket: it moves to done, the worktree and branch go away.

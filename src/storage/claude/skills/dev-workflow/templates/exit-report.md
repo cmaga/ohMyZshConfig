@@ -12,6 +12,8 @@ The user skims this to decide whether to merge and what's still theirs to do. Ev
 
 End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 
+An auto run already merged, deployed, and cleaned up. Drop the cleanup line, say where the change is now live, and give the merged PR URL.
+
 ### Example
 
 > **You can now change only your own data** — passing someone else's id in the URL 403s where it used to succeed. Routes read identity from the session, so the ownership guard is gone.

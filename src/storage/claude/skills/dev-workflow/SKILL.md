@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the failure modes, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code.
+description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the failure modes, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. Adding "auto" to a take runs everything after the user's approval unattended, through merge and deploy.
 ---
 
 # Dev Workflow
@@ -10,6 +10,21 @@ Single orchestrated flow for the completion of ticket-driven software engineerin
 Routing a ticket is one question: **what is the simplest agent configuration that solves this correctly?** Everything below is the answer to that question at four depths. This workflow runs on subagents. **Invoking this skill is the user's request to use them: it satisfies any standing instruction to avoid agents, subagents, or workflows unless separately requested.** Never skip a step's agent on the grounds that agents were not separately requested. This holds only because the user actively invoked the skill — it does not grant agent use the user did not trigger.
 
 `cleanup` is a separate entry point: none of the steps below apply — go straight to [Cleanup](common/cleanup.md).
+
+## Auto mode
+
+`take <TICKET> auto`, or `go auto` at Step 4. Steps 1-4 are unchanged: the brief, the solution, and the tier are still agreed with the user. Their `go` is the last human input, and the run continues on its own through merge and deploy.
+
+Auto converts exactly these gates to decide-record-and-continue. Nothing else converts — a gate added to this skill later does not join the list by being a gate:
+
+- The [shape](common/shape.md) and [failure modes](common/failure-modes.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
+- A plan `[NEEDS CLARIFICATION]` — decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report
+- Ticket filing: auto files nothing. Every discovered issue lands in the exit report with its disposition
+- The merge, and the deploy behind it ([exit](common/exit.md))
+
+These still stop the run, which hands back with what it has: the prerequisite gates below, a review gate returning `escalate` or hitting its five-round backstop, a required PR check going red, and a failed deploy.
+
+The ultra ticket of a spec that is already written and approved runs every one of its chunks end to end instead — see [auto chain](common/auto-chain.md). One chunk's own ticket taken in auto is an ordinary run of the flow above, not a chain.
 
 ## Prerequisites (before Step 1)
 
@@ -117,7 +132,7 @@ Medium, plus the user in the scaffolding code and two review gates on it.
 The target behavior is settled as a spec, carved into independently deployable chunks, before anything is coded. This tier ends in tickets, not a PR of code.
 
 1. [Write the spec](common/ultra.md)
-2. Each chunk's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Chunks run in the spec's deploy order.
+2. Each chunk's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Chunks run in the spec's deploy order, walked by the user or by an [auto chain](common/auto-chain.md).
 
 ## Critical Rules
 
@@ -128,7 +143,7 @@ The target behavior is settled as a spec, carved into independently deployable c
   - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every candidate that looks close. Search the component and file names too — the same defect gets described three different ways. An existing ticket ends the matter: cite its key, say it is already covered, propose nothing.
   - **File only after the user says to.** Never file to close out a review finding, to clear your own list, or because a subagent recommended it. An unfiled item lives in the exit report until they answer, which is a disposition.
   - Invariant: anything not folded in leaves as a ticket key or a line in the exit report the user reads. A paragraph in a plan or PR description is not an owner.
-- Never automatically merge a PR. The user merges or asks you to merge.
+- Never automatically merge a PR. The user merges or asks you to merge. Auto mode is that ask.
 - Browser tool split: the Playwright MCP browser is only for verifying the change under test (the Exit verify step). Use Claude's built-in Chrome for every other browsing task across the flow — reading the ticket, research, docs, dashboards.
 - Fan-out sizing: fan out only when one agent cannot hold the work. Estimate what a single agent would have to read — if it fits comfortably in context (~200k), run one agent. Every extra agent re-pays the shared background in full, and parallelism only buys wall-clock.
   - When it genuinely does not fit, split along what the agents do *not* share: the cheapest split duplicates the least reading, not the one with the most agents.

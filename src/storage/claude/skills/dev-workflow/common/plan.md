@@ -26,3 +26,5 @@ Before the plan is done, grep it for `[NEEDS CLARIFICATION]`, `[DEFERRED]`, and 
 - A deferral or report needs the key of an existing ticket that already covers it, or their word to file a new one and the key you then wrote. **Search Jira before you propose either** — per the discovered-issue rule in [SKILL.md](../SKILL.md), an existing ticket ends the matter and you propose nothing.
 
 A deferral with no ticket key and no answer does not ship. This is the only thing in planning that stops for the user — if the grep comes back empty, say nothing and carry on.
+
+Under auto nothing here stops. Resolve each clarification yourself and rewrite it in place as `[ASSUMED: ...]`; leave deferrals and reports as they are. All three kinds go to the exit report — the search still runs, so an existing ticket's key travels with the item.
