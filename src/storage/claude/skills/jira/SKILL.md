@@ -15,8 +15,9 @@ Manage JIRA tickets using jira-cli by ankitpokhrel.
 ## Configuration Gate
 
 Setup establishes four prerequisites — jira-cli installed, `config.json`,
-`.jira-config.yml`, and a token in `~/.netrc`. Once setup completes these hold,
-so do **not** re-run the full battery on every invocation.
+`.jira-config.yml`, and a token in `~/.netrc` — plus one correctness invariant:
+`project.type` matches the real project. Once setup completes these hold, so do
+**not** re-run the full battery on every invocation.
 
 > **Path convention:** All file paths in this skill are relative to the **project root**
 > (the git repository root / current working directory where Claude is invoked).
@@ -33,9 +34,19 @@ before any command (see "Load Config"). That read **is** the gate:
 
 ### On command failure
 
-If a jira command then fails — `jira: command not found`, "config not found",
-an auth error / HTTP 401, or a hang despite `--no-input` — run the **Full
-detection battery** below to pinpoint the missing prerequisite, then route to setup.
+Branch on the error — the two classes have different fixes:
+
+- **Missing prerequisite** — `jira: command not found`, "config not found", HTTP
+  401, or a hang despite `--no-input`. Run the **Full detection battery**, then
+  route to setup.
+- **Field rejection** — Jira names a field it will not accept, e.g. `Field
+  'customfield_10014' cannot be set. It is not on the appropriate screen, or
+  unknown.` Every prerequisite is present and the config *values* are wrong. Run
+  battery check 5 and correct `.jira-config.yml`. Never route this to setup —
+  setup rewrites the same values. Never work around it with raw REST calls.
+
+If all five checks pass and the command still fails, report the API's own error
+verbatim and stop.
 
 ### Full detection battery (setup verification & failure diagnosis only)
 
@@ -54,6 +65,20 @@ stated otherwise):
    server=$(awk '/^[[:space:]]*server:/ {sub(/^[[:space:]]*server:[[:space:]]*/, ""); gsub(/[[:space:]"'\'']/, ""); sub(/^https?:\/\//, ""); sub(/\/$/, ""); print; exit}' .claude/skills/jira/.jira-config.yml)
    awk -v m="$server" '$1=="machine" && $2==m {found=1} END {exit !found}' ~/.netrc
    ```
+
+5. **`project.type` matches the real project?** — existence is not correctness.
+   The config value must equal the project's `style` from the API; a mismatch
+   makes jira-cli send epic fields the project rejects (see Step 4).
+
+   `HOST` is `server` from `config.json` without its scheme; `PROJECT_KEY` is
+   `projectKey`. `curl -n` reads the same `~/.netrc` token the wrapper uses.
+
+   ```bash
+   curl -s -n "https://${HOST}/rest/api/3/project/${PROJECT_KEY}" | jq -r '.style'
+   grep -A2 '^project:' .claude/skills/jira/.jira-config.yml | grep 'type:'
+   ```
+
+   Both must read `next-gen`, or both `classic`. Fix the config, not the project.
 
 ### Routing to setup
 
@@ -76,10 +101,11 @@ Trigger phrases: "set up jira", "jira setup", "configure jira", "initialize the 
 
 Goal: one round of questions, then done. Everything else is derived from the environment.
 
-### Step 1: Install jira-cli
+### Step 1: Install jira-cli and jq
 
 ```bash
 command -v jira || brew install jira-cli
+command -v jq   || brew install jq
 ```
 
 ### Step 2: Silent discovery
@@ -90,7 +116,7 @@ Run these in parallel and absorb the results — no intermediate prompts to the 
 # Atlassian hosts already known to ~/.netrc
 awk '/^machine .*atlassian\.net/ {print $2}' ~/.netrc 2>/dev/null
 
-# Sibling jira-cli configs in peer projects (template source for Step 4)
+# Sibling jira-cli configs in peer projects (file shape only — see Step 4)
 find ~/dev -maxdepth 5 -path '*/.claude/skills/jira/.jira-config.yml' 2>/dev/null
 
 # Identity hints
@@ -116,7 +142,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -u "${EMAIL}:${TOKEN}" \
 # 200 = good. 401 = bad token; treat as "no token" and proceed to Step 5.
 ```
 
-If a sibling `.jira-config.yml` matches the discovered host, read it — it becomes the template in Step 4.
+If a sibling `.jira-config.yml` matches the discovered host, read it — it supplies the file's *shape* in Step 4, never its project-specific values.
 
 ### Step 3: Ask once
 
@@ -130,20 +156,44 @@ Show a short summary of what was discovered (host, email, username, sibling temp
 
 Add a server-confirmation question **only if** discovery found multiple Atlassian hosts or none. Do not ask for server/email/username/labels when discovery answered them — default `labels` to `[]` and `username` to `$(whoami)`; the user can edit `config.json` later.
 
-### Step 4: Write configs directly
+### Step 4: Derive every project-specific value
 
-Fetch the board id once the project key is known:
+Never carry `project.type`, `epic.*`, or `issue.types` over from a sibling config
+— they are per-project and per-instance, and a wrong `project.type` silently
+breaks every epic operation. Derive all four from the API:
 
 ```bash
-curl -s -u "${EMAIL}:${TOKEN}" \
-  "https://${HOST}/rest/agile/1.0/board?projectKeyOrId=${PROJECT_KEY}" \
-  | jq '.values[0] | {id, name, type}'
+# project.type — the API calls it "style"; jira-cli takes the same two values
+curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/api/3/project/${PROJECT_KEY}" | jq -r '.style'
+
+# board.{id,name,type}
+curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/agile/1.0/board?projectKeyOrId=${PROJECT_KEY}" | jq '.values[0] | {id, name, type}'
+
+# issue.types — createmeta, NOT /rest/api/3/issuetype (that returns every type in
+# the instance, with ids that do not apply to this project)
+curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/api/3/issue/createmeta/${PROJECT_KEY}/issuetypes" \
+  | jq -r '.issueTypes[] | "\(.id) \(.name) \(.subtask)"'
 ```
+
+Then the `epic:` block, which depends on the style just derived:
+
+- **`next-gen`** — omit the `epic:` block. Team-managed projects parent through
+  the built-in `parent` field; jira-cli handles it natively once the type is right.
+- **`classic`** — derive the two custom field ids for this instance. They differ
+  per instance; never copy them from another config.
+
+  ```bash
+  curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/api/3/field" \
+    | jq -r '.[] | select(.name=="Epic Name" or .name=="Epic Link") | "\(.name) \(.id)"'
+  ```
+
+  `Epic Name` → `epic.name`, `Epic Link` → `epic.link`.
 
 Then write both files:
 
 - `<project-root>/.claude/skills/jira/config.json` — structure from [dependencies/templates/jira-config.json](dependencies/templates/jira-config.json), values from discovery + user answers.
-- `<project-root>/.claude/skills/jira/.jira-config.yml` — if a sibling config was found, copy it and swap `project.key`, `project.type`, and `board.{id,name,type}`. If not, fetch issue types from `${HOST}/rest/api/3/issuetype` and assemble the YAML from scratch.
+- `<project-root>/.claude/skills/jira/.jira-config.yml` — a sibling config is a
+  shape template only. Fill every value above from the API.
 
 Do not write the token into either file. It lives only in `~/.netrc`.
 
@@ -162,11 +212,8 @@ Do not write the token into either file. It lives only in `~/.netrc`.
 
 ### Step 6: Verify
 
-```bash
-jira me
-```
-
-Returning the user's email means setup is complete.
+`jira me` proves auth only. Run the **Full detection battery** — all five checks,
+including the `project.type` match — and setup is complete when every one passes.
 
 ## Working inside a worktree
 
@@ -195,29 +242,6 @@ cp "$main/.claude/skills/jira/config.json"       .claude/skills/jira/
 
 The token in `~/.netrc` is already user-global, so no token copy is
 needed.
-
-## Migration from direnv-based setup
-
-Projects set up before this change kept the token in
-`<project-root>/.envrc` and pointed jira-cli at
-`.claude/skills/jira/.jira-config.yml` via `JIRA_CONFIG_FILE`. To move to
-the netrc flow:
-
-1. Read the token value out of `<project-root>/.envrc`.
-2. Read the server host out of `.claude/skills/jira/.jira-config.yml`
-   (or `config.json`'s `server` field), stripped of scheme and trailing
-   slash.
-3. Append to `~/.netrc`:
-   ```
-   machine <bare-host>
-     login <email>
-     password <token-from-.envrc>
-   ```
-   Ensure `chmod 600 ~/.netrc`.
-4. **Leave `.envrc` in place.** It holds information you may still
-   need, and the new wrapper ignores it. Do not delete it as part of
-   this migration.
-5. Confirm with `jira me` in the project dir.
 
 ## Execute Commands
 
@@ -267,18 +291,28 @@ plain text suitable for parsing.
 
 ### Flag Compatibility
 
-Not all flags work on all commands. Use only the flags valid for each command type:
+Not all flags work on all commands. Passing an unsupported flag aborts the
+command. Generated from `jira <subcommand> --help` on jira-cli 1.7.0; regenerate
+it against the installed version rather than editing cells by hand:
 
-Source of truth: `jira <subcommand> --help`. The table below was rebuilt from
-that output — if you suspect a cell is wrong, run `--help` and trust it over
-this table.
+```bash
+for c in "issue list" "issue view" "issue create" "issue edit" "issue move" \
+         "issue comment add" "issue worklog add" "epic add" "epic create"; do
+  out=$(eval "jira $c --help" 2>&1 | sed $'s/\033\[[0-9;]*m//g')
+  row="$c"
+  for f in --plain --no-headers --raw --no-input; do
+    grep -q -e "$f " <<<"$out" && row="$row | Yes" || row="$row | No"
+  done
+  echo "$row"
+done
+```
 
-| Flag           | `issue list` | `issue view` | `issue create` | `issue edit` | `issue move` | `issue comment add` | `issue worklog add` |
-| -------------- | :----------: | :----------: | :------------: | :----------: | :----------: | :-----------------: | :-----------------: |
-| `--plain`      |     Yes      |     Yes      |       No       |      No      |      No      |         No          |         No          |
-| `--no-headers` |     Yes      |      No      |       No       |      No      |      No      |         No          |         No          |
-| `--raw`        |     Yes      |     Yes      |      Yes       |      No      |      No      |         No          |         No          |
-| `--no-input`   |      No      |      No      |      Yes       |     Yes      |      No      |         Yes         |         Yes         |
+| Flag           | `issue list` | `issue view` | `issue create` | `issue edit` | `issue move` | `issue comment add` | `issue worklog add` | `epic add` | `epic create` |
+| -------------- | :----------: | :----------: | :------------: | :----------: | :----------: | :-----------------: | :-----------------: | :--------: | :-----------: |
+| `--plain`      |     Yes      |     Yes      |       No       |      No      |      No      |         No          |         No          |     No     |      No       |
+| `--no-headers` |     Yes      |      No      |       No       |      No      |      No      |         No          |         No          |     No     |      No       |
+| `--raw`        |     Yes      |     Yes      |      Yes       |      No      |      No      |         No          |         No          |     No     |      No       |
+| `--no-input`   |      No      |      No      |      Yes       |     Yes      |      No      |         Yes         |         Yes         |     No     |      Yes      |
 
 ### Label Usage
 
@@ -291,6 +325,18 @@ jira issue list -p {projectKey} -lteam-alpha -lsprint-1 --plain --no-headers
 # config.labels = []
 jira issue list -p {projectKey} --plain --no-headers
 ```
+
+### Mutating Commands
+
+> **MANDATORY — applies to every `issue create`, `issue edit`, `issue comment add`,
+> and `issue worklog add` below. Both rules are required to prevent session hangs;
+> a missing `--no-input` has hung sessions for hours.**
+>
+> - Pass `--no-input`. Without it, jira-cli prompts for missing fields, opens an
+>   editor, or asks "Are you sure you want to submit?" and blocks indefinitely
+>   with nothing on stdin.
+> - Set Bash tool `timeout: 60000`. A healthy write completes in well under a
+>   second. If it exceeds, investigate — never retry without `--no-input`.
 
 ### Common Operations
 
@@ -320,11 +366,6 @@ jira issue move {ticketId} "{transitions.inProgress}"
 
 **Create issue:**
 
-> **MANDATORY — both rules required to prevent session hangs:**
->
-> - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
-> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
-
 ```bash
 jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -l{label} --no-input
 ```
@@ -337,14 +378,27 @@ For long descriptions, write content to a temp file first, then pass via stdin:
 cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary" -l{label} --no-input
 ```
 
-Include `-l{label}` for each label in `config.labels`. Omit if the array is empty.
+**Create issue under an epic:**
+
+`-P` sets the parent at creation. This is the normal path wherever a project
+requires tickets to live under an epic — parenting after the fact is a second
+round trip that gets skipped.
+
+```bash
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -P {epicKey} --no-input
+```
+
+`-P` is the flag that exposes a wrong `project.type`: on `next-gen` jira-cli sends
+the built-in `parent` field, on `classic` it sends the `epic.link` custom field.
+Get the type wrong and Jira rejects the field — see "On command failure".
+
+**Re-parent an existing issue:**
+
+```bash
+jira epic add {epicKey} {ticketId}
+```
 
 **Edit issue:**
-
-> **MANDATORY — both rules required to prevent session hangs:**
->
-> - Pass `--no-input`. Without it, jira-cli drops into an interactive editor or prompt and blocks the session.
-> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 
 ```bash
 jira issue edit {ticketId} -s "New summary" --no-input
@@ -358,11 +412,6 @@ even with `--no-input` (this hung a session for two hours on 2026-06-10).
 
 **Add comment:**
 
-> **MANDATORY — both rules required to prevent session hangs (this command has hung Claude sessions before):**
->
-> - Pass `--no-input`. Without it, jira-cli shows "Are you sure you want to submit?" and blocks indefinitely with nothing on stdin.
-> - Set Bash tool `timeout: 60000` (60s ceiling). A healthy comment write completes in well under a second; if it exceeds 60s, investigate — do NOT retry without `--no-input`.
-
 ```bash
 jira issue comment add {ticketId} "Comment text" --no-input
 ```
@@ -374,11 +423,6 @@ cat /tmp/comment.txt | jira issue comment add {ticketId} --no-input
 ```
 
 **Add worklog:**
-
-> **MANDATORY — both rules required to prevent session hangs:**
->
-> - Pass `--no-input`. Without it, jira-cli prompts for missing fields and blocks indefinitely with nothing on stdin.
-> - Set Bash tool `timeout: 60000` (60s ceiling). If it exceeds, investigate — do NOT retry without `--no-input`.
 
 ```bash
 jira issue worklog add {ticketId} "2h 30m" --no-input
@@ -400,3 +444,9 @@ For complete command documentation, see:
 Do not run the full detection battery on every invocation. Loading `config.json`
 is the gate: if it loads, proceed; if it's missing, route to setup. Run the
 detection battery only when a command fails or during setup verification.
+
+When a command does fail, separate a **missing prerequisite** from a **wrong
+config value**. Jira naming a field it will not accept (`Field 'customfield_...'
+cannot be set`) is the second kind: check `project.type` against the project's
+`style`, fix the config, and re-run the same jira command. Do not route it to
+setup, and do not fall back to raw REST calls.
