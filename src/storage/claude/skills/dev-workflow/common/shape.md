@@ -4,6 +4,8 @@ The cheapest gate there is: the structure of the change, drawn before a line of 
 
 Post it in chat. In `large`, stop and wait for the user. In `medium`, post and continue.
 
+In `large`, lead with two lines before the tree: what the change is, and what this structure is for. A tree of real paths is only readable by someone already holding the change ([failure modes](failure-modes.md) states the full four-part frame; a shape needs its first two parts).
+
 ## What to draw
 
 1. **A tree** of the files and modules the change involves, each marked `new`, `changed`, or `unchanged (context)`. Real paths.
