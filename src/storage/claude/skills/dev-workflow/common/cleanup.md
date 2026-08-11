@@ -7,6 +7,7 @@ Post-merge teardown for a completed ticket. Invoked when the user says `cleanup 
 - Never proceed unless `gh pr view` reports `MERGED`. If the PR is any other state, abort with the current state in the message.
 - Cleanup is idempotent. If a resource is already gone, continue without error.
 - `--force` removal of a worktree is allowed only after step 2 confirms `MERGED`. Never `--force` on an unmerged worktree.
+- Never run `git worktree remove` on the worktree the session is currently inside. The session is pinned to it: `cd` out, `git -C`, `--git-dir`, and `GIT_DIR`/`GIT_WORK_TREE` are all refused, so once the directory is gone the pin resolves to nothing and every later git command fails. `ExitWorktree` is the only exit. If that has already happened, `ExitWorktree` with `action: "remove"` still clears the pin and restores the session — it does not need the directory to exist.
 - Main-checkout gate: before the step 4 pull or any other write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop, show the user the dirty files, and wait for their decision. Never stash, commit, or discard main-checkout changes to unblock the cleanup.
 
 ## Process
@@ -37,20 +38,19 @@ Invoke the `jira` skill to transition the ticket to `transitions.done`. Trust th
 
 In order:
 
-1. If currently inside the worktree, call `ExitWorktree` with `discard_changes: true`. Section 2 (Verify merge) confirmed `MERGED` via `gh` — local git treats squash/rebase-merged branches as dirty even though the work is in main.
-2. Release anything the worktree left running. If `<path>/.claude-artifacts/teardown.sh` exists, run it:
+1. Release anything the worktree left running. If `<path>/.claude-artifacts/teardown.sh` exists, run it:
 
        bash <path>/.claude-artifacts/teardown.sh
 
-   Projects that provision per-worktree resources — containers, background servers, tunnels — record their own undo commands there as they start them. Run it before step 3; removing the worktree deletes the file.
+   Projects that provision per-worktree resources — containers, background servers, tunnels — record their own undo commands there as they start them. Run it first; the next step deletes the file along with the rest of `<worktree>/.claude-artifacts/`.
 
    If the file does not exist, skip without comment. Most projects provision nothing.
 
    Report failures but do not stop on them: a resource that is already gone is the expected case, not an error. Never substitute your own cleanup commands for the file's contents, and never widen the scope — no `docker system prune`, no `docker volume prune`, nothing that could reach another worktree or another project. Concurrent worktrees are running their own resources.
-3. Remove the worktree: `git worktree remove --force <path>`. Same reasoning as step 1. Artifacts under `<worktree>/.claude-artifacts/` are removed with the worktree.
-4. Delete the local branch: `git branch -D <branch>`. Use `-D`, not `-d` — squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic even though the work is in main. Section 2 (Verify merge) already confirmed `MERGED` via `gh`, which is the source of truth.
-5. Update the local base branch: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, check out the base branch and run `git pull --ff-only`; skip the pull if the branch has no upstream.
-6. Kill any shells still running
+2. Call `ExitWorktree` with `action: "remove"` and `discard_changes: true`. One move: it deletes the worktree and its branch and returns the session to the main checkout, so the pin never outlives the directory. `action` is required — a call without it is invalid. `discard_changes` is required because squash and rebase merges (GitHub's defaults) leave a branch "unmerged" by git's local heuristic; section 2 (Verify merge) confirmed `MERGED` via `gh`, which is the source of truth.
+3. Only if step 2 reports that no worktree session is active — a `cleanup <TICKET>` run in a session that never entered the worktree — remove them with git, which is unpinned and works normally here: `git worktree remove --force <path>`, then `git branch -D <branch>`. Use `-D`, not `-d`, for the reason in step 2.
+4. Update the local base branch: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, check out the base branch and run `git pull --ff-only`; skip the pull if the branch has no upstream.
+5. Kill any shells still running
 
 ### 5. Report
 

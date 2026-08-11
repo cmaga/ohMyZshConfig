@@ -59,7 +59,7 @@ Every finding you did not fix appears there with its disposition — an existing
 Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence.
 
 1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts.
-2. **Leave the worktree.** `ExitWorktree` with `discard_changes: true` — the work is in the base branch now — then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).
+2. **Leave the worktree.** `ExitWorktree` with `action: "keep"` — `action` is required, and `keep` leaves the worktree standing as evidence for steps 3 and 4; step 5 removes it. Exiting is what unpins the session: until it returns, git targets the worktree only and the main checkout is unreachable. Then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).
 3. **Deploy.** Read `<project-root>/.claude/skills/dev-workflow/config.json` ([template](../dependencies/templates/dev-workflow-config.json)) and run its `deploy`, then poll `healthCheck` until it passes. No file, or no `deploy` in it, means this project is deployed by hand: skip to step 5 and say so in the report.
 4. **Verify what is live** — step 1's behavior check again, run against `verifyTarget` instead of the local app. This is the only proof the merge did what the tests said.
 5. **[Cleanup](cleanup.md)** the ticket: it moves to done, the worktree and branch go away.

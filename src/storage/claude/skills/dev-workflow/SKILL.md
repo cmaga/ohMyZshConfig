@@ -88,6 +88,7 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
 3. **Enter the worktree.**
    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
+   - From here until `ExitWorktree`, the session is pinned to the worktree and git reaches nothing else: `cd` out of it, `git -C`, `--git-dir`, and `GIT_DIR`/`GIT_WORK_TREE` are refused, and so is any Bash command whose shape hides where it lands — `cd` chained with `&&`, command substitution, redirects. When one is refused, write the commands to a script under the scratchpad and run it by absolute path.
 
 ## Step 6: Per Tier Implementation
 
