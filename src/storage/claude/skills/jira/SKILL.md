@@ -19,6 +19,15 @@ Setup establishes four prerequisites — jira-cli installed, `config.json`,
 `project.type` matches the real project. Once setup completes these hold, so do
 **not** re-run the full battery on every invocation.
 
+> **How `jira` finds its instance:** a shim at `~/.local/bin/jira` walks up from
+> the current directory for `.claude/skills/jira/.jira-config.yml` and reads the
+> token from `~/.netrc`. It is an executable, not a shell function, so it applies
+> to every caller — an interactive shell, `bash -c`, a script, an agent tool call.
+> It **refuses** rather than falling back to jira-cli's default config: that
+> default points at whichever instance was set up last, so a fallback files
+> against the wrong tracker silently and unrecoverably. Set `JIRA_CONFIG_FILE` to
+> name a config deliberately.
+
 > **Path convention:** All file paths in this skill are relative to the **project root**
 > (the git repository root / current working directory where Claude is invoked).
 > They are NOT relative to the skill definition directory (`~/.claude/skills/jira/`).

@@ -1,0 +1,81 @@
+#!/bin/sh
+# Route each `jira` call to the right jira-cli config for the current project.
+#
+# An executable on PATH, not a shell function, and that is the whole point.
+# This was a zsh function, so anything that was not zsh -- `bash -c`, a shell
+# script, a subprocess, an agent's tool call -- never reached it and `jira`
+# resolved to the raw binary instead. The raw binary reads ~/.config/.jira/
+# .config.yml, which points at a DIFFERENT company's instance, so a bypass did
+# not fail: it silently filed against the wrong tracker. Two tickets were
+# created in the wrong project that way before anyone noticed, and they could
+# not be deleted afterwards.
+#
+# Lookup: walk $PWD ancestors for .claude/skills/jira/.jira-config.yml, read
+# `server:` from it, strip scheme and trailing slash, and find the ~/.netrc
+# `machine <host>` entry for the password.
+#
+# NO SILENT FALLBACK, by design. If no project config is found this refuses
+# rather than reaching for the default one -- a default that resolves to
+# whichever instance was configured last is precisely the failure above. To
+# use a config deliberately, set JIRA_CONFIG_FILE, which is honoured as-is.
+
+set -eu
+
+die() { printf 'jira: %s\n' "$1" >&2; exit 1; }
+
+# The real binary: the first `jira` on PATH that is not this shim. Resolved
+# rather than hardcoded so a Homebrew prefix change does not break it, and
+# compared by inode so a symlinked shim cannot invoke itself into a loop.
+self=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+real=""
+IFS=:
+for dir in $PATH; do
+    [ -n "$dir" ] || dir=.
+    candidate="$dir/jira"
+    [ -x "$candidate" ] || continue
+    resolved=$(cd "$(dirname "$candidate")" && pwd)/$(basename "$candidate")
+    [ "$resolved" = "$self" ] && continue
+    real=$candidate
+    break
+done
+unset IFS
+[ -n "$real" ] || die "no jira-cli binary found on PATH (brew install ankitpokhrel/jira-cli/jira-cli)"
+
+# An explicit JIRA_CONFIG_FILE outranks the search: the caller has said which
+# instance they mean, which is the one case where there is nothing to infer.
+if [ -n "${JIRA_CONFIG_FILE:-}" ]; then
+    exec "$real" "$@"
+fi
+
+cfg=""
+dir=$PWD
+while [ "$dir" != "/" ]; do
+    if [ -f "$dir/.claude/skills/jira/.jira-config.yml" ]; then
+        cfg="$dir/.claude/skills/jira/.jira-config.yml"
+        break
+    fi
+    dir=$(dirname "$dir")
+done
+[ -n "$cfg" ] || die "no .claude/skills/jira/.jira-config.yml in any ancestor of $PWD.
+    Refusing to fall back to the default config -- it points at whichever
+    instance was set up last, and filing there is silent and unrecoverable.
+    Add a project config, or set JIRA_CONFIG_FILE to name one explicitly."
+
+server=$(awk '/^[[:space:]]*server:/ {
+    sub(/^[[:space:]]*server:[[:space:]]*/, "");
+    gsub(/[[:space:]"'\'']/, "");
+    print; exit
+}' "$cfg")
+server=${server#https://}
+server=${server#http://}
+server=${server%/}
+[ -n "$server" ] || die "no server: field in $cfg"
+
+token=$(awk -v m="$server" '
+    $1 == "machine" && $2 == m { inblock=1; next }
+    inblock && $1 == "password" { print $2; exit }
+    $1 == "machine" && $2 != m { inblock=0 }
+' "$HOME/.netrc" 2>/dev/null || true)
+[ -n "$token" ] || die "no netrc entry for machine $server (add one to ~/.netrc)"
+
+JIRA_CONFIG_FILE=$cfg JIRA_API_TOKEN=$token exec "$real" "$@"

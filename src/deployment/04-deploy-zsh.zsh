@@ -15,14 +15,14 @@ STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 # Source paths
 ZSHRC_SOURCE="${STORAGE_DIR}/zsh/.zshrc"
 ALIASES_SOURCE="${STORAGE_DIR}/zsh/aliases.zsh"
-JIRA_WRAPPER_SOURCE="${STORAGE_DIR}/zsh/jira-wrapper.zsh"
+BIN_SOURCE="${STORAGE_DIR}/bin"
 SCRIPTS_SOURCE="${STORAGE_DIR}/scripts"
 PLUGINS_FILE="${PROJECT_ROOT}/plugins.txt"
 
 # Destination paths
 ZSHRC_DEST="$HOME/.zshrc"
 ALIASES_DEST="$OMZ_DIR/custom/aliases.zsh"
-JIRA_WRAPPER_DEST="$OMZ_DIR/custom/jira-wrapper.zsh"
+BIN_DEST="$HOME/.local/bin"
 SCRIPTS_DEST="$OMZ_DIR/custom/scripts"
 PLUGINS_DIR="$OMZ_DIR/custom/plugins"
 
@@ -239,7 +239,7 @@ deploy_configs() {
     # Check if source files exist
     [ -f "$ZSHRC_SOURCE" ] || error "Source .zshrc not found at $ZSHRC_SOURCE"
     [ -f "$ALIASES_SOURCE" ] || error "Source aliases.zsh not found at $ALIASES_SOURCE"
-    [ -f "$JIRA_WRAPPER_SOURCE" ] || error "Source jira-wrapper.zsh not found at $JIRA_WRAPPER_SOURCE"
+    [ -d "$BIN_SOURCE" ] || error "Source bin directory not found at $BIN_SOURCE"
 
     # Deploy .zshrc
     log "Deploying .zshrc from $ZSHRC_SOURCE to $ZSHRC_DEST"
@@ -249,9 +249,21 @@ deploy_configs() {
     log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
     cp "$ALIASES_SOURCE" "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
 
-    # Deploy jira-wrapper.zsh (omz auto-sources $OMZ_DIR/custom/*.zsh)
-    log "Deploying jira-wrapper.zsh from $JIRA_WRAPPER_SOURCE to $JIRA_WRAPPER_DEST"
-    cp "$JIRA_WRAPPER_SOURCE" "$JIRA_WRAPPER_DEST" || error "Failed to deploy jira-wrapper.zsh"
+    # Deploy bin/ shims. ~/.local/bin leads PATH, so these are reached from
+    # every shell -- which a zsh function is not. `jira` was a zsh function,
+    # and anything that was not zsh silently got the raw binary and its
+    # default config, pointing at a different company's Jira.
+    log "Deploying bin shims from $BIN_SOURCE to $BIN_DEST"
+    mkdir -p "$BIN_DEST" || error "Failed to create $BIN_DEST"
+    for shim in "$BIN_SOURCE"/*; do
+        [ -f "$shim" ] || continue
+        install -m 755 "$shim" "$BIN_DEST/$(basename "$shim")" \
+            || error "Failed to deploy $(basename "$shim")"
+    done
+    # Remove the superseded zsh function so there is one implementation. A
+    # stale copy would shadow the shim in interactive zsh only, which is the
+    # hardest kind of divergence to notice.
+    rm -f "$OMZ_DIR/custom/jira-wrapper.zsh"
 
     # Deploy utility scripts directory
     if [ -d "$SCRIPTS_SOURCE" ]; then
@@ -305,7 +317,7 @@ main() {
     info "Deployed files:"
     echo "  - .zshrc -> $ZSHRC_DEST"
     echo "  - aliases.zsh -> $ALIASES_DEST"
-    echo "  - jira-wrapper.zsh -> $JIRA_WRAPPER_DEST"
+    echo "  - bin shims -> $BIN_DEST"
     if [ -d "$SCRIPTS_SOURCE" ]; then
         info "Deployed scripts:"
         for script in "$SCRIPTS_SOURCE"/*; do
