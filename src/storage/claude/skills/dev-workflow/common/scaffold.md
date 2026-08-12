@@ -59,6 +59,8 @@ Under auto there is nobody to ask, and nobody reading the PR either: stand up a 
 
 ## Reviewing it (`large`)
 
+Under auto, nobody is opening an editor: call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
+
 Open the worktree in the user's editor first. They are about to read code, not a chat message:
 
     code "$(git rev-parse --show-toplevel)"

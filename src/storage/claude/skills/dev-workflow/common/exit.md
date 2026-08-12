@@ -7,7 +7,8 @@ Every tier mode ends here before returning control.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — see below. Skip on `small`, except under auto: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
 5. **Land it** — auto only, see [Landing under auto](#landing-under-auto).
-6. **Render the [exit report](../templates/exit-report.md)** as the final message.
+6. **Disarm the auto guard** — auto only: `~/.claude/hooks/auto-run-guard.sh end <TICKET>`. The report that follows is prose alone, so this is the last tool call of the run.
+7. **Render the [exit report](../templates/exit-report.md)** as the final message.
 
 ## Review gate
 
@@ -56,7 +57,7 @@ Every finding you did not fix appears there with its disposition — an existing
 
 ## Landing under auto
 
-Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence.
+Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence. Disarm the guard before handing back; a halt is a hand-back.
 
 1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts.
 2. **Leave the worktree.** `ExitWorktree` with `action: "keep"` — `action` is required, and `keep` leaves the worktree standing as evidence for steps 3 and 4; step 5 removes it. Exiting is what unpins the session: until it returns, git targets the worktree only and the main checkout is unreachable. Then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).

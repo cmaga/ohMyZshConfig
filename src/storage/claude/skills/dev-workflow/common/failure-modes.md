@@ -21,9 +21,9 @@ Nobody can supply the failures you missed unless they are holding the mechanism.
 
 Parts 1-3 are a short paragraph each, and they are repeated for every integration point. The repetition is the feature: the last plain-English contact was the user brief, several gates ago, and the design has gotten concrete since. A list that presumes the vocabulary of the scaffold lands on nothing.
 
-Then discuss, take their additions, and stop. Never open the next integration point unasked.
+Then discuss, take their additions, and stop. Never open the next integration point unasked. Under auto there is nobody to take additions from: record the list and open the next integration point yourself.
 
-In `medium`, produce the full list without stopping. Parts 1-3 are not needed there — nobody is being asked to react to it.
+In `medium`, produce the full list in the same message as the tester dispatch — a list posted on its own ends the turn. Parts 1-3 are not needed there — nobody is being asked to react to it.
 
 ## Where each one goes
 

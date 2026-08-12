@@ -15,6 +15,8 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
 
 `take <TICKET> auto`, or `go auto` at Step 4. Steps 1-4 are unchanged: the brief, the solution, and the tier are still agreed with the user. Their `go` is the last human input, and the run continues on its own through merge and deploy.
 
+The run is armed at Step 5 and disarmed the moment it hands back. While armed, a `Stop` hook refuses to let the turn end and says why. Every hand-back disarms first, a halt included — an armed marker nobody is working costs eight forced turns before the harness overrides it.
+
 Auto converts exactly these gates to decide-record-and-continue. Nothing else converts — a gate added to this skill later does not join the list by being a gate:
 
 - The [shape](common/shape.md) and [failure modes](common/failure-modes.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
@@ -85,7 +87,8 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
 2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
-3. **Enter the worktree.**
+3. **Arm the auto guard** — auto only, and only once the ticket key exists: `~/.claude/hooks/auto-run-guard.sh start <TICKET>`. Disarming is `end <TICKET>`.
+4. **Enter the worktree.**
    - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
    - From here until `ExitWorktree`, the session is pinned to the worktree and git reaches nothing else: `cd` out of it, `git -C`, `--git-dir`, and `GIT_DIR`/`GIT_WORK_TREE` are refused, and so is any Bash command whose shape hides where it lands — `cd` chained with `&&`, command substitution, redirects. When one is refused, write the commands to a script under the scratchpad and run it by absolute path.
@@ -104,9 +107,9 @@ Run the sequence for the confirmed tier. Each step links to its procedure file. 
 The full pipeline, unattended. The user approved the approach and sees the PR. The only thing that stops for them is an unresolved marker in the plan ([plan](common/plan.md)).
 
 1. [Scope](common/scope.md)
-2. [Shape](common/shape.md) — post and continue
-3. [Scaffold](common/scaffold.md) — post and continue
-4. [Failure modes](common/failure-modes.md) — produce the full list without stopping
+2. [Shape](common/shape.md) — post it with the next step's first tool call, in one message
+3. [Scaffold](common/scaffold.md) — same
+4. [Failure modes](common/failure-modes.md) — produce the full list and carry it straight into the tester
 5. [Tests first](common/tests-first.md)
 6. [Plan](common/plan.md) — every task card carries its own model, by [archetype](references/archetypes.md)
 7. [Dispatch workers](common/worker-dispatch.md)
@@ -137,6 +140,7 @@ The target behavior is settled as a spec, carved into independently deployable c
 
 ## Critical Rules
 
+- A message with no tool call in it ends the turn and hands back to the user. Every step that says post, report, or present means: ship that prose in the same message as the next step's first tool call. Prose on its own is a hand-back whatever it says, and only a gate that waits for the user is entitled to one.
 - Shared-contract blast radius: a change to something other code calls (endpoint, signature, schema, shared validator) is not done until you have listed every caller and confirmed each one's actual usage survives the new behavior. Derive the contract from all consumers, not the ticket's framing — it usually describes one surface, and a test written from it passes while hiding the break elsewhere.
 - Discovered-issue routing: a problem found mid-flow (scope, scaffold, planning, implementation, or review) is routed when found, never parked as prose.
   - Related and smaller than the task at hand → fold into this ticket. The default — the context is already loaded, so spending it now is cheaper than reacquiring it later.

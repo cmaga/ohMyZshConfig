@@ -2,7 +2,7 @@
 
 The cheapest gate there is: the structure of the change, drawn before a line of code exists. Correcting placement here costs seconds. Correcting it after the scaffold is written means rewriting the scaffold.
 
-Post it in chat. In `large`, stop and wait for the user. In `medium`, post and continue.
+Post it in chat. In `large`, stop and wait for the user — under auto, take your own answer and continue. In `medium`, post it in the same message as the scaffold's first tool call.
 
 In `large`, lead with two lines before the tree: what the change is, and what this structure is for. A tree of real paths is only readable by someone already holding the change ([failure modes](failure-modes.md) states the full four-part frame; a shape needs its first two parts).
 

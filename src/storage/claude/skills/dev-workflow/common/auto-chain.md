@@ -8,11 +8,14 @@ The spec is the approval artifact. It stands in for Step 3 and for Step 4's rese
 
 Your session drives and holds almost nothing: the spec path, the chunk order, each chunk's status and returned report. Keep it that way. Dispatching each chunk is what keeps your own context from compacting halfway through the spec.
 
-1. **Order the chunks** from their `Needs` lines into one deploy order. A cycle, or a `Needs` naming something the spec does not define, halts before anything is built.
-2. **Confirm every chunk has a ticket**, filing the missing ones via the `jira` skill. The spec's approval is the go-ahead for these — it is the one place auto files tickets.
-3. **Dispatch one agent per chunk**, in order, waiting for each before starting the next:
+1. **Arm the guard** for the whole chain — `~/.claude/hooks/auto-run-guard.sh start <TICKET>` with the spec's ticket. Disarming is the last tool call of the chain, immediately before the report below or before any halt. The chunk agents are subagents and are not covered by it; they fire `SubagentStop`, which this run must leave alone.
+2. **Order the chunks** from their `Needs` lines into one deploy order. A cycle, or a `Needs` naming something the spec does not define, halts before anything is built.
+3. **Confirm every chunk has a ticket**, filing the missing ones via the `jira` skill. The spec's approval is the go-ahead for these — it is the one place auto files tickets.
+4. **Dispatch one agent per chunk**, in order, waiting for each before starting the next:
 
    > Run the `dev-workflow` skill for `<TICKET>` in auto mode. It is chunk `C-N` of the approved spec at `<absolute path>`; that section is your contract. Skip Step 3 and Step 4's research and routing — the spec settled them. Do Step 4.2's codebase-fit pass against `C-N`, pick the tier, then run from Step 5 to a deployed ticket. Anything `C-N` marks `Awaiting` an earlier chunk's deployment is now answered by that deployment, which is live: read the answer off the running system and record it in the plan as `[ASSUMED: ...]` rather than stopping for the user. Return your exit report.
+
+   A chunk that comes back without a complete exit report ended its turn early rather than finishing — send it back in with `SendMessage` naming what is missing, and never read a partial return as a finished chunk.
 
    An agent that cannot load this skill or enter a worktree halts the chain — say so plainly. There is no fallback where you build the chunk yourself; that is the context the dispatch exists to avoid spending.
 
