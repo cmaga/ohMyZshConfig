@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the failure modes, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. Adding "auto" to a take runs everything after the user's approval unattended, through merge and deploy.
+description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the edge cases, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. Adding "auto" to a take runs everything after the user's approval unattended, through merge and deploy.
 ---
 
 # Dev Workflow
@@ -19,8 +19,8 @@ The run is armed at Step 5 and disarmed the moment it hands back. While armed, a
 
 Auto converts exactly these gates to decide-record-and-continue. Nothing else converts — a gate added to this skill later does not join the list by being a gate:
 
-- The [shape](common/shape.md) and [failure modes](common/failure-modes.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
-- A plan `[NEEDS CLARIFICATION]` — decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report
+- The [shape](common/shape.md) and [edge cases](common/edge-cases.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
+- A plan marker that is a strategic call — attended, that one escalates; under auto, decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report. Everything else in [plan](common/plan.md) already resolves without stopping
 - Ticket filing: auto files nothing. Every discovered issue lands in the exit report with its disposition
 - The merge, and the deploy behind it ([exit](common/exit.md))
 
@@ -44,12 +44,16 @@ The ultra ticket of a spec that is already written and approved runs every one o
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
-## Step 1: Understanding The Goal
+Every step below is labelled **internal** or **user-facing**, and the label is binding. An internal step produces no post and never waits — its output is working context for the steps after it, and pausing there hands back mid-thought on something the user was never asked to answer. Only a user-facing step is entitled to end a turn.
+
+## Step 1: Understanding The Goal — internal
 
 1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. If the ticket is blocked or parked, STOP immediately and notify the user. Otherwise, assign it to me and transition it to "In Progress" right away via the jira skill — move it as soon as work starts, not later. (A `new take` has no ticket yet; it gets assigned and transitioned when created in Step 5.) If this is a ticket for a spec, read the entire spec to understand how the chunk we are working on fits into the bigger picture.
 2. Restate intent with zero implementation nouns from the ticket. Force the mechanism out so it can't sneak in as a requirement. Every implementation noun the ticket carries is a hypothesis that must be beaten by code analysis/research before it is adopted.
 
-## Step 2: Verify context/ticket claims
+The restatement is working notes, not a post — Step 3 is the brief, and writing one here means writing it twice, the first time before you have verified anything. One line surfaces from this step: the ticket read, assigned, and moved to In Progress.
+
+## Step 2: Verify context/ticket claims — internal
 
 1. Investigate the following yourself — this is the case file the rest of the workflow consumes, and the threads feed each other, so keep the primary evidence in your own context and chase leads across threads as they appear. (A genuinely isolated read may still be delegated.)
    1. **Verify the problem exists in code** Do your own investigation.
@@ -58,11 +62,13 @@ The ultra ticket of a spec that is already written and approved runs every one o
    4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation. Before reporting, undo what Step 1 did: move the ticket back to its previous status and unassign it. Leaving it In Progress tells the board someone is working on it. Do not transition it to anything opinionated — Blocked or Won't Do is the user's call, made with the reason in hand.
 2. **Descends from a spec?** If the ticket names a chunk in one, that `C-N` section is the contract for this run — read it, plus the chunks its Needs line names, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
 
-## Step 3: User brief
+## Step 3: User brief — user-facing
 
 Once you understand the goal explain it to the user as simply as possible, no code, no jargon. There may be some back and forth discussing for understanding and steering. Do not proceed to the next step until the user says go. This is **crucial**: your framing of the intent and problem space must be approved by the user before proceeding. If a viable solution is discussed take it as an option to consider, not gospel.
 
-## Step 4: High Level Solution Research
+**One short paragraph, plus the one thing you need them to weigh in on.** That is the whole brief. Everything you learned in Step 2 is what makes the paragraph correct, not what goes in it — depth is on request, and they will ask. A brief long enough to skim is a brief that gets rubber-stamped, which is the one outcome this gate exists to prevent.
+
+## Step 4: High Level Solution Research — internal until Present (item 5)
 
 The goal at this point is to use your understanding of the problem and the business to come up with the best solution possible. Not a lazy hack. Something flawless that you can be proud of. To do this you need to gather multiple solutions and pick one.
 
@@ -79,11 +85,18 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
    | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the PR |
    | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
-5. **Present** - By this point a lot of time will have passed so summarize the high level goal/problem and the approach to solving the problem, again, as simply and concise as possible. With the recommended implementation tier at the end. For complex solutions with multiple pieces present each point one by one so each can be discussed and understood by the user one at a time. When they are ready to move from one to the next they will say "next". Once a consensus is reached on the solution space the user will say "go" and you can begin implementation. **Note** it is crucial that the user fully understand the problem and solution and is not just rubber stamping. You have access to the following tools to help the user with understanding as well as with your planning.
+5. **Present** — user-facing. By this point a lot of time will have passed and the user has been watching agents run, so the first thing they need is their bearings back. Three parts, in this order, and nothing else:
+   1. **Where we are.** `Research complete for <the problem, restated in one line>.` They should not have to scroll up to remember what this run is about.
+   2. **The approach.** What we are going to do, in plain language. No jargon, no file paths, no symbol names. Short.
+   3. **The tier**, with one clause on why.
+
+   Then stop and let them react. **Do not walk the solution point by point unless they ask** — a run that opens on "Point 1 of 5" drops them into a conversation they have lost the thread of, and the summary they needed never gets written. Point-by-point is what "more details" buys: only then break the approach into pieces, one per message, advancing on "next", and repeat the one-line problem restatement at the top of each so no piece lands contextless. Consensus reached, the user says "go" and implementation begins.
+
+   **Note** it is crucial that the user fully understand the problem and solution and is not just rubber stamping. Length is not understanding — a wall of text is skimmed, and a skimmed proposal is rubber-stamped. You have access to the following tools to help the user with understanding as well as with your planning.
    - UI artifact prototypes for ambiguous/large UI changes (mocked data)
    - Architectural Artifact visual diff diagrams for complex systems
 
-## Step 5: Workspace Setup
+## Step 5: Workspace Setup — internal
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
 2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
@@ -93,9 +106,21 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
    - From here until `ExitWorktree`, the session is pinned to the worktree and git reaches nothing else: `cd` out of it, `git -C`, `--git-dir`, and `GIT_DIR`/`GIT_WORK_TREE` are refused, and so is any Bash command whose shape hides where it lands — `cd` chained with `&&`, command substitution, redirects. When one is refused, write the commands to a script under the scratchpad and run it by absolute path.
 
-## Step 6: Per Tier Implementation
+## Step 6: Per Tier Implementation — internal except the waits listed below
 
 Run the sequence for the confirmed tier. Each step links to its procedure file. If task tracking is active, mark the Implementation item `in_progress` and add the tier's steps as their own tasks via `TaskCreate` tool.
+
+### What stops, attended
+
+The complete list, closed the same way auto's is. A step not named here does not wait, whatever its procedure file says about posting or presenting — and a step added to this skill later does not join the list by looking like a gate:
+
+- `large` — four waits, all of them before any code is written: [shape](common/shape.md), the [scaffold](common/scaffold.md) review, the [edge case](common/edge-cases.md) component list, then one wait per component.
+- `medium` — none.
+- `small` — none.
+
+**Once the last component is discussed, the run does not stop again until the PR is out.** Tests, plan, QA, dispatch, review and exit are internal. This is the point of the tier: the user spent their attention on the design, and spending it again on mechanics is what makes them stop reading.
+
+Only escalation breaks that, and escalation means one of three things: the review gate returns `escalate` or hits its five-round backstop, a worker escalation you cannot decide from the code, or a hard blocker. **A question whose answer is in the repo is not an escalation** — the user is needed for strategic and directional calls, not for anything you can check. Read the code and decide it.
 
 ### Small
 
@@ -108,8 +133,8 @@ The full pipeline, unattended. The user approved the approach and sees the PR. T
 
 1. [Scope](common/scope.md)
 2. [Shape](common/shape.md) — post it with the next step's first tool call, in one message
-3. [Scaffold](common/scaffold.md) — same
-4. [Failure modes](common/failure-modes.md) — produce the full list and carry it straight into the tester
+3. [Scaffold](common/scaffold.md) — same; commit it as soon as it is written
+4. [Edge cases](common/edge-cases.md) — produce the full list and carry it straight into the tester
 5. [Tests first](common/tests-first.md)
 6. [Plan](common/plan.md) — every task card carries its own model, by [archetype](references/archetypes.md)
 7. [Dispatch workers](common/worker-dispatch.md)
@@ -122,8 +147,8 @@ Medium, plus the user in the scaffolding code and two review gates on it.
 
 1. [Scope](common/scope.md)
 2. [Shape](common/shape.md) — **wait for the user**
-3. [Scaffold](common/scaffold.md) — **wait for the user**, then invoke `plan-review-agent` against the committed scaffold. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls to the user.
-4. [Failure modes](common/failure-modes.md) — one integration point at a time, **waiting between each**
+3. [Scaffold](common/scaffold.md) — left uncommitted and **wait for the user**; commit once their corrections are in, then invoke `plan-review-agent` against that commit. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls to the user.
+4. [Edge cases](common/edge-cases.md) — **wait** on the component list, then one component at a time, **waiting between each**. The last one is the last wait in the run.
 5. [Tests first](common/tests-first.md)
 6. [Plan](common/plan.md) — every task card carries its own model, by [archetype](references/archetypes.md)
 7. **QA planning.** Invoke `qa-planner-agent` with the draft plan and the user-facing surfaces it affects (UI, API, CLI). Append the agent's `## QA Plan` section to the plan verbatim.

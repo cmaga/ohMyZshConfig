@@ -4,7 +4,7 @@ The design, in a form the user can hold: real code, all structure, no behavior. 
 
 Written by the parent, not a subagent. The parent already read the system during scoping, and that context does not survive a handoff.
 
-Commit it before dispatching anyone. It survives into the PR.
+It survives into the PR. When it gets committed depends on the tier — see [Reviewing it](#reviewing-it-large).
 
 ## What to write
 
@@ -12,9 +12,36 @@ Commit it before dispatching anyone. It survives into the PR.
 - Function and method signatures — complete and real
 - Module placement: real files, real directories, real imports
 - Migration DDL, including the constraints and indexes that enforce something
-- Doc comments on the contracts. Everything true about an interface gets documented here, so no worker has to infer it later.
+- Doc comments on the contracts — see below
 
 A worker still comments what it discovers inside a body — a coupling nobody predicted, why an edge case is handled the way it is. Those are the comments only someone in the weeds can write. What the scaffold prevents is workers re-documenting the interface from below, where it drifts.
+
+## Doc comments
+
+Write the language's ordinary doc comment, exactly as it would be written if the code were finished — TSDoc, JSDoc, docstrings, whatever this repo already uses, at the density this repo already uses. Nothing about a scaffold makes its comments a different genre.
+
+- A one-line summary.
+- One short paragraph only when there is a rule the signature cannot carry.
+- Then the standard tags: params, return, throws.
+
+Plain language. No jargon, no restating the signature in prose, no essays on the design. A scaffold reads as code with comments, never as documentation with code in it — if the comments outweigh the declarations, they are wrong.
+
+    /**
+     * Finds the bank connection for an institution, creating one if it does not exist yet.
+     *
+     * Linking the same bank a second time returns the existing connection rather than
+     * making a new one, so a customer's transactions are never counted twice.
+     *
+     * @param institutionId - The bank's id, as given by Plaid.
+     * @param accessToken - Token for this link. Replaces the stored one when the connection already exists.
+     * @returns The connection, existing or newly created.
+     * @throws {InstitutionNotFoundError} If the institution id is not one we support.
+     */
+    async resolveItem(institutionId: string, accessToken: string): Promise<Item> {
+      throw new Error("unimplemented");
+    }
+
+A signature that already says everything gets no comment.
 
 Every function body is exactly the unimplemented throw, in the language's idiom (`throw new Error("unimplemented")`, `raise NotImplementedError`).
 
@@ -59,9 +86,11 @@ Under auto there is nobody to ask, and nobody reading the PR either: stand up a 
 
 ## Reviewing it (`large`)
 
-Under auto, nobody is opening an editor: call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
+Under auto, nobody is opening an editor: commit the scaffold, call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
 
-Open the worktree in the user's editor first. They are about to read code, not a chat message:
+**Leave the scaffold uncommitted until the user has read it.** A committed scaffold is invisible: the user opens the worktree onto a repo that looks untouched and has to undo the commit to find out what you wrote. Uncommitted, the editor's source control panel *is* the file list, each entry already a diff. Commit once their corrections are worked in — before the tester, and before anyone is dispatched.
+
+Open the worktree in the user's editor:
 
     code "$(git rev-parse --show-toplevel)"
 
@@ -76,4 +105,4 @@ Then say in two lines what the change is and what the scaffold covers, name the 
 3. What do the interfaces promise?
 4. What is conspicuously missing?
 
-In `medium`, skip the review — the scaffold still gets written and committed, because it is the contract that keeps worker files disjoint and frozen, and it is what the tests bind to.
+In `medium`, skip the review — commit the scaffold as soon as it is written, because it is the contract that keeps worker files disjoint and frozen, and it is what the tests bind to.

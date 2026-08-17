@@ -8,7 +8,7 @@ split scaffolded work across workers and to hold the contract they execute
 under. Never restate architecture, module boundaries, or interfaces here.
 
 Length is whatever the workers need — the user does not read this file; they
-saw the shape gate. Delete sections that do not apply. Empty headers are
+saw the shape step. Delete sections that do not apply. Empty headers are
 forbidden — they teach workers that fields are noise.
 
 Large tier: qa-planner-agent appends a ## QA Plan section after the parent
@@ -17,7 +17,9 @@ finishes drafting. Do not pre-create it.
 During planning, mark inline: [NEEDS CLARIFICATION: ...] for unresolved
 ambiguity, [DEFERRED: ... → ticket] for a related problem too large to fold
 in, [REPORT: ...] for an unrelated one. The parent greps for all three and
-resolves every hit with the user before dispatching workers.
+closes every hit before dispatching workers — a clarification settled from
+the code is rewritten as [ASSUMED: ...]; deferrals and reports ride to the
+exit report. Only a strategic call goes to the user.
 -->
 
 ## Objective

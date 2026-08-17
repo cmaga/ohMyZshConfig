@@ -1,11 +1,21 @@
-# Failure modes
+# Edge cases
 
 What can actually go wrong, listed against the scaffold before any code exists. The model supplies the obvious ones; the user supplies the ones a model would not think of. That second half is the entire point of the step, so the list exists to be reacted to, not to be complete.
+
+## Integration points
+
+An integration point is a distinct component of the system with its own surface — a REST endpoint, a background job, a user flow. Not a file, not a function.
+
+## Agreeing the list first (`large`)
+
+Before discussing any edge case, post the components you intend to walk — your own proposed cut, one line each — and wait. The user confirms it or re-cuts it. Getting this wrong wastes the whole step: a cut that follows files instead of surfaces produces edge cases nobody can react to.
+
+Then walk the agreed list one at a time.
 
 ## Shape
 
 - One bullet per edge case. Concise.
-- Grouped under the integration point it belongs to — an endpoint, a user flow, a whole user story.
+- Grouped under the integration point it belongs to.
 - No categories, no severity ranking, no taxonomy of any kind.
 
 ## Presenting one (`large`)
@@ -21,9 +31,11 @@ Nobody can supply the failures you missed unless they are holding the mechanism.
 
 Parts 1-3 are a short paragraph each, and they are repeated for every integration point. The repetition is the feature: the last plain-English contact was the user brief, several gates ago, and the design has gotten concrete since. A list that presumes the vocabulary of the scaffold lands on nothing.
 
-Then discuss, take their additions, and stop. Never open the next integration point unasked. Under auto there is nobody to take additions from: record the list and open the next integration point yourself.
+Then discuss, take their additions, and stop. Never open the next integration point unasked. Under auto there is nobody to take additions from: record the list and open the next integration point yourself — including the component list, which auto cuts itself.
 
-In `medium`, produce the full list in the same message as the tester dispatch — a list posted on its own ends the turn. Parts 1-3 are not needed there — nobody is being asked to react to it.
+The last integration point is the last thing in the run that waits for the user. Everything after it runs through to the PR ([Step 6](../SKILL.md#step-6-per-tier-implementation)).
+
+In `medium`, produce the full list in the same message as the tester dispatch — a list posted on its own ends the turn. There is no component-list gate and parts 1-3 are not needed; nobody is being asked to react to it.
 
 ## Where each one goes
 
@@ -33,6 +45,18 @@ In `medium`, produce the full list in the same message as the tester dispatch �
 Never send the second kind to the tester. The tester writes against the scaffold's surface, so an edge case it cannot observe there is one it will have to invent semantics for.
 
 ## Example
+
+The component list, first:
+
+> Three pieces to walk, in this order:
+>
+> - **The sync endpoint** — pulls transactions from the bank and writes them to us
+> - **The link flow** — what happens when a customer connects a bank
+> - **The webhook handler** — what happens when the bank tells us something changed
+>
+> Start with the sync endpoint, or re-cut this?
+
+Then one of them:
 
 > **What we're building.** One shared bank connection per institution, so a customer who links the same bank twice does not get their transactions counted twice.
 >
