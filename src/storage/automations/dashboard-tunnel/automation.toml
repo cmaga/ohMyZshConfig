@@ -1,6 +1,8 @@
 # Capture Station dashboard tunnel (always-on).
-# Keeps an SSM port-forward to the mdcap-capture box's localhost:8787 alive so
-# http://localhost:8787 is always reachable on this Mac. Not a scheduled job —
+# Keeps an SSM port-forward to the mdcap-capture box's localhost:8788 alive — the
+# nginx proxy, which forwards to the dashboard on the box's 8787 — so
+# http://localhost:8787 is always reachable on this Mac. The local port is
+# unchanged on purpose; only the box-side port moved. Not a scheduled job —
 # a KeepAlive daemon, so it declares `keepalive` instead of `cron`.
 # macOS only (launchd); the deploy script no-ops on Linux/Windows.
 # Only `enabled` and `keepalive` are read by the deploy script.
