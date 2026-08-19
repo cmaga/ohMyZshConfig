@@ -7,7 +7,7 @@ Every tier mode ends here before returning control.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — see below. Skip on `small`, except under auto: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
 5. **Land it** — auto only, see [Landing under auto](#landing-under-auto).
-6. **Disarm the auto guard** — auto only: `~/.claude/hooks/auto-run-guard.sh end <TICKET>`. The report that follows is prose alone, so this is the last tool call of the run.
+6. **Disarm the auto guard** — auto only, and never a chunk inside a chain: it armed none, and the chain disarms its own at the end. `~/.claude/hooks/auto-run-guard.sh end <TICKET>`. The report that follows is prose alone, so this is the last tool call of the run.
 7. **Render the [exit report](../templates/exit-report.md)** as the final message.
 
 ## Review gate
@@ -20,7 +20,7 @@ It returns JSON and never edits files. You do all the fixing.
 
 ### What to pass it
 
-- **First round** — what explains why the change was made (the spec if one exists, else the scaffold commit and the plan, else the ticket title and description), the ticket, and the base branch if it is not `main`.
+- **First round** — what explains why the change was made (the spec if one exists — a chunk run sends its own `C-N` section and the ones its Needs names, not the whole document — else the scaffold commit and the plan, else the ticket title and description), the ticket, and the base branch if it is not `main`.
 - **Later rounds** — continue the same agent with `SendMessage`. Send only what it does not already have: what you did about each finding, and which commits hold the fixes. Never re-send the diff, the plan, or its own findings.
 - **If that agent is gone** (compaction, a dead agent) — spawn a fresh one with the first-round inputs plus last round's findings and what was done about each, and note in the exit report that the reviewer restarted cold.
 
@@ -48,7 +48,7 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 ### When to stop
 
 - **`"gate": "pass"`** — done.
-- **`"gate": "escalate"`** — stop. The reviewer has decided the loop will not converge and its `reason` says what it thinks is wrong underneath. Take that to the user; do not open another round to prove it wrong.
+- **`"gate": "escalate"`** — stop. The reviewer has decided the loop will not converge and its `reason` says what it thinks is wrong underneath. Take that to the user — or, inside a chain, return it to the parent, which decides. Either way, do not open another round to prove it wrong.
 - **Five failed rounds** — a backstop for when the reviewer does not make that call itself. It should almost never fire; when it does, say so in the exit report.
 
 Whatever is still open goes in the exit report rather than into another round.
@@ -56,6 +56,10 @@ Whatever is still open goes in the exit report rather than into another round.
 Every finding you did not fix appears there with its disposition — an existing ticket's key, or a proposed one for the user's call. A PR comment is not a disposition: the PR closes and it is orphaned.
 
 ## Landing under auto
+
+**A chunk running inside an [auto chain](auto-chain.md) does not land.** It waits for the PR's required checks to go green — that obligation is the chain's definition of a finished chunk — then returns its exit report with the worktree still entered. The chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
+
+**A spec-descended auto run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** Attended, it stops at the PR like any other run and the user merges. It merges into the spec's integration branch, leaves the worktree, and goes straight to [cleanup](cleanup.md). Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
 
 Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence. Disarm the guard before handing back; a halt is a hand-back.
 

@@ -13,7 +13,7 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
 
 ## Auto mode
 
-`take <TICKET> auto`, or `go auto` at Step 4. Steps 1-4 are unchanged: the brief, the solution, and the tier are still agreed with the user. Their `go` is the last human input, and the run continues on its own through merge and deploy.
+`take <TICKET> auto`, or `go auto` at Step 4. Steps 1-4 are unchanged: the brief, the solution, and the tier are still agreed with the user. Their `go` is the last human input, and the run continues on its own through the merge — and the deploy behind it, where the run owns one. A run building a chunk of a spec does not; the spec deploys as one release.
 
 The run is armed at Step 5 and disarmed the moment it hands back. While armed, a `Stop` hook refuses to let the turn end and says why. Every hand-back disarms first, a halt included — an armed marker nobody is working costs eight forced turns before the harness overrides it.
 
@@ -21,16 +21,18 @@ Auto converts exactly these gates to decide-record-and-continue. Nothing else co
 
 - The [shape](common/shape.md) and [edge cases](common/edge-cases.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
 - A plan marker that is a strategic call — attended, that one escalates; under auto, decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report. Everything else in [plan](common/plan.md) already resolves without stopping
-- Ticket filing: auto files nothing. Every discovered issue lands in the exit report with its disposition
+- Ticket filing: auto files nothing. Every discovered issue lands in the exit report with its disposition. The single exception is a chain filing a chunk ticket the approved spec already calls for, per [auto chain](common/auto-chain.md)
 - The merge, and the deploy behind it ([exit](common/exit.md))
 
-These still stop the run, which hands back with what it has: the prerequisite gates below, a review gate returning `escalate` or hitting its five-round backstop, a required PR check going red, and a failed deploy.
+These still stop the run, which hands back with what it has: the prerequisite gates below, a review gate returning `escalate` or hitting its five-round backstop, a required PR check going red, and a failed deploy. Inside a chain none of them ends the turn: the chunk stops, returns, and the parent decides what it costs — which may be another round, or halting the chain at the end of that wave. See [auto chain](common/auto-chain.md#escalation).
 
-The ultra ticket of a spec that is already written and approved runs every one of its chunks end to end instead — see [auto chain](common/auto-chain.md). One chunk's own ticket taken in auto is an ordinary run of the flow above, not a chain.
+**Routing, decided the moment the ticket is read.** Run Prerequisites 2 and 3, then Step 1's first item — read the ticket, assign it, move it to In Progress. Prerequisite 1's status list and Prerequisite 4's gate both wait on this call: a chain tracks waves instead of steps, and runs the gate once in its own Driver. If it turns out to be an ultra ticket whose spec is already written and approved — its own PR merged — that is a chain: skip the rest of Steps 1-4 — the spec settled the intent and the solution when it was approved — and go to [auto chain](common/auto-chain.md), whose Driver is the whole run. Everything else runs the flow below, a single chunk's own ticket included — that one on Step 2.2's spec-descended path.
 
-## Prerequisites (before Step 1)
+## Prerequisites
 
-1. **Task tracking.** Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, that is a known Anthropic-side bug (the `tengu_vellum_ash` model gate strips the task tools on current models) — it is expected, already diagnosed, and not worth investigating or working around. Say so in one line, skip this item, mark step transitions in prose instead, and carry on with the workflow. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
+Run in the order the routing paragraph above sets: 2 and 3 first, then Step 1's first item, then 1 and 4 — which a chain instead handles in its own Driver, per that paragraph.
+
+1. **Task tracking.** Seeded once the routing call above is made. Load the tools first via `ToolSearch` with `select:TaskCreate,TaskUpdate` — both are deferred, so calling them cold fails. If they do not resolve, that is a known Anthropic-side bug (the `tengu_vellum_ash` model gate strips the task tools on current models) — it is expected, already diagnosed, and not worth investigating or working around. Say so in one line, skip this item, mark step transitions in prose instead, and carry on with the workflow. Otherwise call `TaskCreate` once per item for each of these exact items to seed the status list, then keep it current with `TaskUpdate` — mark the prior item `completed` and the next `in_progress` as you move through the flow. This list is the user's at-a-glance status surface, not narration; maintain it even when responses are otherwise terse.
    1. Understand the goal
    2. Verify context and ticket claims
    3. User brief
@@ -39,8 +41,9 @@ The ultra ticket of a spec that is already written and approved runs every one o
    6. Implementation
    7. Exit
 2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind the `kind: "skill"` levers this workflow uses — `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `MECHANICAL_WORKER_MODEL`, and `JUDGMENT_WORKER_MODEL` — to the all-caps form of their keys. A value of `inherit`, a key absent from the file, or a missing file all mean no pin: omit the `model` opt wherever that alias is used and let the agent's own default stand. Never invent a value for an absent key. If the values fall out of context later (long session, compaction), re-read the file rather than trusting memory.
-3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value.
-4. **Main-checkout gate.** In the main checkout, run `git status --porcelain`. If it prints anything, stop, show the user the dirty files, and wait for their decision — never stash, commit, or discard main-checkout changes to unblock yourself. When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream.
+3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value, until Step 5.4 rebinds it for a spec-descended run.
+4. **Main-checkout gate.** In the main checkout, run `git status --porcelain`. If it prints anything, stop, show the user the dirty files, and wait for their decision — never stash, commit, or discard main-checkout changes to unblock yourself. When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream. Leave the main checkout on the base branch — nothing later in the flow moves it, and a session that finds it elsewhere is looking at a bug.
+   - A chain cannot run this before Step 1, because reading the ticket is what identifies it as a chain. Its Driver runs the gate once for the whole chain instead, and the chunk agents skip it.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
@@ -48,7 +51,7 @@ Every step below is labelled **internal** or **user-facing**, and the label is b
 
 ## Step 1: Understanding The Goal — internal
 
-1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. If the ticket is blocked or parked, STOP immediately and notify the user. Otherwise, assign it to me and transition it to "In Progress" right away via the jira skill — move it as soon as work starts, not later. (A `new take` has no ticket yet; it gets assigned and transitioned when created in Step 5.) If this is a ticket for a spec, read the entire spec to understand how the chunk we are working on fits into the bigger picture.
+1. If a ticket was provided read it using the jira skill, else use the user provided context to begin to try to understand the problem. If the ticket is blocked or parked, STOP immediately and notify the user. Otherwise, assign it to me and transition it to "In Progress" right away via the jira skill — move it as soon as work starts, not later. (A `new take` has no ticket yet; it gets assigned and transitioned when created in Step 5.) If this is a ticket for a spec — its own or one chunk's — read the entire spec, so the part you hold is read against the whole.
 2. Restate intent with zero implementation nouns from the ticket. Force the mechanism out so it can't sneak in as a requirement. Every implementation noun the ticket carries is a hypothesis that must be beaten by code analysis/research before it is adopted.
 
 The restatement is working notes, not a post — Step 3 is the brief, and writing one here means writing it twice, the first time before you have verified anything. One line surfaces from this step: the ticket read, assigned, and moved to In Progress.
@@ -60,7 +63,10 @@ The restatement is working notes, not a post — Step 3 is the brief, and writin
    2. **Read relevant documentation** Be careful, documentation could be out of date.
    3. **Historical precedence** Are there related issues? Does the commit history help us understand where this bug came from? Is it recurring? Is this problem a symptom of something larger?
    4. **Is this needed?** What are the business-level implications? Is there a simpler solution? Dive deep. If you have reason to believe this should not be done, stop here and report back to the user with a simple high level explanation. Before reporting, undo what Step 1 did: move the ticket back to its previous status and unassign it. Leaving it In Progress tells the board someone is working on it. Do not transition it to anything opinionated — Blocked or Won't Do is the user's call, made with the reason in hand.
-2. **Descends from a spec?** If the ticket names a chunk in one, that `C-N` section is the contract for this run — read it, plus the chunks its Needs line names, before scoping. Anything it marks `Awaiting` a deployment that has since happened must be resolved with the user first: it was left open precisely because that deployment would answer it, and scoping around it rebuilds the shape the spec deferred.
+2. **Descends from a spec?** If the ticket names a chunk in one, that `C-N` section is the contract for this run — read it, plus the chunks its Needs line names, before scoping. The spec ticket's key comes from the chunk ticket's link to it; the spec's path is in that ticket. Note the run as spec-descended and carry that to Step 5, which resolves the branch. Investigate the integration branch rather than the main checkout — earlier chunks are merged there, and they merged on the remote. `git fetch origin`, then read it at the ref: `git log --stat origin/spec/<SPEC-TICKET>` for what moved, `git show origin/spec/<SPEC-TICKET>:<path>` for a file. No worktree exists this early and the main checkout does not move.
+   - **Its brief and its solution are already agreed.** The spec is the approval artifact, so Step 2.1's "is this needed" question is settled — its other three investigations still run, since the spec never looked at the code. Step 3 and Step 4's research do not re-open the brief either. The tier is the one thing still open — the spec settled what to build, never how big the run is. Do Step 4.2's codebase-fit pass against `C-N`, pick the tier, and go on to Step 5.
+   - **Post-deploy** items were ticketed when the spec was approved. Its key is among the ultra ticket's linked issues — cite it and move on; if the spec left one unfiled, it rides to the exit report as a proposal under the discovered-issue rule below — never file one to clear it.
+   - An **Open question** surviving into a chunk ticket is a spec defect: it was supposed to be closed before the ticket was filed, and by its own definition no amount of code reading answers it. Raise it before Step 4.2. Attended, that is the only thing Step 3 runs for on a chunk ticket — ask that one question and nothing else, since the brief itself is not up for discussion, and their answer is the go. In a chain the parent screens for these before dispatch, so one that reaches you slipped through: never ask — return it, and the parent halts with the question in its report.
 
 ## Step 3: User brief — user-facing
 
@@ -85,6 +91,7 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
    | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the PR |
    | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
+   Under `auto` nobody is watching, so read the last column as what a user *would* need to see: `large` is where new structure or a moved boundary appears, whether or not anyone reviews the scaffold.
 5. **Present** — user-facing. By this point a lot of time will have passed and the user has been watching agents run, so the first thing they need is their bearings back. Three parts, in this order, and nothing else:
    1. **Where we are.** `Research complete for <the problem, restated in one line>.` They should not have to scroll up to remember what this run is about.
    2. **The approach.** What we are going to do, in plain language. No jargon, no file paths, no symbol names. Short.
@@ -100,9 +107,16 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
 2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
-3. **Arm the auto guard** — auto only, and only once the ticket key exists: `~/.claude/hooks/auto-run-guard.sh start <TICKET>`. Disarming is `end <TICKET>`.
-4. **Enter the worktree.**
-   - Call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
+3. **Arm the auto guard** — auto only, and only once the ticket key exists: `~/.claude/hooks/auto-run-guard.sh start <TICKET>`. Disarming is `end <TICKET>`. Skip this entirely inside a chain: the chain armed one guard for the whole run, and a subagent fires `SubagentStop`, which the guard never reads — arming here writes a marker nothing will ever clear.
+4. **Spec-descended runs only — resolve the base branch.** A chunk of a spec builds against that spec's integration branch, `spec/<SPEC-TICKET>`; cut it from the project base and push it if it does not exist yet. From here on, "the base branch" means that branch for the PR target and any rebase. Fetch before branching from it: earlier chunks merged into it on the remote, and a stale local ref builds on a branch missing their work. The main checkout stays on the project base, so Prerequisite 4 is unaffected.
+5. **Enter the worktree.**
+   - **Ordinary runs:** call `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
+   - **Spec-descended runs:** `EnterWorktree` has no base-ref parameter — given a `name` it branches from the project's default branch, which is the one branch a chunk must not build on. Create the worktree yourself and enter it by path instead:
+
+         git fetch origin
+         git worktree add -b <TICKET>-<tier> "$(git rev-parse --show-toplevel)/.claude/worktrees/<TICKET>-<tier>" origin/spec/<SPEC-TICKET>
+
+     then call `EnterWorktree` with that `path`. It must live under `.claude/worktrees/` or the entry is refused. `ExitWorktree` will not remove a worktree entered this way — only `keep` works, and [cleanup](common/cleanup.md) takes it down with git.
    - Verify with `git rev-parse --show-toplevel` that you're inside the worktree. Then proceed with the tier sequence for the implementation.
    - From here until `ExitWorktree`, the session is pinned to the worktree and git reaches nothing else: `cd` out of it, `git -C`, `--git-dir`, and `GIT_DIR`/`GIT_WORK_TREE` are refused, and so is any Bash command whose shape hides where it lands — `cd` chained with `&&`, command substitution, redirects. When one is refused, write the commands to a script under the scratchpad and run it by absolute path.
 
@@ -158,10 +172,10 @@ Medium, plus the user in the scaffolding code and two review gates on it.
 
 ### Ultra
 
-The target behavior is settled as a spec, carved into independently deployable chunks, before anything is coded. This tier ends in tickets, not a PR of code.
+The target behavior is settled as a spec, carved into independently buildable chunks, before anything is coded. This tier ends in tickets, not a PR of code.
 
 1. [Write the spec](common/ultra.md)
-2. Each chunk's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR, ending at [Exit](common/exit.md). Chunks run in the spec's deploy order, walked by the user or by an [auto chain](common/auto-chain.md).
+2. Each chunk's ticket re-enters this workflow at Step 1 at its own tier — its own worktree, its own PR into the spec's integration branch, ending at [Exit](common/exit.md). The spec's waves say which chunks are built at the same time, walked by the user or by an [auto chain](common/auto-chain.md). A chain finishes the spec itself ([hand-back](common/auto-chain.md#hand-back)). Walked by hand there is no chain to do it, so the run that finishes the spec's last chunk says so in its exit report — read the ultra ticket's linked chunk tickets to know that you are it, since nothing else tells you and names what closing the spec takes: a PR from the integration branch into the project's own base branch, and a worktree on the integration branch to run it from. Do both when the user asks — never unasked, since the spec reaching the base branch is their call.
 
 ## Critical Rules
 
@@ -173,7 +187,7 @@ The target behavior is settled as a spec, carved into independently deployable c
   - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every candidate that looks close. Search the component and file names too — the same defect gets described three different ways. An existing ticket ends the matter: cite its key, say it is already covered, propose nothing.
   - **File only after the user says to.** Never file to close out a review finding, to clear your own list, or because a subagent recommended it. An unfiled item lives in the exit report until they answer, which is a disposition.
   - Invariant: anything not folded in leaves as a ticket key or a line in the exit report the user reads. A paragraph in a plan or PR description is not an owner.
-- Never automatically merge a PR. The user merges or asks you to merge. Auto mode is that ask.
+- Never automatically merge a PR into the base branch. The user merges or asks you to merge; auto mode is that ask. A chunk PR into a spec's integration branch is the one exception, and only ever for whoever owns the chunk's ticket: a chain merges its chunks, a lone auto run on a chunk ticket merges its own, and a chunk dispatched inside a chain merges nothing — its parent does. The user's merge is the single one at the end that takes the whole spec to the base branch.
 - Browser tool split: the Playwright MCP browser is only for verifying the change under test (the Exit verify step). Use Claude's built-in Chrome for every other browsing task across the flow — reading the ticket, research, docs, dashboards.
 - Fan-out sizing: fan out only when one agent cannot hold the work. Estimate what a single agent would have to read — if it fits comfortably in context (~200k), run one agent. Every extra agent re-pays the shared background in full, and parallelism only buys wall-clock.
   - When it genuinely does not fit, split along what the agents do *not* share: the cheapest split duplicates the least reading, not the one with the most agents.
