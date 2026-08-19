@@ -1,0 +1,169 @@
+<!--
+Output format for the ultra tier. The process that fills this in is
+common/ultra.md.
+
+Written to the project's drafts directory (`docs/drafts/` unless the project
+uses another) as `<name>-spec.mockup.html` — the double extension is what opens it in a live visual preview.
+
+One document, three parts, in the order they get produced: the strategy as
+prose, the system map as a diagram, then one section per component carrying
+its contract. The map is what the user thinks with; the contracts fall out of
+it.
+
+A component is a named unit of work one ticket delivers, built and merged on
+its own by one manager. Its section must let a reader answer four things:
+what it owns, what it does when it is live, which components must be merged
+before it can be built, and how it is proven. A component does not have to be
+user-facing: shared infrastructure other components ride on is a component in
+its own right — the means of a strategy, not a strategy.
+
+**Waves are derived, never written.** Nothing here groups components into
+phases. Each section declares its edges in `data-needs`, and the chain
+topologically sorts them at dispatch to decide what builds together. A cycle
+in those edges is the one error that breaks the build: it has no valid order,
+so nothing can start. Every edge is throughput given away — declare one only
+where the design truly forces it.
+
+The `id` on each `<section>` is the lookup surface: dev-workflow reads a
+ticket's component at Step 2 by finding `<section id="C-N">`, and that
+section is the contract for the run. Keep `id`, `data-needs`, `class="owns"`,
+and the Tests block exactly as written here. Everything else is open.
+
+An id is permanent once assigned: a component added later takes the next free
+number wherever it sits, and nothing already written is renumbered around it
+— a ticket names its component by id, and renumbering would silently repoint
+it.
+
+The diagram is inline SVG because a `.mockup.html` preview is plain HTML and
+CSS with no script runtime — a mermaid block would show as raw text. Lay the
+nodes out by dependency depth: everything with no edges on the top row, and
+each component one row below the deepest thing it needs. That is the same
+layering the chain derives waves from, so the picture and the build order
+cannot disagree.
+-->
+<title><SPEC NAME> — spec</title>
+
+<style>
+  body { max-width: 62rem; margin: 0 auto; padding: 2rem 1.25rem; line-height: 1.6;
+         font-family: system-ui, -apple-system, sans-serif; }
+  section.component { border-top: 1px solid currentColor; margin-top: 2.5rem; padding-top: 1rem; }
+  .owns { font-weight: 600; }
+  .needs { font-family: ui-monospace, monospace; font-size: .9em; opacity: .8; }
+  .open-question, .post-deploy { border-left: 3px solid currentColor; padding-left: .9rem; margin: 1.2rem 0; }
+  #map svg { display: block; margin: 1rem 0; }
+</style>
+
+<h1><SPEC NAME></h1>
+
+<section id="context">
+  <h2>Context</h2>
+  <!--
+  Why this spec exists, and why now. If it follows a failure, what the failure
+  was and what it cost, in the plainest terms available — lessons learned
+  belong here as prose, not as a numbered rule list. A reader who has never
+  seen the system should finish this section knowing what is being built.
+  -->
+</section>
+
+<section id="map">
+  <h2>System map</h2>
+  <!--
+  The components and the edges between them. An arrow runs from a component to
+  each one that needs it, so the graph flows downward in the order things get
+  built, and reading it top to bottom is the build narrative — the same thing
+  the user walks when they test the branch before merging.
+
+  Every node here has a section below, and every name in a section's
+  `data-needs` is one arrow into it — including a need another path already
+  implies, so the drawing and the edges can be checked against each other
+  mechanically. When one changes, change the other in the same edit.
+  -->
+  <svg viewBox="0 0 520 240" width="100%" style="max-width:520px" fill="none" stroke="currentColor">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/>
+      </marker>
+    </defs>
+
+    <!-- row 0: no edges -->
+    <rect x="20" y="20" width="180" height="52" rx="6"/>
+    <text x="110" y="51" text-anchor="middle" fill="currentColor" stroke="none">C-1: name</text>
+
+    <rect x="240" y="20" width="180" height="52" rx="6"/>
+    <text x="330" y="51" text-anchor="middle" fill="currentColor" stroke="none">C-2: name</text>
+
+    <!-- row 1: needs C-1 and C-2 -->
+    <rect x="130" y="160" width="180" height="52" rx="6"/>
+    <text x="220" y="191" text-anchor="middle" fill="currentColor" stroke="none">C-3: name</text>
+
+    <path d="M110,72 L200,160" marker-end="url(#a)"/>
+    <path d="M330,72 L240,160" marker-end="url(#a)"/>
+  </svg>
+</section>
+
+<section id="C-1" class="component" data-needs="">
+  <h2>C-1: <name></h2>
+
+  <p class="owns">Owns: <the one thing this component is sole author of></p>
+  <p class="needs">Needs: <C-x, C-y | none></p>
+
+  <!--
+  **Owns** is what keeps two components off the same ground. Name the
+  responsibility this component is the sole author of, in the system's terms
+  rather than the code's. Two components that build at the same time must own
+  disjoint things — if you cannot say what this one owns without naming
+  something another owns, they are one component, or one needs the other.
+  Overlap is never fully avoidable, but two components answering to different
+  responsibilities rarely touch the same ground, and two inside one
+  responsibility almost always do.
+
+  **Needs** names the components this one consumes, and must match
+  `data-needs` on the section tag. The why — what it cannot do until they are
+  merged — goes in the body. Managers building at the same time cannot see
+  each other's work, so an edge you did not declare is a build that fails at
+  integration.
+
+  Free-form body, end to end: a reader should be able to follow the component
+  the way the live system executes it. Where it bets on a premise about the
+  world, state in prose the observation that would prove the premise wrong.
+
+  Never how it is built. Naming a file, class, function, library, or ticket
+  key is the obvious version, but the line is wider than code nouns: a storage
+  shape, a data structure, an ordering, a concurrency model usually smuggle it
+  in too. None of those words is banned on sight — the test is the rule, and
+  the list is only where it most often trips: could two competent teams build
+  your sentence differently and both be right? If it rules one of them out
+  without a behavioral reason, it belongs in the run's plan, not here.
+
+  One exception: a named established mechanism the spec deliberately adopts —
+  the named equivalent that ultra's precedent research hunts down — is a
+  decision, not an implementation detail. Name it and say what it buys;
+  inheriting its literature is the whole point of naming it.
+
+  Unresolved items sit inline where they belong, in the markup below. The task
+  tracker is the index — no rollup section here.
+  -->
+
+  <p class="open-question"><strong>Open question:</strong> undecided, needs the user's call.</p>
+
+  <p class="post-deploy"><strong>Post-deploy:</strong> cannot be decided until the spec is live and
+  real traffic answers it. Ships as a follow-up ticket, never as a blocker.</p>
+
+  <section class="tests">
+    <h3>Tests</h3>
+    <!--
+    Last thing in every component: how it is exercised end to end, then one
+    named scenario per edge case. The body's rule holds here too — a scenario
+    says what is observed, never how the code makes it so. Surviving findings
+    from the adversarial gate land here. It is the longest part by far, and
+    every scenario carries its reasoning — a named bullet with a sentence
+    behind it, never a bare list of labels.
+    -->
+  </section>
+</section>
+
+<!--
+Repeat the component section for as many components as the design has. Order
+them the way the system reads, not the way they build — the edges carry the
+build order, and the map shows it.
+-->

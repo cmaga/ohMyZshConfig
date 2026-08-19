@@ -14,9 +14,9 @@ End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 
 An auto run already merged, deployed, and cleaned up. Drop the cleanup line, say where the change is now live, and give the merged PR URL.
 
-The run that finishes a hand-walked spec's **last** chunk says the spec is complete on its integration branch once this PR merges, and names what closing it takes — a PR into the project's base branch and a worktree on the integration branch to run it from — as the user's call to make, not a thing already done.
+The run that finishes a hand-walked spec's **last** component says the spec is complete on its integration branch once this PR merges, and names what closing it takes — a PR into the project's base branch and a worktree on the integration branch to run it from — as the user's call to make, not a thing already done.
 
-A chunk inside an [auto chain](../common/auto-chain.md) has merged nothing and deployed nothing — its reader is the chain parent, not the user. Drop the cleanup line, and add the one thing the parent cannot reconstruct: **how to exercise this chunk by hand**, in steps someone can replay on the integration branch. The chain collapses those into the list the user tests before merging, and nobody else will be alive to write it.
+A component inside an [auto chain](../common/auto-chain.md) has merged nothing and deployed nothing — its reader is the chain parent, not the user. Drop the cleanup line, and add the one thing the parent cannot reconstruct: **how to exercise this component by hand**, in steps someone can replay on the integration branch. The chain collapses those into the list the user tests before merging, and nobody else will be alive to write it.
 
 ### Example
 
