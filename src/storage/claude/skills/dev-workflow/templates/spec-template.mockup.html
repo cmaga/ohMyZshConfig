@@ -17,6 +17,15 @@ before it can be built, and how it is proven. A component does not have to be
 user-facing: shared infrastructure other components ride on is a component in
 its own right — the means of a strategy, not a strategy.
 
+**Components are one flat level.** Group them in the narrative however the
+design reads — a heading and a paragraph saying what the group is for — but a
+grouping never gets a component's markup: no `id`, no `data-needs`, no `Needs`
+line. A group that declares edges is a second node over work already in the
+graph, and the chain dispatches the group and its members both. Every id is
+`C-` and one plain number: no prefix for foundation work, no decimal for a
+member of a group. Buildable and mergeable alone means a component with its own
+number wherever it sits in the narrative; anything else is not a component.
+
 **Waves are derived, never written.** Nothing here groups components into
 phases. Each section declares its edges in `data-needs`, and the chain
 topologically sorts them at dispatch to decide what builds together. A cycle
@@ -24,10 +33,21 @@ in those edges is the one error that breaks the build: it has no valid order,
 so nothing can start. Every edge is throughput given away — declare one only
 where the design truly forces it.
 
-The `id` on each `<section>` is the lookup surface: dev-workflow reads a
-ticket's component at Step 2 by finding `<section id="C-N">`, and that
-section is the contract for the run. Keep `id`, `data-needs`, `class="owns"`,
-and the Tests block exactly as written here. Everything else is open.
+**A component that lands everywhere declares it.** `data-exclusive="true"` on a
+section makes it a wave of one: everything else waits, and nothing builds
+beside it. It is for work that is physically everywhere rather than
+behaviorally downstream — a move, a rename, a whole-tree reshaping.
+`data-needs` cannot express that, because an edge says what a component
+consumes and this one consumes nothing; it simply lands underneath any sibling
+still building. Declare it only where a sibling would have its files moved out
+from under it, since it costs the whole wave.
+
+The `id` on each component `<section>` is the lookup surface: dev-workflow
+reads a ticket's component at Step 2 by finding `<section id="C-N">`, and that
+section is the contract for the run. `class="component"` is what makes a
+section a node in the graph the chain sorts, so it is load-bearing rather than
+styling. Keep it, `id`, `data-needs`, `class="owns"`, and the Tests block
+exactly as written here. Everything else is open.
 
 An id is permanent once assigned: a component added later takes the next free
 number wherever it sits, and nothing already written is renumbered around it
@@ -121,7 +141,9 @@ cannot disagree.
   `data-needs` on the section tag. The why — what it cannot do until they are
   merged — goes in the body. Managers building at the same time cannot see
   each other's work, so an edge you did not declare is a build that fails at
-  integration.
+  integration. A component that lands everywhere rather than consuming anything
+  declares `data-exclusive="true"` on the tag instead of inventing edges to hold
+  its siblings off.
 
   Free-form body, end to end: a reader should be able to follow the component
   the way the live system executes it. Where it bets on a premise about the

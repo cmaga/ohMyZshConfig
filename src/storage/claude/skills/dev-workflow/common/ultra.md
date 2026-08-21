@@ -29,10 +29,12 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
 7. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then check the template's wiring:
    - Every component is buildable alone and closes with its Tests.
    - Every `Needs` matches its section's `data-needs`, names a component the spec defines, and the edges hold no cycle.
+   - A grouping carries no component markup: no `id`, no `data-needs`, no `Needs` line.
    - Every `Owns` names something no other component claims.
    - The map's nodes and arrows match the sections and their edges.
    - No component body describes how a thing is built, beyond a named mechanism it deliberately adopts and says what it buys.
    - No component carries an edge it does not need. For each one, name what it cannot do until that component is merged, and drop the edge when you cannot — this is where a spec silently over-serializes.
+   - Any component whose work lands across the tree rather than downstream of a sibling carries `data-exclusive="true"`, and no other component does.
 
 8. **Adversarial review.** Edge cases are where systems die, and planning generates assumptions faster than data retires them. This step asks what can actually happen at each strategic piece, and whether the spec accounts for it.
    - **Attack lenses** — one agent per lens, each playing an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec as written does not stop it, and the smallest change that closes it.
