@@ -57,7 +57,7 @@ Every finding you did not fix appears there with its disposition — an existing
 
 ## Landing under auto
 
-**A component running inside an [auto chain](auto-chain.md) does not land.** It waits for the PR's required checks to go green — that obligation is the chain's definition of a finished component — then returns its exit report with the worktree still entered. The chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
+**A component running inside a [chain](auto-chain.md) does not land.** It waits for the PR's required checks to go green — that obligation is the chain's definition of a finished component — then returns its exit report with the worktree still entered. The chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
 
 **A spec-descended auto run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** Attended, it stops at the PR like any other run and the user merges. It merges into the spec's integration branch, leaves the worktree, and goes straight to [cleanup](cleanup.md). Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
 
