@@ -51,7 +51,7 @@ In order:
 3. Fall back to git — `git worktree remove --force <path>`, then `git branch -D <branch>`, using `-D` for the reason in step 2 — in either case where step 2 could not do the job:
    - No worktree session was active, so `ExitWorktree` was a no-op. This is a `cleanup <TICKET>` run in a session that never entered the worktree.
    - The worktree was entered by `path` rather than created by `name`, which is how every spec-descended run enters one. `ExitWorktree` refuses to remove those; call it with `action: "keep"` to unpin the session, then remove them here.
-4. Update the local base branch: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, check out the base branch and run `git pull --ff-only`; skip the pull if the branch has no upstream. A spec-descended ticket's base branch is the spec's integration branch — update that one in place, `git fetch origin` then `git branch -f <branch> origin/<branch>`, so the main checkout stays on the project base and the branch stays free to be checked out in a worktree.
+4. Update the local base branch: in the main checkout, run `git status --porcelain`. If it prints anything, stop (main-checkout gate in Critical Rules). When it prints nothing, check out the base branch and run `git pull --ff-only`; skip the pull if the branch has no upstream. A spec-descended ticket's base branch is the spec's integration branch, which is local and has no upstream to pull from — leave it exactly as it is, and leave the main checkout on the project base.
 5. Kill any shells still running
 
 ### 5. Report

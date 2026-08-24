@@ -3,7 +3,7 @@
 Every tier mode ends here before returning control.
 
 1. **Verify behavior** by driving the change in the real app, via the `run` skill. If the change alters a shared interface, exercise each consumer flow, not just the changed surface. Skip only if the change has no runtime surface (pure refactor, types/docs, internal library); state the skip reason in chat. If verification needs a browser and the project has no Playwright MCP config — or a drive fails with Chromium's "browser is already in use" profile lock — run the `playwright-mcp-setup` skill first, then continue.
-2. **Create the PR** via the `git-provider` skill.
+2. **Create the PR** via the `git-provider` skill. Skip it on a spec-descended run: that branch is local and unpushed, and the whole spec goes up as one pull request when it is complete.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — see below. Skip on `small`, except under auto: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
 5. **Land it** — auto only, see [Landing under auto](#landing-under-auto).
@@ -41,7 +41,7 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 
 - **Read the whole path before editing.** A finding names a symptom and a line; the defect is often neither. Locate it yourself, then read every function on that path end to end — the writer sitting below the reader you are adding, the second consumer of the condition you are narrowing, every caller that reaches the early return you are inserting. Edit from that reading, never by pattern-replacing text you have not read.
 - Apply the fix yourself. Never dispatch a worker for one — the reading that prevents the next regression does not survive the handoff.
-- **Small enough for this ticket** — apply it, re-run the tests, commit as `address code review findings`, push.
+- **Small enough for this ticket** — apply it, re-run the tests, commit as `address code review findings`, and push unless the run is spec-descended, whose branch is local.
 - **Too big** — carry it into the exit report as a proposed ticket, searching Jira first per the discovered-issue rule in [SKILL.md](../SKILL.md). A proposal counts as handled for the gate; do not file it to unblock yourself.
 - A recurring finding lists example locations only. Sweep the diff for the rest when you apply the fix.
 
@@ -57,13 +57,13 @@ Every finding you did not fix appears there with its disposition — an existing
 
 ## Landing under auto
 
-**A component running inside a [chain](auto-chain.md) does not land.** It waits for the PR's required checks to go green — that obligation is the chain's definition of a finished component — then returns its exit report with the worktree still entered. The chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
+**A component running inside a [chain](auto-chain.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
 
-**A spec-descended auto run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** Attended, it stops at the PR like any other run and the user merges. It merges into the spec's integration branch, leaves the worktree, and goes straight to [cleanup](cleanup.md). Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
+**A spec-descended auto run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** It merges **locally** into the spec's integration branch — no push and no pull request, since the whole spec goes up as one PR when it is complete — then leaves the worktree and goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge. Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
 
 Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence. Disarm the guard before handing back; a halt is a hand-back.
 
-1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts.
+1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts. A spec-descended run merges its own branch into the integration branch with git instead — there is no PR and no checks to wait on, and the suite it already ran is the bar.
 2. **Leave the worktree.** `ExitWorktree` with `action: "keep"` — `action` is required, and `keep` leaves the worktree standing as evidence for steps 3 and 4; step 5 removes it. Exiting is what unpins the session: until it returns, git targets the worktree only and the main checkout is unreachable. Then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).
 3. **Deploy.** Read `<project-root>/.claude/skills/dev-workflow/config.json` ([template](../dependencies/templates/dev-workflow-config.json)) and run its `deploy`, then poll `healthCheck` until it passes. No file, or no `deploy` in it, means this project is deployed by hand: skip to step 5 and say so in the report.
 4. **Verify what is live** — step 1's behavior check again, run against `verifyTarget` instead of the local app. This is the only proof the merge did what the tests said.
