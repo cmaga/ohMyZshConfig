@@ -6,7 +6,7 @@ Send it verbatim. What is in angle brackets is yours to fill.
 
 ---
 
-Run the `dev-workflow` skill for `<COMPONENT-TICKET>` in auto mode. You are the **manager** for component `<C-N>` of the approved spec at `<absolute path>`; that section is your contract.
+Run the `dev-workflow` skill for `<COMPONENT-TICKET>`, unattended — no goal of your own to arm and no user to stop for, so none of its waits apply to you. You are the **manager** for component `<C-N>` of the approved spec at `<absolute path>`; that section is your contract.
 
 ## Branch and worktree
 

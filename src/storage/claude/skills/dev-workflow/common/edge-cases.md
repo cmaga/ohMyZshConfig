@@ -31,7 +31,7 @@ Nobody can supply the failures you missed unless they are holding the mechanism.
 
 Parts 1-3 are a short paragraph each, and they are repeated for every integration point. The repetition is the feature: the last plain-English contact was the user brief, several gates ago, and the design has gotten concrete since. A list that presumes the vocabulary of the scaffold lands on nothing.
 
-Then discuss, take their additions, and stop. Never open the next integration point unasked. Under auto there is nobody to take additions from: record the list and open the next integration point yourself — including the component list, which auto cuts itself.
+Then discuss, take their additions, and stop. Never open the next integration point unasked. Unattended there is nobody to take additions from: record the list and open the next integration point yourself — including the component list, which the run cuts itself.
 
 The last integration point is the last thing in the run that waits for the user. Everything after it runs through to the PR ([Step 6](../SKILL.md#step-6-per-tier-implementation)).
 

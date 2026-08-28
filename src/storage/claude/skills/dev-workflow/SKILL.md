@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the edge cases, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. Adding "auto" to a take runs everything after the user's approval unattended, through merge and deploy.
+description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, agree the edge cases, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. A run the user arms with a `/goal` continues unattended from there, through merge and deploy.
 ---
 
 # Dev Workflow
@@ -11,9 +11,9 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
 
 `cleanup` is a separate entry point: none of the steps below apply — go straight to [Cleanup](common/cleanup.md).
 
-## Auto mode
+## Unattended runs
 
-`take <TICKET> auto`, or `go auto` at Step 4. Steps 1-4 are unchanged: the brief, the solution, and the tier are still agreed with the user. The `/goal` they paste is the last human input, and the run continues on its own through the merge — and the deploy behind it, where the run owns one. A run building a component of a spec does not; the spec deploys as one release.
+A run is unattended when a goal is armed, and not otherwise — no keyword asks for one. Steps 1-4 are unchanged either way: the brief, the solution, and the tier are still agreed with the user. The `/goal` they paste is the last human input, and the run continues on its own through the merge — and the deploy behind it, where the run owns one. A run building a component of a spec does not; the spec deploys as one release.
 
 **The goal is the go.** An unattended run is held open by a `/goal`, and the user pasting one is their approval to start — so draft it, hand it over ready to paste, and wait for it. Nothing is created before they do.
 
@@ -23,11 +23,11 @@ Routing a ticket is one question: **what is the simplest agent configuration tha
 
 Its check-in fires on an idle timer as well as at turn end, so it can start a turn and not only refuse to end one. That is the whole mechanism: the failure this guards against is a run going quiet, never a run stopping too readily. Two things it cannot do — it does not survive the process exiting, and some errors clear it silently, with nothing announcing either. Neither is visible from inside the run, so the out-of-process wake-up armed at dispatch is what covers them, and a run that notices any interruption asks the user to re-arm.
 
-Auto converts exactly these gates to decide-record-and-continue. Nothing else converts — a gate added to this skill later does not join the list by being a gate:
+An armed goal converts exactly these gates to decide-record-and-continue. Nothing else converts — a gate added to this skill later does not join the list by being a gate:
 
 - The [shape](common/shape.md) and [edge cases](common/edge-cases.md) waits, and the [scaffold](common/scaffold.md) review wait and blast-radius interrupt
-- A plan marker that is a strategic call — attended, that one escalates; under auto, decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report. Everything else in [plan](common/plan.md) already resolves without stopping
-- Ticket filing: auto files nothing. Every discovered issue lands in the exit report with its disposition. The single exception is a chain filing a component ticket the approved spec already calls for, per [the chain](common/auto-chain.md)
+- A plan marker that is a strategic call — attended, that one escalates; unattended, decide it, rewrite it as `[ASSUMED: ...]`, and carry it to the exit report. Everything else in [plan](common/plan.md) already resolves without stopping
+- Ticket filing: an unattended run files nothing. Every discovered issue lands in the exit report with its disposition. The single exception is a chain filing a component ticket the approved spec already calls for, per [the chain](common/auto-chain.md)
 - The merge, and the deploy behind it ([exit](common/exit.md))
 
 These still stop the run, which hands back with what it has: the prerequisite gates below, a review gate returning `escalate` or hitting its five-round backstop, a required PR check going red, and a failed deploy. Inside a chain none of them ends the turn: the component stops, returns, and the parent decides what it costs — another round, a question put to the user, or a halt at the end of that wave. See [the chain](common/auto-chain.md#escalation).
@@ -97,12 +97,12 @@ Fan out only over sets you enumerate yourself — never per-item over a set a su
    | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the PR |
    | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
-   Under `auto` nobody is watching, so read the last column as what a user *would* need to see: `large` is where new structure or a moved boundary appears, whether or not anyone reviews the scaffold.
+   Unattended, nobody is watching, so read the last column as what a user *would* need to see: `large` is where new structure or a moved boundary appears, whether or not anyone reviews the scaffold.
 5. **Present** — user-facing. By this point a lot of time will have passed and the user has been watching agents run, so the first thing they need is their bearings back. Three parts, in this order, and nothing else:
    1. **Where we are.** `Research complete for <the problem, restated in one line>.` They should not have to scroll up to remember what this run is about.
    2. **The approach.** What we are going to do, in plain language. No jargon, no file paths, no symbol names. Short.
    3. **The tier**, with one clause on why.
-   4. **Under `auto`, the `/goal` line to paste** — see [Auto mode](#auto-mode). Pasting it is the go; there is no separate approval.
+   4. **The `/goal` line to paste**, where the run is meant to be unattended — see [Unattended runs](#unattended-runs). Pasting it is the go; there is no separate approval, and a user who pastes nothing has answered that they are staying in the loop.
 
    Then stop and let them react. **Do not walk the solution point by point unless they ask** — a run that opens on "Point 1 of 5" drops them into a conversation they have lost the thread of, and the summary they needed never gets written. Point-by-point is what "more details" buys: only then break the approach into pieces, one per message, advancing on "next", and repeat the one-line problem restatement at the top of each so no piece lands contextless. Consensus reached, the user says "go" and implementation begins.
 
@@ -131,7 +131,7 @@ Run the sequence for the confirmed tier. Each step links to its procedure file. 
 
 ### What stops, attended
 
-The complete list, closed the same way auto's is. A step not named here does not wait, whatever its procedure file says about posting or presenting — and a step added to this skill later does not join the list by looking like a gate:
+The complete list, closed the same way the unattended one above is. A step not named here does not wait, whatever its procedure file says about posting or presenting — and a step added to this skill later does not join the list by looking like a gate:
 
 - `large` — four waits, all of them before any code is written: [shape](common/shape.md), the [scaffold](common/scaffold.md) review, the [edge case](common/edge-cases.md) component list, then one wait per component.
 - `medium` — none.
@@ -199,7 +199,7 @@ The target behavior is settled as a spec, carved into independently buildable co
   - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every candidate that looks close. Search the component and file names too — the same defect gets described three different ways. An existing ticket ends the matter: cite its key, say it is already covered, propose nothing.
   - **File only after the user says to.** Never file to close out a review finding, to clear your own list, or because a subagent recommended it. An unfiled item lives in the exit report until they answer, which is a disposition.
   - Invariant: anything not folded in leaves as a ticket key or a line in the exit report the user reads. A paragraph in a plan or PR description is not an owner.
-- Never automatically merge a PR into the base branch. The user merges or asks you to merge; auto mode is that ask. Merging a component into a spec's integration branch is the one exception, and only ever for whoever owns the component's ticket: a chain merges its components, a lone auto run on a component ticket merges its own, and a component dispatched inside a chain merges nothing — its parent does. That merge is local and opens no pull request. The user's merge is the single one at the end that takes the whole spec to the base branch.
+- Never automatically merge a PR into the base branch. The user merges or asks you to merge; an armed goal is that ask. Merging a component into a spec's integration branch is the one exception, and only ever for whoever owns the component's ticket: a chain merges its components, a lone unattended run on a component ticket merges its own, and a component dispatched inside a chain merges nothing — its parent does. That merge is local and opens no pull request. The user's merge is the single one at the end that takes the whole spec to the base branch.
 - A refused tool call is not a blocker until you have tried the other way. A denial is about one command's shape, never about the question you were answering — where a second route to the same information exists, take it and carry on. Naming an alternative and then stopping to ask whether to use it is the exact failure this rule exists to prevent: a read-only fact is the same fact however you obtain it. Escalate only once every route you can name is refused, and say which ones you tried.
 - Nothing dispatched ever parks waiting for an answer. A subagent cannot message whatever spawned it — the reply path does not resolve — so an agent that stops mid-task to wait has stranded itself and everything above it. When you need a decision you cannot make, **end your turn and return the question as your report**; that is the one channel that works. Return what you did, what you need decided, and what a replacement would need, so the work survives whether you are resumed or replaced.
 - **Three levels, and the worker level is the floor.** A session dispatches managers, a manager dispatches workers, and a worker dispatches nothing. A completion reaches its spawner one level down and no further: deeper than that it surfaces to the main session, so the agent that asked never receives it and waits forever on a result already delivered to somebody else. Say it in every dispatch prompt, in the second person — *anything you spawn reports to me, not to you; do the work yourself* — and make each level say it to the one below. Where a job is genuinely too large for one agent, the level that can hold the results splits it and dispatches the pieces itself.

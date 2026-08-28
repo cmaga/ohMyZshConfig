@@ -5,8 +5,8 @@ Every tier mode ends here before returning control.
 1. **Verify behavior** by driving the change in the real app, via the `run` skill. If the change alters a shared interface, exercise each consumer flow, not just the changed surface. Skip only if the change has no runtime surface (pure refactor, types/docs, internal library); state the skip reason in chat. If verification needs a browser and the project has no Playwright MCP config — or a drive fails with Chromium's "browser is already in use" profile lock — run the `playwright-mcp-setup` skill first, then continue.
 2. **Create the PR** via the `git-provider` skill. Skip it on a spec-descended run: that branch is local and unpushed, and the whole spec goes up as one pull request when it is complete.
 3. **Transition the ticket** to "in review" via the `jira` skill.
-4. **Run the review gate** — see below. Skip on `small`, except under auto: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
-5. **Land it** — auto only, see [Landing under auto](#landing-under-auto).
+4. **Run the review gate** — see below. Skip on `small`, except unattended: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
+5. **Land it** — unattended only, see [Landing unattended](#landing-unattended).
 6. **Render the [exit report](../templates/exit-report.md)** as the final message. The `/goal` the user armed is theirs to clear; say in the report that the run is finished so its evaluator can see the condition met.
 
 ## Review gate
@@ -56,11 +56,11 @@ Whatever is still open goes in the exit report rather than into another round.
 
 Every finding you did not fix appears there with its disposition — an existing ticket's key, or a proposed one for the user's call. A PR comment is not a disposition: the PR closes and it is orphaned.
 
-## Landing under auto
+## Landing unattended
 
 **A component running inside a [chain](auto-chain.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
 
-**A spec-descended auto run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** It merges **locally** into the spec's integration branch — no push and no pull request, since the whole spec goes up as one PR when it is complete — then leaves the worktree and goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge. Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
+**A spec-descended unattended run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** It merges **locally** into the spec's integration branch — no push and no pull request, since the whole spec goes up as one PR when it is complete — then leaves the worktree and goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge. Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
 
 Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence.
 

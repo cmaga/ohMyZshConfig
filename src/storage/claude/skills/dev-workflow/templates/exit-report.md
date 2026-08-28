@@ -12,7 +12,7 @@ The user skims this to decide whether to merge and what's still theirs to do. Ev
 
 End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 
-An auto run already merged, deployed, and cleaned up. Drop the cleanup line, say where the change is now live, and give the merged PR URL.
+An unattended run already merged, deployed, and cleaned up. Drop the cleanup line, say where the change is now live, and give the merged PR URL.
 
 The run that finishes a hand-walked spec's **last** component says the spec is complete on its integration branch once this PR merges, and names what closing it takes — a PR into the project's base branch and a worktree on the integration branch to run it from — as the user's call to make, not a thing already done.
 

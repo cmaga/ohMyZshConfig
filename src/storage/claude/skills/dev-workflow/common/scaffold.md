@@ -82,11 +82,11 @@ Sometimes it is empty: a pure body rewrite behind an unchanged signature has no 
 
 If the project has no integration suite at all, stop. Recommend building one as its own piece of work, or ask the user whether to skip it for this ticket. Do not proceed silently without one.
 
-Under auto there is nobody to ask, and nobody reading the PR either: stand up a minimal harness covering this ticket's integration points and continue. The red test is what makes a cheap worker safe, and auto has nothing else in that role.
+Unattended there is nobody to ask, and nobody reading the PR either: stand up a minimal harness covering this ticket's integration points and continue. The red test is what makes a cheap worker safe, and an unattended run has nothing else in that role.
 
 ## Reviewing it (`large`)
 
-Under auto, nobody is opening an editor: commit the scaffold, call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
+Unattended, nobody is opening an editor: commit the scaffold, call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
 
 **Leave the scaffold uncommitted until the user has read it.** A committed scaffold is invisible: the user opens the worktree onto a repo that looks untouched and has to undo the commit to find out what you wrote. Uncommitted, the editor's source control panel *is* the file list, each entry already a diff. Commit once their corrections are worked in — before the tester, and before anyone is dispatched.
 
