@@ -4,15 +4,10 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "$HOME/.claude/hooks/deny-busy-loops.sh" }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          { "type": "command", "command": "$HOME/.claude/hooks/auto-run-guard.sh" }
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/deny-busy-loops.sh"
+          }
         ]
       }
     ],
@@ -20,7 +15,10 @@
       {
         "matcher": "EnterWorktree",
         "hooks": [
-          { "type": "command", "command": "$HOME/.claude/hooks/clear-symdocs-claude-md.sh" }
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/clear-symdocs-claude-md.sh"
+          }
         ]
       }
     ]
