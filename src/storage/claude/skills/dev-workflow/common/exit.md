@@ -58,7 +58,7 @@ Every finding you did not fix appears there with its disposition — an existing
 
 ## Landing unattended
 
-**A component running inside a [chain](auto-chain.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
+**A component running inside a [chain](spec-run.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
 
 **A spec-descended unattended run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** It merges **locally** into the spec's integration branch — no push and no pull request, since the whole spec goes up as one PR when it is complete — then leaves the worktree and goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge. Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
 

@@ -36,7 +36,7 @@ One file per entry. A chain's managers run in parallel and a shared file loses w
     ---
     ticket: EN-326
     date: 2026-08-27
-    file: common/auto-chain.md
+    file: common/spec-run.md
     trigger: correction
     ---
 
