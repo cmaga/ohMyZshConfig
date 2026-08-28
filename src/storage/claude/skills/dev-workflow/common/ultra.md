@@ -17,7 +17,7 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
    - Break findings into individual talking points and track them with `TaskCreate`. That list is both the agenda and the resumption state.
    - Work one point at a time. Discuss until the user is satisfied, then stop and wait — they say `next` to advance. Never open the next question unasked.
 
-3. **Map the systems.** Turn the agreed strategy into components — the systems the work divides into, and the edges between them. Draw the map before writing a single contract: the picture is what makes a decomposition arguable, and the contracts fall out of it once the shape is right. Name what each component owns, and check that any two that could build at the same time own disjoint things — that is the whole lever against two managers colliding on the same ground. Discuss it the way everything else is discussed, one question at a time.
+3. **Map the systems.** Turn the agreed strategy into components — the systems the work divides into, and the edges between them. Draw the map before writing a single contract: the picture is what makes a decomposition arguable, and the contracts fall out of it once the shape is right. Name what each component owns, and check that any two that could build at the same time own disjoint things — that is the whole lever against two managers colliding on the same ground. **Ownership means the directories the work happens in, not only the ones it produces.** For anything that relocates code those are different trees, and it is the source tree that collides: a decomposition drawn over destinations can look perfectly disjoint while both components spend the wave draining the same directory nobody was said to own. Discuss it the way everything else is discussed, one question at a time.
 
 4. **Draft.** Start the document from the [spec template](../templates/spec-template.mockup.html). The map goes in first; each component's contract is written under it.
 
@@ -29,6 +29,7 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
 7. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then check the template's wiring:
    - Every component is buildable alone and closes with its Tests.
    - Every `Needs` matches its section's `data-needs`, names a component the spec defines, and the edges hold no cycle.
+   - **At least one component carries `data-needs` at all.** A spec where none does is un-waveable from its own text — the check that every `Needs` matches is silent when there are none of either, and the chain that builds it then hand-derives an ordering from prose without anything saying so. Either give the components their edges or state in the spec that ordering lives in the tracker, so the fallback is a decision rather than a discovery.
    - A grouping carries no component markup: no `id`, no `data-needs`, no `Needs` line.
    - Every `Owns` names something no other component claims.
    - The map's nodes and arrows match the sections and their edges.

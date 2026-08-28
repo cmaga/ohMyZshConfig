@@ -12,7 +12,7 @@ Every tier mode ends here before returning control.
 
 ## Review gate
 
-Spawn `code-review-agent` once, fix what it finds, then send the fixes back to **the same agent**. Repeat until it passes or escalates.
+Spawn `code-review-agent` once, fix what it finds, then send the fixes back to **the same agent**. Repeat until it passes or escalates. **Tell it to spawn nothing** — a reviewer that fans out loses every finding its helpers return and reports a verdict over the ground it covered itself. If a review needs several perspectives, run those agents yourself.
 
 Keeping it alive is the whole efficiency of this loop. A fresh reviewer re-reads the spec, the diff, and the full source of every changed file before it can say anything — that reload is the cost of a round, not the reviewing. The agent you already have holds all of it, plus its own reasoning for every finding it raised.
 
@@ -20,6 +20,7 @@ It returns JSON and never edits files. You do all the fixing.
 
 ### What to pass it
 
+- **Tell it to diff every stated claim against the mechanism that backs it.** Bounds, coverage figures and every-X-is-handled sentences are where changes on this workflow go wrong, and never as a logic error: a guard that checks thirteen of fourteen, an anti-vacuity floor one quantifier weaker than its own sentence, a worst-case number stated three times and wrong twice. Always in the safe-looking direction, and in one run three of the six were inside artifacts written to prevent exactly that.
 - **First round** — what explains why the change was made (the spec if one exists — a component run sends its own `C-N` section and the ones its Needs names, not the whole document — else the scaffold commit and the plan, else the ticket title and description), the ticket, and the base branch if it is not `main`.
 - **Later rounds** — continue the same agent with `SendMessage`. Send only what it does not already have: what you did about each finding, and which commits hold the fixes. Never re-send the diff, the plan, or its own findings.
 - **If that agent is gone** (compaction, a dead agent) — spawn a fresh one with the first-round inputs plus last round's findings and what was done about each, and note in the exit report that the reviewer restarted cold.
@@ -44,6 +45,7 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 - **Small enough for this ticket** — apply it, re-run the tests, commit as `address code review findings`, and push unless the run is spec-descended, whose branch is local.
 - **Too big** — carry it into the exit report as a proposed ticket, searching Jira first per the discovered-issue rule in [SKILL.md](../SKILL.md). A proposal counts as handled for the gate; do not file it to unblock yourself.
 - A recurring finding lists example locations only. Sweep the diff for the rest when you apply the fix.
+- **Sweep for the claim, not the symbol.** When a behaviour changes, everywhere that *quotes* the old behaviour is now stale, and a grep for the function's name will not find them. Check the definitional surface explicitly — the wiring module, the entry point, the README — because it describes the thing in one prose line and matches no name-based sweep, which is why it is the instance that survives four rounds of correction. It is also the file someone opens to learn what the job does, so the stale sentence there is the one that gets believed.
 
 ### When to stop
 
