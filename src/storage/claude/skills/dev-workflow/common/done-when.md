@@ -10,6 +10,14 @@ What that costs, measured once: a component merged on three days of green builds
 
 The [spec template](../templates/spec-template.mockup.html) defines no acceptance section, so unless the spec wrote one of its own, the component's acceptance is three things read together: its **Tests** — the scenarios it closes with, which the spec's adversarial pass filled and which are the closest thing to a signed contract it has — its **Owns** line, and every sentence in its body stating what becomes true. Where the spec does carry an explicit list, that list wins and the Tests are the check for it.
 
+## The check that did not follow
+
+**A component that creates a second instance of something the build already gates owes that gate its extension, and owes it here.** Nobody errs locally when this fails: the component was told to stand up its own database, and it did; the gate was written before that database existed and correctly checks the one it knows. What is left is a gate that reads as covering the repository while covering half of it, which is worse than no gate — the green is now evidence of nothing and is read as evidence of everything.
+
+Measured once: a system given its own database wrote its own migration history alongside it. The build's fork check ran `alembic heads` against the original configuration only, so a fork in the new history turned nothing red, in the build and in continuous integration both.
+
+Ask it of every component that adds a database, a migration history, a package root, a lint scope, an allowlist, or a service: which existing check counted one of these, and does it now count both. The answer is part of this component's acceptance whether or not its section says so.
+
 ## Who runs it
 
 **The parent, never the component's own agent.** That agent is the party that wants to be done, and its exit report is its own account of itself — honest in its own terms and silent about the terms it did not choose.
