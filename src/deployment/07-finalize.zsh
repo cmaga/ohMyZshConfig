@@ -12,12 +12,16 @@ echo
 print_status "success" "All deployments complete!"
 echo
 
-# Offer to source the new configuration
-read "REPLY?Would you like to apply the new configuration now? (Y/n) "
-if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-    log "Sourcing ~/.zshrc..."
-    source ~/.zshrc
-    log "Done! Your new Zsh configuration is now active."
+# Offer to source the new configuration (skip when stdin is not a terminal)
+if [[ -t 0 ]]; then
+    read "REPLY?Would you like to apply the new configuration now? (Y/n) "
+    if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
+        log "Sourcing ~/.zshrc..."
+        source ~/.zshrc
+        log "Done! Your new Zsh configuration is now active."
+    else
+        log "Remember to run 'source ~/.zshrc' to apply the changes."
+    fi
 else
     log "Remember to run 'source ~/.zshrc' to apply the changes."
 fi
