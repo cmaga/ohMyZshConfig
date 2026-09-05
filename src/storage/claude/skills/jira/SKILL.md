@@ -444,6 +444,31 @@ With a comment:
 jira issue worklog add {ticketId} "2h 30m" --comment "Implementation work" --no-input
 ```
 
+**Attach a file:**
+
+jira-cli has no attachment command, so this one operation goes to the REST API
+directly. That is not a workaround for the CLI being misconfigured — the rule
+against raw REST above is about a config the CLI would accept once corrected,
+and this is a capability it does not have at any config.
+
+```bash
+curl -s -n -X POST -H "X-Atlassian-Token: no-check" \
+  -F "file=@{path}" \
+  "https://{server}/rest/api/3/issue/{ticketId}/attachments"
+```
+
+`-n` reads the same `~/.netrc` token the wrapper uses, and `{server}` is
+`config.json`'s `server` with the scheme stripped. `X-Atlassian-Token: no-check`
+is required — Jira rejects the upload as XSRF without it. Success is a JSON
+**array** whose element carries the new attachment's `id`; anything else is the
+error, so parse it rather than trusting the exit code.
+
+To remove one — 204, no body:
+
+```bash
+curl -s -n -X DELETE "https://{server}/rest/api/3/attachment/{attachmentId}"
+```
+
 ## Full CLI Reference
 
 For complete command documentation, see:
