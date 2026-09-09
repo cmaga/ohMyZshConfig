@@ -9,6 +9,7 @@ The user skims this to decide whether to merge and what's still theirs to do. Ev
 - Plain language. No internal vocabulary, no section labels, no diff-stat.
 - Build, tests, and a clean review are preconditions for being here — never list them. If one failed you're not exiting, you're fixing it.
 - List every assumption you settled yourself, deferred item, and unfixed review finding with its disposition — an existing ticket's key, or one line proposing a new one for the user's decision. Never a key you filed unasked. This is where "nothing left as prose" is enforced: a finding with no home here has none.
+- **A proposal here is an admission you did not fix something you could have.** Each one has to survive the question *why couldn't this ride the branch?* — and "the ticket didn't ask for it" is not an answer. Three proposals in one report means the run deferred instead of finishing; go back and fix the ones that could have ridden along.
 
 End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 

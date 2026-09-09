@@ -16,7 +16,7 @@ Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktre
 - Fill `## Reuse contract` from the [shape](shape.md) step's reuse lines and the `## Reusable surface` sections of vault component notes the plan touches.
 - Carry each edge case that is only observable inside a body onto the card that owns that body.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`, then resolve it as described below.
-- Mark a problem you find but are not folding in as `[DEFERRED: ... → ticket]` (related, too large) or `[REPORT: ...]` (unrelated), per the discovered-issue rule in [SKILL.md](../SKILL.md).
+- A problem you find gets folded in and fixed. Mark it `[DEFERRED: ... → ticket]` or `[REPORT: ...]` only when the fix genuinely cannot ride this branch, and write the reason it cannot into the marker itself — see the discovered-issue rule in [SKILL.md](../SKILL.md). A marker is not a parking space: "out of scope for this ticket" is not a reason, because the scope is yours to widen.
 
 ## Closing out the markers
 
