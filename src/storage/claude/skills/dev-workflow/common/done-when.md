@@ -8,7 +8,7 @@ What that costs, measured once: a component merged on three days of green builds
 
 ## What to read
 
-The [spec template](../templates/spec-template.mockup.html) defines no acceptance section, so unless the spec wrote one of its own, the component's acceptance is three things read together: its **Tests** — the scenarios it closes with, which the spec's adversarial pass filled and which are the closest thing to a signed contract it has — its **Owns** line, and every sentence in its body stating what becomes true. Where the spec does carry an explicit list, that list wins and the Tests are the check for it.
+The [spec template](../templates/spec-template.md) defines no acceptance section, so unless the spec wrote one of its own, the component's acceptance is three things read together: its **Tests** — the scenarios it closes with, which the spec's adversarial pass filled and which are the closest thing to a signed contract it has — its **Owns** line, and every sentence in its body stating what becomes true. Where the spec does carry an explicit list, that list wins and the Tests are the check for it.
 
 ## The check that did not follow
 

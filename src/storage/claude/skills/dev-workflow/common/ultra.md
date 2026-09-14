@@ -19,7 +19,7 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
 
 3. **Map the systems.** Turn the agreed strategy into components — the systems the work divides into, and the edges between them. Draw the map before writing a single contract: the picture is what makes a decomposition arguable, and the contracts fall out of it once the shape is right. Name what each component owns, and check that any two that could build at the same time own disjoint things — that is the whole lever against two managers colliding on the same ground. **Ownership means the directories the work happens in, not only the ones it produces.** For anything that relocates code those are different trees, and it is the source tree that collides: a decomposition drawn over destinations can look perfectly disjoint while both components spend the wave draining the same directory nobody was said to own. Discuss it the way everything else is discussed, one question at a time.
 
-4. **Draft.** Start the document from the [spec template](../templates/spec-template.mockup.html). The map goes in first; each component's contract is written under it.
+4. **Draft.** Start the document from the [spec template](../templates/spec-template.md), written to the project's drafts directory as `<name>-spec.md`. The map goes in first; each component's contract is written under it. This markdown is the deliverable and the only authoritative copy — the Artifact step 7 publishes is a view regenerated from it, never a second place to edit.
 
 5. **Fold in only on the user's word.** Nothing enters the document until they say so — this governs the drafting loop; step 8 says what its own findings may fold in unasked. Discussion and drafting are separate acts; drafting early makes the user review prose when they wanted to think.
 
@@ -28,15 +28,20 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
 
 7. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then check the template's wiring:
    - Every component is buildable alone and closes with its Tests.
-   - Every `Needs` matches its section's `data-needs`, names a component the spec defines, and the edges hold no cycle.
-   - **At least one component carries `data-needs` at all.** A spec where none does is un-waveable from its own text — the check that every `Needs` matches is silent when there are none of either, and the chain that builds it then hand-derives an ordering from prose without anything saying so. Either give the components their edges or state in the spec that ordering lives in the tracker, so the fallback is a decision rather than a discovery.
-   - A grouping carries no component markup: no `id`, no `data-needs`, no `Needs` line.
+   - Every `Needs` line matches its component's `needs` in the dispatch graph, names a component the spec defines, and the edges hold no cycle.
+   - **The dispatch graph has one entry per `## C-N:` heading and no entry without one.** It is the only thing the chain sorts, so a component missing from it is a component that never builds, and an entry with no section is an edge into nothing that halts the chain.
+   - **At least one component declares a non-empty `needs`.** A spec where none does is un-waveable from its own text — the check that every `Needs` matches is silent when there are none of either, and the chain that builds it then hand-derives an ordering from prose without anything saying so. Either give the components their edges or state in the spec that ordering lives in the tracker, so the fallback is a decision rather than a discovery.
+   - A grouping is not a component: no dispatch-graph entry, no `Needs` line, and its heading is never `## C-N:`.
    - Every `Owns` names something no other component claims.
    - The map's nodes and arrows match the sections and their edges.
    - No component body describes how a thing is built, beyond a named mechanism it deliberately adopts and says what it buys.
    - No component carries an edge it does not need. For each one, name what it cannot do until that component is merged, and drop the edge when you cannot — this is where a spec silently over-serializes.
-   - Any component whose work lands across the tree rather than downstream of a sibling carries `data-exclusive="true"`, and no other component does.
+   - Any component whose work lands across the tree rather than downstream of a sibling carries `exclusive: true` in the dispatch graph, and no other component does.
    - **Nothing the spec declines to close survives as a sentence.** A spec that names a hole understands it well enough to describe it, and describing it is not closing it: one spec wrote that its new rule caught writers and left readers uncovered, and an uncovered reader is what the finished branch shipped. Every such sentence is a component if the work is doable now, and a ticket if it genuinely is not — the same rule the Wrap-up already applies to a Post-deploy item, for the same reason. A hole with no owner is not a caveat, it is a defect the spec agreed to in advance.
+
+   **Then publish the view.** The markdown has just been read end to end for the first time, so this is the first moment it is worth looking at. Load the `artifact-design` skill, author the document as HTML into the scratchpad as `<name>-spec.html`, and publish it with the `Artifact` tool. Render the system map as a `mermaid` block — Artifacts render mermaid natively, so the map needs no diagramming library and no hand-placed coordinates. The HTML lives in the scratchpad and never in the repo: the PR reviews markdown, which is what makes a spec's changes readable between drafts.
+
+   Republish to the same file path whenever the document changes — the URL is stable across the run, so the link given to the user once stays the one they return to. Regenerate it from the markdown every time. A fix applied to the Artifact and not the markdown is a fix the chain never sees.
 
 8. **Adversarial review.** Edge cases are where systems die, and planning generates assumptions faster than data retires them. This step asks what can actually happen at each strategic piece, and whether the spec accounts for it.
    - **Attack lenses** — one agent per lens, each playing an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec as written does not stop it, and the smallest change that closes it.
@@ -48,7 +53,7 @@ Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2
 
 ## Wrap-up
 
-1. Present the spec: what it decided, the components and what each one makes true, and what is still open — counting open questions and post-deploy items separately, since only the first kind is actionable now. Plain language, 5-15 lines, with the absolute path to the document.
+1. Present the spec: what it decided, the components and what each one makes true, and what is still open — counting open questions and post-deploy items separately, since only the first kind is actionable now. Plain language, 5-15 lines. Republish the Artifact from the final markdown and lead with its link — that is what the user reads and reviews. Give the repo path too, on its own line, since that is what the PR and the chain consume.
 2. Create the PR for the spec via the `git-provider` skill.
 3. Transition the ultra ticket to "in review" via the `jira` skill, and record the spec's repo path on it — the spec is the deliverable, its PR is now open, and a [chain](spec-run.md) later reads that path off this ticket.
 4. Create one ticket per component via the `jira` skill, each linked to the ultra ticket and naming its C-N section rather than copying it. Approving the spec is the user's go-ahead to file these — but search open tickets for each component first and link an existing one instead of duplicating it. A **Post-deploy** item gets its own follow-up ticket, linked to the ultra ticket like the rest, stating the evidence it is waiting on — the spec has to be live before anyone can answer it. So does every hole step 7 left standing as a ticket rather than folding into a component. Anything living only in the spec is invisible work.
