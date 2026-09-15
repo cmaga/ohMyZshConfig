@@ -266,23 +266,30 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # attribution could not measure per-lever slices and the pipeline was not worth
     # its maintenance; lever costs now come from the optimize-usage benchmark plus
     # published research).
-    # DISABLE_GROWTHBOOK was set here on 2026-07-22 to dodge the server-side
-    # `tengu_vellum_ash` gate that disables the task-list tools, then removed: it
-    # forces EVERY feature flag to its compiled default (66 flags measured), which
-    # also turns off bridge attestation enforcement, malformed-tool-use retry,
-    # ultraplan, and push notifications. That trade is not worth a status
-    # checklist. The gate oscillates on Anthropic's side — do not re-add this on
-    # the strength of a short empty-flag reading. It is deleted rather than merely
-    # omitted so machines that took the interim deploy get it stripped.
+    # CLAUDE_CODE_ENABLE_TODO_TOOLS restores the task-list tools (TaskCreate /
+    # TaskUpdate / TaskList / TaskGet), which newer models suppress by default.
+    # The binary gates them on a model list — [["opus",[4,8]],["sonnet",[5]],
+    # ["fable",[5]],["mythos",[5]]] — falling back to the server-side
+    # `tengu_rosy_wren` flag; an explicit true short-circuits both. The var is
+    # declared as a bool, so the string "1" coerces correctly. Verified against
+    # 2.1.266 on 2026-09-09; a running session picks it up without a restart.
+    # DISABLE_GROWTHBOOK was set here on 2026-07-22 chasing the same goal against
+    # the wrong flag name, then removed: it forces EVERY feature flag to its
+    # compiled default (66 flags measured), which also turns off bridge
+    # attestation enforcement, malformed-tool-use retry, ultraplan, and push
+    # notifications. That trade is not worth a status checklist, and the env var
+    # above makes it unnecessary. It is deleted rather than merely omitted so
+    # machines that took the interim deploy get it stripped.
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
             echo '{}' > "$SETTINGS_DEST"
         fi
-        print_status "info" "Setting BashTool timeout env vars..."
+        print_status "info" "Setting BashTool timeout and task-tool env vars..."
         jq '.env = ((.env // {}) + {
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
-                "BASH_MAX_TIMEOUT_MS":"3600000"
+                "BASH_MAX_TIMEOUT_MS":"3600000",
+                "CLAUDE_CODE_ENABLE_TODO_TOOLS":"1"
             }) | del(.env.DISABLE_GROWTHBOOK,
                      .env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
@@ -290,7 +297,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m)"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi

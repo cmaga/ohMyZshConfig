@@ -34,6 +34,27 @@ Run:
 
 Invoke the `jira` skill to transition the ticket to `transitions.done`. Trust the result — `jira-cli` surfaces errors on non-zero exit.
 
+**Then check what this ticket was blocking.** Closing a blocker is the moment its dependents become actionable, and it is the only moment anything in this workflow is looking at them — otherwise a dependent keeps its old status until somebody happens to open it. Measured once on a real board: ten open tickets had every recorded blocker already Done, the oldest for sixty days.
+
+`jira-cli` has no command for this, so it goes to the REST API directly — the same exception the `jira` skill makes for attachments, and not a config problem to be fixed back to the CLI. `$host` is that skill's `config.json` `server` with the scheme stripped; `-n` reads the same `~/.netrc` token.
+
+```bash
+for d in $(curl -s -n "https://$host/rest/api/3/issue/<TICKET>?fields=issuelinks" \
+      | jq -r '.fields.issuelinks[] | select(.type.outward=="blocks" and .outwardIssue) | .outwardIssue.key'); do
+  curl -s -n "https://$host/rest/api/3/issue/$d?fields=summary,status,issuelinks" | jq -r '
+    select(.fields.status.statusCategory.key != "done")
+    | [.fields.issuelinks[] | select(.type.inward=="is blocked by" and .inwardIssue)] as $b
+    | [$b[] | select(.inwardIssue.fields.status.statusCategory.key != "done")] as $open
+    | if ($open|length)==0
+      then "CLEAR    \(.key) [\(.fields.status.name)] \(.fields.summary)"
+      else "WAITING  \(.key) still blocked by \([$open[].inwardIssue.key]|join(", "))" end'
+done
+```
+
+- **Report it, never transition it.** A cleared link says nothing recorded is blocking that ticket any more — not that it is ready. A dependent can still be waiting on something nobody wrote down as a link, so which ones actually move is the user's call.
+- **Link direction is the silent failure.** `blocks` is the outward spelling, `is blocked by` the inward one; swapping them returns nothing and reads exactly like a clean pass.
+- Empty output means nothing this ticket blocked is still open. Say that in the report rather than omitting the line — a check that reports only on hits is indistinguishable from one that never ran.
+
 ### 4. Teardown
 
 In order:
@@ -56,6 +77,7 @@ In order:
 
 ### 5. Report
 
-One line:
+One line, plus step 3's finding:
 
     Cleaned up <TICKET>: ticket done, worktree removed, branch <name> deleted.
+    Unblocked by this: <keys, or "nothing — it blocked no open ticket">.

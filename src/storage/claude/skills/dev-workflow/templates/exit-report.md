@@ -1,6 +1,6 @@
 # Exit report
 
-The user skims this to decide whether to merge and what's still theirs to do. Everything else is in the PR — don't re-narrate the diff.
+The user skims this to decide whether to merge. What is still theirs to decide is on the [loose-end tracker](../common/exit.md#the-loose-end-tracker), not here; everything else is in the PR — don't re-narrate the diff.
 
 **≤ 8 lines. Lead with the outcome in one sentence.** Longer means you're reporting instead of summarizing.
 
@@ -8,8 +8,7 @@ The user skims this to decide whether to merge and what's still theirs to do. Ev
 - **Then only what changes their next move:** a deviation from plan, a caveat that limits the result, how the visible outcome was confirmed if it isn't obvious, or the one thing only they can verify (look-and-feel, a taste/business call). Skip any that don't apply.
 - Plain language. No internal vocabulary, no section labels, no diff-stat.
 - Build, tests, and a clean review are preconditions for being here — never list them. If one failed you're not exiting, you're fixing it.
-- List every assumption you settled yourself, deferred item, and unfixed review finding with its disposition — an existing ticket's key, or one line proposing a new one for the user's decision. Never a key you filed unasked. This is where "nothing left as prose" is enforced: a finding with no home here has none.
-- **A proposal here is an admission you did not fix something you could have.** Each one has to survive the question *why couldn't this ride the branch?* — and "the ticket didn't ask for it" is not an answer. Three proposals in one report means the run deferred instead of finishing; go back and fix the ones that could have ridden along.
+- Anything still needing the user's decision leaves as a task on the [loose-end tracker](../common/exit.md#the-loose-end-tracker), never as a line here. A sentence in a report reads as a decision already taken; a task reads as open, which is what it is. Name a disposition here only when it is closed — an existing ticket's key, or a thing you fixed. Never a key you filed unasked.
 
 End with `Run cleanup <TICKET> after merge.` then the PR URL on its own line.
 
@@ -23,7 +22,7 @@ A component inside a [chain](../common/spec-run.md) has merged nothing and deplo
 
 > **You can now change only your own data** — passing someone else's id in the URL 403s where it used to succeed. Routes read identity from the session, so the ownership guard is gone.
 >
-> Nothing for you to check by hand; one edge case I couldn't fold in without doubling the ticket — no open ticket covers it, want one?
+> Nothing for you to check by hand.
 >
 > Run `cleanup KRAT-188` after merge.
 >

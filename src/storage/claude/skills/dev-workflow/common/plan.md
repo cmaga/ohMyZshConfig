@@ -22,9 +22,9 @@ Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktre
 
 Before the plan is done, grep it for `[NEEDS CLARIFICATION]`, `[DEFERRED]`, and `[REPORT]`. Nothing here stops for the user by default, attended or not.
 
-- **A clarification you can settle from the code, you settle** — read what decides it, then rewrite the marker in place as `[ASSUMED: ...]` and carry it to the exit report. This is nearly all of them. The user cannot answer a question whose answer is in the repo, and asking spends their attention on something you were able to check.
-- **Deferrals and reports** are left as they are and carried to the exit report. **Search Jira first** — per the discovered-issue rule in [SKILL.md](../SKILL.md), an existing ticket ends the matter and its key travels with the item. Never file one unasked.
+- **A clarification you can settle from the code, you settle** — read what decides it, then rewrite the marker in place as `[ASSUMED: ...]` and carry it to the exit report. This is nearly all of them, and none of them reaches the user as a decision — you settled it by reading, which is the [loose-end tracker](exit.md#the-loose-end-tracker)'s own test for what it must never carry. The user cannot answer a question whose answer is in the repo, and asking spends their attention on something you were able to check.
+- **Deferrals and reports** are left as they are and carried to the [loose-end tracker](exit.md#the-loose-end-tracker). **Search Jira first** — per the discovered-issue rule in [SKILL.md](../SKILL.md), an existing ticket ends the matter and its key travels with the item. Never file one unasked.
 
 The exception is a marker that is genuinely a strategic or directional call — which solution the product should offer, a trade-off only the user can price. That is an escalation, not a checkpoint: raise it, and expect it to be rare. Everything else you decide.
 
-Nothing is left as prose. Every marker exits as `[ASSUMED]`, a ticket key, or a line in the exit report.
+Nothing is left as prose. Every marker exits as `[ASSUMED]`, a ticket key, or an open task the user answers.
