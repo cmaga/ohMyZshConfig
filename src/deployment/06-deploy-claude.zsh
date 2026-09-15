@@ -220,13 +220,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     SETTINGS_DEST="$CLAUDE_DIR/settings.json"
 
     if [ -f "$HOOKS_SOURCE" ]; then
+        if ! command_exists jq; then
+            print_status "warning" "jq not found — skipping hooks.json merge (install with: brew install jq)"
+        else
         hooks_count=$(jq '.hooks | length' "$HOOKS_SOURCE" 2>/dev/null)
         if [ "$hooks_count" -gt 0 ] 2>/dev/null; then
             print_status "info" "Deploying Claude hooks..."
-
-            if ! command_exists jq; then
-                error "jq is required to deploy hooks — install it with: brew install jq"
-            fi
 
             if [ ! -f "$SETTINGS_DEST" ]; then
                 echo '{}' > "$SETTINGS_DEST"
@@ -258,6 +257,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             print_status "success" "Hooks deployed to $SETTINGS_DEST"
         else
             print_status "info" "hooks.json has no hooks — skipping hooks deployment"
+        fi
         fi
     fi
 

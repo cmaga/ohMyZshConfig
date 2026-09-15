@@ -74,6 +74,7 @@ Machine-specific overrides (intentional): `~/.zshrc.local` and `~/.zshrc.$(hostn
 - Pass single-line strings to CLI commands — multi-line quoted strings get mangled through terminal/shell parsing.
 - Deploy scripts must remain idempotent. When adding a step, check current state first and no-op if already applied.
 - Scripts that are meant to be executed need their exec bit set; `make lint` and `make setup` fix this, but new scripts should be created with `chmod +x`.
+- **The `find | cp` fallback in `06-deploy-claude.zsh` is the supported copy path.** Never propose installing `rsync`, and never treat its absence as a defect — the pipeline deploys with only what a stock Git Bash, macOS, or Linux shell provides, and depending on an extra binary is the thing being avoided. Fix copy defects inside the fallback.
 
 ## Code exploration
 
