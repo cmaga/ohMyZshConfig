@@ -343,6 +343,13 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
           && print_status "success" "Removed legacy $HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh"
     fi
 
+    # Clean up the friction-review skill, renamed to memory-review. Skill
+    # deploys only add, so a renamed skill's old directory stays otherwise.
+    if [ -d "$CLAUDE_SKILLS_DEST/friction-review" ]; then
+        rm -rf "$CLAUDE_SKILLS_DEST/friction-review" \
+          && print_status "success" "Removed legacy $CLAUDE_SKILLS_DEST/friction-review"
+    fi
+
     print_status "success" "Claude Code configurations deployed successfully!"
 else
     error "Claude Code configuration directory not found at $CLAUDE_CONFIG_SOURCE"
