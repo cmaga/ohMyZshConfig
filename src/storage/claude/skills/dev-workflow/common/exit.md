@@ -6,7 +6,7 @@ Every tier mode ends here before returning control.
 2. **Create the PR** via the `git-provider` skill. Skip it on a spec-descended run: that branch is local and unpushed, and the whole spec goes up as one pull request when it is complete.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — see below. Skip on `small`, except unattended: `small` has no scaffold and no tests, so the gate is the only thing that reads the code before it merges.
-5. **Land it** — unattended only, see [Landing unattended](#landing-unattended).
+5. **Wait on the PR's required checks** — unattended only. Red, or never going green, halts; the merge and the deploy are the user's. A spec-descended run has no PR — see [Landing unattended](#landing-unattended).
 6. **Render the [exit report](../templates/exit-report.md)**. The `/goal` the user armed is theirs to clear; say in the report that the run is finished so its evaluator can see the condition met.
 7. **Seed the [loose-end tracker](#the-loose-end-tracker)** and present its first item. That item, not the report, is the last thing on screen.
 
@@ -94,7 +94,7 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 ### When to stop
 
 - **`"gate": "pass"`** — done.
-- **`"gate": "escalate"`** — stop. The reviewer has decided the loop will not converge and its `reason` says what it thinks is wrong underneath. Take that to the user — or, inside a chain, return it to the parent, which decides. Either way, do not open another round to prove it wrong.
+- **`"gate": "escalate"`** — stop. The reviewer has decided the loop will not converge and its `reason` says what it thinks is wrong underneath. Take that to the escalation agent in [Step 6](../SKILL.md#what-stops-attended), and to the user only if it cannot decide — or, inside a chain, return it to the parent, which decides. Either way, do not open another round to prove it wrong.
 - **Five failed rounds** — a backstop for when the reviewer does not make that call itself. It should almost never fire; when it does, say so in the exit report.
 
 Whatever is still open becomes a task on the [loose-end tracker](#the-loose-end-tracker) rather than another round.
@@ -103,14 +103,6 @@ Every finding you did not fix appears there with its disposition — an existing
 
 ## Landing unattended
 
-**A component running inside a [chain](spec-run.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase. Nothing below runs.
+**A component running inside a [chain](spec-run.md) does not land.** It opens no pull request and pushes nothing: committed work on its own branch, a passed review gate and a green full suite in its worktree are the chain's definition of a finished component. It returns its exit report with the worktree still entered; the chain parent merges, cleans up, and will send it back in to rebase.
 
-**A spec-descended unattended run that owns its own ticket does the merge and the cleanup, and neither of the deploy steps.** It merges **locally** into the spec's integration branch — no push and no pull request, since the whole spec goes up as one PR when it is complete — then leaves the worktree and goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge. Deploying would ship a base branch that does not contain the change, and verifying live would check behavior that is not there; the spec deploys as one release, once the user merges the integration branch.
-
-Only once the gate passes, in this order. Anything that fails halts the run and hands back with the PR and the worktree left standing — they are the evidence.
-
-1. **Merge** via the `git-provider` skill. Wait on the PR's required checks first; red, or never going green, halts. A spec-descended run merges its own branch into the integration branch with git instead — there is no PR and no checks to wait on, and the suite it already ran is the bar.
-2. **Leave the worktree.** `ExitWorktree` with `action: "keep"` — `action` is required, and `keep` leaves the worktree standing as evidence for steps 3 and 4; step 5 removes it. Exiting is what unpins the session: until it returns, git targets the worktree only and the main checkout is unreachable. Then pull the base branch in the main checkout under the main-checkout gate (Prerequisites, [SKILL.md](../SKILL.md)).
-3. **Deploy.** Read `<project-root>/.claude/skills/dev-workflow/config.json` ([template](../dependencies/templates/dev-workflow-config.json)) and run its `deploy`, then poll `healthCheck` until it passes. No file, or no `deploy` in it, means this project is deployed by hand: skip to step 5 and say so in the report.
-4. **Verify what is live** — step 1's behavior check again, run against `verifyTarget` instead of the local app. This is the only proof the merge did what the tests said.
-5. **[Cleanup](cleanup.md)** the ticket: it moves to done, the worktree and branch go away.
+**A spec-descended unattended run that owns its own ticket does the merge and the cleanup.** Once the review gate passes, it merges **locally** into the spec's integration branch with git — no push, no pull request and no checks to wait on, since the whole spec goes up as one PR when it is complete and the suite it already ran is the bar — then goes straight to [cleanup](cleanup.md). Attended, it stops with the branch built and green and the user says when to merge.

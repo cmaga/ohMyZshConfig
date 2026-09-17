@@ -62,6 +62,8 @@ The four shapes it drifts into:
 
 The scaffold is not finished until the project compiles and the test suite executes. Tests must be able to load the scaffolded code and go red on the throw — a suite that errors during import or collection is not red, and the tester cannot tell whether what it wrote is valid.
 
+Lint is not part of it. A commit hook will often reject a scaffold for being unimplemented — unused parameters, an `async` body with no `await`. Run the linter yourself first: when every failure comes from an unimplemented body, commit the scaffold with `--no-verify` and say so in the commit message. That is acceptable for this one commit and only for those failures; every later commit runs the hooks, and the fills are what make lint clean.
+
 ## Blast radius
 
 When the scaffold changes an existing signature, schema, or shared validator, list every caller at `file:line` with a verdict: survives, or breaks.

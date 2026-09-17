@@ -1,5 +1,0 @@
-{
-    "deploy": "npm run deploy:staging",
-    "healthCheck": "curl -fsS https://staging.example.com/health",
-    "verifyTarget": "https://staging.example.com"
-}

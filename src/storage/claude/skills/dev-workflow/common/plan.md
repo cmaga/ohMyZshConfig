@@ -13,7 +13,7 @@ Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktre
 - The boundaries are wrong only when no such ordering exists (the dependencies form a cycle) or the overlap is pervasive enough that the split is fiction. Then return to [scaffold](scaffold.md).
 - Number outcomes (`O-1`, `O-2`, …). Each task card cites the outcome IDs it satisfies.
 - Give every card a model, recorded on the card and chosen by [archetype](../references/archetypes.md): work a committed test verifies defaults to `MECHANICAL_WORKER_MODEL`, work needing judgment to `JUDGMENT_WORKER_MODEL`.
-- Fill `## Reuse contract` from the [shape](shape.md) step's reuse lines and the `## Reusable surface` sections of vault component notes the plan touches.
+- Fill `## Reuse contract` from Step 4.2's reuse mapping in [SKILL.md](../SKILL.md) and the `## Reusable surface` sections of vault component notes the plan touches.
 - Carry each edge case that is only observable inside a body onto the card that owns that body.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`, then resolve it as described below.
 - A problem you find gets folded in and fixed. Mark it `[DEFERRED: ... → ticket]` or `[REPORT: ...]` only when the fix genuinely cannot ride this branch, and write the reason it cannot into the marker itself — see the discovered-issue rule in [SKILL.md](../SKILL.md). A marker is not a parking space: "out of scope for this ticket" is not a reason, because the scope is yours to widen.

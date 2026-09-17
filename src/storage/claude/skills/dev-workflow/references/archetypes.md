@@ -7,6 +7,7 @@ Picking an agent configuration is one question: **what is the simplest configura
 | haiku  | An intern on coffee. Fast, tireless, no judgment.                                          | 1             | Work a test verifies mechanically. It will iterate against a red test as many times as it takes. Cheaply and quickly |
 | sonnet | An entry-to-mid level engineer who rushes and does exactly what it was told, nothing more. | 3             | Complete cards. Anything requiring it to notice something unstated will be missed.                                   |
 | opus   | A senior engineer.                                                                         | 5             | Judgment, ambiguity, work that spans modules.                                                                        |
+| fable  | An outsourced senior. Far more expensive.                                                  | 10            | Decisions that would otherwise escalate to the user — a `general-purpose` agent, never a card model.                 |
 
 Costs are per-token price ratios normalized to haiku — the same figures as `optimize-usage`'s lever table expressed against a different baseline. Update both together.
 

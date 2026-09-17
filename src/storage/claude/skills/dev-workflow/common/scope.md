@@ -8,4 +8,4 @@
 - If the change creates or modifies user-facing UI, use the `frontend-design` skill for the visual/design pass and carry its direction into the [scaffold](scaffold.md) so workers inherit it as structure, not as prose.
 - The mock-first prototype go/no-go was decided when the solution was presented in Step 4 — do not re-raise it here. If a prototype was built, its approved shape pins the data contract: express that contract in the scaffold's types.
 
-This step ends where [shape](shape.md) begins. Scope is what you learned; shape is what you draw from it.
+This step ends where [scaffold](scaffold.md) begins. Scope is what you learned; the scaffold is what you write from it.

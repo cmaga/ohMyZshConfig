@@ -21,7 +21,7 @@ Run the `dev-workflow` skill for `<COMPONENT-TICKET>`, unattended — no goal of
 - **Skip** Prerequisite 4, the main-checkout gate — it has already run. Skip Step 3, and all of Step 4 except 4.2 and the tier pick in 4.4; the spec settled the brief, the solution, and the Present, so there is nothing to post and nothing to wait for.
 - **Everything not named above runs as normal**, Steps 1 and 2 included — your ticket still gets read, assigned, and moved to In Progress.
 - **Do** Step 4.2's codebase-fit pass against `<C-N>`, pick the tier, then run from Step 5 until your work is committed on your own branch, the review gate has passed, and the full suite is green in your worktree. That is a finished component here; there is no pull request and no continuous-integration run to wait on, so the suite is the whole bar.
-- **Stop there.** No Landing, no merge, no deploy, no cleanup, and do not call `ExitWorktree`. The chain parent merges your component and will send you back into your worktree to rebase it.
+- **Stop there.** No Landing, no merge, no cleanup, and do not call `ExitWorktree`. The chain parent merges your component and will send you back into your worktree to rebase it.
 
 ## Concurrent siblings
 

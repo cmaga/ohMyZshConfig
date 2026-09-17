@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-06",
+  "updated": "2026-09-17",
   "levers": {
     "session_model": {
       "value": "fable",
@@ -45,10 +45,12 @@
       "kind": "runtime",
       "native": "agents/tester-agent.md model:"
     },
-    "advisor_model": {
+    "escalation_model": {
       "value": "fable",
-      "kind": "runtime",
-      "native": "~/.claude/settings.json advisorModel"
+      "kind": "skill",
+      "readers": [
+        "dev-workflow SKILL.md Step 6 escalation agent"
+      ]
     },
     "worker_effort": {
       "value": "inherit",

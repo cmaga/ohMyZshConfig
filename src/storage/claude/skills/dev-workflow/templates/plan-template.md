@@ -7,8 +7,7 @@ The design is NOT here — it is the committed scaffold. This file exists to
 split scaffolded work across workers and to hold the contract they execute
 under. Never restate architecture, module boundaries, or interfaces here.
 
-Length is whatever the workers need — the user does not read this file; they
-saw the shape step. Delete sections that do not apply. Empty headers are
+Length is whatever the workers need — the user does not read this file. Delete sections that do not apply. Empty headers are
 forbidden — they teach workers that fields are noise.
 
 Large tier: qa-planner-agent appends a ## QA Plan section after the parent
@@ -74,7 +73,7 @@ Workers write their own unit tests; those are not listed here.
 ## Reuse contract
 
 <!--
-From the shape gate's reuse lines, plus the `## Reusable surface` entries of
+From Step 4.2's reuse mapping, plus the `## Reusable surface` entries of
 any vault component notes this plan touches. Symbols workers must use instead
 of re-implementing, and logic to promote rather than copy. Parent review
 rejects diffs that re-implement anything listed.
