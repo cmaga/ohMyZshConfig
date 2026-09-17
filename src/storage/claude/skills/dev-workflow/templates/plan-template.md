@@ -132,7 +132,7 @@ multiple blockers; none = wave 1.
 ### T-1: <scope>
 
 - **Satisfies**: O-?
-- **Model**: <haiku | sonnet | opus>  (never fable — that is the `advisor` tool)
+- **Model**: <haiku | sonnet | opus>
 - **After**: <T-x | T-x, T-y | none>
 - **Files**: <list>
 - **Steps**: <numbered>

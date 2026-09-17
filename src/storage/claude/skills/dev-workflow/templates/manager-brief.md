@@ -65,14 +65,13 @@ A routing label that hands work to your **own** section is a deferral, not deleg
 
 Commit in coherent pieces throughout, not only at the scaffold. Sessions die, and only committed work survives one — a manager on a large relocation can otherwise go an entire session with nothing committed and be one crash from losing all of it. For a relocation the natural unit is one commit per move, which also makes a bisect land on a single move and a rebase conflict name one thing.
 
-## One writer per worktree
+## Parallel workers
 
-If you fan out, **one worker writes at a time — per tree, not per file.** A working tree is a single mutable object: `git reset`, `checkout --`, `stash`, `clean` and `restore` act on all of it regardless of who was assigned what. Two workers with no file overlap whatsoever have lost a verified session's edits to one `reset`.
-
-Fan out freely for reading — classification, measurement, review, verification. Keep every write in one worker or in your own hands, tell your workers they may not run those commands, and name the siblings in each worker's card so a worker that finds edits it did not make can tell a sibling from an intruder.
+If you fan out, your workers may write in parallel. Tell each one it may not run `git reset`, `checkout --`, `stash`, `clean` or `restore`, that it stages only its own files by path, and who its siblings are — so a worker that finds edits it did not make can tell a sibling from an intruder.
 
 ## Reporting
 
+- **Never end your turn while something you started is still running** — the suite, a worker, the reviewer. Ending your turn is returning, and a return with a gate still open reads to me as a component that stopped short. Run the suite in the foreground, in a call whose timeout covers the whole run, and report its exit code.
 - **Never park waiting for an answer.** You cannot message me — a subagent has no address for its parent, so a question you stop on is a question nobody receives. If you need a decision you cannot make, or every route past a refused call is exhausted, end your turn and return the question as your report: what you did, what needs deciding, and what a replacement would need to carry on. A refused tool call is not that moment — try the other route first.
 - **Your workers are the last level. They spawn nothing.** Tell every one of them so, in these words: *anything you spawn reports to the chain parent, not to you — do the work yourself.* A result reaches its spawner one level down and no further, so a worker's helper reports past you to a session that never asked for it, and you wait forever on an answer already delivered elsewhere. That binds your reviewer too: if a review needs several perspectives, run those agents yourself so you hold their findings. Where a job is too large for one worker, split it and dispatch the pieces yourself.
 - **Record friction with the skill as it happens** — per [friction](../common/friction.md), any place its text underdetermined what you did and you had to decide. Nobody can reconstruct that from your report, and you are the only one who was there. Write the entry and carry on; never return it to me or wait on it.

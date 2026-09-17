@@ -86,7 +86,7 @@ Unattended there is nobody to ask, and nobody reading the PR either: stand up a 
 
 ## Reviewing it (`large`)
 
-Unattended, nobody is opening an editor: commit the scaffold, call `advisor`, act on what it says, and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
+Unattended, nobody is opening an editor: commit the scaffold and continue. Only the user's read is converted — the `plan-review-agent` pass in the large sequence still runs. The rest of this section is the attended run.
 
 **Leave the scaffold uncommitted until the user has read it.** A committed scaffold is invisible: the user opens the worktree onto a repo that looks untouched and has to undo the commit to find out what you wrote. Uncommitted, the editor's source control panel *is* the file list, each entry already a diff. Commit once their corrections are worked in — before the tester, and before anyone is dispatched.
 
@@ -95,8 +95,6 @@ Open the worktree in the user's editor:
     code "$(git rev-parse --show-toplevel)"
 
 If `code` is not on `PATH`, say so in one line and give the absolute worktree path instead. Never install anything to make this work.
-
-Call `advisor` on the scaffold before showing it. This is the cheapest artifact in the run and everything downstream inherits it, so it is the one place a stronger read pays for itself ([archetypes](../references/archetypes.md)).
 
 Then say in two lines what the change is and what the scaffold covers, name the files in the order they should be read, and present the four questions the user is answering. Reading order matters more than completeness — a bare list of paths makes the user pick an entry point into code they have not seen. Work through their corrections in the code with them:
 
