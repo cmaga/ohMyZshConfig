@@ -53,8 +53,20 @@ alias gskipped='git ls-files -v | grep "^S"'
 # SSH Key Generation and Management
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 
-# Claude Code - skip permission prompts, default model
-alias oc='claude --dangerously-skip-permissions'
+# Claude Code - skip permission prompts. Routes through the local LiteLLM proxy
+# (automations/litellm-proxy) when this machine has one, so the `deepseek` model
+# name resolves; otherwise plain claude.
+oc() {
+  local -a via_proxy=()
+  if [[ -n "$LITELLM_MASTER_KEY" ]]; then
+    if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health/liveliness; then
+      via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000 "ANTHROPIC_CUSTOM_HEADERS=x-litellm-api-key: Bearer $LITELLM_MASTER_KEY")
+    else
+      print -u2 "oc: litellm proxy is not up; starting without it"
+    fi
+  fi
+  env $via_proxy claude --dangerously-skip-permissions "$@"
+}
 
 # Task Planner - launch plan execution via Claude Code CLI
 TASK_PLANNER_LAUNCHER="$HOME/.cline/skills/task-planner/scripts/launch.zsh"
