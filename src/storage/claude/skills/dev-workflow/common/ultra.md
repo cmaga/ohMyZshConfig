@@ -1,59 +1,51 @@
 # Ultra
 
-Produces a spec — an agreed description of how the system should behave — before any code is written. Drafted through co-work with the user in a worktree, and merged on the ultra ticket.
-
-Reserved for the most load-bearing work there is: decisions complex enough that they have to be thought through at the highest level, with no code in the room.
+Produces a spec — an agreed description of how the system should behave — before any code. Drafted with the user in a worktree, merged on the ultra ticket. Reserved for decisions that must be thought through with no code in the room.
 
 ## The process
 
-The spec is written with the user, one question at a time. This is ultra's core mechanic — a large design surface stays tractable only when consumed serially.
+The spec is written with the user, one question at a time. Steps 2-8 are a loop: adversarial review that changes strategy returns to step 2; the spec is done when a pass produces no strategic change, or after three passes. The cap is hard.
 
-Steps 2-8 are a loop. Adversarial review that changes strategy returns to step 2, and the spec is done when a pass produces no strategic change — or after three passes, whichever comes first. The cap is hard: an adversarial fleet will always find something, and past the third pass the findings are polish, not risk reduction.
+1. **Identify the premise.** What are we working on, and why now? Establish the goal before any solution talk.
 
-1. **Identify the premise.** What are we working on, and why now — a system failed, a design needs rethinking, something new is being reasoned about from scratch? Establish the high-level goal before any solution talk; it determines which strategic directions are even available.
+2. **Build the solution space.** Start from the user's intuition, then research precedent online. Synthesize, then discuss.
+   - **Do not dump text on the user.** Break findings into talking points tracked with `TaskCreate` — that list is the agenda and the resumption state.
+   - One point at a time. Discuss until the user is satisfied, then stop — they say `next`.
 
-2. **Build the solution space.** Start from the user's intuition, then research precedent and established recommendations online. Synthesize, then discuss.
-   - **Do not dump text on the user.** A wall of prose is unsortable — they will skim it and agree to something they did not read.
-   - Break findings into individual talking points and track them with `TaskCreate`. That list is both the agenda and the resumption state.
-   - Work one point at a time. Discuss until the user is satisfied, then stop and wait — they say `next` to advance. Never open the next question unasked.
+3. **Map the systems.** Turn the strategy into components and the edges between them. Draw the map before writing a contract. Name what each component owns, and check that any two that could build at the same time own disjoint things. **Ownership means the directories the work happens in, not only the ones it produces** — a relocation collides in the source tree. Discuss one question at a time.
 
-3. **Map the systems.** Turn the agreed strategy into components — the systems the work divides into, and the edges between them. Draw the map before writing a single contract: the picture is what makes a decomposition arguable, and the contracts fall out of it once the shape is right. Name what each component owns, and check that any two that could build at the same time own disjoint things — that is the whole lever against two managers colliding on the same ground. **Ownership means the directories the work happens in, not only the ones it produces.** For anything that relocates code those are different trees, and it is the source tree that collides: a decomposition drawn over destinations can look perfectly disjoint while both components spend the wave draining the same directory nobody was said to own. Discuss it the way everything else is discussed, one question at a time.
+4. **Draft.** Start from the [spec template](../templates/spec-template.md), written to the project's drafts directory as `<name>-spec.md`. Map first, then each component's contract. The markdown is the only authoritative copy; the Artifact in step 7 is a view.
 
-4. **Draft.** Start the document from the [spec template](../templates/spec-template.md), written to the project's drafts directory as `<name>-spec.md`. The map goes in first; each component's contract is written under it. This markdown is the deliverable and the only authoritative copy — the Artifact step 7 publishes is a view regenerated from it, never a second place to edit.
+5. **Fold in only on the user's word.** Discussion and drafting are separate acts.
 
-5. **Fold in only on the user's word.** Nothing enters the document until they say so — this governs the drafting loop; step 8 says what its own findings may fold in unasked. Discussion and drafting are separate acts; drafting early makes the user review prose when they wanted to think.
+6. **Probe in the background.** When a question needs real data, dispatch it as a background workflow and keep discussing. Queue the result in the tracker. Brainstorming is messy — guiding the user back to the order the system flows in is your job.
 
-6. **Probe in the background.** When a question needs real data — a third party's actual API behavior, an existing system's real numbers — dispatch it as a background workflow and keep discussing the next point. Queue the result in the tracker and take it up when it lands.
-   - High-level brainstorming is messy. The user will forget things, branch into tangents, and attack whichever piece surfaces in their mind first. That is expected. Guiding them back to the order the system actually flows in is your job, not theirs.
-
-7. **Cohesion pass.** The draft was written piecewise as the conversation progressed. Read it end to end as one artifact and fix what only shows at that scale — contradictions, organization, a term meaning one thing in one section and something else in another. Then check the template's wiring:
+7. **Cohesion pass.** Read the draft end to end and fix what only shows at that scale. Then check the template's wiring:
    - Every component is buildable alone and closes with its Tests.
-   - Every `Needs` line matches its component's `needs` in the dispatch graph, names a component the spec defines, and the edges hold no cycle.
-   - **The dispatch graph has one entry per `## C-N:` heading and no entry without one.** It is the only thing the chain sorts, so a component missing from it is a component that never builds, and an entry with no section is an edge into nothing that halts the chain.
-   - **At least one component declares a non-empty `needs`.** A spec where none does is un-waveable from its own text — the check that every `Needs` matches is silent when there are none of either, and the chain that builds it then hand-derives an ordering from prose without anything saying so. Either give the components their edges or state in the spec that ordering lives in the tracker, so the fallback is a decision rather than a discovery.
-   - A grouping is not a component: no dispatch-graph entry, no `Needs` line, and its heading is never `## C-N:`.
+   - Every `Needs` line matches its `needs` in the dispatch graph, names a defined component, and the edges hold no cycle.
+   - **The dispatch graph has one entry per `## C-N:` heading and none without one.**
+   - **At least one component declares a non-empty `needs`** — else state in the spec that ordering lives in the tracker.
+   - A grouping is not a component: no graph entry, no `Needs` line, never `## C-N:`.
    - Every `Owns` names something no other component claims.
    - The map's nodes and arrows match the sections and their edges.
-   - No component body describes how a thing is built, beyond a named mechanism it deliberately adopts and says what it buys.
-   - No component carries an edge it does not need. For each one, name what it cannot do until that component is merged, and drop the edge when you cannot — this is where a spec silently over-serializes.
-   - Any component whose work lands across the tree rather than downstream of a sibling carries `exclusive: true` in the dispatch graph, and no other component does.
-   - **Nothing the spec declines to close survives as a sentence.** A spec that names a hole understands it well enough to describe it, and describing it is not closing it: one spec wrote that its new rule caught writers and left readers uncovered, and an uncovered reader is what the finished branch shipped. Every such sentence is a component if the work is doable now, and a ticket if it genuinely is not — the same rule a Post-deploy item gets, for the same reason. Mark it in the spec either way; the [chain](spec-run.md) is what turns the second kind into a ticket, once the spec has merged. A hole with no owner is not a caveat, it is a defect the spec agreed to in advance.
+   - No component body describes how a thing is built, beyond a named mechanism it adopts and what it buys.
+   - No component carries an edge it does not need — for each, name what it cannot do until that component is merged.
+   - A component whose work lands across the tree carries `exclusive: true`; no other does.
+   - **Nothing the spec declines to close survives as a sentence.** A named hole is a component if doable now, a ticket if not. A hole with no owner is a defect the spec agreed to in advance.
 
-   **Then publish the view.** The markdown has just been read end to end for the first time, so this is the first moment it is worth looking at. Load the `artifact-design` skill, author the document as HTML into the scratchpad as `<name>-spec.html`, and publish it with the `Artifact` tool. Render the system map as a `mermaid` block — Artifacts render mermaid natively, so the map needs no diagramming library and no hand-placed coordinates. The HTML lives in the scratchpad and never in the repo: the PR reviews markdown, which is what makes a spec's changes readable between drafts.
+   **Then publish the view.** Load `artifact-design`, author the document as HTML into the scratchpad as `<name>-spec.html`, publish with the `Artifact` tool; the map as a `mermaid` block. Republish to the same path whenever the markdown changes — never edit the Artifact directly.
 
-   Republish to the same file path whenever the document changes — the URL is stable across the run, so the link given to the user once stays the one they return to. Regenerate it from the markdown every time. A fix applied to the Artifact and not the markdown is a fix the chain never sees.
-
-8. **Adversarial review.** Edge cases are where systems die, and planning generates assumptions faster than data retires them. This step asks what can actually happen at each strategic piece, and whether the spec accounts for it.
-   - **Attack lenses** — one agent per lens, each playing an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec as written does not stop it, and the smallest change that closes it.
-   - **Precedent research** — wherever the spec describes a scheme in its own words, hunt the named established equivalent (fan out on `RESEARCH_FANOUT_MODEL`). "Bet so you survive" is Kelly sizing; adopting the named mechanism inherits its literature, its known failure modes, and its parameter guidance.
-   - **Verify before reporting.** Check every finding against the document text. Kill the ones the spec already covers and the ones that are speculative rather than reachable. Present only survivors.
-   - Each surviving hole becomes a named scenario in its component's **Tests** — that section is what makes the spec testable before a line of code exists.
-   - **Route by size.** Minor tightening folds in directly. Anything altering the strategy returns to step 2, remaps if it moves a boundary, and is discussed one finding at a time, each folded in only on the user's word.
-   - On the third pass, nothing returns to step 2. Findings that still matter become tickets against the components they touch, and the spec ships.
+8. **Adversarial review.**
+   - **Attack lenses** — one agent per lens, each an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec does not stop it, the smallest change that closes it.
+   - **Precedent research** — wherever the spec describes a scheme in its own words, hunt the named established equivalent (fan out on `RESEARCH_FANOUT_MODEL`).
+   - **Verify before reporting.** Kill findings the spec already covers and ones that are speculative.
+   - Each surviving hole becomes a named scenario in its component's **Tests**.
+   - **Route by size.** Minor tightening folds in directly. Anything altering strategy returns to step 2, one finding at a time, folded in only on the user's word.
+   - On the third pass nothing returns to step 2: remaining findings become tickets and the spec ships.
 
 ## Wrap-up
 
-1. Present the spec: what it decided, the components and what each one makes true, and what is still open — counting open questions and post-deploy items separately, since only the first kind is actionable now. Plain language, 5-15 lines. Republish the Artifact from the final markdown and lead with its link — that is what the user reads and reviews. Give the repo path too, on its own line, since that is what the PR and the chain consume. Close by saying what happens next: **merging the PR is what starts the build**, and the tickets are filed then. An empty tracker after a wrap-up otherwise reads as a dropped step.
-2. Create the PR for the spec via the `git-provider` skill.
-3. Transition the ultra ticket to "in review" via the `jira` skill, and record the spec's repo path on it — the spec is the deliverable, its PR is now open, and a [chain](spec-run.md) later reads that path off this ticket.
-4. **File nothing.** The wrap-up ends here: PR open, ticket in review, path recorded. A spec under review is still moving, and every ticket filed against a draft is cleanup somebody has to do by hand when a review moves a boundary — the components get recarved and the tickets do not. The [chain](spec-run.md) files them all at its Driver step 4, and it opens only on a merged spec, so the user merging the PR is the one act that turns the spec into work. Say what is coming rather than creating it: the count of component tickets, post-deploy items, and any hole step 7 left standing as a ticket. Anything living only in the spec is invisible work, and the spec is what is being reviewed.
+1. Present the spec: what it decided, the components, what is still open — open questions and post-deploy items counted separately. Plain language, 5-15 lines. Lead with the republished Artifact link; give the repo path on its own line. Say that **merging the PR is what starts the build** and files the tickets.
+2. Create the PR via the `git-provider` skill.
+3. Transition the ultra ticket to "in review" via the `jira` skill, and record the spec's repo path on it — the [chain](spec-run.md) reads it there.
+4. **File nothing.** A spec under review is still moving. The [chain](spec-run.md) files every ticket at its Driver step 4, on a merged spec. Say what is coming: the count of component tickets, post-deploy items, and holes left as tickets.

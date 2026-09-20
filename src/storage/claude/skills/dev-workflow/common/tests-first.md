@@ -1,8 +1,6 @@
 # Tests first
 
-Failing tests are what make cheap workers safe. Not supervision — ground truth. A worker with nothing to fail against produces plausible code; a worker with a red test iterates until it is right.
-
-Dispatch `tester-agent` after the edge-case list is settled and before any worker.
+Failing tests are what make cheap workers safe: a worker with a red test iterates until it is right. Dispatch `tester-agent` after the edge-case list is settled and before any worker.
 
 ## What the tester gets
 
@@ -12,20 +10,12 @@ Dispatch `tester-agent` after the edge-case list is settled and before any worke
 
 ## What it produces
 
-Integration tests only — real tests in the project's framework, each exercising a whole endpoint or user flow. One suite per integration point.
-
-Unit tests belong to the workers. The tester never writes them: they bind to internals the scaffold does not specify, so writing them now means inventing.
+Integration tests only, one suite per integration point, each exercising a whole endpoint or user flow. Unit tests belong to the workers.
 
 ## The gate
 
-Every test must run and fail **for a reason you can name** — on the unimplemented throw where the scaffold added one, on the current wrong behavior where it did not.
-
-A test that errors during import or collection is not a failing test. You cannot tell whether it is valid, so fix that before continuing.
-
-Commit the tests before dispatching workers.
+Every test must run and fail **for a reason you can name** — on the unimplemented throw, or on the current wrong behavior. A test that errors during import or collection is not a failing test; fix that first. Commit the tests before dispatching workers.
 
 ## Ownership after dispatch
 
-Workers may not edit a tester test. A worker that believes a test is wrong stops and reports it — the parent decides, never the worker.
-
-Treat a challenged test as a signal worth reading. It usually means the edge-case list and the scaffold disagree.
+Workers may not edit a tester test. A worker that believes one is wrong stops and reports it — the parent decides. A challenged test usually means the edge-case list and the scaffold disagree.

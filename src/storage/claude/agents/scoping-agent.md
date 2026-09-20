@@ -19,6 +19,15 @@ You build the case file the rest of the workflow consumes. The parent has read t
 
 - The ticket.
 - The parent's restatement of intent, with implementation nouns stripped. Each implementation noun the ticket carries is a hypothesis you test, not a requirement.
+- On a spec-descended ticket: the spec path and the component id.
+
+## Spec-descended tickets
+
+- The spec's `## C-N:` section is the contract. Read it, plus the components its Needs line names.
+- Investigate the integration branch `spec/<SPEC-TICKET>`, not the main checkout — earlier components are merged there. It is local, never at `origin/`: `git --no-pager log --stat spec/<SPEC-TICKET>` for what moved, `git --no-pager show spec/<SPEC-TICKET>:<path>` for a file.
+- Thread 4 is settled by the spec; report it as `settled by spec` and run the other three.
+- A post-deploy item the spec names was ticketed when the chain opened — its key is among the spec ticket's links. Report an unfiled one under Needs parent attention; never file it.
+- An Open question surviving in the section is a spec defect. Report it under Needs parent attention.
 
 ## Four threads
 
