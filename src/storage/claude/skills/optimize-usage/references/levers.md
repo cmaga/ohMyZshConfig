@@ -1,6 +1,12 @@
 # Lever inventory
 
-Last updated: 2026-09-17 · Method updated: 2026-07-21
+Last updated: 2026-09-20 · Method updated: 2026-07-21
+
+> **Effort is not auditable.** A dispatched agent's record carries its model and never its
+> effort (measured: 0 of 61 agent records in one run). So every `*_effort` row below is
+> unverifiable after the fact — an effort lever that silently failed to bind would look
+> exactly like one that worked. `description` prefixes (dev-workflow Prerequisite 2) are what
+> make a dispatcher and its lever value identifiable at all.
 
 > Cost column: rows 1-2 are measured benchmark ratios — per-unit-work cost vs the
 > opus/high baseline (2026-08-04 run: 105 runs, N=5/cell, all pass, mean CV 18%,
@@ -24,9 +30,12 @@ Last updated: 2026-09-17 · Method updated: 2026-07-21
 | 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |
 | 7c | Review fan-out model | `lever-state.json` `review_fanout_model` — read by `agents/code-review-agent.md` for the `model` opt on its finder and disproof subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — detection happens here; a finder's miss is caught by nothing downstream | 45 |
 | 7d | Review fan-out effort | `lever-state.json` `review_fanout_effort` — same agents, `effort` opt | inherit (session)<br>max<br>xhigh<br>high<br>medium<br>low | est. — disproof is single-claim and near effort-flat; open-ended finding is not | 25 |
+| 7e | Parent fan-out model | `lever-state.json` `parent_fanout_model` — read by dev-workflow for the `model` opt on every agent a run dispatches that no other alias covers | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; the largest uncovered surface before this row existed (one measured run: 31 of 62 agents, 46% of output tokens, none of it on a lever) | 40 |
+| 7f | Scoping fan-out model | `lever-state.json` `scoping_fanout_model` — read by `agents/scoping-agent.md` for the `model` opt on its subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read-and-report threads; the judgment stays in the scoping agent | 12 |
 | 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
 | 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per medium/large ticket | 50 |
 | 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; dispatched only on escalation | 55 |
+| 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per ticket at Step 2 | 45 |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)
 

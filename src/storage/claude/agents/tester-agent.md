@@ -58,6 +58,8 @@ A test that errors during import, collection, or setup is not a failing test —
 **Integration points covered**: [list]
 **Test files written**: [paths]
 **Test results**: [N failing on unimplemented — the required state]
-**Edge cases not covered**: [each, with why — usually "not observable at this surface"]
+**Edge cases not covered**: [one line each — the parent moves them to worker cards]
 **Needs parent attention**: [anything blocking, or none]
 ```
+
+Nothing else.

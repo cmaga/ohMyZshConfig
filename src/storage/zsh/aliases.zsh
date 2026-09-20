@@ -53,17 +53,15 @@ alias gskipped='git ls-files -v | grep "^S"'
 # SSH Key Generation and Management
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 
-# Claude Code - skip permission prompts. Routes through the local LiteLLM proxy
-# (automations/litellm-proxy) when this machine has one, so the `deepseek` model
-# name resolves; otherwise plain claude.
+# Claude Code - skip permission prompts. Routes through the local proxy
+# (automations/claude-proxy) when this machine has one, so DeepSeek model names
+# resolve; otherwise plain claude, where only Anthropic models are reachable.
 oc() {
   local -a via_proxy=()
-  if [[ -n "$LITELLM_MASTER_KEY" ]]; then
-    if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health/liveliness; then
-      via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000 "ANTHROPIC_CUSTOM_HEADERS=x-litellm-api-key: Bearer $LITELLM_MASTER_KEY")
-    else
-      print -u2 "oc: litellm proxy is not up; starting without it"
-    fi
+  if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
+    via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000)
+  else
+    print -u2 "oc: claude-proxy is not up; starting without it (DeepSeek models will not resolve)"
   fi
   env $via_proxy claude --dangerously-skip-permissions "$@"
 }

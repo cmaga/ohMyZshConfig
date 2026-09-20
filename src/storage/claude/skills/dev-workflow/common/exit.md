@@ -12,7 +12,7 @@ Every tier mode ends here before returning control.
 
 ## The loose-end tracker
 
-The report is prose, and prose narrates. It lands in a scrollback of agent returns and tool output, gets skimmed, and an open decision written as a sentence reads as a decision already taken — *"a deadline, not a ticket; it's recorded on the note that owns the clock"* is a real one that sailed past a user who was reading. A task cannot do that. It is open or it is closed.
+The report is prose, and prose narrates. It lands in a scrollback of agent returns and tool output, gets skimmed, and an open decision written as a sentence reads as a decision already taken — _"a deadline, not a ticket; it's recorded on the note that owns the clock"_ is a real one that sailed past a user who was reading. A task cannot do that. It is open or it is closed.
 
 So anything still needing the user's judgment leaves as a task, never as a line in the report. Seed one `TaskCreate` per item — the tools are already loaded from Prerequisite 1, and the run's own step list is completed by now, so these append below it as the only open work.
 
@@ -56,28 +56,34 @@ The user answers, a subagent files it, and the tracker moves on the word `next`.
 
 ## Review gate
 
-Spawn `code-review-agent` once, fix what it finds, then send the fixes back to **the same agent**. Repeat until it passes or escalates. **Tell it to spawn nothing** — a reviewer that fans out loses every finding its helpers return and reports a verdict over the ground it covered itself. If a review needs several perspectives, run those agents yourself.
-
-Keeping it alive is the whole efficiency of this loop. A fresh reviewer re-reads the spec, the diff, and the full source of every changed file before it can say anything — that reload is the cost of a round, not the reviewing. The agent you already have holds all of it, plus its own reasoning for every finding it raised.
+Spawn `code-review-agent` once, fix what it finds, then send the fixes back to **the same agent**. Repeat until it passes or escalates. Keeping it alive is the whole efficiency of this loop.
 
 It returns JSON and never edits files. You do all the fixing.
+
+### Count the rounds, in writing
+
+**Open every dispatch with `Round N of the review gate.`** Keep the count in the scratchpad, one line per round: the round number, the reviewer's agent id, the commit reviewed, the gate verdict, and the file and symbol of each confirmed bug.
+
+The escalate checklist the reviewer runs is written for an agent that holds every round, and a reviewer restarted cold holds one. It cannot see that the same function failed twice running, so it reports a findings list where it should have escalated — and nothing else is counting. **A restarted reviewer gets that file's contents**, not a summary: the per-round symbols are what its checklist tests.
+
+Read the file before each dispatch and say the number out loud in the exit report. Seven rounds ran on one ticket against a five-round backstop, because seven fresh reviewers each held one round and the count lived only in the parent's head.
 
 ### What to pass it
 
 - **Tell it to diff every stated claim against the mechanism that backs it.** Bounds, coverage figures and every-X-is-handled sentences are where changes on this workflow go wrong, and never as a logic error: a guard that checks thirteen of fourteen, an anti-vacuity floor one quantifier weaker than its own sentence, a worst-case number stated three times and wrong twice. Always in the safe-looking direction, and in one run three of the six were inside artifacts written to prevent exactly that.
 - **First round** — what explains why the change was made (the spec if one exists — a component run sends its own `C-N` section and the ones its Needs names, not the whole document — else the scaffold commit and the plan, else the ticket title and description), the ticket, and the base branch if it is not `main`.
 - **Later rounds** — continue the same agent with `SendMessage`. Send only what it does not already have: what you did about each finding, and which commits hold the fixes. Never re-send the diff, the plan, or its own findings.
-- **If that agent is gone** (compaction, a dead agent) — spawn a fresh one with the first-round inputs plus last round's findings and what was done about each, and note in the exit report that the reviewer restarted cold.
+- **If that agent is gone** (compaction, a dead agent) — spawn a fresh one with the first-round inputs, the round-count file above, and what was done about each of last round's findings. Note in the exit report that the reviewer restarted cold.
 
 ### What comes back
 
 Four kinds of finding. **Only bugs block the gate.**
 
-| Kind          | What to do                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------------ |
-| **Bug**       | Fix it, or propose a ticket when it is too big for this one. See below.                                |
+| Kind          | What to do                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Bug**       | Fix it, or propose a ticket when it is too big for this one. See below.                                                 |
 | **Design**    | Never fix. It becomes a task on the [loose-end tracker](#the-loose-end-tracker) — it is the user's call.                |
-| **Quality**   | Fix it when it is small and provably behavior-preserving (dead code, a misleading name). Else list it. |
+| **Quality**   | Fix it when it is small and provably behavior-preserving (dead code, a misleading name). Else list it.                  |
 | **Tech debt** | A task on the [loose-end tracker](#the-loose-end-tracker) proposing a ticket, with the Jira search showing none exists. |
 
 Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: it decides whether you verify before fixing, never whether it gets fixed. Verify a `PLAUSIBLE` bug yourself before acting when it would be serious if true — uncertainty is a reason to check, not to skip.
@@ -89,13 +95,13 @@ Bugs carry a `CONFIRMED` or `PLAUSIBLE` tag. That is confidence, not severity: i
 - **Small enough for this ticket** — apply it, re-run the tests, commit as `address code review findings`, and push unless the run is spec-descended, whose branch is local.
 - **Too big** — carry it to the [loose-end tracker](#the-loose-end-tracker) as a proposed ticket, searching Jira first per the discovered-issue rule in [SKILL.md](../SKILL.md). A proposal counts as handled for the gate; do not file it to unblock yourself.
 - A recurring finding lists example locations only. Sweep the diff for the rest when you apply the fix.
-- **Sweep for the claim, not the symbol.** When a behaviour changes, everywhere that *quotes* the old behaviour is now stale, and a grep for the function's name will not find them. Check the definitional surface explicitly — the wiring module, the entry point, the README — because it describes the thing in one prose line and matches no name-based sweep, which is why it is the instance that survives four rounds of correction. It is also the file someone opens to learn what the job does, so the stale sentence there is the one that gets believed.
+- **Sweep for the claim, not the symbol.** When a behaviour changes, everywhere that _quotes_ the old behaviour is now stale, and a grep for the function's name will not find them. Check the definitional surface explicitly — the wiring module, the entry point, the README — because it describes the thing in one prose line and matches no name-based sweep, which is why it is the instance that survives four rounds of correction. It is also the file someone opens to learn what the job does, so the stale sentence there is the one that gets believed.
 
 ### When to stop
 
 - **`"gate": "pass"`** — done.
 - **`"gate": "escalate"`** — stop. The reviewer has decided the loop will not converge and its `reason` says what it thinks is wrong underneath. Take that to the escalation agent in [Step 6](../SKILL.md#what-stops-attended), and to the user only if it cannot decide — or, inside a chain, return it to the parent, which decides. Either way, do not open another round to prove it wrong.
-- **Five failed rounds** — a backstop for when the reviewer does not make that call itself. It should almost never fire; when it does, say so in the exit report.
+- **Five failed rounds** — read off the round-count file, a backstop for when the reviewer does not make that call itself. It should almost never fire. Advisory rather than a halt: say in the exit report that it fired and at what count, and carry on. A hard stop here would abandon confirmed bugs mid-fix, which is worse than a long loop — but a loop past five that nobody has named is how seven rounds happen.
 
 Whatever is still open becomes a task on the [loose-end tracker](#the-loose-end-tracker) rather than another round.
 

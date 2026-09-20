@@ -251,7 +251,7 @@ if [ -d "$STANDALONE_SOURCE" ]; then
 fi
 
 # Retired automations: unload and remove anything previously registered that is not in source
-for name in cost-tracker; do
+for name in cost-tracker litellm-proxy; do
     label="com.cmagana.$name"
     plist="$LAUNCH_AGENTS_DIR/$label.plist"
     if launchctl list 2>/dev/null | grep -q "$label"; then

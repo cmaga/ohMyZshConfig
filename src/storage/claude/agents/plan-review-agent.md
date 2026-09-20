@@ -52,7 +52,6 @@ Each finding cites `file:line` where relevant and is small enough that the user 
 **Findings**:
 1. [must-fix | should-consider | nit] [Concise statement] — `file:line` if applicable
 2. ...
-
-**Approved items**:
-- [Things you reviewed and found sound]
 ```
+
+Nothing else. A sound design is `Approved` with no findings.

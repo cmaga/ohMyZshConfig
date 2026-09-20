@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-17",
+  "updated": "2026-09-20",
   "levers": {
     "session_model": {
       "value": "fable",
@@ -88,6 +88,25 @@
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
+      ]
+    },
+    "parent_fanout_model": {
+      "value": "sonnet",
+      "kind": "skill",
+      "readers": [
+        "dev-workflow SKILL.md Prerequisite 2"
+      ]
+    },
+    "scoping_model": {
+      "value": "opus",
+      "kind": "runtime",
+      "native": "agents/scoping-agent.md model:"
+    },
+    "scoping_fanout_model": {
+      "value": "sonnet",
+      "kind": "skill",
+      "readers": [
+        "agents/scoping-agent.md Subagent settings"
       ]
     }
   }

@@ -47,7 +47,9 @@ Every finding points at a file and line in code you actually opened. Never guess
 
 ## Subagent settings
 
-Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state.json` and use `review_fanout_model` and `review_fanout_effort` as the `model` and `effort` options on every subagent. If the file or key is missing, or the value is `inherit`, leave that option out.
+Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state.json` and use `review_fanout_model` and `review_fanout_effort` as the `model` and `effort` options on every subagent. If the file or key is missing, or the value is `inherit`, leave that option out. Prefix each subagent's `description` with the lever values it carries, as `review-fanout(<model>/<effort>): <what it does>` — neither the model nor the effort you pass is recorded anywhere, so the prefix is the only trace of which lever that agent was dispatched under.
+
+Every subagent returns its findings verbatim, never summarized: a reviewer that lets a helper condense what it found reports a verdict over ground it never saw. Disproof subagents are the exception that proves the rule — each gets the failing scenario alone and never your reasoning, because an agent handed the argument for a bug is anchored on it, and a CONFIRMED verdict is what authorizes a fix no human checks.
 
 ## How to review
 
@@ -70,7 +72,7 @@ Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state
 
 ## When to escalate instead of failing
 
-Some rounds are not a findings list — they are a signal the loop will not converge. You are the only one who can see this, because you hold every round. Return `"gate": "escalate"` when any of these holds:
+Some rounds are not a findings list — they are a signal the loop will not converge. Run this checklist against every round, not only the ones you reviewed: if you were started cold mid-loop the parent owes you a round-count file, and its per-round symbols are what the second and third tests below read. **Ask for it if a later round arrives without one** — a reviewer holding one round cannot see a function failing twice running, and nothing downstream is counting either. Return `"gate": "escalate"` when any of these holds:
 
 - A fix broke something you had already passed. Once is enough: whoever is fixing does not understand the code well enough to edit it safely.
 - The same function produced a new bug in two rounds running, under different descriptions. The code is wrong in a way nobody has understood, and each round patches a symptom.

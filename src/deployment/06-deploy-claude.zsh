@@ -322,32 +322,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         print_status "warning" "claude CLI not available, skipping jcodemunch MCP registration"
     fi
 
-    # LiteLLM proxy behind worker-agent's `deepseek` model. deploy-automations
-    # registers the launchd agent (src/storage/automations/litellm-proxy/); this
-    # installs the binary and seeds the proxy's master key in ~/.zshrc.local. The
-    # DeepSeek key is a secret and stays manual. macOS only, like the agent.
-    # Idempotent: install and key generation each skip when already done.
+    # claude-proxy backs the DeepSeek model names. deploy-automations registers
+    # the launchd agent (src/storage/automations/claude-proxy/); the proxy needs
+    # only node, which bootstrap already installs. The DeepSeek key is a secret
+    # and stays manual. macOS only, like the agent.
     if [[ "$(detect_os)" == "macos" ]]; then
-        LITELLM_VERSION="1.101.0"
         ZSHRC_LOCAL="$HOME/.zshrc.local"
-
-        if command_exists litellm; then
-            print_status "success" "litellm already installed"
-        elif command_exists pipx; then
-            print_status "download" "Installing litellm proxy ${LITELLM_VERSION}..."
-            if pipx install "litellm[proxy]==${LITELLM_VERSION}" >/dev/null 2>&1; then
-                print_status "success" "litellm installed"
-            else
-                print_status "warning" "Failed to install litellm — worker-agent's deepseek model will not resolve"
-            fi
-        else
-            print_status "warning" "pipx not found — install it and re-run so the litellm proxy can start (worker-agent uses the deepseek model)"
-        fi
-
-        if ! grep -q '^export LITELLM_MASTER_KEY=' "$ZSHRC_LOCAL" 2>/dev/null; then
-            echo "export LITELLM_MASTER_KEY=sk-$(openssl rand -hex 16)" >> "$ZSHRC_LOCAL"
-            print_status "success" "Generated LITELLM_MASTER_KEY in $ZSHRC_LOCAL"
-        fi
         if ! grep -q '^export DEEPSEEK_API_KEY=' "$ZSHRC_LOCAL" 2>/dev/null; then
             print_status "warning" "DEEPSEEK_API_KEY not set — add 'export DEEPSEEK_API_KEY=<key>' to $ZSHRC_LOCAL"
         fi
