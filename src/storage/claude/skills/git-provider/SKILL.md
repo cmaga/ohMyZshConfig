@@ -100,6 +100,16 @@ Run **exactly one** branch below based on `PROVIDER`. Do not run the other provi
 | GitHub    | `gh pr review {id} --approve` |
 | Bitbucket | `bb pr approve {id}`          |
 
+### Build Logs
+
+| Provider  | Command                                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
+| GitHub    | `gh run view {id} --log-failed`                                                                              |
+| Bitbucket | `bb pipeline step list --pipeline {n} --show-logs-command`, then `bb pipeline step logs --pipeline {n} '{uuid}'` |
+
+Bitbucket needs the UUID with its braces — a step name is rejected despite the
+usage string. See the Pipelines section of the reference for the list shape.
+
 ## PR Body Template
 
 Use `dependencies/templates/pr-body.md` with placeholders:

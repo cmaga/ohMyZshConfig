@@ -189,6 +189,10 @@ bb pr unapprove {pr-id}
 bb pr decline {pr-id}
 ```
 
+Decline is also the closing state for a PR whose work landed by a direct push: a
+grafted squash commit shares no ancestry with the PR branch, so Bitbucket never
+auto-marks it merged and the PR stays open forever.
+
 ### Update Pull Request
 
 ```bash
@@ -248,6 +252,51 @@ bb commit list -o json
 
 # For specific branch
 bb commit list --branch {branch-name}
+```
+
+## Pipelines
+
+### List Builds
+
+```bash
+bb pipeline list -o json
+```
+
+Two traps in the response shape:
+
+- It returns every build on **one page, oldest first**. Reading the first N rows
+  gets the repository's earliest builds, not its recent ones. Sort by
+  `build_number` descending.
+- A **pull-request** build's `target` has no `ref_name` — its keys are `commit`,
+  `destination`, `destination_commit`, `pullrequest`, `selector`, `source`, with
+  `selector.type == "pull-requests"`. Only `branches` builds carry `ref_name`, so
+  filtering on a branch name silently matches nothing for a PR build.
+
+Identify a PR build by its commit instead:
+
+```python
+rows = sorted(rows, key=lambda p: p.get("build_number", 0), reverse=True)
+mine = [p for p in rows
+        if (p.get("target") or {}).get("commit", {}).get("hash", "").startswith(tip)]
+```
+
+### Step Logs
+
+Two commands: the UUID comes from `step list`, the log from `step logs`.
+
+```bash
+bb pipeline step list --pipeline {build-number} --show-logs-command
+bb pipeline step logs --pipeline {build-number} '{04b12b5e-...}'
+```
+
+`step logs` takes the UUID **with its braces**, quoted against shell globbing.
+Its usage string reads `<pipeline-step-uuid-or-name>`, but both alternatives it
+offers are rejected — a step name (`test-e2e`) and a bare UUID both fail with
+`Not found: The value provided is not a valid uuid`. Extract the braced form:
+
+```bash
+bb pipeline step list --pipeline {n} --show-logs-command \
+  | grep -oE '\{[0-9a-f-]+\}'
 ```
 
 ## Users
