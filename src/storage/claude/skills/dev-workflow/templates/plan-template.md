@@ -121,8 +121,6 @@ rejects diffs that re-implement anything listed.
 One card per worker. T-N IDs cite outcome IDs.
 Cards are extracted and passed inline to workers; workers open this file
 only if they hit ambiguity.
-Model = chosen by archetype (references/archetypes.md) and passed as the
-dispatch model opt.
 After = dispatch ordering only: list every card this one must run after
 (it consumes that card's output, or shares a file with it). Comma-separate
 multiple blockers; none = wave 1.
@@ -131,7 +129,6 @@ multiple blockers; none = wave 1.
 ### T-1: <scope>
 
 - **Satisfies**: O-?
-- **Model**: <haiku | sonnet | opus>
 - **After**: <T-x | T-x, T-y | none>
 - **Files**: <list>
 - **Steps**: <numbered>

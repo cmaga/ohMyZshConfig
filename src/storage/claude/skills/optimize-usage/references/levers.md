@@ -22,9 +22,7 @@ Last updated: 2026-09-20 · Method updated: 2026-07-21
 | 2 | Session effort | settings.json, `--effort`, `CLAUDE_CODE_EFFORT_LEVEL` (live) | max<br>xhigh<br>high<br>medium<br>low | max 1.22x<br>xhigh 1.11x (directional)<br>high 1.00x<br>medium unmeasured<br>low 0.74x<br>(measured on opus; session runs fable) | 50 |
 | 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios (fable 2x, opus 1x, sonnet 0.6x, haiku 0.2x); measured swaps run shallower than price (sonnet 0.86x at session) | 60 |
 | 4 | Review effort | `effort:` frontmatter in the same review agent files | max<br>xhigh<br>high<br>medium<br>low | est. — effort measured shallow at session (max 1.22x / high 1.00x / low 0.74x) | 35 |
-| 5 | Worker model | `agents/worker-agent.md` `model:` — fallback only; binds when a task card names no model | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; currently sonnet, no recorded quality drop | 25 |
-| 5a | Mechanical worker model | `lever-state.json` `mechanical_worker_model` — read by dev-workflow for the `Model` field on task cards whose work a committed test verifies | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; iterates against a red test until green | 10 |
-| 5b | Judgment worker model | `lever-state.json` `judgment_worker_model` — read by dev-workflow for the `Model` field on task cards requiring judgment | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3 | 30 |
+| 5 | Worker model | `agents/worker-agent.md` `model:` — the only place a worker's model is set; dev-workflow never passes one | fable<br>opus<br>deepseek-flash (proxy)<br>sonnet<br>haiku | est. — Claude models: price ratios as row 3. deepseek-flash: 0x on the Claude limit, billed separately by DeepSeek at ~0.03x opus per token; `deepseek-v4-pro` serves the same model at the same price until V4.1-Pro ships. Fails in a session not launched through `oc` | 30 |
 | 6 | Worker effort | `agents/worker-agent.md` `effort:` | max<br>xhigh<br>high<br>medium<br>low | est. — shallow per session effort data; bounded by review gates | 10 |
 | 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 4.1 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read/summarize; sonnet ~price-ratio cheap, safe | 8 |
 | 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |
@@ -43,4 +41,4 @@ Excluded — do not re-add: fast mode, context ceiling, skill frontmatter overri
 
 Advisor model came off this list (2026-09-17): the `advisor` tool is disabled. Row 10 replaced it.
 
-Per-card model is still excluded **as a lever** — the parent picks each card's model at dispatch, which is a workflow mechanic, not a config position. Rows 5a/5b are the tunable part: the policy those per-card picks default to. Do not flag the mechanic as an unregistered lever on a refresh pass.
+Per-card worker models were removed 2026-09-20: every worker runs on row 5. Do not re-add them.

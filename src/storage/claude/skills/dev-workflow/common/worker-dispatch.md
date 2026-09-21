@@ -2,7 +2,7 @@
 
 Workers arrive to a scaffolded repo with failing tests. Their job is to fill bodies until the tests pass — not to decide anything.
 
-- Spawn one `worker-agent` per task, passing the card's model id verbatim as the `model` opt — `haiku`, `sonnet`, or `opus`, never an alias and never `fable` ([archetypes](../references/archetypes.md)). Record each `agentId`.
+- Spawn one `worker-agent` per task with no `model` opt; the agent file sets the model. Record each `agentId`.
 - Dispatch in waves from each card's **After** field: wave 1 is every card with `After: none`; dispatch a wave in parallel, wait, then dispatch the cards whose blockers are complete. Two cards in one wave touching the same file is a plan defect — fix the plan, then dispatch.
 - Each worker's prompt is its T-N card from the plan — paste that block, not the whole plan. Every card says:
   - Workers may not run `git reset`, `checkout --`, `stash`, `clean`, or `restore`; each stages only its own files, by path. Workers in a wave share one tree.

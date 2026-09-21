@@ -44,7 +44,7 @@ Everything else, a component ticket included, runs the steps below.
    5. Workspace setup
    6. Implementation
    7. Exit
-2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind its `kind: "skill"` levers to the all-caps form of their keys: `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `MECHANICAL_WORKER_MODEL`, `JUDGMENT_WORKER_MODEL`, `ESCALATION_MODEL`, and `PARENT_FANOUT_MODEL` (every dispatch no other alias covers). `inherit`, an absent key, or a missing file means omit the `model` opt. Re-read the file after compaction. Prefix every dispatched agent's `description` with its alias and value — `code-fanout(opus): seam check on the intake path` — since the model is recorded nowhere else.
+2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind its `kind: "skill"` levers to the all-caps form of their keys: `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `ESCALATION_MODEL`, and `PARENT_FANOUT_MODEL` (every dispatch no other alias covers, except `worker-agent`, which never takes a `model` opt). `inherit`, an absent key, or a missing file means omit the `model` opt. Re-read the file after compaction. Prefix every dispatched agent's `description` with its alias and value — `code-fanout(opus): seam check on the intake path` — since the model is recorded nowhere else.
 3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value, until Step 5.3 rebinds it for a spec-descended run.
 4. **Main-checkout gate.** In the main checkout, run `git status --porcelain`. If it prints anything, stop, show the user the dirty files, and wait for their decision — never stash, commit, or discard main-checkout changes to unblock yourself. When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream. Leave the main checkout on the base branch — nothing later in the flow moves it, and a session that finds it elsewhere is looking at a bug.
 
@@ -125,7 +125,7 @@ After that the run does not stop until the PR is out. Only escalation breaks it:
 
 ### Small
 
-1. Dispatch any number of `worker-agent` with changes to be made to implement your approach. Pick each one's model id with the [archetypes](references/archetypes.md).
+1. Dispatch any number of `worker-agent` with changes to be made to implement your approach.
 2. [Exit](common/exit.md).
 
 ### Medium
@@ -136,7 +136,7 @@ The full pipeline, no waits.
 2. [Scaffold](common/scaffold.md) — commit it as soon as it is written
 3. [Edge cases](common/edge-cases.md) — produce the full list and carry it straight into the tester
 4. [Tests first](common/tests-first.md)
-5. [Plan](common/plan.md) — every task card carries its own model, by [archetype](references/archetypes.md)
+5. [Plan](common/plan.md)
 6. [Dispatch workers](common/worker-dispatch.md)
 7. [Parent review](common/parent-review.md)
 8. [Exit](common/exit.md)
@@ -149,7 +149,7 @@ Medium, plus the user in the scaffolding code and two review gates on it.
 2. [Scaffold](common/scaffold.md) — left uncommitted and **wait for the user**; commit once their corrections are in, then invoke `plan-review-agent` against that commit. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls to the user.
 3. [Edge cases](common/edge-cases.md) — produce the full list and carry it straight into the tester
 4. [Tests first](common/tests-first.md)
-5. [Plan](common/plan.md) — every task card carries its own model, by [archetype](references/archetypes.md)
+5. [Plan](common/plan.md)
 6. **QA planning.** Invoke `qa-planner-agent` with the draft plan and the user-facing surfaces it affects (UI, API, CLI). Append the agent's `## QA Plan` section to the plan verbatim.
 7. [Dispatch workers](common/worker-dispatch.md)
 8. [Parent review](common/parent-review.md)

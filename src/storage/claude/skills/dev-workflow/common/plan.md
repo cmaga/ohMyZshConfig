@@ -11,7 +11,6 @@ Then write `.claude-artifacts/workflows/dev-workflow/plan.md` inside the worktre
 - Take `## Files` from the scaffold — the files already exist.
 - Partition those files across task cards so no two cards in the same wave touch the same file. Where two must — a module index, a barrel export — give the later one an `After` edge. The boundaries are wrong only when no ordering exists or the overlap is pervasive; then return to [scaffold](scaffold.md).
 - Number outcomes (`O-1`, `O-2`, …). Each card cites the outcome IDs it satisfies.
-- Give every card a model by [archetype](../references/archetypes.md): test-verified work defaults to `MECHANICAL_WORKER_MODEL`, judgment work to `JUDGMENT_WORKER_MODEL`.
 - Fill `## Reuse contract` from Step 4.2's reuse mapping and the `## Reusable surface` sections of vault notes the plan touches.
 - Carry each edge case only observable inside a body onto the card that owns that body.
 - Mark unresolved ambiguity inline as `[NEEDS CLARIFICATION: ...]`. Mark `[DEFERRED: ... → ticket]` or `[REPORT: ...]` only when a fix genuinely cannot ride this branch, with the reason in the marker — "out of scope" is not one.
