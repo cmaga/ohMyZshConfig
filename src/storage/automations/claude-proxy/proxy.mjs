@@ -170,10 +170,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   // The point of this proxy: relay the response untouched. Claude Code reads
-  // rate-limit and low-priority headers straight off it.
+  // rate-limit and low-priority headers straight off it. The one exception is
+  // content-encoding: fetch already decoded the body, so relaying the header
+  // would make the client decompress plaintext.
   const outHeaders = {};
   for (const [key, value] of upstream.headers) {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) outHeaders[key] = value;
+    const k = key.toLowerCase();
+    if (!HOP_BY_HOP.has(k) && k !== "content-encoding") outHeaders[key] = value;
   }
   res.writeHead(upstream.status, outHeaders);
 
