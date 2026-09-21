@@ -219,6 +219,23 @@ process_automation() {
 
 print_status "info" "Deploying automations..."
 
+# Retired automations: unload and remove anything previously registered that is not in source.
+# Runs before registration so a successor that takes over a retired agent's port can bind it.
+for name in cost-tracker litellm-proxy; do
+    label="com.cmagana.$name"
+    plist="$LAUNCH_AGENTS_DIR/$label.plist"
+    if launchctl list 2>/dev/null | grep -q "$label"; then
+        print_status "info" "Unloading retired $label..."
+        launchctl unload "$plist" 2>/dev/null || true
+    fi
+    if [ -f "$plist" ]; then
+        rm -f "$plist" && print_status "success" "Removed $plist"
+    fi
+    if [ -d "$STANDALONE_DEST/$name" ]; then
+        rm -rf "$STANDALONE_DEST/$name" && print_status "success" "Removed $STANDALONE_DEST/$name"
+    fi
+done
+
 # 1. Skill-bundled automations under ~/.claude/skills/<name>/
 if [ -d "$CLAUDE_SKILLS_DEST" ]; then
     for skill_dir in "$CLAUDE_SKILLS_DEST"/*/; do
@@ -249,21 +266,5 @@ if [ -d "$STANDALONE_SOURCE" ]; then
         process_automation "$name" "$run_script" "$dest_dir/automation.toml"
     done
 fi
-
-# Retired automations: unload and remove anything previously registered that is not in source
-for name in cost-tracker litellm-proxy; do
-    label="com.cmagana.$name"
-    plist="$LAUNCH_AGENTS_DIR/$label.plist"
-    if launchctl list 2>/dev/null | grep -q "$label"; then
-        print_status "info" "Unloading retired $label..."
-        launchctl unload "$plist" 2>/dev/null || true
-    fi
-    if [ -f "$plist" ]; then
-        rm -f "$plist" && print_status "success" "Removed $plist"
-    fi
-    if [ -d "$STANDALONE_DEST/$name" ]; then
-        rm -rf "$STANDALONE_DEST/$name" && print_status "success" "Removed $STANDALONE_DEST/$name"
-    fi
-done
 
 print_status "success" "Automation deployment complete!"
