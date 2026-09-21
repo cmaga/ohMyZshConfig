@@ -2,7 +2,7 @@
   "updated": "2026-09-21",
   "levers": {
     "session_model": {
-      "value": "fable",
+      "value": "opus",
       "kind": "runtime",
       "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json"
     },
@@ -17,7 +17,7 @@
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
-      "value": "max",
+      "value": "xhigh",
       "kind": "runtime",
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
@@ -32,7 +32,7 @@
       "native": "agents/tester-agent.md model:"
     },
     "escalation_model": {
-      "value": "fable",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent"
@@ -44,40 +44,40 @@
       "native": "agents/worker-agent.md effort: (unset)"
     },
     "vault_scribe_model": {
-      "value": "opus",
+      "value": "sonnet",
       "kind": "runtime",
       "native": "agents/vault-scribe-agent.md model:"
     },
     "research_fanout_model": {
-      "value": "sonnet",
+      "value": "haiku",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.1"
       ]
     },
     "code_fanout_model": {
-      "value": "opus",
+      "value": "sonnet",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.2"
       ]
     },
     "review_fanout_model": {
-      "value": "opus",
+      "value": "sonnet",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "review_fanout_effort": {
-      "value": "xhigh",
+      "value": "high",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "parent_fanout_model": {
-      "value": "sonnet",
+      "value": "haiku",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Prerequisite 2"
@@ -89,7 +89,7 @@
       "native": "agents/scoping-agent.md model:"
     },
     "scoping_fanout_model": {
-      "value": "sonnet",
+      "value": "haiku",
       "kind": "skill",
       "readers": [
         "agents/scoping-agent.md Subagent settings"
