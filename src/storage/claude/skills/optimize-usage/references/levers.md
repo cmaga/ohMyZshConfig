@@ -1,6 +1,6 @@
 # Lever inventory
 
-Last updated: 2026-09-20 · Method updated: 2026-07-21
+Last updated: 2026-09-21 · Method updated: 2026-07-21
 
 > **Effort is not auditable.** A dispatched agent's record carries its model and never its
 > effort (measured: 0 of 61 agent records in one run). So every `*_effort` row below is
@@ -11,18 +11,20 @@ Last updated: 2026-09-20 · Method updated: 2026-07-21
 > Cost column: rows 1-2 are measured benchmark ratios — per-unit-work cost vs the
 > opus/high baseline (2026-08-04 run: 105 runs, N=5/cell, all pass, mean CV 18%,
 > which resolves ~40% effects; figures within ~25% of 1.0x are directional).
-> Rows 3-8 are per-token price-ratio estimates (fable 2x opus, sonnet 0.6x, haiku
+> Rows 3-8 are per-token price-ratio estimates (fable 2x opus, sonnet 0.4x, haiku
 > 0.2x), tagged est. pending an agent-frontmatter benchmark runner. Ratios are not
 > additive points. Aliases currently bind: opus=Opus 5, sonnet=Sonnet 5,
-> haiku=Haiku 4.5, fable=Fable 5.
+> haiku=Haiku 4.5, fable=Fable 5.1 (Claude Code 2.1.257+; same list price as Fable 5,
+> but cache reads $0.25/MTok vs opus $0.50, so a cache-heavy session runs below the
+> 2x list ratio — unmeasured; the row 1 fable figure was measured on Fable 5).
 
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet<br>haiku | fable 2.08x<br>opus 1.00x<br>sonnet 0.86x (directional)<br>haiku 0.18x | 100 |
+| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet<br>haiku | fable 2.08x (measured on Fable 5)<br>opus 1.00x<br>sonnet 0.86x (directional)<br>haiku 0.18x | 100 |
 | 2 | Session effort | settings.json, `--effort`, `CLAUDE_CODE_EFFORT_LEVEL` (live) | max<br>xhigh<br>high<br>medium<br>low | max 1.22x<br>xhigh 1.11x (directional)<br>high 1.00x<br>medium unmeasured<br>low 0.74x<br>(measured on opus; session runs fable) | 50 |
-| 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios (fable 2x, opus 1x, sonnet 0.6x, haiku 0.2x); measured swaps run shallower than price (sonnet 0.86x at session) | 60 |
+| 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios (fable 2x, opus 1x, sonnet 0.4x, haiku 0.2x); measured swaps run shallower than price (sonnet 0.86x at session) | 60 |
 | 4 | Review effort | `effort:` frontmatter in the same review agent files | max<br>xhigh<br>high<br>medium<br>low | est. — effort measured shallow at session (max 1.22x / high 1.00x / low 0.74x) | 35 |
-| 5 | Worker model | `agents/worker-agent.md` `model:` — the only place a worker's model is set; dev-workflow never passes one | fable<br>opus<br>deepseek-flash (proxy)<br>sonnet<br>haiku | est. — Claude models: price ratios as row 3. deepseek-flash: 0x on the Claude limit, billed separately by DeepSeek at ~0.03x opus per token; `deepseek-v4-pro` serves the same model at the same price until V4.1-Pro ships. Fails in a session not launched through `oc` | 30 |
+| 5 | Worker model | `agents/worker-agent.md` `model:` — the only place a worker's model is set; dev-workflow never passes one | fable<br>opus<br>deepseek-flash (proxy)<br>sonnet<br>haiku | est. — Claude models: price ratios as row 3. deepseek-flash (DeepSeek-V4.1-Flash): 0x on the Claude limit, billed separately by DeepSeek at ~0.03x opus per token off-peak, double that at peak; `deepseek-v4-pro` (DeepSeek-V4-Pro-0813) is ~4x the flash price and dominated by it. Fails in a session not launched through `oc` | 30 |
 | 6 | Worker effort | `agents/worker-agent.md` `effort:` | max<br>xhigh<br>high<br>medium<br>low | est. — shallow per session effort data; bounded by review gates | 10 |
 | 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 4.1 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read/summarize; sonnet ~price-ratio cheap, safe | 8 |
 | 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |

@@ -15,7 +15,7 @@ A run is unattended when the user pastes a `/goal`; `manual` in the take keeps i
 
     /goal <one measurable end state, and the check that settles it>
 
-Name something whose evidence lands in the transcript — *every component merged with the suite green* — never a posture. Schedule nothing alongside it; only [the chain](common/spec-run.md) arms a wake-up. A run that notices any interruption asks the user to re-arm.
+Name something whose evidence lands in the transcript — *every component merged with the suite green* — never a posture. Schedule nothing alongside it. A run that notices any interruption asks the user to re-arm.
 
 An armed goal converts these gates, and only these, to decide-record-and-continue:
 

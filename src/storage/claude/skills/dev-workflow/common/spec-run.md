@@ -32,7 +32,7 @@ Once step 2 has the waves, seed the task tracker with one item per wave, `Integr
 
    Say in the same message that `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=10` is worth setting for a run this long.
 
-   **Then arm the out-of-process wake-up** — the one run that does. A usage limit clears the goal silently and nothing else restarts the chain. Set a periodic check, cadence longer than a wave, that re-dispatches if nothing is live. **Record its id in the scratchpad** — [hand-back](#hand-back) takes it down. After any interruption, ask the user to re-arm the goal.
+   After any interruption, ask the user to re-arm the goal.
 
 4. **File the spec's tickets, under an epic.** Create the epic first, named for the spec and linked to the ultra ticket — never convert the ultra ticket into one. File one child per `## C-N:` section, plus one per **Post-deploy** item and per hole the spec left as a ticket, each naming its section. **Read the epic's children and the ultra ticket's links first** and match to `C-N` ids — top up, never duplicate. An **Open question** still in a component's section is a spec defect: settle it per [escalation](#escalation) before its wave opens; only one that goes to the user withholds that wave — run the waves before it.
 
@@ -98,7 +98,7 @@ The chain parent answers what the spec answers. A manager held one section; you 
 
 For a component that cannot finish, never for a question. Let its wave's siblings finish and integrate; the next wave does not open, whatever its `Needs` say. A component withheld before its wave opened (step 4) means nothing in that wave is built.
 
-A halt is not [hand-back](#hand-back): no PR. **Cancel the wake-up from Driver step 3.** Leave everything standing and report in prose — which component stopped, on what, which waves never started, what is left — not the exit report. Give the user your worktree's absolute path.
+A halt is not [hand-back](#hand-back): no PR. Leave everything standing and report in prose — which component stopped, on what, which waves never started, what is left — not the exit report. Give the user your worktree's absolute path.
 
 ## Hand-back
 
@@ -120,5 +120,5 @@ When the last wave integrates:
 6. **Push the branch and open the one PR** — `git push -u origin spec/<SPEC-TICKET>`, then the `git-provider` skill. Red checks are reported, not fixed.
 7. **Move every component ticket to match the branch** — the branch is the truth.
 8. Run [cleanup](cleanup.md) for every merged component. Your own integration worktree stays.
-9. **Hand over your worktree, and cancel the wake-up** by the id recorded at Driver step 3. Give the user the worktree's absolute path and the command that starts the app.
+9. **Hand over your worktree.** Give the user the worktree's absolute path and the command that starts the app.
 10. **Report.** One [exit report](../templates/exit-report.md) for the whole spec: what the user can do, what to test, which component stopped or never started, every deviation with its verdict, every red CI check. Assumptions, deferrals, and unfixed findings collapse into one [loose-end tracker](exit.md#the-loose-end-tracker); the three-task cap applies.

@@ -1,10 +1,10 @@
 {
-  "updated": "2026-09-20",
+  "updated": "2026-09-21",
   "levers": {
     "session_model": {
       "value": "fable",
       "kind": "runtime",
-      "native": "~/.claude/settings.json model"
+      "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json"
     },
     "session_effort": {
       "value": "high",
