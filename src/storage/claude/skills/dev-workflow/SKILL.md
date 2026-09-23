@@ -20,8 +20,8 @@ Name something whose evidence lands in the transcript — *every component merge
 An armed goal converts these gates, and only these, to decide-record-and-continue:
 
 - The [scaffold](common/scaffold.md) review wait and blast-radius interrupt
-- A strategic plan marker — decide it, rewrite as `[ASSUMED: ...]`, carry it to the [loose-end tracker](common/exit.md#the-loose-end-tracker)
-- Ticket filing — file nothing; every discovered issue becomes a tracker task. Exception: a chain filing a component ticket the spec calls for
+- A strategic plan marker — decide it, rewrite as `[ASSUMED: ...]`, carry it to [triage](common/exit.md#triage)
+- Ticket filing — file nothing; every discovered issue goes to triage. Exception: a chain filing a component ticket the spec calls for
 - A spec component's local merge into its integration branch
 
 Still stops the run: the prerequisite gates, a review gate at its five-round backstop or an `escalate` the [escalation agent](#what-stops-attended) cannot decide, a red required PR check. Inside a chain the component returns instead and the parent decides. The run ends on the tracker's first item — that is the hand-back.
@@ -121,7 +121,7 @@ The complete list; a step not named here does not wait, whatever its procedure f
 
 After that the run does not stop until the PR is out. Only escalation breaks it: the review gate returns `escalate` or hits its five-round backstop, a worker escalation you cannot decide from the code, or a hard blocker. **A question whose answer is in the repo is not an escalation** — read the code and decide it.
 
-**Before an escalation reaches the user, give it to the escalation agent** — a `general-purpose` agent on `ESCALATION_MODEL` — with the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user.
+**Before an escalation reaches the user, give it to the escalation agent** — a `general-purpose` agent on `ESCALATION_MODEL` — with the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user. The same agent [triages](common/exit.md#triage) the loose ends at exit.
 
 ### Small
 
@@ -171,7 +171,7 @@ The target behavior is settled as a spec, carved into independently buildable co
 - **Before adding a validator that refuses a configuration, grep the tests for the field it would refuse.** A defect-guard test is the record of *we tried that*.
 - Discovered-issue routing: a problem found mid-flow is routed when found, never parked as prose.
   - **Fix it.** The one question is whether the fix can ride this branch — not whether it is in scope. This is the cheapest moment the fix will ever have.
-  - Leave it only when it genuinely cannot ride — a different subsystem, a design decision the user owns, a scope that would double the diff. Then propose it with your recommendation and why it could not ride. A third proposal on the tracker means re-ask whether any could have been fixed.
+  - Leave it only when it genuinely cannot ride — a different subsystem, a design decision the user owns, a scope that would double the diff. If your own answer is that it rides, that answer is final: fold it. Then open it as a task, with your recommendation and why it could not ride; [triage](common/exit.md#triage) at exit folds it or escalates it. A third candidate means re-ask whether any could have been fixed.
   - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every close candidate; search component and file names too. An existing ticket ends the matter: cite its key.
   - **File only after the user says to.** An unfiled item is an open task on the [loose-end tracker](common/exit.md#the-loose-end-tracker) until they answer. Prose in a plan, PR description, vault note, or exit report is not an owner.
 - Never merge a PR into the base branch; an armed goal is not that ask. The one exception is a component's local merge into its spec's integration branch, by whoever owns the component's ticket — a chain merges its components; a component dispatched inside a chain merges nothing.
