@@ -7,7 +7,8 @@ Post-merge teardown for a completed ticket. Invoked when the user says `cleanup 
 - Never proceed unless `gh pr view` reports `MERGED`. Any other state: abort with the state in the message.
 - Idempotent. A resource already gone is not an error.
 - `--force` removal of a worktree only after step 2 confirms `MERGED`.
-- Never `git worktree remove` the worktree the session is inside — the pin then resolves to nothing. `ExitWorktree` is the only exit; if it already happened, `ExitWorktree` with `action: "remove"` still clears the pin.
+- Never `git worktree remove` the worktree the session is inside — the pin then resolves to nothing. `ExitWorktree` with `action: "keep"` is the only exit. Its `remove` reports removals it never did; git does the removing.
+- Work silently. Speak only when something unexpected happens — a command fails, or a resource survives its removal — and then say what and why. The step 5 report is the only other output.
 - Main-checkout gate: before any write in the main checkout, `git status --porcelain` must print nothing. If it prints anything, stop and show the user. Never stash, commit, or discard main-checkout changes.
 
 ## Process
@@ -55,8 +56,14 @@ done
 In order:
 
 1. If `<path>/.claude-artifacts/teardown.sh` exists, run it: `bash <path>/.claude-artifacts/teardown.sh`. Projects that provision per-worktree resources record their undo commands there. Report failures but do not stop. Never substitute your own cleanup commands or widen the scope — no `docker system prune`, nothing that could reach another worktree.
-2. `ExitWorktree` with `action: "remove"` and `discard_changes: true` — squash and rebase merges leave a branch "unmerged" by git's heuristic; step 2 confirmed `MERGED` via `gh`.
-3. Fall back to git — `git worktree remove --force <path>`, then `git branch -D <branch>` — when step 2 could not do the job: no worktree session was active, or the worktree was entered by `path` (every spec-descended run). For the latter, `ExitWorktree` with `action: "keep"` first to unpin.
+2. `ExitWorktree` with `action: "keep"` to unpin the session. Skip it when no worktree session is active.
+3. Remove with git, worktree first — `git branch -D` refuses a branch a worktree still claims:
+
+       git worktree remove --force <path>
+       git branch -D <branch>
+       git ls-remote --heads origin <branch>   # prints anything → git push origin --delete <branch>
+
+   `-D`, not `-d`: squash and rebase merges leave the branch "unmerged" by git's heuristic; step 2 confirmed `MERGED`. Done when `git worktree list` no longer shows `<path>`.
 4. Update the local base branch: main-checkout gate, then check out the base branch and `git pull --ff-only`; skip the pull with no upstream. A spec-descended ticket's base branch is the local integration branch — leave it as it is.
 5. Kill any shells still running.
 
