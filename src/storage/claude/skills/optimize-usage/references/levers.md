@@ -34,7 +34,7 @@ Last updated: 2026-09-21 · Method updated: 2026-07-21
 | 7f | Scoping fan-out model | `lever-state.json` `scoping_fanout_model` — read by `agents/scoping-agent.md` for the `model` opt on its subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read-and-report threads; the judgment stays in the scoping agent | 12 |
 | 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
 | 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per medium/large ticket | 50 |
-| 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; dispatched only on escalation | 55 |
+| 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user, and by exit triage, where the same agent folds or escalates each loose end | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; dispatched on escalation and once per run at exit triage when there are loose ends | 55 |
 | 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per ticket at Step 2 | 45 |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)

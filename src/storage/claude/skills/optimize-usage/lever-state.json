@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21",
+  "updated": "2026-09-23",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -32,10 +32,11 @@
       "native": "agents/tester-agent.md model:"
     },
     "escalation_model": {
-      "value": "opus",
+      "value": "fable",
       "kind": "skill",
       "readers": [
-        "dev-workflow SKILL.md Step 6 escalation agent"
+        "dev-workflow SKILL.md Step 6 escalation agent",
+        "dev-workflow common/exit.md Triage"
       ]
     },
     "worker_effort": {
