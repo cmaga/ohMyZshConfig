@@ -13,7 +13,7 @@ echo "${BLUE}Running pre-commit validation...${NC}"
 echo
 
 # Check if any relevant files are staged for commit
-staged_files=$(git diff --cached --name-only | grep -E '\.(zsh|txt)$|^\.zshrc$|^aliases\.zsh$|^Makefile$')
+staged_files=$(git diff --cached --name-only | grep -E '\.(zsh|txt|sh|json)$|^\.zshrc$|^aliases\.zsh$|^Makefile$|^src/storage/claude/')
 
 if [[ -z "$staged_files" ]]; then
     echo "${YELLOW}No relevant files staged for commit, skipping validation.${NC}"
