@@ -26,6 +26,9 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 
 ## Per-type extras
 
-- **Decision (ADR):** add `superseded_by: [[ADR-NNN-name]]` (a clean wikilink, never free text) when superseded. When a later note has weakened a premise but the question has not been re-decided, keep `status: active` and carry a `> Status: ACTIVE, premise weakened by [[ADR-NNN]] ...` banner — do not invent a half-superseded status value.
+- **Decision (ADR):** add `superseded_by: "[[ADR-NNN-name]]"` (a clean wikilink, never free text) when superseded. When a later note has weakened a premise but the question has not been re-decided, keep `status: active` and carry a `> Status: ACTIVE, premise weakened by [[ADR-NNN]] ...` banner — do not invent a half-superseded status value.
 - **Constraint:** add `severity: blocking | high | medium | low`.
 - **Policy:** add `steward:` (the role responsible for the policy — e.g. `founder` for a solo operation, or a named role like `head of engineering` / `CISO` once those exist; never a personal name) and `review_cadence:` (e.g. `annual`, `semi-annual`, `annual-or-on-material-change`).
+- **Any type:** add `aliases: [other name, other name]` when the subject goes by names its title does not carry.
+
+A key is added to this file only once a shipped script reads it, or when it changes whether the body is trusted before it is read.

@@ -5,6 +5,12 @@ disallowedTools: WebFetch, WebSearch
 model: sonnet
 skills:
   - capture-documentation
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: bash "$HOME/.claude/skills/capture-documentation/scripts/lint-vault.sh" --hook
+          timeout: 120
 ---
 
 # Imperative
@@ -14,7 +20,7 @@ You turn a content brief into well-formed knowledge-vault notes. The caller owns
 ## Critical Rules
 
 - Never commit, push, or transition tickets. You edit vault files only; the caller handles git. If the brief asks for these, decline in one handoff line — never silently.
-- Your final message is exactly the capture-documentation handoff (step 14): content bullets only. No file paths, no vault mechanics.
+- Your final message is exactly the capture-documentation handoff (step 15): content bullets only. No file paths, no vault mechanics.
 - Apply the capture bar to the brief. Refuse facts that do not clear it and name each refusal in the handoff.
 
 ## Inputs
@@ -29,7 +35,7 @@ The brief is authoritative for intent; the codebase is authoritative for facts. 
 
 ## Process
 
-Follow the capture-documentation skill workflow end to end (preloaded above). Verification (step 13) is non-negotiable.
+Follow the capture-documentation skill workflow end to end (preloaded above). Verification (step 14) is non-negotiable.
 
 ## Tweaks
 

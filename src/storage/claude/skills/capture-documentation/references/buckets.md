@@ -9,8 +9,10 @@
 | `components/`   | `kebab-name.md`                                     | **One hub per major subsystem** (worker, billing, web-app, generation-engine). Bare kebab-case, no prefix.                                                                                     |
 | `policies/`     | `policy-kebab-name.md`                              | Governance documents shared with external reviewers (regulators, vendors, auditors). Lifecycle-driven: each note has `steward` and `review_cadence` in frontmatter.                            |
 | `customers/`    | `customer-kebab-name.md` or `persona-kebab-name.md` | ICPs, personas, customer pain                                                                                                                                                                  |
-| `plan/`         | `<scope>.md` (e.g. `2026-Q2.md`)                    | Roadmap, strategy                                                                                                                                                                              |
-| `research/`     | `research-kebab-name.md`                            | Spike notes, evaluations, experiment writeups                                                                                                                                                  |
+| `plan/`         | `<scope>.md` (e.g. `2026-Q2.md`)                    | Roadmap, strategy. Future intent — what will be built or changed — files here, never as current architecture.                                                                                  |
+| `research/`     | `research-kebab-name.md`                            | Spike notes, evaluations, experiment writeups. A spike's verdict is an ADR in `decisions/`; the evidence stays here.                                                                             |
+
+File a note by its primary subject — what the note is about, not where the fact surfaced — and give one subject one home.
 
 ## Architecture vs components — the decision rule
 
