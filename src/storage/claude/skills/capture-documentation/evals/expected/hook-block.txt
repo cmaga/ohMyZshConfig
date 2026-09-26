@@ -1,0 +1,7 @@
+exit=2
+--- stdout ---
+
+--- stderr ---
+FAIL components/reporting-pipeline.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
+DRIFT components/reporting-pipeline.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
+Fix every FAIL above before handing off. Copy each DRIFT line into the handoff as "Drift found: <what the vault states> - <what the code shows>".

@@ -1,0 +1,6 @@
+exit=0
+--- stdout ---
+HIGH	<tmp>/repo/docs/project-knowledge/components/reporting-pipeline.md:13	[[ADR-009-scale-worker-pool]]	"adr-009"	override (unlike decisions/ADR-009) and no prior over-limit finding
+HIGH	<tmp>/repo/docs/project-knowledge/policies/policy-data-retention.md:14	[[reporting-pipeline]]	"reporting pipeline"	surfaced by the reporting pipeline inherit the billing retention window
+--- stderr ---
+

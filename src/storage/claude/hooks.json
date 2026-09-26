@@ -9,6 +9,16 @@
             "command": "$HOME/.claude/hooks/deny-busy-loops.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/guard-vault-write.sh",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [

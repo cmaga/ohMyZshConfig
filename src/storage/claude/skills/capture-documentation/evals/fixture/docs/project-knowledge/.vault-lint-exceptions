@@ -1,0 +1,9 @@
+# Format: CODE PATH (whitespace-separated, path is vault-root-relative).
+# A trailing * on PATH matches as a prefix glob.
+
+# Genuine suppression: ADR-005 intentionally carries an unknown `owner`
+# field for eval coverage; do not flag it as a real finding.
+FIELD_UNKNOWN decisions/ADR-005-shrink-batch-window.md
+
+# Deliberately stale: matches nothing current, exercising EXCEPTION_STALE.
+SIZE_NOTE decisions/ADR-001-use-postgres.md

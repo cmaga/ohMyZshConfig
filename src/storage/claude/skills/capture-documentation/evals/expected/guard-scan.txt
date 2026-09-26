@@ -1,0 +1,9 @@
+exit=1
+--- stdout ---
+SECRET_DETECTED	<tmp>/guard-scan/content-1.md	3	generic-assignment
+HTML_COMMENT	<tmp>/guard-scan/content-1.md	5	html-comment
+INVISIBLE_UNICODE	<tmp>/guard-scan/content-2.md	3	invisible-unicode
+REMOTE_IMAGE	<tmp>/guard-scan/content-2.md	5	remote-image
+UNTRUSTED_FENCE_NO_SOURCE	<tmp>/guard-scan/content-2.md	7	untrusted-fence-no-source
+--- stderr ---
+

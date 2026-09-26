@@ -164,10 +164,10 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             # Mirror skill files, excluding repos and artifacts directories.
             # --delete removes files dropped from source; excluded paths are
             # protected on the receiving side, so cloned repos survive.
-            if ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" "$skill_dir" "$skill_dest/" 2>&1; then
+            if ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" --exclude="evals/" "$skill_dir" "$skill_dest/" 2>&1; then
                 # Fallback if rsync is unavailable or failed: copy manually
                 print_status "warning" "rsync failed for skill '$skill_name', falling back to manual copy"
-                find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -type f | while read -r src_file; do
+                find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -type f | while read -r src_file; do
                     rel_path="${src_file#$skill_dir}"
                     dest_file="$skill_dest/$rel_path"
                     mkdir -p "$(dirname "$dest_file")"

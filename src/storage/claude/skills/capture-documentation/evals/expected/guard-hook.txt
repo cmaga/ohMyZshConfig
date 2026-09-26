@@ -1,0 +1,11 @@
+exit=2
+--- stdout ---
+
+--- stderr ---
+SECRET_DETECTED line 1: generic-assignment
+
+Vault write blocked by guard-vault-write hook. Do not retry around this
+block. If the value is provably not a secret, append vault:allow to that
+line. A recheck comment is written as <!-- recheck YYYY-MM-DD: reason -->;
+any other HTML comment, invisible character, remote image, or untrusted
+fence without source= is refused.

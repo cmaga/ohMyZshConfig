@@ -1,0 +1,75 @@
+exit=1
+--- stdout ---
+FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
+FAIL components/billing.md:1 SURFACE_MISSING no ## Reusable surface
+FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
+FAIL components/reporting-pipeline.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
+FAIL constraints/constraint-legacy-billing-freeze.md:15 SURFACE_EMPTY no entries, no None stanza
+FAIL constraints/constraint-webhook-idempotency-keys.md:16 SURFACE_ENTRY_FORMAT requireIdempotencyKey @ 
+FAIL constraints/constraint-webhook-idempotency-keys.md:17 SURFACE_PATH_MISSING anotherMissingFn @ src/billing/does-not-exist.js
+FAIL constraints/constraint-webhook-idempotency-keys.md:18 SURFACE_SYMBOL_MISSING notARealExport @ src/billing/charge.js
+FAIL constraints/flatfee.md:1 FILENAME_PATTERN flatfee.md
+FAIL constraints/flatfee.md:5 ENUM_INVALID severity critical
+FAIL customers/customer-selfserve-smb.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
+FAIL customers/persona-enterprise-ops-lead.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
+FAIL customers/persona-enterprise-ops-lead.md:1 EMPTY_NOTE no content after the H1
+FAIL decisions/ADR-001-alt-name.md:1 FIELD_REQUIRED missing created
+FAIL decisions/ADR-001-alt-name.md:1 ADR_NUMBER_DUPLICATE ADR number 001 used by decisions/ADR-001-alt-name.md, decisions/ADR-001-use-postgres.md
+FAIL decisions/ADR-001-use-postgres.md:1 ADR_NUMBER_DUPLICATE ADR number 001 used by decisions/ADR-001-alt-name.md, decisions/ADR-001-use-postgres.md
+FAIL decisions/ADR-002-drop-legacy-queue.md:1 BANNER_MISSING status superseded, no > Status: banner
+FAIL decisions/ADR-002-drop-legacy-queue.md:3 SUPERSEDED_BY_REQUIRED superseded without superseded_by
+FAIL decisions/ADR-004-retire-batch-job.md:1 SECTION_MISSING ## Consequences
+FAIL decisions/ADR-004-retire-batch-job.md:4 SUPERSEDED_BY_FORMAT ADR-001-use-postgres
+FAIL decisions/ADR-004-retire-batch-job.md:9 BANNER_STATUS_MISMATCH status superseded, banner says DEPRECATED
+FAIL decisions/ADR-005-shrink-batch-window.md:13 BANNER_NOT_FIRST banner is not the first body line
+FAIL decisions/ADR-006-consolidate-queues.md:4 SUPERSEDED_BY_STRAY status is open
+FAIL decisions/ADR-007-cap-worker-concurrency.md:2 TYPE_BUCKET_MISMATCH type constraint in decisions/ (expected decision)
+FAIL decisions/ADR-008-switch-cache-layer.md:4 SUPERSEDED_BY_UNRESOLVED ADR-999-phantom
+FAIL decisions/ADR-008-switch-cache-layer.md:5 DATE_INVALID 2026-13-40
+FAIL decisions/ADR-008-switch-cache-layer.md:9 LINK_UNRESOLVED ADR-999-phantom
+FAIL decisions/ADR-008-switch-cache-layer.md:14 LINK_UNRESOLVED ADR-999-phantom
+FAIL decisions/ADR-010-amend-worker-timeout.md:1 AMENDMENT_MISSING status amended, no ## Amendment
+FAIL domain/domain-bad-frontmatter.md:1 FM_DUPLICATE_KEY type
+FAIL domain/domain-bad-frontmatter.md:6 FM_UNSUPPORTED_SYNTAX ref: [unclosed
+FAIL misc/stray-note.md:1 BUCKET_UNKNOWN bucket "misc" not in schema
+FAIL plan/2026-q3-roadmap.md:1 ORPHAN_NO_INBOUND 0 notes link here
+FAIL plan/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
+FAIL policies/policy-incident-disclosure.md:1 FIELD_REQUIRED missing steward
+FAIL research/research-message-queue-eval.md:11 LINK_UNRESOLVED nonexistent-note-xyz
+FAIL research/research-no-frontmatter.md:1 FM_MISSING_OPEN no frontmatter
+FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
+WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
+WARN _index.md:1 SIZE_HUB hub is 40001 bytes
+WARN _index.md:74 SIZE_HUB_LINE line is 1500 chars
+WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
+WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
+WARN components/worker.md:16 SURFACE_DUPLICATE_HOME claimNextJob
+WARN constraints/constraint-legacy-billing-freeze.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN constraints/constraint-single-writer-db.md:16 SURFACE_DUPLICATE_HOME claimNextJob
+WARN constraints/constraint-webhook-idempotency-keys.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN customers/persona-enterprise-ops-lead.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN decisions/ADR-002-drop-legacy-queue.md:6 ADR_TITLE_MISMATCH Legacy Queue Retirement
+WARN decisions/ADR-006-consolidate-queues.md:1 SECTION_ORDER sections out of order
+WARN decisions/ADR-006-consolidate-queues.md:3 STATUS_UNEXPECTED status open in decisions/
+WARN decisions/ADR-007-cap-worker-concurrency.md:9 BANNER_NO_LINK > Status: SUPERSEDED, replaced by wider queue changes.
+WARN decisions/ADR-009-scale-worker-pool.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
+WARN decisions/ADR-010-amend-worker-timeout.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN domain/domain-bad-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
+WARN glossary.md:21 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
+WARN misc/stray-note.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN plan/billing.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN policies/policy-data-retention.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN policies/policy-incident-disclosure.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN policies/policy-incident-disclosure.md:14 SURFACE_OUT_OF_SCOPE policies
+WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
+WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
+INFO .:0 SIZE_VAULT vault is 714711 bytes
+INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
+lint-vault: 38 FAIL, 27 WARN across 34 notes
+--- stderr ---
+

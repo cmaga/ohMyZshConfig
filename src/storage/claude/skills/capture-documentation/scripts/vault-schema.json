@@ -1,0 +1,469 @@
+{
+  "version": 2,
+  "ticket_pattern": "^(STAX|NOV|EN)-[0-9]+$",
+  "status": [
+    "active",
+    "proposed",
+    "revisit",
+    "superseded",
+    "deprecated",
+    "amended",
+    "open",
+    "closed"
+  ],
+  "optional_global": [
+    "aliases"
+  ],
+  "sizes": {
+    "note_warn": 36864,
+    "note_fail": 61440,
+    "line_warn": 2048,
+    "hub_warn": 30720,
+    "hub_fail": 61440,
+    "hub_line_warn": 1024,
+    "hub_line_fail": 2048,
+    "vault_info": 614400
+  },
+  "hubs": {
+    "_index.md": {
+      "type": "index"
+    },
+    "glossary.md": {
+      "type": "glossary"
+    }
+  },
+  "buckets": {
+    "decisions": {
+      "type": "decision",
+      "filename": "^ADR-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "statuses": [
+        "active",
+        "proposed",
+        "revisit",
+        "superseded",
+        "deprecated",
+        "amended"
+      ],
+      "sections": [
+        "Context",
+        "Decision",
+        "Consequences"
+      ],
+      "banner": true,
+      "surface": "forbidden",
+      "size_limit": "warn"
+    },
+    "constraints": {
+      "type": "constraint",
+      "filename": "^constraint-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created",
+        "severity"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "enums": {
+        "severity": [
+          "blocking",
+          "high",
+          "medium",
+          "low"
+        ]
+      },
+      "surface": "conditional"
+    },
+    "domain": {
+      "type": "domain",
+      "filename": "^domain-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "surface": "conditional"
+    },
+    "architecture": {
+      "type": "architecture",
+      "filename": "^architecture-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "surface": "conditional"
+    },
+    "components": {
+      "type": "component",
+      "filename": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "surface": "required"
+    },
+    "policies": {
+      "type": "policy",
+      "filename": "^policy-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created",
+        "steward",
+        "review_cadence"
+      ],
+      "optional": [],
+      "surface": "forbidden"
+    },
+    "customers": {
+      "type": "customer",
+      "filename": "^(customer|persona)-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [],
+      "surface": "forbidden"
+    },
+    "plan": {
+      "type": "plan",
+      "filename": "^[a-z0-9][a-z0-9.-]*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "surface": "forbidden"
+    },
+    "research": {
+      "type": "research",
+      "filename": "^research-[a-z0-9]+(-[a-z0-9]+)*$",
+      "required": [
+        "type",
+        "status",
+        "created"
+      ],
+      "optional": [
+        "superseded_by"
+      ],
+      "surface": "forbidden",
+      "orphan": "info"
+    }
+  },
+  "classes": {
+    "FM_MISSING_OPEN": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "first line must be ---"
+    },
+    "FM_MISSING_CLOSE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "close the frontmatter with --- before the body"
+    },
+    "FM_UNSUPPORTED_SYNTAX": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "frontmatter is flat 'key: scalar' lines only; no block lists, block scalars, or nesting (aliases: [a, b] flow lists are the one exception)"
+    },
+    "FM_DUPLICATE_KEY": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "each key once"
+    },
+    "FIELD_REQUIRED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "add the field the bucket requires"
+    },
+    "FIELD_UNKNOWN": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "field not in the bucket schema; add it to the schema or drop it"
+    },
+    "ENUM_INVALID": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "value outside the allowed set"
+    },
+    "STATUS_UNEXPECTED": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "status is sanctioned but not used in this bucket"
+    },
+    "TYPE_BUCKET_MISMATCH": {
+      "severity": "fail",
+      "fix": "auto",
+      "hint": "type must match the bucket folder"
+    },
+    "DATE_INVALID": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "created is YYYY-MM-DD and a real date"
+    },
+    "DATE_FUTURE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "created is after today"
+    },
+    "FILENAME_PATTERN": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "rename to the bucket convention and update inbound links"
+    },
+    "BASENAME_DUPLICATE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "same basename used in more than one bucket; rename one or qualify every wikilink to it"
+    },
+    "ADR_NUMBER_DUPLICATE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "two ADRs share a number"
+    },
+    "ADR_TITLE_MISMATCH": {
+      "severity": "warn",
+      "fix": "auto",
+      "hint": "H1 should read '# ADR-NNN: <title>' with the file's number"
+    },
+    "SECTION_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "ADR needs ## Context, ## Decision, ## Consequences"
+    },
+    "SECTION_ORDER": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "Context, Decision, Consequences in that order"
+    },
+    "SUPERSEDED_BY_REQUIRED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "status superseded needs superseded_by: [[target]]"
+    },
+    "SUPERSEDED_BY_STRAY": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "superseded_by set but status is not superseded"
+    },
+    "SUPERSEDED_BY_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "superseded_by must be one [[wikilink]]"
+    },
+    "SUPERSEDED_BY_UNRESOLVED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "superseded_by target does not exist"
+    },
+    "BANNER_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "demoted decision needs '> Status:' as the first body line"
+    },
+    "BANNER_NOT_FIRST": {
+      "severity": "fail",
+      "fix": "auto",
+      "hint": "move the '> Status:' line directly under the H1"
+    },
+    "BANNER_STATUS_MISMATCH": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "banner keyword must agree with frontmatter status"
+    },
+    "BANNER_NO_LINK": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "SUPERSEDED/AMENDED banner should name the note to read instead"
+    },
+    "AMENDMENT_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "status amended needs a dated '## Amendment' block"
+    },
+    "SURFACE_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "components end with '## Reusable surface' (entries or 'None - <reason>')"
+    },
+    "SURFACE_EMPTY": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "section has neither entries nor a 'None - <reason>' stanza"
+    },
+    "SURFACE_OUT_OF_SCOPE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "bucket does not carry a Reusable surface; link the owning component"
+    },
+    "SURFACE_ENTRY_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "- `Symbol` - `repo/relative/path` - purpose"
+    },
+    "SURFACE_PATH_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "listed path no longer exists; repair or drop the entry"
+    },
+    "SURFACE_SYMBOL_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "symbol not found at the listed path; repair or drop the entry"
+    },
+    "SURFACE_DUPLICATE_HOME": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "symbol listed in more than one note; keep one canonical home"
+    },
+    "SURFACE_REGION_CHANGED": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "code around this symbol changed since the note last touched it; verify the entry still holds"
+    },
+    "LINK_UNRESOLVED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "link target does not exist"
+    },
+    "LINK_AMBIGUOUS": {
+      "severity": "fail",
+      "fix": "auto",
+      "hint": "basename exists in several buckets; qualify it as [[bucket/name]]"
+    },
+    "LINK_INTERNAL_MD": {
+      "severity": "warn",
+      "fix": "auto",
+      "hint": "use [[wikilink]] for links between vault notes, not a markdown link"
+    },
+    "ANCHOR_UNRESOLVED": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "#heading not found in the target note"
+    },
+    "ORPHAN_NO_OUTBOUND": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "note links to no other note"
+    },
+    "ORPHAN_NO_INBOUND": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "no other note links to this one"
+    },
+    "ORPHAN_HUB_ONLY_INBOUND": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "only a hub links here; link this note from a content note too"
+    },
+    "EMPTY_NOTE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "no content after the H1; add content or delete the note"
+    },
+    "SIZE_NOTE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "note is getting large; consider splitting it"
+    },
+    "SIZE_NOTE_LIMIT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "note exceeds the hard size limit; split it"
+    },
+    "SIZE_LINE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "line is very long; wrap it"
+    },
+    "SIZE_HUB": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "hub is getting large; consider trimming or splitting"
+    },
+    "SIZE_HUB_LIMIT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "hub exceeds the hard size limit; trim it"
+    },
+    "SIZE_HUB_LINE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "hub line is very long; wrap it"
+    },
+    "SIZE_HUB_LINE_LIMIT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "hub line exceeds the hard limit; wrap it"
+    },
+    "SIZE_VAULT": {
+      "severity": "info",
+      "fix": "manual",
+      "hint": "vault exceeds the soft budget; consider archiving or splitting buckets"
+    },
+    "SECRET_DETECTED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "looks like a credential or token; remove it and rotate if real"
+    },
+    "HTML_COMMENT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "remove the HTML comment; it can hide instructions from reviewers"
+    },
+    "INVISIBLE_UNICODE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "remove invisible or control unicode characters"
+    },
+    "REMOTE_IMAGE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "avoid remote image embeds; they can leak reader signals"
+    },
+    "UNTRUSTED_FENCE_NO_SOURCE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "add 'source=<url>' to the fence info string or remove it"
+    },
+    "GUARD_ABSENT": {
+      "severity": "info",
+      "fix": "manual",
+      "hint": "guard-vault-write.sh not found; content classes were skipped"
+    },
+    "EXCEPTION_STALE": {
+      "severity": "warn",
+      "fix": "auto",
+      "hint": "allowlist entry matches nothing; delete it"
+    },
+    "BUCKET_UNKNOWN": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "note sits outside every schema bucket"
+    }
+  }
+}

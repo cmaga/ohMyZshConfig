@@ -1,0 +1,10 @@
+exit=0
+--- stdout ---
+WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
+WARN components/worker.md:16 SURFACE_DUPLICATE_HOME claimNextJob
+WARN components/worker.md:16 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
+WARN constraints/constraint-single-writer-db.md:16 SURFACE_DUPLICATE_HOME claimNextJob
+WARN constraints/constraint-single-writer-db.md:16 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
+lint-vault: 0 FAIL, 5 WARN across 34 notes
+--- stderr ---
+

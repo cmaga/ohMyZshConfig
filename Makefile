@@ -86,6 +86,35 @@ lint: ## Format files and run lint checks
 		printf "  $(GREEN)plugins.txt format is valid$(NC)\n"; \
 	fi
 	@printf "\n"
+	@printf "$(BLUE)Checking bash syntax...$(NC)\n"
+	@for file in $(STORAGE_DIR)/claude/hooks/*.sh $(STORAGE_DIR)/claude/skills/*/scripts/*.sh $(STORAGE_DIR)/claude/skills/*/evals/*.sh; do \
+		if [ -f "$$file" ]; then \
+			if bash -n "$$file"; then \
+				printf "  $(GREEN)OK: $$file$(NC)\n"; \
+			else \
+				printf "  $(RED)SYNTAX ERROR: $$file$(NC)\n"; \
+				exit 1; \
+			fi; \
+		fi; \
+	done
+	@printf "\n"
+	@printf "$(BLUE)Validating JSON...$(NC)\n"
+	@for file in $(STORAGE_DIR)/claude/hooks.json $(STORAGE_DIR)/claude/skills/*/scripts/*.json; do \
+		if [ -f "$$file" ]; then \
+			if jq -e . "$$file" >/dev/null; then \
+				printf "  $(GREEN)OK: $$file$(NC)\n"; \
+			else \
+				printf "  $(RED)INVALID JSON: $$file$(NC)\n"; \
+				exit 1; \
+			fi; \
+		fi; \
+	done
+	@printf "\n"
+	@printf "$(BLUE)Running vault linter evals...$(NC)\n"
+	@if [ -f "$(STORAGE_DIR)/claude/skills/capture-documentation/evals/run.sh" ]; then \
+		bash "$(STORAGE_DIR)/claude/skills/capture-documentation/evals/run.sh" || exit 1; \
+	fi
+	@printf "\n"
 	@printf "$(GREEN)All lint checks passed!$(NC)\n"
 
 deploy: deploy-zsh deploy-git deploy-claude deploy-automations finalize ## Deploy all configs (zsh, git, claude, automations)
