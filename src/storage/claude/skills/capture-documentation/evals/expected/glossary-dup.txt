@@ -1,6 +1,6 @@
 exit=0
 --- stdout ---
-FAIL glossary.md:9159 GLOSSARY_TERM_DUPLICATE claim is already defined at line 15
+FAIL glossary.md:9166 GLOSSARY_TERM_DUPLICATE claim is already defined at line 15
 lint-vault: 85 FAIL, 71 WARN across 53 notes
 --- stderr ---
 

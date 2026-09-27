@@ -181,9 +181,10 @@ fence { next }
     heads = add(heads, "\"" esc(t) "\"")
     if (hp != "") hdone = 1
     if (isdec) hz = (lvl == 2 && t == "Decision")
-    gclose(); if (path == GLOSS && lvl == 3) { gopen = 1; gterm = t; gline = FNR; glink = 0 }
+    gclose(); if (path == GLOSS && lvl == 3) { gopen = 1; gterm = t; gline = FNR; glink = 0; ghead = 1; gbody = 0 }
     if (lvl == 1 && h1 == "") h1 = pos(FNR, t)
-    if (lvl == 2) { h2 = add(h2, pos(FNR, t)); cursec = t }
+    # an old ADR's backfilled "## Considered options (recorded DATE)" is the same section
+    if (lvl == 2) { tn = t; sub(/ \(recorded [0-9-]+\)$/, "", tn); h2 = add(h2, pos(FNR, tn)); cursec = tn }
     if (lvl == 1) cursec = ""
     if (lvl <= 2) { emit(); insurf = (lvl == 2 && t ~ /^Reusable surface/) }
     if (insurf) sline = FNR
@@ -224,8 +225,10 @@ fence { next }
     else if (hz) hp = (hp == "" ? trim(line) : hp " " trim(line))
   }
   if (path == GLOSS) {
-    if (line ~ /^[-*]?[ \t]*\*\*/) { gclose(); gopen = 1; gline = FNR; gterm = line; sub(/^[-*]?[ \t]*\*\*/, "", gterm); sub(/\*\*.*/, "", gterm); glink = 0 }
-    else if (line ~ /^[ \t]*$/) gclose()
+    if (line ~ /^[-*]?[ \t]*\*\*/) { gclose(); gopen = 1; gline = FNR; gterm = line; sub(/^[-*]?[ \t]*\*\*/, "", gterm); sub(/\*\*.*/, "", gterm); glink = 0; ghead = 0 }
+    # a "### Term" entry is the heading plus its paragraph: the blank line after the heading does not close it
+    else if (line ~ /^[ \t]*$/) { if (!ghead || gbody) gclose() }
+    else if (line !~ /^#/) gbody = 1
     if (gopen && (line ~ /\[\[/ || line ~ /\]\(/)) glink = 1
   }
   l = nocode(line); hist = (l ~ /[Rr]etired|[Hh]istory|[Ff]ormerly|[Ss]uperseded|[Dd]eprecated|no longer|was live/) ? ",\"hist\":true" : ""

@@ -18,3 +18,12 @@ note index.
   [[components/billing]].
 - **Credit** - a stored balance consumed over time; see
   [[domain/domain-credit-lifecycle]].
+
+### Retry budget
+
+The number of attempts a job gets before it parks; see
+[[constraints/constraint-retry-cap]].
+
+### Backoff
+
+Waiting longer between each attempt.

@@ -135,7 +135,6 @@ WARN decisions/ADR-006-consolidate-queues.md:1 SECTION_ORDER sections out of ord
 WARN decisions/ADR-006-consolidate-queues.md:3 STATUS_UNEXPECTED status open in decisions/
 WARN decisions/ADR-007-cap-worker-concurrency.md:23 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-008-switch-cache-layer.md:24 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
-WARN decisions/ADR-009-scale-worker-pool.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-009-scale-worker-pool.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
 WARN decisions/ADR-009-scale-worker-pool.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_Y_STATEMENT_MISSING no y_statement
@@ -157,7 +156,8 @@ WARN decisions/ADR-020-revisit-no-tripwire.md:1 ADR_OPTIONS_MISSING no ## Consid
 WARN decisions/ADR-020-revisit-no-tripwire.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN domain/domain-marker-cases.md:11 MARKER_RECHECK_MISSING as of 2026-01-15 without a recheck comment
 WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
-WARN glossary.md:21 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
+WARN glossary.md:27 GLOSSARY_ENTRY_NO_LINK Backoff
+WARN glossary.md:30 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
 WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferred with no sources
 WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes

@@ -21,6 +21,11 @@ Run more worker processes against the same [[worker]] claim path.
 Unrelated to the cache change in [[ADR-008-switch-cache-layer]], but
 similar in spirit.
 
+## Considered options (recorded 2026-09-27)
+
+- More worker processes on the same queue (chosen) - no schema change.
+- A second queue - rejected: two queues to keep consistent.
+
 ## Consequences
 
 None beyond the size finding.
