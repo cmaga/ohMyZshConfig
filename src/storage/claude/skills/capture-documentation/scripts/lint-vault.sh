@@ -120,7 +120,7 @@ function emit(   d, hd, rest, p) {
 }
 function gclose() {
   if (gopen) gl = add(gl, sprintf("{\"line\":%d,\"term\":\"%s\",\"link\":%s}", gline, esc(gterm), (glink ? "true" : "false")))
-  gopen = 0
+  gopen = 0; ghead = 0
 }
 function flush(   s) {
   if (path == "") return
@@ -181,7 +181,7 @@ fence { next }
     heads = add(heads, "\"" esc(t) "\"")
     if (hp != "") hdone = 1
     if (isdec) hz = (lvl == 2 && t == "Decision")
-    gclose(); if (path == GLOSS && lvl == 3) { gopen = 1; gterm = t; gline = FNR; glink = 0; ghead = 1; gbody = 0 }
+    gclose(); if (path == GLOSS && lvl == 3) { gopen = 1; gterm = t; gline = FNR; glink = 0; ghead = 1 }
     if (lvl == 1 && h1 == "") h1 = pos(FNR, t)
     # an old ADR's backfilled "## Considered options (recorded DATE)" is the same section
     if (lvl == 2) { tn = t; sub(/ \(recorded [0-9-]+\)$/, "", tn); h2 = add(h2, pos(FNR, tn)); cursec = tn }
@@ -225,10 +225,11 @@ fence { next }
     else if (hz) hp = (hp == "" ? trim(line) : hp " " trim(line))
   }
   if (path == GLOSS) {
-    if (line ~ /^[-*]?[ \t]*\*\*/) { gclose(); gopen = 1; gline = FNR; gterm = line; sub(/^[-*]?[ \t]*\*\*/, "", gterm); sub(/\*\*.*/, "", gterm); glink = 0; ghead = 0 }
-    # a "### Term" entry is the heading plus its paragraph: the blank line after the heading does not close it
-    else if (line ~ /^[ \t]*$/) { if (!ghead || gbody) gclose() }
-    else if (line !~ /^#/) gbody = 1
+    # a bold term opens an entry as a list item, or as the first line of a paragraph; a
+    # wrapped line that merely starts with bold text continues the open entry. A
+    # "### Term" entry runs to the next heading, across its paragraphs and bold lines.
+    if (!ghead && (line ~ /^[-*][ \t]+\*\*/ || (!gopen && line ~ /^[ \t]*\*\*/))) { gclose(); gopen = 1; gline = FNR; gterm = line; sub(/^[-*]?[ \t]*\*\*/, "", gterm); sub(/\*\*.*/, "", gterm); glink = 0 }
+    else if (line ~ /^[ \t]*$/ && !ghead) gclose()
     if (gopen && (line ~ /\[\[/ || line ~ /\]\(/)) glink = 1
   }
   l = nocode(line); hist = (l ~ /[Rr]etired|[Hh]istory|[Ff]ormerly|[Ss]uperseded|[Dd]eprecated|no longer|was live/) ? ",\"hist\":true" : ""
