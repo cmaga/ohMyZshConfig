@@ -155,7 +155,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 725154 bytes
+INFO .:0 SIZE_VAULT vault is 725184 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
@@ -232,7 +232,7 @@ MISSING-GUARD	decisions/ADR-012-successor-silent.md	governs set, no mechanical #
 POLICY-REVIEW-DUE	policies/policy-data-retention.md	due 2026-04-29 (cadence:quarterly, 91d)
 POLICY-REVIEW-DUE	policies/policy-incident-disclosure.md	due 2026-04-30 (cadence:quarterly, 91d)
 MANUAL	decisions/ADR-016-revisit-cache-layer.md	external:when the cache layer is replaced
-MANUAL	decisions/ADR-017-pin-node-runtime.md	external:Node LTS schedule moves
+MANUAL	decisions/ADR-017-pin-node-runtime.md	external: Node LTS schedule moves, or the runtime is swapped
 MANUAL	decisions/ADR-018-bad-template-fields.md	when the moon is full
 Triage: ~/.claude/skills/capture-documentation/references/drift-triage.md
 --- stderr ---

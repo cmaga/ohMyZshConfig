@@ -134,7 +134,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 724240 bytes
+INFO .:0 SIZE_VAULT vault is 724270 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here

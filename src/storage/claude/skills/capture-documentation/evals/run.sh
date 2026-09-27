@@ -701,6 +701,11 @@ refactor_case retire retire domain-marker-cases --reason removed --consider work
 # gets the suffix. A supersede without a backlink would print a ! line.
 refactor_case supersede supersede ADR-001-use-postgres ADR-009-scale-worker-pool
 
+# retire-backfill: constraint-bad-tombstone.md is already deprecated but has
+# no retired date, so retire fills the tombstone in: the invalid reason and
+# the stray pointer are replaced, the prose truncated, the banner written.
+refactor_case retire-backfill retire constraint-bad-tombstone --reason wrong --replaced-by worker --why "captured a rule the code never had"
+
 # split: scheduler.md into two component notes by H2. Each new note carries
 # Split from [[scheduler]]; the parent keeps a Moved to stub per heading;
 # buildReport is mentioned only by the backoff section so it moves there,

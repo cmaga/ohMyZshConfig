@@ -378,7 +378,7 @@ pass2c_probes() {
   local extracted; extracted=$(mktemp "$TMP/p2c.XXXXXX")
   "$JQ" -r --slurpfile scope "$scopef" '
     ($scope[0] // []) as $sc |
-    def flow: if type=="string" and test("^\\[.*\\]$") then (.[1:-1]|split(",")|map(gsub("^ +| +$";""))|map(select(.!=""))) else [] end;
+    def flow: if type=="string" and test("^\\[.*\\]$") then ([.[1:-1]|scan("\\s*(\"[^\"]*\"|\\x27[^\\x27]*\\x27|[^,]+)")|.[0]]|map(gsub("^ +| +$";"")|gsub("^[\"\\x27]|[\"\\x27]$";""))|map(select(.!=""))) else [] end;
     . as $r | $r.path as $p | select(($sc|length) == 0 or ($sc|index($p))) |
     ( (($r.fm.sources // "") | flow[] | select(startswith("commit:") or startswith("doc:")) | [$p, ($r.fm_line.sources // 1), "src", ., ""]),
       (($r.fm.governs // "") | flow[] | [$p, ($r.fm_line.governs // 1), "governs", ., ""]),
@@ -570,7 +570,7 @@ def base: split("/")[-1] | rtrimstr(".md");
 def norm: ascii_downcase | gsub("-"; " ") | gsub("[^a-z0-9 ]"; "") | gsub(" +"; " ") | ltrimstr(" ") | rtrimstr(" ");
 def normpath: reduce (split("/")[]) as $s ([]; if $s == ".." then .[:-1] elif ($s == "." or $s == "") then . else . + [$s] end) | join("/");
 def isflow: type == "string" and test("^\\[.*\\]$");
-def flow: if type=="string" and test("^\\[.*\\]$") then (.[1:-1]|split(",")|map(gsub("^ +| +$";""))|map(select(.!=""))) else [] end;
+def flow: if type=="string" and test("^\\[.*\\]$") then ([.[1:-1]|scan("\\s*(\"[^\"]*\"|\\x27[^\\x27]*\\x27|[^,]+)")|.[0]]|map(gsub("^ +| +$";"")|gsub("^[\"\\x27]|[\"\\x27]$";""))|map(select(.!=""))) else [] end;
 def datechk($r; $k): ($r.fm[$k]) as $v | if $v == null then empty elif ($v | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$") | not) or ((try (($v + "T00:00:00Z") | fromdateiso8601 | strftime("%Y-%m-%d")) catch "") != $v) then f($r; "DATE_INVALID"; ($r.fm_line[$k] // 1); "\($k) \($v)") elif $v > $today then f($r; "DATE_FUTURE"; ($r.fm_line[$k] // 1); "\($k) \($v)") else empty end;
 ($R | map({key: .path, value: .}) | from_entries) as $byPath |
 ($R | group_by(.path | base) | map({key: (.[0].path | base), value: map(.path)}) | from_entries) as $byBase |

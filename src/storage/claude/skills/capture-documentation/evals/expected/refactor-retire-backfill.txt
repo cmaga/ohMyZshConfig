@@ -1,0 +1,21 @@
+exit=0
+--- stdout ---
+== preview
+retire: constraints/constraint-bad-tombstone.md (wrong)
+ + > Status: DEPRECATED 2026-09-26 — recorded in error; see [[worker]]. captured a rule the code never had
+ body -> tombstone (History: git log --follow -- docs/project-knowledge/constraints/constraint-bad-tombstone.md)
+ index: line removed
+preview only; re-run with --apply
+rc=0
+== apply
+retire: constraints/constraint-bad-tombstone.md (wrong)
+ + > Status: DEPRECATED 2026-09-26 — recorded in error; see [[worker]]. captured a rule the code never had
+ body -> tombstone (History: git log --follow -- docs/project-knowledge/constraints/constraint-bad-tombstone.md)
+ index: line removed
+applied
+rc=0
+== status
+ M docs/project-knowledge/constraints/constraint-bad-tombstone.md
+== lint
+--- stderr ---
+

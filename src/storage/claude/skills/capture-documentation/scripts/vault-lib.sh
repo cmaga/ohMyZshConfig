@@ -59,7 +59,7 @@ EOF
 # flow_items: normalises a raw flow-list string (e.g. "[a, b]") or an actual
 # JSON array into a clean array of strings; anything else yields [].
 read -r -d '' JQ_FLOW_ITEMS <<'EOF' || true
-def flow_items: if type == "array" then . elif type == "string" and test("^\\[.*\\]$") then (.[1:-1] | split(",") | map(gsub("^ +| +$"; "") | gsub("^[\"']|[\"']$"; "")) | map(select(. != ""))) else [] end;
+def flow_items: if type == "array" then . elif type == "string" and test("^\\[.*\\]$") then ([.[1:-1] | scan("\\s*(\"[^\"]*\"|'[^']*'|[^,]+)") | .[0]] | map(gsub("^ +| +$"; "") | gsub("^[\"']|[\"']$"; "")) | map(select(. != ""))) else [] end;
 EOF
 
 # glob2ere(g) -- translates a vault-style glob (literal, *, ?, **, **/) into a

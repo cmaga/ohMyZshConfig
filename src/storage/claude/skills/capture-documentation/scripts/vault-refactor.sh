@@ -102,6 +102,10 @@ fm_set() {
     infm && index($0, k ":")==1 { print k ": " v; done=1; next }
     { print }' "$f" > "$TMP/fm.tmp" && mv "$TMP/fm.tmp" "$f"
 }
+fm_del() {
+  local f="$1" k="$2"
+  awk -v k="$k" 'NR==1 && $0=="---" { infm=1; print; next } infm && $0=="---" { infm=0; print; next } infm && index($0, k ":")==1 { next } { print }' "$f" > "$TMP/fm.tmp" && mv "$TMP/fm.tmp" "$f"
+}
 fm_add_alias() {
   local f="$1" a="$2" cur
   cur=$(fm_get "$f" aliases)
@@ -215,7 +219,9 @@ do_retire() {
     if tp=$(resolve "$t"); then retired_status "$tp" && { echo "vault-refactor: $t is itself retired (pointer chain)" >&2; exit 3; }
     else bang "$t does not resolve"; fi
   done
-  retired_status "$path" && bang "$path is already retired"
+  # a note already deprecated but without the tombstone fields is backfilled
+  if [ "$bkt" = decisions ]; then retired_status "$path" && bang "$path is already retired"
+  else retired_status "$path" && [ -n "$(fm_get "$VAULT/$path" retired)" ] && bang "$path is already retired"; fi
   case "$REASON" in
     merged) reasontxt="merged into $(wikilist "$REPLACED_BY")" ;;
     split) reasontxt="split into $(wikilist "$CONSIDER")" ;;
@@ -237,8 +243,9 @@ do_retire() {
     else
       fm_set "$VAULT/$path" obsoletion_reason "$REASON"
       fm_set "$VAULT/$path" retired "$TODAY"
-      [ -n "$REPLACED_BY" ] && fm_set "$VAULT/$path" replaced_by "\"[[$(base_of "$REPLACED_BY")]]\""
-      [ -n "$CONSIDER" ] && fm_set "$VAULT/$path" consider "$(fmlist "$CONSIDER")"
+      if [ -n "$REPLACED_BY" ]; then fm_set "$VAULT/$path" replaced_by "\"[[$(base_of "$REPLACED_BY")]]\""; fm_del "$VAULT/$path" consider
+      elif [ -n "$CONSIDER" ]; then fm_set "$VAULT/$path" consider "$(fmlist "$CONSIDER")"; fm_del "$VAULT/$path" replaced_by
+      else fm_del "$VAULT/$path" replaced_by; fm_del "$VAULT/$path" consider; fi
       hist="History: git log --follow -- $RELV/$path"
       set_banner "$VAULT/$path" "$banner" "$hist"
       index_remove "$base" "$bkt"

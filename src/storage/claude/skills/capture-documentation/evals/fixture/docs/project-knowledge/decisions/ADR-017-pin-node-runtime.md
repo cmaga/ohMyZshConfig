@@ -5,7 +5,7 @@ created: 2026-03-02
 governs: [src/worker/index.js]
 y_statement: In the context of the worker pool, facing runtime drift between hosts, we decided for a pinned Node LTS and neglected floating majors, to achieve reproducible claims, accepting a manual bump each LTS cycle.
 approved_by: cmaga 2026-03-02
-revisit_if: [code:`src/worker/index.js` claim loop changes, external:Node LTS schedule moves, date:2030-01-01]
+revisit_if: [code:`src/worker/index.js` claim loop changes, "external: Node LTS schedule moves, or the runtime is swapped", date:2030-01-01]
 tracking: EN-17
 ---
 # ADR-017: Pin the Node runtime
