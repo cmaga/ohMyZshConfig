@@ -1,0 +1,13 @@
+exit=1
+--- stdout ---
+-- coverage --
+OMITTED	ghostFn	src/ghost/nothing.js	-
+HOMONYM	buildReport	src/reporting/worker-report.js	listed at src/reporting/pipeline.js in components/reporting-pipeline.md
+DRIFT	processQueueItem	src/worker/index.js	components/worker.md
+MENTIONED	parkJob	src/worker/park.js	domain/domain-retry-policy.md
+FILE_MENTIONED	unparkJob	src/worker/park.js	domain/domain-retry-policy.md
+coverage 33% (src=coverage-population, 3 anchored of 9)
+STALE src/never/**
+Triage: ~/.claude/skills/capture-documentation/references/drift-triage.md
+--- stderr ---
+

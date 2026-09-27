@@ -1,0 +1,81 @@
+exit=0
+--- stdout ---
+{
+  "anchored": 3,
+  "coverage": 33,
+  "rows": [
+    {
+      "detail": "components/scheduler.md",
+      "label": "ANCHORED",
+      "path": "src/worker/index.js",
+      "symbol": "claimNextJob"
+    },
+    {
+      "detail": "components/worker.md",
+      "label": "DRIFT",
+      "path": "src/worker/index.js",
+      "symbol": "processQueueItem"
+    },
+    {
+      "detail": "policies/policy-incident-disclosure.md",
+      "label": "ANCHORED",
+      "path": "src/billing/charge.js",
+      "symbol": "chargeCustomer"
+    },
+    {
+      "detail": "listed at src/reporting/pipeline.js in components/reporting-pipeline.md",
+      "label": "HOMONYM",
+      "path": "src/reporting/worker-report.js",
+      "symbol": "buildReport"
+    },
+    {
+      "detail": "src/vendor/**",
+      "label": "EXCLUDED",
+      "path": "src/vendor/lib.js",
+      "symbol": "vendorThing"
+    },
+    {
+      "detail": "legacyShim",
+      "label": "EXCLUDED",
+      "path": "src/worker/shim.js",
+      "symbol": "legacyShim"
+    },
+    {
+      "detail": "constraints/constraint-retry-cap.md",
+      "label": "DECLARED_ABSENT",
+      "path": "src/worker/backoff.js",
+      "symbol": "retryBackoff"
+    },
+    {
+      "detail": "domain/domain-retry-policy.md",
+      "label": "MENTIONED",
+      "path": "src/worker/park.js",
+      "symbol": "parkJob"
+    },
+    {
+      "detail": "domain/domain-retry-policy.md",
+      "label": "FILE_MENTIONED",
+      "path": "src/worker/park.js",
+      "symbol": "unparkJob"
+    },
+    {
+      "detail": "-",
+      "label": "OMITTED",
+      "path": "src/ghost/nothing.js",
+      "symbol": "ghostFn"
+    },
+    {
+      "detail": "constraints/constraint-webhook-idempotency-keys.md",
+      "label": "ANCHORED",
+      "path": "",
+      "symbol": "requireIdempotencyKey"
+    }
+  ],
+  "src": "caller",
+  "stale": [
+    "src/never/**"
+  ],
+  "total": 9
+}
+--- stderr ---
+

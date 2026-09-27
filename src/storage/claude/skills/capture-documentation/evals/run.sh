@@ -676,6 +676,25 @@ C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case glossary-dup
 
+# coverage: the fixture population against the Wave 2 tree (git-backed, so
+# the anchored rows resolve and processQueueItem is DRIFT after commit2).
+# One row per label; two exclusions match, one is STALE; --propose writes a
+# stub per OMITTED/HOMONYM row.
+"$SCRIPTS/vault-coverage.sh" "$VAULT" "$REPO/coverage-population.tsv" --src fixture --propose 2 --out "$WORK/cov" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out"; echo "== stubs"; ls "$WORK/cov"; cat "$WORK/cov"/*.md)"; C_ERR="$(cat "$WORK/c_err")"
+finish_case coverage
+
+"$SCRIPTS/vault-coverage.sh" "$VAULT" "$REPO/coverage-population.tsv" --json >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$("$JQ" -S . "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case coverage-json
+
+"$AUDIT" --format text --coverage "$REPO/coverage-population.tsv" "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(sed -n '/^-- coverage --$/,$p' "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-coverage
+
 # ---------------------------------------------------------------------------
 # vault-refactor.sh (L11). Every command mutates the tree, so each case runs
 # on a fresh clone of $REPO at HEAD (no dirty-state additions): the preview,

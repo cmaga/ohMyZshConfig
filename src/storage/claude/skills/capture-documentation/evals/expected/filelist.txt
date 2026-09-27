@@ -5,6 +5,6 @@ WARN components/worker.md:16 SURFACE_DUPLICATE_HOME claimNextJob
 WARN components/worker.md:16 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
 WARN constraints/constraint-single-writer-db.md:17 SURFACE_DUPLICATE_HOME claimNextJob
 WARN constraints/constraint-single-writer-db.md:17 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
-lint-vault: 0 FAIL, 5 WARN across 51 notes
+lint-vault: 0 FAIL, 5 WARN across 52 notes
 --- stderr ---
 

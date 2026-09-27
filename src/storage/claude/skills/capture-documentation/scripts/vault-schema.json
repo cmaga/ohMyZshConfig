@@ -59,6 +59,9 @@
     },
     "glossary.md": {
       "type": "glossary"
+    },
+    "_coverage-exclusions.md": {
+      "type": "exclusions"
     }
   },
   "buckets": {
@@ -782,6 +785,11 @@
       "severity": "fail",
       "fix": "manual",
       "hint": "a fragment lives under _fragments/<kind>/ with kind: and at: YYYY-MM-DD frontmatter; a ruling names exactly two [[notes]]"
+    },
+    "COVERAGE_EXCLUSION_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "every exclusion is - `glob-or-symbol` - reason; an entry without the reason is not an exclusion"
     }
   },
   "cache": {

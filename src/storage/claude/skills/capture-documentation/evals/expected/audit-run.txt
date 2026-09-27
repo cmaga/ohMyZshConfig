@@ -1,6 +1,6 @@
 exit=1
 --- stdout ---
-vault-audit (repo): RED - 75 FAIL, 73 WARN, 3 drift flags, 32 reviews overdue, 1 rechecks due, 4 ADR tripwires.
+vault-audit (repo): RED - 76 FAIL, 73 WARN, 3 drift flags, 32 reviews overdue, 1 rechecks due, 4 ADR tripwires.
 -- links --
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL decisions/ADR-002-drop-legacy-queue.md:3 SUPERSEDED_BY_REQUIRED superseded without superseded_by
@@ -61,6 +61,7 @@ INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
 -- other --
+FAIL _coverage-exclusions.md:14 COVERAGE_EXCLUSION_FORMAT an entry is - `glob-or-symbol` - reason
 FAIL _fragments/rulings/bad-ruling.md:1 FRAGMENT_FORMAT missing kind: or at: frontmatter
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL components/billing.md:5 APPLIES_TO_DEAD_GLOB src/ghost/ matches no file at HEAD
@@ -161,7 +162,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 726499 bytes
+INFO .:0 SIZE_VAULT vault is 727041 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem

@@ -867,6 +867,16 @@ fragments_check() {
   return 0
 }
 
+# exclusions_check TREE OUT : every entry line of the coverage-exclusions hub
+# is "- `glob-or-symbol` - reason"; a line without the reason fails.
+exclusions_check() {
+  local tree="$1" out="$2" hub
+  hub=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="exclusions")|.key][0] // "_coverage-exclusions.md"' "$3")
+  [ -f "$tree/$hub" ] || return 0
+  awk -v rel="$hub" '/^- / && !/^- `[^`]+` +(-|\xe2\x80\x94) +./ { printf "{\"code\":\"COVERAGE_EXCLUSION_FORMAT\",\"path\":\"%s\",\"line\":%d,\"msg\":\"an entry is - `glob-or-symbol` - reason\"}\n", rel, FNR }' "$tree/$hub" >> "$out"
+  return 0
+}
+
 # Pass 1 driver: resolves the glossary hub path from the schema (awk needs it
 # verbatim to gate glossary-entry extraction to that one file) and the literal
 # em-dash (awk octal escapes don't match multi-byte UTF-8, see header note).
@@ -910,6 +920,7 @@ lint_tree() {
     : > "${pfx}.guard.ndjson"
   fi
   fragments_check "$tree" "${pfx}.guard.ndjson"
+  exclusions_check "$tree" "${pfx}.guard.ndjson" "$schema"
   pass3 "${pfx}.recs.ndjson" "${pfx}.surf.ndjson" "${pfx}.region.ndjson" "${pfx}.guard.ndjson" "${pfx}.probe.ndjson" "$schema" "$out"
   local rc=$?
   rm -f "${pfx}".*

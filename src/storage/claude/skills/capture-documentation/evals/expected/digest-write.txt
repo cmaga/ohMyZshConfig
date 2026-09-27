@@ -26,7 +26,7 @@ exit=0
 - [Domain note with malformed frontmatter](domain/domain-bad-frontmatter.md): The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket
 - [Credit lifecycle](domain/domain-credit-lifecycle.md): A customer's credit balance is granted, consumed, and expired through the flow described in
 - [Marker extraction edge cases](domain/domain-marker-cases.md): as of 2026-01-15.
-- [Retry policy](domain/domain-retry-policy.md): The worker retries a failed job five times before parking it; the product team treats the fifth attempt as the
+- [Retry policy](domain/domain-retry-policy.md): The worker retries a failed job five times before `parkJob` in `src/worker/park.js` parks it; the product team treats
 
 ## Architecture
 - [Credit deduction flow](architecture/architecture-credit-deduction-flow.md): Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.

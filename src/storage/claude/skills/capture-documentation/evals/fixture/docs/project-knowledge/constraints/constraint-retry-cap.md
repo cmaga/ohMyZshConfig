@@ -14,3 +14,7 @@ No job is retried more than three times: the fourth failure parks it so
 the [[worker]] pool cannot be pinned by one poison row. [[domain-retry-policy]]
 records the product view of five attempts; both stay live until the
 owners rule.
+
+## Reusable surface
+
+None — the cap is a number, not code; `src/worker/backoff.js` is owned by [[scheduler]].

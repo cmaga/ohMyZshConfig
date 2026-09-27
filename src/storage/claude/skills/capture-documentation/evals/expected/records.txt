@@ -1,5 +1,6 @@
 exit=0
 --- stdout ---
+_coverage-exclusions.md	Population items the vault deliberately does not anchor.	0	-	-
 _index.md	Entry point into the vault.	0	-	-
 architecture/architecture-credit-deduction-flow.md	Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.	0	-	-
 architecture/architecture-payment-flow.md	Bare link to billing is deliberately ambiguous now that both `components/billing.md` and `plan/billing.md` exist,	0	-	-
@@ -37,7 +38,7 @@ decisions/ADR-020-revisit-no-tripwire.md	Keep the cache layer until a tripwire f
 domain/domain-bad-frontmatter.md	The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket	0	-	-
 domain/domain-credit-lifecycle.md	A customer's credit balance is granted, consumed, and expired through the flow described in	0	-	-
 domain/domain-marker-cases.md	as of 2026-01-15.	7	-	-
-domain/domain-retry-policy.md	The worker retries a failed job five times before parking it; the product team treats the fifth attempt as the	0	-	-
+domain/domain-retry-policy.md	The worker retries a failed job five times before `parkJob` in `src/worker/park.js` parks it; the product team treats	0	-	-
 glossary.md	Shared vocabulary for the fixture vault.	0	-	-
 misc/stray-note.md	Lives under a `misc/` directory that is not one of the buckets listed in vault-schema.json, exercising BUCKET_UNKNOWN.	0	-	-
 plan/2026-q3-roadmap.md	Deliberately left unlinked from every hub and content note, exercising ORPHAN_NO_INBOUND.	0	-	-

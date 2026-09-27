@@ -13,12 +13,14 @@ trap 'rm -rf "$TMP"' EXIT
 usage() {
   echo "usage: vault-audit.sh [--hook] [--force] [--format text|json] [REPO]" >&2
   echo "       vault-audit.sh --adr-report [REPO]      ADR fitness rows as TSV (KIND path detail), no cache" >&2
+  echo "       vault-audit.sh --coverage POP.tsv [REPO] append the vault-coverage.sh report as -- coverage -- (text only, never cached)" >&2
   exit 2
 }
 
 HOOK=0
 FORCE=0
 ADR_REPORT=0
+COVERAGE=""
 FORMAT=text
 REPO_ARG=""
 while [ $# -gt 0 ]; do
@@ -26,6 +28,7 @@ while [ $# -gt 0 ]; do
     --hook) HOOK=1 ;;
     --force) FORCE=1 ;;
     --adr-report) ADR_REPORT=1 ;;
+    --coverage) shift; COVERAGE="${1:-}"; [ -f "$COVERAGE" ] || usage ;;
     --format) shift; FORMAT="${1:-}"; case "$FORMAT" in text|json) ;; *) usage ;; esac ;;
     -*) usage ;;
     *) REPO_ARG="$1" ;;
@@ -431,6 +434,11 @@ ADR_LINES=$("$JQ" -r '(.adr_rows // [])[]?' "$CACHE" 2>/dev/null)
 if [ -n "$ADR_LINES" ]; then
   printf -- '-- adr fitness --\n'
   printf '%s\n' "$ADR_LINES"
+fi
+
+if [ -n "$COVERAGE" ]; then
+  printf -- '-- coverage --\n'
+  bash "$HERE/vault-coverage.sh" "$VAULT" "$COVERAGE" --src "$(basename "$COVERAGE" .tsv)"
 fi
 
 echo "Triage: ~/.claude/skills/capture-documentation/references/drift-triage.md"

@@ -1,0 +1,11 @@
+claimNextJob	src/worker/index.js
+processQueueItem	src/worker/index.js
+chargeCustomer	src/billing/charge.js
+buildReport	src/reporting/worker-report.js
+vendorThing	src/vendor/lib.js
+legacyShim	src/worker/shim.js
+retryBackoff	src/worker/backoff.js
+parkJob	src/worker/park.js
+unparkJob	src/worker/park.js
+ghostFn	src/ghost/nothing.js
+requireIdempotencyKey	
