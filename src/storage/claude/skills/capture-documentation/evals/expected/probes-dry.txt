@@ -1,0 +1,12 @@
+exit=0
+--- stdout ---
+probes: 20
+replicates: 3
+model: haiku
+judge: haiku
+hashes: corpus=e86247c3 prompt=3c2c431f models=f9b5dc1d rubric=b4dc29c9
+receipt: receipts/e86247c3-3c2c431f-f9b5dc1d-b4dc29c9.json
+baseline: receipts/baseline-e86247c3-b4dc29c9.json
+fixture lint: {"fail":1,"warn":5}
+--- stderr ---
+

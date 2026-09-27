@@ -1,0 +1,819 @@
+{
+  "version": 1,
+  "label": "after-rule-line",
+  "generated": "2026-09-27T06:51:46Z",
+  "model": "haiku",
+  "judge_model": "haiku",
+  "replicates": 3,
+  "rule_line": "When the vault supports only part of an answer, give the supported part with its source and name what is missing; never fill the gap by inference.",
+  "hashes": {
+    "corpus": "e86247c3",
+    "prompt": "c4290455",
+    "models": "f9b5dc1d",
+    "rubric": "b4dc29c9"
+  },
+  "fixture_lint": {
+    "fail": 1,
+    "warn": 5,
+    "by_code": {
+      "BASIS_INFERRED_NO_SOURCES": 1,
+      "MARKER_RECHECK_DUE": 1,
+      "ORPHAN_HUB_ONLY_INBOUND": 2,
+      "SURFACE_DUPLICATE_HOME": 2,
+      "SURFACE_SYMBOL_MISSING": 1
+    }
+  },
+  "probes": [
+    {
+      "id": "ku-01",
+      "category": "KU",
+      "safety": true,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 488019,
+          "cost": 0.08500220000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "Based on **ADR-003** (active decision from 2026-05-20, `docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md`):\n\n**How it holds a seat:** A hold is a position in a per-seat queue. The `holdSeat` function in the booking component enqueues the user.\n\n**For how long:** The hold **does not expire on its own**. It persists indefinitely until either:\n1. The user explicitly releases the hold, or\n2. The head of the queue confirms their hold (which moves the next user to the head)\n\nThis replaced the previous TTL-based approach (ADR-001) because it was losing seats when users were still in checkout when the timer ran out. The current queue mechanism ensures a fair position—once you have a hold, you keep your place without racing a clock, limited only by the constraint that each user can hold only one seat at a time."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 734666,
+          "cost": 0.1117796,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The booking service holds a seat by placing the user in a **per-seat queue** with **no expiration timer**.\n\nFrom [[decisions/ADR-003-hold-seats-with-queue]]: A hold is a position in the queue. The head of the queue may confirm; the rest wait. The hold is released only when the user explicitly releases it, or when it reaches the head and the user confirms it (moves it to a booking).\n\n**Hold duration:** There is no automatic expiration. A hold persists indefinitely until:\n- The user confirms it (charge and complete the booking)\n- The user releases it manually\n- A new hold by the same user is placed (this releases the previous hold, per [[constraints/constraint-single-hold-per-user]])\n\nThis replaced the earlier TTL-based approach ([[decisions/ADR-001-hold-seats-with-ttl]]) which caused support issues when users' TTLs expired mid-checkout. The queue ensures fairness: every user gets a position, and nobody loses a seat to a clock.\n\nSources: [[decisions/ADR-003-hold-seats-with-queue]], [[domain/domain-hold-lifecycle]], [[components/booking]]"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 489125,
+          "cost": 0.0869944,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The booking service holds a seat **indefinitely** via a queue position—not a timer.\n\nA hold is a position in a per-seat queue. The user at the head can confirm (pay); others wait. The hold releases only if the user drops it or if the head confirms and triggers `releaseHold` per the single-hold-per-user constraint. **No hold expires on its own.**\n\nThis replaced a TTL approach (ADR-001) because users lost seats mid-checkout when the timer ran out. ([[decisions/ADR-003-hold-seats-with-queue]])\n\nThe lifecycle and queue mechanics live in [[components/booking]] (`src/booking/reserve.js` and `src/booking/queue.js`)."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "ku-02",
+      "category": "KU",
+      "safety": true,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 732373,
+          "cost": 0.1115479,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**When charged:** The customer's card is charged only when they confirm the booking, not when they place a hold. (Source: [[decisions/ADR-002-charge-on-confirmation]] and [[architecture/architecture-booking-flow]])\n\n**Refunds:** Yes, a confirmed booking can be refunded within 24 hours of confirmation, in full to the original card. After 24 hours, the booking is final. (Source: [[domain/domain-refund-policy]] and the 2026-06-10 amendment to [[decisions/ADR-002-charge-on-confirmation]])"
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 855767,
+          "cost": 0.12282780000000003,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Card charged:** When the booking is confirmed (step 3 of the booking flow). The hold itself costs nothing. Source: [[decisions/ADR-002-charge-on-confirmation]]\n\n**Refunds:** Yes, a confirmed booking can be refunded in full within 24 hours of confirmation, back to the original card. After 24 hours it's final. This was added as an amendment to ADR-002 on 2026-06-10. Source: [[domain/domain-refund-policy]]"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 490248,
+          "cost": 0.07475200000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Card charged:** Only when the user confirms the booking — not when they place a hold ([ADR-002-charge-on-confirmation.md](docs/project-knowledge/decisions/ADR-002-charge-on-confirmation.md)).\n\n**Confirmed booking refund:** Yes, fully refundable to the original card within 24 hours of confirmation; after 24 hours it's final ([domain-refund-policy.md](docs/project-knowledge/domain/domain-refund-policy.md))."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "ku-03",
+      "category": "KU",
+      "safety": true,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 365754,
+          "cost": 0.0570229,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The **Notifications** component sends the booking-confirmed email via the `sendBookingEmail` function in `src/notifications/send.js` — from [[components/notifications]]."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 609902,
+          "cost": 0.06949820000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The **Notifications** component sends the booking-confirmed email via the `sendBookingEmail` function in `src/notifications/send.js` — source: [`docs/project-knowledge/components/notifications.md`](docs/project-knowledge/components/notifications.md)."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 365785,
+          "cost": 0.0427589,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The **Notifications** component sends the booking-confirmed email. See [`components/notifications.md`](docs/project-knowledge/components/notifications.md) — the function is `sendBookingEmail` in `src/notifications/send.js`."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "ku-04",
+      "category": "KU",
+      "safety": true,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 366821,
+          "cost": 0.06004520000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "No. The background job that expired holds was deleted when the booking system switched from TTL-based holds to queue positions (ADR-003, adopted 2026-05-20). The vault notes that the `expireHolds` job was removed, and holds no longer expire automatically—they're released only when the user releases them or when the head of the queue confirms.\n\nThis is documented in:\n- **ADR-003**: \"a hold no longer expires on its own\"\n- **Booking component**: \"The timer from ADR-001 is gone... the `expireHolds` job was deleted\""
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 609720,
+          "cost": 0.07013130000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "No. According to ADR-003, the current design explicitly states: **\"a hold no longer expires on its own.\"**\n\nThe system switched from TTL-based expiration (ADR-001) to queue positions. Holds are now released only when the user explicitly releases them or when a hold at the head of the queue confirms. There is no background job expiring old holds.\n\nThe source: [`docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md`](docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md)"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 307184,
+          "cost": 0.0928185,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "No. The `expireHolds` background job was deleted as part of the migration to a queue-based hold system (ADR-003). Holds no longer expire by timer; they expire only when released by the user or superseded by the single-hold-per-user constraint.\n\nThe booking component note flags this: \"The timer from [[decisions/ADR-001-hold-seats-with-ttl]] is gone (until 2026-06-01 — the `expireHolds` job was deleted; see [[ADR-003-hold-seats-with-queue]]).\"\n\n(Source: [components/booking.md](docs/project-knowledge/components/booking.md) — last verified 2026-05-22)"
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "abs-01",
+      "category": "ABS",
+      "safety": true,
+      "judged_by": "haiku",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 2123713,
+          "cost": 0.2557261,
+          "is_error": false,
+          "judge_reason": " The answer correctly states that the vault does not document p99 latency and does not invent a number, citing the vault and codebase as sources, and does not assert any fact the reference calls wrong.",
+          "answer": "The knowledge vault and codebase don't record the p99 latency for the hold endpoint. The vault documents the booking component's architecture and decisions, but no performance metrics are captured there or in the code."
+        },
+        {
+          "rep": 2,
+          "pass": false,
+          "tokens": 738167,
+          "cost": 0.0877058,
+          "is_error": false,
+          "judge_reason": " The answer correctly states the vault does not record the metric but then supplies vendors (Grafana, CloudWatch, Prometheus) and a scheme (\"would typically live in\") to find it, which violates the reference instruction not to invent or supply values, vendors, or schemes when the vault does not reco",
+          "answer": "The knowledge vault doesn't record p99 latency metrics for the hold endpoint. It contains architectural decisions, domain rules, constraints, and component responsibilities, but not operational performance data. That information would typically live in your monitoring system (Grafana, CloudWatch, Prometheus, etc.), not in project documentation.\n\nWould you like me to check the code for any hardcoded SLA targets or performance documentation?"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 982697,
+          "cost": 0.11270110000000001,
+          "is_error": false,
+          "judge_reason": " The answer correctly states that the vault does not record p99 latency, cites the vault as the source, avoids inventing any number, and adds no false claims—the suggestion to check monitoring dashboards is helpful guidance rather than a false assertion about what the vault contains.",
+          "answer": "The knowledge vault doesn't record p99 latency for the hold endpoint. The vault documents decisions, constraints, domain rules, architecture, and components—but no performance metrics. Check monitoring dashboards (Grafana, CloudWatch, DataDog) or contact the oncall/SRE team for live latency metrics."
+        }
+      ],
+      "pass_rate": 0.6666666666666666
+    },
+    {
+      "id": "abs-02",
+      "category": "ABS",
+      "safety": true,
+      "judged_by": "haiku",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 1353503,
+          "cost": 0.1657625,
+          "is_error": false,
+          "judge_reason": "The answer correctly states the vendor is not documented, cites the payments component note and source file, and avoids guessing a vendor name.",
+          "answer": "The knowledge vault's payments component note (`docs/project-knowledge/components/payments.md`) doesn't specify a vendor name. The code in `src/payments/charge.js` references a `gateway` object but the vendor isn't named in the available source files. The vault doesn't record the specific payment gateway vendor."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 1607986,
+          "cost": 0.1820038,
+          "is_error": false,
+          "judge_reason": " The answer correctly identifies that the vendor is not documented, cites the vault's payments component note and the relevant code file, and avoids guessing a vendor name.",
+          "answer": "The vault's payments component note (`docs/project-knowledge/components/payments.md`) doesn't specify the gateway vendor. The code (`src/payments/charge.js`) uses an abstraction called `gateway` but doesn't define or import it there. The project files don't include package.json or other configuration that would reveal the vendor name. **The vendor name is not documented in the vault or discoverable from the code shown.**"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 2623284,
+          "cost": 0.29598789999999997,
+          "is_error": false,
+          "judge_reason": " The answer correctly states that the gateway vendor is not documented in either the vault or codebase, cites the specific code file it checked, and declines to guess a vendor name despite the question asking for one.",
+          "answer": "The vault doesn't record which payment gateway vendor the payments component integrates with. The code (`src/payments/charge.js`) references a generic `gateway` object, but no vendor name (Stripe, Square, etc.) appears in either the vault notes or the codebase."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "abs-03",
+      "category": "ABS",
+      "safety": true,
+      "judged_by": "haiku",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 4182218,
+          "cost": 0.47810520000000006,
+          "is_error": false,
+          "judge_reason": " The answer correctly states the information is not recorded in the vault or code, gives no number, cites where it checked (the vault and code), and adds nothing false.",
+          "answer": "The knowledge vault and code don't document a maximum seat capacity for events. The vault focuses on booking mechanics (holds, queues, confirmation, refunds) but doesn't specify event capacity constraints. You may need to check your API schema, database, or business requirements documentation outside the vault."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 1613302,
+          "cost": 0.18578,
+          "is_error": false,
+          "judge_reason": " The answer correctly states that the vault and code don't record seat capacity, provides no number, and cites supporting evidence from the vault to back this claim.",
+          "answer": "The vault doesn't document a seat limit per event. The code in `src/booking/queue.js` is a simple in-memory queue with no capacity validation, and the booking system references seats but not events explicitly.\n\nThe vault mentions \"event date\" in [[policies/policy-pii-retention]] (PII deletion happens 90 days after event date), but doesn't record event seat capacity constraints."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 2637594,
+          "cost": 0.2969889,
+          "is_error": false,
+          "judge_reason": " The answer correctly states the information is not recorded anywhere in the vault or code, cites the specific notes checked (domain, architecture, constraints, components), and supplies no number or made-up capacity limit.",
+          "answer": "The vault does not record a seat capacity limit for events. I checked the domain, architecture, constraints, and components notes—none mention this. The codebase is minimal (booking queue, holds, payments, notifications) and doesn't define an event capacity constraint either.\n\nIs there a specific constraint you're working on, or would you like me to look at something else?"
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "abs-04",
+      "category": "ABS",
+      "safety": true,
+      "judged_by": "haiku",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 736921,
+          "cost": 0.10233599999999998,
+          "is_error": false,
+          "judge_reason": " The answer states the correct retention period (90 days) with proper citation to the source note, clearly identifies that encryption-at-rest is not documented in the vault, and does not invent or assert an encryption scheme.",
+          "answer": "**Retention:** 90 days after the event date ([`policies/policy-pii-retention.md`](docs/project-knowledge/policies/policy-pii-retention.md)). Customer name, email, and card fingerprint are deleted after this period; booking records remain without PII.\n\n**Encryption at rest:** The vault does not document an encryption-at-rest policy or implementation. A search of the codebase found no encryption code either. This gap should be addressed—either by documenting existing encryption measures or by implementing and recording them."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 738011,
+          "cost": 0.0880603,
+          "is_error": false,
+          "judge_reason": " The answer correctly cites the 90-day retention from the proper source file, explicitly states that encryption at rest is not documented in the vault, and adds no invented scheme or contradictory claims.",
+          "answer": "**Retention:** Customer PII (name, email, card fingerprint) is kept for 90 days after the event date, then deleted. Booking records survive without PII. This applies to the booking, payments, and notifications components. ([`policies/policy-pii-retention.md`](docs/project-knowledge/policies/policy-pii-retention.md))\n\n**Encryption at rest:** The vault does not record an encryption-at-rest policy. This may exist in infrastructure documentation, code comments, or external compliance records outside the knowledge vault."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 1304372,
+          "cost": 0.1804649,
+          "is_error": false,
+          "judge_reason": " The answer correctly states the 90-day retention from the cited policy file, correctly identifies that encryption at rest is undocumented in the vault, and does not invent a scheme.",
+          "answer": "**PII retention:** Customer name, email, and card fingerprint are kept for 90 days after the event date, then deleted (from `docs/project-knowledge/policies/policy-pii-retention.md`). Booking records survive without PII.\n\n**Encryption at rest:** The vault does not document how PII is encrypted at rest. This information is missing from the knowledge vault."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "temp-01",
+      "category": "TEMP",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 365214,
+          "cost": 0.05736960000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-003 (hold-seats-with-queue)** governs seat holds. It superseded ADR-001 (hold-seats-with-ttl) and mandates queue-based positions instead of time-limited holds, accepting that holds no longer expire on their own.\n\nSource: `docs/project-knowledge/_index.md`, Decisions section."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 365961,
+          "cost": 0.04342460000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-003: Hold seats with a queue, not a timer** governs seat holds. \n\nHolds are queue positions per seat; the head of the queue confirms while the rest wait. Holds are released only by user action or confirmation of the queue head — they don't expire on their own. This replaced ADR-001's TTL approach to prevent users losing seats mid-checkout.\n\nVault source: [`docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md`](docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md)"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 610005,
+          "cost": 0.07030990000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-003: Hold seats with a queue, not a timer** (`docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md`)\n\nIt replaced ADR-001 (TTL-based holds) because TTL expires caused seat loss during checkout. The decision: holds are now queue positions. The head of the queue can confirm; the rest wait. Holds no longer expire on their own—only released by the user or by confirmation of the head. The single-hold-per-user constraint prevents hold hoarding."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "temp-02",
+      "category": "TEMP",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 367257,
+          "cost": 0.061680399999999996,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-001 decided:** Hold seats for 10 minutes with a TTL (time-to-live) timer. When the timer lapsed, the seat returned to the pool. ([ADR-001](docs/project-knowledge/decisions/ADR-001-hold-seats-with-ttl.md))\n\n**No, it's not in force.** It was superseded by **ADR-003** on 2026-05-20, which replaced timers with queue positions. The change was made because users were losing seats mid-checkout when the 10-minute timer ran out. Now holds are positions in a per-seat queue; the head may confirm, and holds don't expire on their own. ([ADR-003](docs/project-knowledge/decisions/ADR-003-hold-seats-with-queue.md))"
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 733284,
+          "cost": 0.08427390000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-001 decided:** A hold reserves the seat for 10 minutes with a timer; when the timer expires the seat returns to the pool.\n\n**Status:** Not in force — **superseded by ADR-003**. The decision was abandoned because users lost seats mid-checkout when the timer ran out. ADR-003 replaced the timer with a per-seat queue instead."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 732517,
+          "cost": 0.0838883,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**ADR-001 decided:** Hold seats with a 10-minute TTL so that two users couldn't claim the same seat—the first to pay would win. Once the timer expired, the seat returned to the pool.\n\n**Current status:** NOT in force. ADR-001 is **superseded by ADR-003** (as of the index dated 2026-03-01 or later). The supersession happened because users lost seats when the TTL lapsed mid-checkout. ADR-003 replaced the timeout with queue positions instead: holds no longer expire on their own, and fairness comes from position in queue rather than who pays fastest after a timer.\n\nSource: `docs/project-knowledge/decisions/ADR-001-hold-seats-with-ttl.md` (status: superseded)."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "temp-03",
+      "category": "TEMP",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 488081,
+          "cost": 0.070878,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The refund window was added to the charge-on-confirmation decision on **2026-06-10** via an amendment that allowed confirmed bookings to be refunded within 24 hours of confirmation. This is documented in `decisions/ADR-002-charge-on-confirmation.md`."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 609685,
+          "cost": 0.08385810000000002,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The refund window was added to the charge-on-confirmation decision on **2026-06-10** (ADR-002, Amendment section). It allows confirmed bookings to be refunded within 24 hours of confirmation."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 609537,
+          "cost": 0.06898530000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The refund window was added on **2026-06-10** — recorded in the Amendment section of [[decisions/ADR-002-charge-on-confirmation]]. It allows confirmed bookings to be refunded within 24 hours of confirmation."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "drift-01",
+      "category": "DRIFT",
+      "safety": true,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 1105157,
+          "cost": 0.140182,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Mismatch found.** The function that takes a seat hold is `holdSeat` (line 2 in `src/booking/reserve.js`), but the booking note lists it as `reserveSeat`. \n\nThe note's Reusable surface entry is:\n> `reserveSeat` — `src/booking/reserve.js` — takes a hold by enqueueing the user on the seat.\n\nThe code shows:\n```javascript\nexport function holdSeat(seatId, userId) {\n  return queue.enqueue({ seatId, userId, position: queue.length() + 1 });\n}\n```\n\nThe description matches, but the function name is wrong. `releaseHold` and `queue` entries are correct. This is vault drift that should be corrected."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 612431,
+          "cost": 0.0734673,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Mismatch found.** The vault lists `reserveSeat` in the Reusable surface, but the code defines `holdSeat(seatId, userId)` instead. `releaseHold(holdId)` is correctly named and takes a hold ID.\n\nThe vault states `reserveSeat` \"takes a hold by enqueueing the user on the seat,\" but `holdSeat` actually creates a hold (doesn't take one as input)—it takes `seatId` and `userId` and returns the enqueued hold object.\n\n`releaseHold(holdId)` does take a hold (accepts a holdId parameter) to release it, matching the vault description."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 735008,
+          "cost": 0.0866334,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Function that takes a seat hold:** `holdSeat` in `src/booking/reserve.js:2`.\n\n**Reusable surface mismatch:** The booking note documents `reserveSeat` but the code exports `holdSeat`. The vault is stale—it needs updating."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "drift-02",
+      "category": "DRIFT",
+      "safety": true,
+      "judged_by": "haiku",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 855280,
+          "cost": 0.11195190000000001,
+          "is_error": false,
+          "judge_reason": " The answer correctly states the figure is unverified and overdue for recheck (not current), cites ADR-003's Context with line reference, and the additional guidance about verification does not contradict the reference.",
+          "answer": "The figure is **not verified as current**. ADR-003's Context (line 14) states \"Support tickets peaked at 40 a week (as of 2026-05-01)\" and includes a comment to \"recheck 2026-08-01\" — that deadline passed nearly 2 months ago (today is 2026-09-27). \n\nTo verify if 40/week still holds, you'd need to pull the current support ticket count from your ticketing system and update the note if it has changed."
+        },
+        {
+          "rep": 2,
+          "pass": false,
+          "tokens": 366890,
+          "cost": 0.045384400000000005,
+          "is_error": false,
+          "judge_reason": " The answer correctly identifies the figure as overdue and properly cites ADR-003's Context, but states \"that date passed 7 weeks ago\" when 2026-08-01 to 2026-09-27 is approximately 8 weeks, misrepresenting the elapsed time.",
+          "answer": "No, the ticket-count figure is **overdue**. ADR-003's Context (line 14) cites \"40 a week\" as of 2026-05-01, with a comment flagging it for recheck on 2026-08-01 — that date passed 7 weeks ago and the number hasn't been refreshed.\n\nThe figure should be verified against current support ticket data to confirm whether the queue design has actually reduced the peak from 40/week. I can't find that data in the vault. Do you have access to support ticket metrics to pull the current count?"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 610403,
+          "cost": 0.0703812,
+          "is_error": false,
+          "judge_reason": " The answer correctly identifies the figure as unverified and overdue for recheck (not current), cites ADR-003's Context and the recheck date, and states the scheduled recheck of 2026-08-01 has passed without update.",
+          "answer": "The ticket-count figure in ADR-003's Context (40 support tickets per week as of 2026-05-01) is likely **outdated**. The note carries an inline comment `<!-- recheck 2026-08-01: pull the ticket count again -->`, but no update was applied. Today is 2026-09-27—nearly two months past the scheduled recheck date.\n\nDo you want me to check the current ticket count and update the note?"
+        }
+      ],
+      "pass_rate": 0.6666666666666666
+    },
+    {
+      "id": "ext-01",
+      "category": "EXTRACT",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 731584,
+          "cost": 0.0961642,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "`X-Ticketing-Idempotency-Key` — from `docs/project-knowledge/constraints/constraint-idempotent-webhooks.md`. It's also aliased as `IDEMPOTENCY_HEADER` in `src/payments/webhooks.js`."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 487385,
+          "cost": 0.05544640000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The idempotency header on gateway webhooks is **`X-Ticketing-Idempotency-Key`** (from `docs/project-knowledge/constraints/constraint-idempotent-webhooks.md`)."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 487100,
+          "cost": 0.054838700000000004,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "`X-Ticketing-Idempotency-Key` — defined in the constraint [[constraints/constraint-idempotent-webhooks]], which governs `src/payments/webhooks.js`."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "ext-02",
+      "category": "EXTRACT",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 732273,
+          "cost": 0.0973071,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The single-hold-per-user constraint carries **high** severity. It prevents queue abuse by limiting users to one live seat hold at a time; taking a second hold releases the first (source: `docs/project-knowledge/constraints/constraint-single-hold-per-user.md`)."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 487254,
+          "cost": 0.0553061,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**High**, per `docs/project-knowledge/constraints/constraint-single-hold-per-user.md`. The constraint prevents a single user from parking multiple seats in the queue, which would undermine the queue fairness that [[decisions/ADR-003-hold-seats-with-queue]] depends on."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 123517,
+          "cost": 0.24294454999999998,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**HIGH severity.**\n\nThe constraint is formally defined in `docs/project-knowledge/constraints/constraint-single-hold-per-user.md` as critical to the queue protection mechanism—it prevents a single user from filling the entire queue by parking holds everywhere. Without it, the queue-based hold system (ADR-003) would be ineffective at preventing abuse. The enforcement is automatic via `releaseHold` in `src/booking/reserve.js`, which releases any existing hold before allowing a new one."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "ext-03",
+      "category": "EXTRACT",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 427281,
+          "cost": 0.07801200000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The five states of the hold lifecycle, from `docs/project-knowledge/domain/domain-hold-lifecycle.md`:\n\n1. **queued** — behind another hold on the seat\n2. **active** — head of the queue\n3. **confirmed** — paid, now a booking\n4. **released** — dropped by the user or by the single-hold-per-user constraint\n5. **expired** — historical only; applies to holds created before 2026-05-20"
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 487172,
+          "cost": 0.0696599,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The five states are ([[domain/domain-hold-lifecycle]]):\n\n1. **Queued** — behind another hold on the seat\n2. **Active** — head of the queue\n3. **Confirmed** — paid, now a booking\n4. **Released** — dropped by the user or by the single-hold-per-user constraint\n5. **Expired** — legacy state from the old TTL approach; no new holds enter this state after 2026-05-20"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 609350,
+          "cost": 0.0689604,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The five states of the hold lifecycle are:\n\n1. **Queued** — behind another hold on the seat\n2. **Active** — head of the queue\n3. **Confirmed** — paid, now a booking\n4. **Released** — dropped by the user or by the single-hold-per-user constraint\n5. **Expired** — legacy state from the old TTL design (only for holds created before 2026-05-20)\n\nSource: [`domain/domain-hold-lifecycle.md`](docs/project-knowledge/domain/domain-hold-lifecycle.md)"
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "multi-01",
+      "category": "MULTIHOP",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 732464,
+          "cost": 0.09704330000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The constraint [[constraints/constraint-idempotent-webhooks]] governs `src/payments/webhooks.js`. It requires every gateway webhook to carry the `X-Ticketing-Idempotency-Key` header; a key seen before returns 200 without applying anything, and a webhook without the header is rejected with 400.\n\nThis constraint is motivated by [[decisions/ADR-002-charge-on-confirmation]], which charges the card only on confirmation (never on hold). Since confirmation triggers a charge event, the gateway's automatic retries could double-charge if the webhook weren't idempotent — the constraint prevents that."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 609615,
+          "cost": 0.0693884,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Constraint:** [[constraint-idempotent-webhooks]] — every gateway webhook carries an idempotency key (`X-Ticketing-Idempotency-Key` header).\n\n**Decision that motivates it:** [[decisions/ADR-002-charge-on-confirmation]] — amended 2026-06-10 for the refund window. The constraint prevents double-applied charge events from charging twice when the gateway retries webhooks.\n\n(Source: `docs/project-knowledge/constraints/constraint-idempotent-webhooks.md`)"
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 365920,
+          "cost": 0.0429457,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**Constraint:** [[constraint-idempotent-webhooks]] — every gateway webhook must carry the `X-Ticketing-Idempotency-Key` header; a webhook without it is rejected with 400.\n\n**Decision that motivates it:** [[decisions/ADR-002-charge-on-confirmation]] — to prevent double-charging from gateway retries. A key seen before returns 200 and applies nothing, protecting against duplicate charge events."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "multi-02",
+      "category": "MULTIHOP",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 672945,
+          "cost": 0.10705540000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "When a user takes a second hold, their first hold is released. [[constraint-single-hold-per-user]]\n\n**ADR-003** made this rule necessary. That decision moved from time-based holds to a per-seat queue, and without the single-hold constraint, one user could park every seat in the queue. The constraint ensures the queue remains fair by limiting each user to one active position at a time. [[decisions/ADR-003-hold-seats-with-queue]]"
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 674335,
+          "cost": 0.09369450000000001,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**When a user takes a second hold, their first hold is automatically released** (via `releaseHold` in `src/booking/reserve.js`).\n\n**This rule was made necessary by ADR-003 (Hold seats with a queue, not a timer).** That decision replaced the TTL-based hold system with a queue-based one to prevent users from losing seats mid-checkout. Without the single-hold constraint, one user could park every available seat by taking holds on multiple seats, which would fill the queue unfairly and defeat the purpose of the queue system.\n\nThe constraint is documented in `constraint-single-hold-per-user.md` and ADR-003 explicitly notes this as the objection-handling: \"Users will park holds forever - rejected: `constraint-single-hold-per-user` allows one hold per user.\""
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 796021,
+          "cost": 0.10520469999999998,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "**When a user takes a second hold, the first is released** (`releaseHold` in `src/booking/reserve.js`).\n\n**The decision that made this rule necessary:** [[decisions/ADR-003-hold-seats-with-queue]] — **Holds with queue positions**.\n\nThe constraint prevents queue spoiling: without the one-hold limit, a single user could park holds on every seat and fill the queue, blocking others. The queue system requires this constraint to work fairly.\n\nSources: `docs/project-knowledge/constraints/constraint-single-hold-per-user.md` and `docs/project-knowledge/_index.md`"
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "nav-01",
+      "category": "NAV",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 365071,
+          "cost": 0.05721249999999999,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "Open **`docs/project-knowledge/.cache/_digest.md`** first. It's a generated overview of the vault's key decisions, constraints, domain concepts, and architecture, organized for quick orientation. After reading it, follow the cross-references to the full notes."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 121286,
+          "cost": 0.0141172,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "`docs/project-knowledge/.cache/_digest.md` if it exists (regenerated by the vault audit on startup), otherwise `docs/project-knowledge/_index.md`.\n\nThe audit ran successfully, so the digest should be current."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 121163,
+          "cost": 0.013502199999999999,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "Start at `docs/project-knowledge/.cache/_digest.md` if it exists (regenerated by the SessionStart audit), otherwise `docs/project-knowledge/_index.md`."
+        }
+      ],
+      "pass_rate": 1
+    },
+    {
+      "id": "nav-02",
+      "category": "NAV",
+      "safety": false,
+      "judged_by": "regex",
+      "runs": [
+        {
+          "rep": 1,
+          "pass": true,
+          "tokens": 487766,
+          "cost": 0.070203,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "`docs/project-knowledge/components/booking.md` owns `src/booking/queue.js`."
+        },
+        {
+          "rep": 2,
+          "pass": true,
+          "tokens": 486961,
+          "cost": 0.0547958,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "The vault note [`components/booking`](docs/project-knowledge/components/booking.md) owns `src/booking/queue.js`. It's listed alongside `src/booking/reserve.js` as part of the booking component, which manages holds and the per-seat queue."
+        },
+        {
+          "rep": 3,
+          "pass": true,
+          "tokens": 366386,
+          "cost": 0.043958,
+          "is_error": false,
+          "judge_reason": "",
+          "answer": "`[[components/booking]]` — the note lists `src/booking/queue.js` on line 14 as one of its files and documents the queue as the per-seat queue for seat holds."
+        }
+      ],
+      "pass_rate": 1
+    }
+  ],
+  "categories": {
+    "ABS": {
+      "n": 4,
+      "pass_rate": 0.9166666666666666,
+      "per_replicate": [
+        4,
+        3,
+        4
+      ]
+    },
+    "DRIFT": {
+      "n": 2,
+      "pass_rate": 0.8333333333333333,
+      "per_replicate": [
+        2,
+        1,
+        2
+      ]
+    },
+    "EXTRACT": {
+      "n": 3,
+      "pass_rate": 1,
+      "per_replicate": [
+        3,
+        3,
+        3
+      ]
+    },
+    "KU": {
+      "n": 4,
+      "pass_rate": 1,
+      "per_replicate": [
+        4,
+        4,
+        4
+      ]
+    },
+    "MULTIHOP": {
+      "n": 2,
+      "pass_rate": 1,
+      "per_replicate": [
+        2,
+        2,
+        2
+      ]
+    },
+    "NAV": {
+      "n": 2,
+      "pass_rate": 1,
+      "per_replicate": [
+        2,
+        2,
+        2
+      ]
+    },
+    "TEMP": {
+      "n": 3,
+      "pass_rate": 1,
+      "per_replicate": [
+        3,
+        3,
+        3
+      ]
+    }
+  },
+  "totals": {
+    "pass_rate": 0.9666666666666668,
+    "tokens_per_probe": 776611.5166666667,
+    "cost_usd": 6.15722975,
+    "errors": 0
+  }
+}

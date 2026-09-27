@@ -686,7 +686,9 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
       (if ($r.opts | length) > 0 and ($r.opts[0].chosen | not) then f($r; "ADR_OPTIONS_CHOSEN_FIRST"; $r.opts[0].line; "first option is not marked (chosen)") else empty end),
       (if $r.fm.approved_by == "agent" then f($r; "ADR_APPROVED_BY_AGENT"; ($r.fm_line.approved_by // 1); "approved by agent (unattended run)") else empty end),
       ($r.objs[] | select(.disp == null) | f($r; "ADR_OBJECTION_DISPOSITION"; .line; "objection needs: accepted as cost / rejected: <why> / deferred: revisit if <condition>")),
-      ([ ($Lby[$indexPath] // [])[] | select(.kind == "note" and .to == $r.path) | .line ]) as $ilns |
+      ([ ($Lby[$indexPath] // [])[] | select(.kind == "note" and .to == $r.path) | .line ]) as $ilnsAll |
+      ([ $ilnsAll[] | . as $l | select((([ ($Lby[$indexPath] // [])[] | select(.line == $l) ] | .[0].to) == $r.path)) ]) as $own |
+      (if ($own | length) > 0 then $own else $ilnsAll end) as $ilns |
       (if $live and ($ilns | length) == 0 then f($r; "ADR_INDEX_LINE_MISSING"; 1; "no _index.md line links this ADR") else empty end),
       (if $y != "" and ($ilns | length) > 0 then
          ($ilns[0]) as $ln | ([ ($byPath[$indexPath].ilines // [])[] | select(.line == $ln) ][0].text // "") as $it |

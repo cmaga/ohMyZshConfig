@@ -695,6 +695,14 @@ C_RC=$?
 C_OUT="$(sed -n '/^-- coverage --$/,$p' "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case audit-coverage
 
+# probes-dry: the L19 runner builds its scratch repo, prints the
+# content-addressed receipt path and the fixture's lint counts, and runs no
+# probe. Hashes are deterministic (git hash-object of the inputs).
+bash "$HERE/vault-eval/run-probes.sh" --dry >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case probes-dry
+
 # ---------------------------------------------------------------------------
 # vault-refactor.sh (L11). Every command mutates the tree, so each case runs
 # on a fresh clone of $REPO at HEAD (no dirty-state additions): the preview,
@@ -754,6 +762,7 @@ refactor_case retire-backfill retire constraint-bad-tombstone --reason wrong --r
 # claimNextJob is mentioned by both and stays with the parent.
 printf 'scheduler-backoff\tcomponents\tBackoff policy\nscheduler-cron\tcomponents\tCron parsing\n' > "$WORK/split-plan.tsv"
 refactor_case split split scheduler --plan "$WORK/split-plan.tsv"
+
 # split-surface: a surface: item routes every entry under the prefix to the
 # line's note, a surface-only line makes a surface note pointing back at the
 # parent, and the parent's emptied section gets the None stanza. Mention

@@ -15,6 +15,16 @@ echo
 # Check if any relevant files are staged for commit
 staged_files=$(git diff --cached --name-only | grep -E '\.(zsh|txt|sh|json)$|^\.zshrc$|^aliases\.zsh$|^Makefile$|^src/storage/claude/')
 
+# Advisory: the reader rule, the scribe agent and the vault skill shape what
+# a reader does with the vault; a change to them should travel with a fresh
+# L19 receipt (evals/vault-eval/run-probes.sh) or say why it does not.
+reader_surface=$(git diff --cached --name-only | grep -E '^src/storage/claude/(rules/knowledge-vault-use\.md|agents/vault-scribe-agent\.md|skills/capture-documentation/SKILL\.md)$')
+if [[ -n "$reader_surface" ]] && ! git diff --cached --name-only | grep -q '^src/storage/claude/skills/capture-documentation/evals/vault-eval/receipts/.*\.json$'; then
+    echo "${YELLOW}WARN: reader-facing vault text is staged without an L19 receipt:${NC}"
+    echo "$reader_surface" | sed 's/^/  /'
+    echo "${YELLOW}      run src/storage/claude/skills/capture-documentation/evals/vault-eval/run-probes.sh --regress and stage the receipt, or note why in the commit.${NC}"
+fi
+
 if [[ -z "$staged_files" ]]; then
     echo "${YELLOW}No relevant files staged for commit, skipping validation.${NC}"
     exit 0
