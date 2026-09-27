@@ -20,7 +20,8 @@
   ],
   "field_patterns": {
     "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$",
-    "approved_by": "^([a-z0-9._-]+ [0-9]{4}-[0-9]{2}-[0-9]{2}|agent)$"
+    "approved_by": "^([a-z0-9._-]+ [0-9]{4}-[0-9]{2}-[0-9]{2}|agent)$",
+    "tracking": "^[A-Z][A-Z0-9]{1,9}-[0-9]+$"
   },
   "freshness": {
     "max_age_days": 180,
@@ -66,10 +67,11 @@
       "optional": [
         "superseded_by",
         "governs",
-        "revisit_by",
-        "revisit_when",
         "y_statement",
-        "approved_by"
+        "approved_by",
+        "revisit_if",
+        "tracking",
+        "expires"
       ],
       "statuses": [
         "active",
@@ -679,6 +681,41 @@
       "severity": "warn",
       "fix": "manual",
       "hint": "the currency suffix after the y_statement stays under 60 characters"
+    },
+    "ADR_REVISIT_IF_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "add revisit_if: [code:.., data:.., external:.., date:YYYY-MM-DD] or revisit_if: none - <reason> (new ADRs: FAIL)"
+    },
+    "ADR_REVISIT_IF_REQUIRED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "a status: revisit ADR names its tripwire in revisit_if"
+    },
+    "ADR_REVISIT_IF_ITEM": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "each item starts with code:, data:, external: or date:YYYY-MM-DD; the scalar form is none - <reason>"
+    },
+    "ADR_COMPLIANCE_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "- Enforced by: hook|lint|test|type|schema|ci - `path` [`Symbol`], or - Enforced by: review - <what>"
+    },
+    "ADR_COMPLIANCE_PATH_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "the guard path no longer exists; update or remove the Compliance entry"
+    },
+    "ADR_COMPLIANCE_SYMBOL_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "the guard symbol is not at that path at HEAD"
+    },
+    "ADR_EXPIRES_PAST": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "the transitional decision has expired; supersede, amend or extend expires"
     }
   },
   "cache": {
@@ -687,7 +724,11 @@
   "promote_on_new_note": [
     "ADR_Y_STATEMENT_MISSING",
     "ADR_OPTIONS_MISSING",
-    "ADR_INDEX_LINE_MISSING"
+    "ADR_INDEX_LINE_MISSING",
+    "ADR_REVISIT_IF_MISSING"
   ],
-  "promote_on_introduced": []
+  "promote_on_introduced": [],
+  "audit": {
+    "churn_commits": 10
+  }
 }

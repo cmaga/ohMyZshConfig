@@ -29,6 +29,7 @@ decisions/ADR-014-cycle-b.md	Introduce `SELECT ... FOR UPDATE SKIP LOCKED`, late
 decisions/ADR-015-banner-mismatch.md	Fold into the backoff policy ADR-012-successor-silent introduces.	0	-	-
 decisions/ADR-017-pin-node-runtime.md	Pin the worker to the current Node LTS through the repo's version file.	0	[src/worker/index.js]	-
 decisions/ADR-018-bad-template-fields.md	Rebuild nightly.	0	[]	-
+decisions/ADR-020-revisit-no-tripwire.md	Keep the cache layer until a tripwire fires.	0	[]	-
 domain/domain-bad-frontmatter.md	The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket	0	-	-
 domain/domain-credit-lifecycle.md	A customer's credit balance is granted, consumed, and expired through the flow described in	0	-	-
 domain/domain-marker-cases.md	as of 2026-01-15.	7	-	-

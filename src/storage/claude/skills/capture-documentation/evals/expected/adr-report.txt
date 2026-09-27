@@ -1,0 +1,15 @@
+exit=0
+--- stdout ---
+TRIPWIRE	decisions/ADR-017-pin-node-runtime.md	code: src/worker/index.js changed in 2 commit(s) since the note
+OVERDUE	decisions/ADR-016-revisit-cache-layer.md	date:2020-01-01
+OVERDUE	decisions/ADR-018-bad-template-fields.md	date:20-01-01
+OVERDUE	decisions/ADR-018-bad-template-fields.md	expires:2020-01-01
+MISSING-GUARD	decisions/ADR-001-use-postgres.md	governs set, no mechanical ## Compliance entry
+MISSING-GUARD	decisions/ADR-012-successor-silent.md	governs set, no mechanical ## Compliance entry
+POLICY-REVIEW-DUE	policies/policy-data-retention.md	due 2026-04-29 (cadence:quarterly, 91d)
+POLICY-REVIEW-DUE	policies/policy-incident-disclosure.md	due 2026-04-30 (cadence:quarterly, 91d)
+MANUAL	decisions/ADR-016-revisit-cache-layer.md	external:when the cache layer is replaced
+MANUAL	decisions/ADR-017-pin-node-runtime.md	external:Node LTS schedule moves
+MANUAL	decisions/ADR-018-bad-template-fields.md	when the moon is full
+--- stderr ---
+

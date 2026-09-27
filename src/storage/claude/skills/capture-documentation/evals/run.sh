@@ -444,8 +444,7 @@ cat > "$VAULT/decisions/ADR-016-revisit-cache-layer.md" <<'EOF'
 ---
 type: decision
 status: revisit
-revisit_by: 2020-01-01
-revisit_when: when the cache layer is replaced
+revisit_if: [date:2020-01-01, external:when the cache layer is replaced]
 created: 2026-02-10
 ---
 # ADR-016: Revisit the cache layer
@@ -465,7 +464,7 @@ is evaluated.
 
 No banner is required for a `revisit` status (only superseded/deprecated/
 amended trigger BANNER_MISSING); vault-freshness.sh surfaces this note via
-its `revisit_by` date instead.
+its `revisit_if` date item instead.
 EOF
 
 must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test add -A
@@ -585,6 +584,16 @@ finish_case rules-write
 # those two flags come from different commits (commit4 and commit6) their
 # relative order there is not stable run to run either -- resorted by note
 # path for the same reason as drift-scan, then normalized.
+# adr-report: the L09 fitness rows on the Wave 2 tree. ADR-017 names
+# src/worker/index.js in a code: item and that file moved after commit1, so a
+# TRIPWIRE row; ADR-016 carries date:2020-01-01 (OVERDUE); ADR-001 governs
+# src/worker/** with no ## Compliance (MISSING-GUARD); the two policies are
+# freshness-overdue (POLICY-REVIEW-DUE); the external: item is MANUAL.
+"$AUDIT" --adr-report "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case adr-report
+
 "$AUDIT" --format text "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
 C_RC=$?
 BEFORE="$(sed -n '1,/^-- drift flags --$/p' "$WORK/c_out")"

@@ -31,6 +31,7 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[decisions/ADR-015-banner-mismatch]]
 - [[ADR-017-pin-node-runtime]] - In the context of the worker pool, facing runtime drift between hosts, we decided for a pinned Node LTS and neglected floating majors, to achieve reproducible claims, accepting a manual bump each LTS cycle.
 - [[ADR-018-bad-template-fields]] - Rebuild nightly for warm caches.
+- [[ADR-020-revisit-no-tripwire]] - Keep the cache layer until a tripwire fires.
 
 ## Constraints
 

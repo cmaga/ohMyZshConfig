@@ -12,17 +12,20 @@ trap 'rm -rf "$TMP"' EXIT
 
 usage() {
   echo "usage: vault-audit.sh [--hook] [--force] [--format text|json] [REPO]" >&2
+  echo "       vault-audit.sh --adr-report [REPO]      ADR fitness rows as TSV (KIND path detail), no cache" >&2
   exit 2
 }
 
 HOOK=0
 FORCE=0
+ADR_REPORT=0
 FORMAT=text
 REPO_ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --hook) HOOK=1 ;;
     --force) FORCE=1 ;;
+    --adr-report) ADR_REPORT=1 ;;
     --format) shift; FORMAT="${1:-}"; case "$FORMAT" in text|json) ;; *) usage ;; esac ;;
     -*) usage ;;
     *) REPO_ARG="$1" ;;
@@ -63,6 +66,83 @@ dirty_sig() {
     git -C "$REPO" ls-files --others --exclude-standard -- docs/project-knowledge ":!docs/project-knowledge/.cache"
   } | git hash-object --stdin
 }
+
+# --- ADR fitness rows (L09) ------------------------------------------------
+# adr_report VAULT REPO FRESHNESS_JSON OUT: TSV rows "KIND<TAB>path<TAB>detail"
+# for every live ADR, sorted TRIPWIRE, OVERDUE, CHURN, WORKAROUND,
+# MISSING-GUARD, POLICY-REVIEW-DUE, MANUAL. data:/external: items are MANUAL:
+# listed for a human, never evaluated. A note with no commit yet has no
+# history to diff against, so it yields no TRIPWIRE/CHURN/WORKAROUND rows.
+adr_report() {
+  local vault="$1" repo="$2" fresh="$3" out="$4"
+  local recs="$TMP/adr.recs.ndjson" items="$TMP/adr.items.tsv" rows="$TMP/adr.rows.tsv"
+  local today churn; today=$(vault_today)
+  churn=$("$JQ" -r '.audit.churn_commits // 10' "$HERE/vault-schema.json" 2>/dev/null); churn=${churn:-10}
+  vault_records "$vault" "$recs"
+  "$JQ" -r "$JQ_FLOW_ITEMS"'
+    select(.path | startswith("decisions/")) |
+    select(.fm.status == "active" or .fm.status == "proposed" or .fm.status == "revisit") |
+    .path as $p |
+    ( ((.fm.revisit_if // "") | flow_items[]? | [$p, "item", .]),
+      (if (.fm.expires // "") != "" then [$p, "expires", .fm.expires] else empty end),
+      ((.fm.governs // "") | flow_items[]? | [$p, "governs", .]),
+      [$p, "guard", (([ .comp[]? | select(.kind != "" and .kind != "review") ] | length) | tostring), (((.fm.governs // "") | flow_items | length) | tostring)]
+    ) | @tsv' "$recs" 2>/dev/null > "$items"
+  : > "$rows"
+  local p kind v extra lc n spans span path sym rest prefix subj
+  while IFS=$'\t' read -r p kind v extra; do
+    [ -n "$p" ] || continue
+    lc=$(git -C "$repo" log -1 --format=%H -- "docs/project-knowledge/$p" 2>/dev/null)
+    case "$kind" in
+      item)
+        prefix="${v%%:*}"; rest="${v#*:}"
+        case "$prefix" in
+          date)
+            if [ "$rest" \< "$today" ] || [ "$rest" = "$today" ]; then printf 'OVERDUE\t%s\tdate:%s\n' "$p" "$rest" >> "$rows"; fi ;;
+          code)
+            path=""; sym=""
+            spans=$(printf '%s' "$rest" | grep -o '`[^`]*`' 2>/dev/null | tr -d '`')
+            for span in $spans; do
+              if printf '%s' "$span" | grep -qE "$PATHRE"; then [ -n "$path" ] || path="$span"; else [ -n "$sym" ] || sym="$span"; fi
+            done
+            if [ -n "$path" ]; then
+              if [ ! -e "$repo/$path" ]; then printf 'TRIPWIRE\t%s\tcode: %s is gone\n' "$p" "$path" >> "$rows"
+              elif [ -n "$lc" ] && ! git -C "$repo" diff --quiet "$lc" HEAD -- "$path" 2>/dev/null; then
+                n=$(git -C "$repo" rev-list --count "$lc..HEAD" -- "$path" 2>/dev/null); n=${n:-0}
+                printf 'TRIPWIRE\t%s\tcode: %s changed in %s commit(s) since the note\n' "$p" "$path" "$n" >> "$rows"
+              fi
+            elif [ -n "$sym" ]; then
+              if ! git -C "$repo" grep -q -w -F -e "$sym" HEAD 2>/dev/null; then printf 'TRIPWIRE\t%s\tcode: %s not found at HEAD\n' "$p" "$sym" >> "$rows"; fi
+            else
+              printf 'MANUAL\t%s\t%s\n' "$p" "$v" >> "$rows"
+            fi ;;
+          *) printf 'MANUAL\t%s\t%s\n' "$p" "$v" >> "$rows" ;;
+        esac ;;
+      expires)
+        if [ "$v" \< "$today" ] || [ "$v" = "$today" ]; then printf 'OVERDUE\t%s\texpires:%s\n' "$p" "$v" >> "$rows"; fi ;;
+      governs)
+        [ -n "$lc" ] || continue
+        n=$(git -C "$repo" rev-list --count --first-parent "$lc..HEAD" -- ":(glob)$v" 2>/dev/null); n=${n:-0}
+        if [ "$n" -gt "$churn" ]; then printf 'CHURN\t%s\t%s: %s commits since the note\n' "$p" "$v" "$n" >> "$rows"; fi
+        git -C "$repo" log --first-parent --format=%s "$lc..HEAD" -- ":(glob)$v" 2>/dev/null | grep -iE 'workaround|hack|bypass|temporar' | head -n 3 |
+          while IFS= read -r subj; do printf 'WORKAROUND\t%s\t%s: %s\n' "$p" "$v" "$subj" >> "$rows"; done ;;
+      guard)
+        if [ "$v" = 0 ] && [ "${extra:-0}" -gt 0 ]; then printf 'MISSING-GUARD\t%s\tgoverns set, no mechanical ## Compliance entry\n' "$p" >> "$rows"; fi ;;
+    esac
+  done < "$items"
+  "$JQ" -r '(.rows // [])[]? | select(.reason == "time" and (.path | startswith("policies/"))) | "POLICY-REVIEW-DUE\t\(.path)\t\(.detail)"' "$fresh" 2>/dev/null >> "$rows"
+  awk -F'\t' 'BEGIN { r["TRIPWIRE"]=0; r["OVERDUE"]=1; r["CHURN"]=2; r["WORKAROUND"]=3; r["MISSING-GUARD"]=4; r["POLICY-REVIEW-DUE"]=5; r["MANUAL"]=6 }
+    { print r[$1] "\t" $0 }' "$rows" | sort -t"$(printf '\t')" -k1,1n -k3,3 -k4,4 | cut -f2- > "$out"
+}
+
+if [ "$ADR_REPORT" -eq 1 ]; then
+  TMP=$(mktemp -d) || exit 2
+  trap 'rm -rf "$TMP"' EXIT
+  bash "$HERE/vault-freshness.sh" "$VAULT" --json > "$TMP/freshness.json" 2>/dev/null || echo '{}' > "$TMP/freshness.json"
+  adr_report "$VAULT" "$REPO" "$TMP/freshness.json" "$TMP/adr.tsv"
+  cat "$TMP/adr.tsv"
+  exit 0
+fi
 
 # --- rerun decision ---------------------------------------------------
 need_rerun=0
@@ -173,6 +253,10 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
   "$JQ" -R -s 'split("\n") | map(select(length>0))' "$TMP/anchored_paths.txt" > "$TMP/anchored_paths.json"
   "$JQ" -R -s 'split("\n") | map(select(length>0))' "$TMP/anchored_globs.txt" > "$TMP/anchored_globs.json"
 
+  adr_report "$VAULT" "$REPO" "$TMP/freshness.json" "$TMP/adr.tsv"
+  ADR_TRIP=$(grep -c -E '^(TRIPWIRE|OVERDUE)' "$TMP/adr.tsv" 2>/dev/null); ADR_TRIP=${ADR_TRIP:-0}
+  "$JQ" -R -s 'split("\n") | map(select(length>0))' "$TMP/adr.tsv" > "$TMP/adr_rows.json"
+
   RECHECK_DUE=$("$JQ" -r '.by_code.MARKER_RECHECK_DUE // 0' "$TMP/lint.json" 2>/dev/null); RECHECK_DUE=${RECHECK_DUE:-0}
   "$JQ" -r '.findings[]? | select(.code=="MARKER_RECHECK_DUE") | "\(.sev|ascii_upcase) \(.path):\(.line) \(.code) \(.msg)"' "$TMP/lint.json" 2>/dev/null > "$TMP/recheck_lines.txt"
   "$JQ" -R -s 'split("\n") | map(select(length>0))' "$TMP/recheck_lines.txt" > "$TMP/recheck_lines.json"
@@ -185,7 +269,7 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
 
   if [ "$FAIL" -gt 0 ] || [ "$DRIFT_OPEN" -gt 0 ]; then
     COLOUR=red
-  elif [ "$WARN" -gt 0 ] || [ "$OVERDUE" -gt 0 ] || [ "$RECHECK_DUE" -gt 0 ]; then
+  elif [ "$WARN" -gt 0 ] || [ "$OVERDUE" -gt 0 ] || [ "$RECHECK_DUE" -gt 0 ] || [ "$ADR_TRIP" -gt 0 ]; then
     COLOUR=yellow
   else
     COLOUR=green
@@ -210,6 +294,7 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
     --slurpfile AG "$TMP/anchored_globs.json" \
     --slurpfile DL "$TMP/drift_lines.json" \
     --slurpfile RL "$TMP/recheck_lines.json" \
+    --slurpfile AR "$TMP/adr_rows.json" --argjson adr_tripwires "$ADR_TRIP" \
     --argjson fail "$FAIL" --argjson warn "$WARN" --argjson info "$INFO" \
     --argjson drift_open "$DRIFT_OPEN" --argjson overdue "$OVERDUE" \
     --argjson drifted "$DRIFTED" --argjson recheck_due "$RECHECK_DUE" \
@@ -223,7 +308,7 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
       anchored_globs: $AG[0],
       dirty_sig: $dirty_sig,
       counts: {fail: $fail, warn: $warn, info: $info, drift_open: $drift_open,
-               overdue: $overdue, drifted: $drifted, recheck_due: $recheck_due},
+               overdue: $overdue, drifted: $drifted, recheck_due: $recheck_due, adr_tripwires: $adr_tripwires},
       by_code: ($LINT[0].by_code // {}),
       colour: $colour,
       prev_counts: $prev_counts,
@@ -231,6 +316,7 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
       drift_lines: $DL[0],
       freshness_rows: ($FRESH[0].rows // []),
       recheck_lines: $RL[0],
+      adr_rows: $AR[0],
       generated: $generated
     }' > "$TMP/cache.new.json"
   mv "$TMP/cache.new.json" "$CACHE"
@@ -256,7 +342,8 @@ if [ "$HOOK" -eq 1 ]; then
         ($c.warn > ($p.warn // 0)) or
         ($c.drift_open > ($p.drift_open // 0)) or
         ($c.overdue > ($p.overdue // 0)) or
-        ($c.recheck_due > ($p.recheck_due // 0))
+        ($c.recheck_due > ($p.recheck_due // 0)) or
+        (($c.adr_tripwires // 0) > ($p.adr_tripwires // 0))
       )
       end
     ) as $should |
@@ -266,7 +353,8 @@ if [ "$HOOK" -eq 1 ]; then
       term($c.warn; "WARN"; ($p.warn // null)) + ", " +
       term($c.drift_open; "drift flags"; ($p.drift_open // null)) + ", " +
       term($c.overdue; "reviews overdue"; ($p.overdue // null)) + ", " +
-      term($c.recheck_due; "rechecks due"; ($p.recheck_due // null)) + ". Run: " + $script
+      term($c.recheck_due; "rechecks due"; ($p.recheck_due // null)) + ", " +
+      term(($c.adr_tripwires // 0); "ADR tripwires"; ($p.adr_tripwires // null)) + ". Run: " + $script
     else "" end
   ' "$CACHE" 2>/dev/null)
   [ -n "$LINE" ] && printf '%s\n' "$LINE"
@@ -292,7 +380,8 @@ fi
   term($c.warn; "WARN"; ($p.warn // null)) + ", " +
   term($c.drift_open; "drift flags"; ($p.drift_open // null)) + ", " +
   term($c.overdue; "reviews overdue"; ($p.overdue // null)) + ", " +
-  term($c.recheck_due; "rechecks due"; ($p.recheck_due // null)) + "."
+  term($c.recheck_due; "rechecks due"; ($p.recheck_due // null)) + ", " +
+  term(($c.adr_tripwires // 0); "ADR tripwires"; ($p.adr_tripwires // null)) + "."
 ' "$CACHE"
 
 "$JQ" -r '
@@ -336,6 +425,12 @@ RECHECK_LINES=$("$JQ" -r '(.recheck_lines // [])[]?' "$CACHE" 2>/dev/null)
 if [ -n "$RECHECK_LINES" ]; then
   printf -- '-- rechecks due --\n'
   printf '%s\n' "$RECHECK_LINES"
+fi
+
+ADR_LINES=$("$JQ" -r '(.adr_rows // [])[]?' "$CACHE" 2>/dev/null)
+if [ -n "$ADR_LINES" ]; then
+  printf -- '-- adr fitness --\n'
+  printf '%s\n' "$ADR_LINES"
 fi
 
 echo "Triage: ~/.claude/skills/capture-documentation/references/drift-triage.md"

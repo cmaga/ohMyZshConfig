@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # vault-freshness.sh -- ranks vault notes by review urgency: missing surface
-# symbols/paths (from the linter), overdue decision revisits, overdue
+# symbols/paths (from the linter), overdue decision revisits (revisit_if date: items), overdue
 # time-based cadence, and notes that have never been verified.
 set -u
 export LC_ALL=C
@@ -52,8 +52,10 @@ fi
   | ($r.fm.status // "") as $status
   | ($r.fm.created // "") as $created
   | ($r.fm.last_verified // "") as $last_verified
-  | ($r.fm.revisit_by // "") as $revisit_by
-  | ($r.fm.revisit_when // "") as $revisit_when
+  | ($r.fm.revisit_if // "") as $ri
+  | (if ($ri | type) == "string" and ($ri | test("^\\[.*\\]$")) then ($ri[1:-1] | split(",") | map(gsub("^ +| +$"; "")) | map(select(. != ""))) else [] end) as $items
+  | ([ $items[] | select(startswith("date:")) | ltrimstr("date:") ] | sort | .[0] // "") as $revisit_by
+  | ([ $items[] | select(startswith("date:") | not) ] | join("; ")) as $revisit_when
   | (if $bucket == "decisions" then
        {cd: -1, src: ""}
      else
@@ -110,8 +112,8 @@ FNR == NR {
   cadence = $6; cadence_src = $7; revisit_by = $8; revisit_when = $9
   if (bucket == "decisions") {
     if (revisit_by != "" && days(revisit_by) <= td) {
-      detail = (revisit_when != "" ? revisit_when : "revisit_by " revisit_by)
-      print "2\trevisit_by\t" path "\t" detail
+      detail = "date:" revisit_by (revisit_when != "" ? "; " revisit_when : "")
+      print "2\trevisit\t" path "\t" detail
     }
     next
   }

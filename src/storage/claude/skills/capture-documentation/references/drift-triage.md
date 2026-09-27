@@ -12,3 +12,5 @@ Two outputs, one per flag:
 
 - `bash ~/.claude/skills/capture-documentation/scripts/vault-drift.sh --clear . <ID> "<reason>"` — nothing in the vault changes.
 - A scribe brief carrying the SHA, the claim as written, and what the code now shows.
+
+An `-- adr fitness --` row from `vault-audit.sh` (also `vault-audit.sh --adr-report .`) is judged by dispatching the `adr-auditor-agent` once with the ADR path and its rows; it returns a JSON verdict with evidence and never edits. A non-`holds` verdict is re-run once, then becomes a brief the human approves and the scribe applies (amend, supersede or a line marker per skill step 10). `MANUAL` rows name `data:` and `external:` tripwires: read them, decide them yourself, and dispatch nothing. `POLICY-REVIEW-DUE` is a freshness row for a policy note and goes to its steward.

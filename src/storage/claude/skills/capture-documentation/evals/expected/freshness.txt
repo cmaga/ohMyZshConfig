@@ -2,7 +2,8 @@ exit=0
 --- stdout ---
 symbol-missing	components/worker.md	processQueueItem
 symbol-missing	constraints/constraint-webhook-idempotency-keys.md	notARealExport
-revisit_by	decisions/ADR-016-revisit-cache-layer.md	when the cache layer is replaced
+revisit	decisions/ADR-016-revisit-cache-layer.md	date:2020-01-01; external:when the cache layer is replaced
+revisit	decisions/ADR-018-bad-template-fields.md	date:20-01-01; when the moon is full
 paths	constraints/constraint-webhook-idempotency-keys.md	src/billing/does-not-exist.js
 time	architecture/architecture-credit-deduction-flow.md	due 2026-07-20 (max_age, 180d)
 time	architecture/architecture-payment-flow.md	due 2026-07-21 (max_age, 180d)
@@ -51,6 +52,6 @@ never-verified	research/research-message-queue-eval.md	created 2026-02-01
 never-verified	research/research-sources-bad.md	created 2026-03-08
 never-verified	research/research-unclosed-frontmatter.md	created 2026-02-02
 never-verified	research/research-warm-cache-spike.md	created 2026-01-30
-vault-freshness: 28 overdue (3 drifted)
+vault-freshness: 29 overdue (3 drifted)
 --- stderr ---
 

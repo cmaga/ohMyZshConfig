@@ -1,5 +1,5 @@
 exit=0
 --- stdout ---
-vault-audit (repo): RED - 57 FAIL, 52 WARN, 3 drift flags, 28 reviews overdue, 1 rechecks due. Run: bash ~/.claude/skills/capture-documentation/scripts/vault-audit.sh
+vault-audit (repo): RED - 64 FAIL, 59 WARN, 3 drift flags, 29 reviews overdue, 1 rechecks due, 4 ADR tripwires. Run: bash ~/.claude/skills/capture-documentation/scripts/vault-audit.sh
 --- stderr ---
 

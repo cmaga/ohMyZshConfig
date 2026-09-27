@@ -36,9 +36,16 @@ FAIL decisions/ADR-014-cycle-b.md:5 GOVERNS_FORMAT governs: not a flow list [..]
 FAIL decisions/ADR-015-banner-mismatch.md:9 BANNER_SUCCESSOR_MISMATCH banner names decisions/ADR-009-scale-worker-pool.md, superseded_by is decisions/ADR-012-successor-silent.md
 FAIL decisions/ADR-018-bad-template-fields.md:6 ADR_Y_STATEMENT_ORDER expects: In the context of .., facing .., we decided .., [neglected ..,] to achieve .., accepting ..
 FAIL decisions/ADR-018-bad-template-fields.md:7 ENUM_INVALID approved_by Someone Approved It
-FAIL decisions/ADR-018-bad-template-fields.md:20 ADR_OPTIONS_EMPTY no option bullets and no _Only option_ / _No alternatives recorded_ line
-FAIL decisions/ADR-018-bad-template-fields.md:29 ADR_OBJECTION_DISPOSITION objection needs: accepted as cost / rejected: <why> / deferred: revisit if <condition>
+FAIL decisions/ADR-018-bad-template-fields.md:8 ADR_REVISIT_IF_ITEM when the moon is full (needs code:|data:|external:|date:YYYY-MM-DD)
+FAIL decisions/ADR-018-bad-template-fields.md:8 ADR_REVISIT_IF_ITEM date:20-01-01 (needs code:|data:|external:|date:YYYY-MM-DD)
+FAIL decisions/ADR-018-bad-template-fields.md:22 ADR_OPTIONS_EMPTY no option bullets and no _Only option_ / _No alternatives recorded_ line
+FAIL decisions/ADR-018-bad-template-fields.md:31 ADR_OBJECTION_DISPOSITION objection needs: accepted as cost / rejected: <why> / deferred: revisit if <condition>
 FAIL decisions/ADR-018-bad-template-fields.md:33 ADR_INDEX_LINE_MISMATCH index line does not carry the y_statement
+FAIL decisions/ADR-018-bad-template-fields.md:35 ADR_COMPLIANCE_FORMAT expects: - Enforced by: hook|lint|test|type|schema|ci - `path` [`Symbol`], or review - <what>
+FAIL decisions/ADR-018-bad-template-fields.md:36 ADR_COMPLIANCE_PATH_MISSING src/billing/nope.js does not exist
+FAIL decisions/ADR-018-bad-template-fields.md:37 ADR_COMPLIANCE_SYMBOL_MISSING noSuchFn not in src/worker/index.js at HEAD
+FAIL decisions/ADR-018-bad-template-fields.md:38 ADR_COMPLIANCE_FORMAT ci names no `path`
+FAIL decisions/ADR-020-revisit-no-tripwire.md:3 ADR_REVISIT_IF_REQUIRED status revisit without revisit_if
 FAIL domain/domain-bad-frontmatter.md:1 FM_DUPLICATE_KEY type
 FAIL domain/domain-bad-frontmatter.md:6 FM_UNSUPPORTED_SYNTAX ref: [unclosed
 FAIL domain/domain-marker-cases.md:18 MARKER_REASON_MISSING until 2026-06-30 has no reason
@@ -56,7 +63,7 @@ FAIL research/research-sources-bad.md:5 SOURCE_DOC_MISSING doc: docs/missing.md 
 FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN _index.md:1 SIZE_HUB hub is 40001 bytes
-WARN _index.md:84 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
 WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
@@ -71,8 +78,10 @@ WARN customers/persona-enterprise-ops-lead.md:1 ORPHAN_HUB_ONLY_INBOUND only a h
 WARN decisions/ADR-001-alt-name.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-001-alt-name.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN decisions/ADR-001-alt-name.md:3 ADR_Y_STATEMENT_MISSING no y_statement
+WARN decisions/ADR-001-alt-name.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-001-use-postgres.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-001-use-postgres.md:3 ADR_Y_STATEMENT_MISSING no y_statement
+WARN decisions/ADR-001-use-postgres.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-002-drop-legacy-queue.md:6 ADR_TITLE_MISMATCH Legacy Queue Retirement
 WARN decisions/ADR-006-consolidate-queues.md:1 SECTION_ORDER sections out of order
 WARN decisions/ADR-006-consolidate-queues.md:3 STATUS_UNEXPECTED status open in decisions/
@@ -81,12 +90,17 @@ WARN decisions/ADR-009-scale-worker-pool.md:1 ADR_OPTIONS_MISSING no ## Consider
 WARN decisions/ADR-009-scale-worker-pool.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
 WARN decisions/ADR-009-scale-worker-pool.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_Y_STATEMENT_MISSING no y_statement
+WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-010-amend-worker-timeout.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN decisions/ADR-011-supersede-no-backlink.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN decisions/ADR-012-successor-silent.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-012-successor-silent.md:3 ADR_Y_STATEMENT_MISSING no y_statement
+WARN decisions/ADR-012-successor-silent.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-012-successor-silent.md:6 GOVERNS_DEAD_GLOB src/nonexistent/** matches no file at HEAD
 WARN decisions/ADR-012-successor-silent.md:24 MARKER_ADR_EVIDENCE until 2026-12-31 cites no [[link]] or Amendment (date)
+WARN decisions/ADR-018-bad-template-fields.md:9 ADR_EXPIRES_PAST expired 2020-01-01
+WARN decisions/ADR-020-revisit-no-tripwire.md:1 ADR_OPTIONS_MISSING no ## Considered options
+WARN decisions/ADR-020-revisit-no-tripwire.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN domain/domain-bad-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN domain/domain-marker-cases.md:11 MARKER_RECHECK_MISSING as of 2026-01-15 without a recheck comment
 WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
@@ -100,7 +114,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 721890 bytes
+INFO .:0 SIZE_VAULT vault is 722814 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
@@ -108,6 +122,6 @@ INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub li
 INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
-lint-vault: 54 FAIL, 46 WARN across 44 notes
+lint-vault: 61 FAIL, 53 WARN across 45 notes
 --- stderr ---
 

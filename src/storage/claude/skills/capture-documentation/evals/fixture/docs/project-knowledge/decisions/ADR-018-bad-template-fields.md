@@ -5,6 +5,8 @@ created: 2026-03-03
 governs: []
 y_statement: We decided for a nightly rebuild, facing slow cold starts, in the context of the worker, to achieve warm caches, accepting a nightly window.
 approved_by: Someone Approved It
+revisit_if: [when the moon is full, date:20-01-01]
+expires: 2020-01-01
 ---
 # ADR-018: Bad template fields
 
@@ -27,3 +29,10 @@ A nightly window.
 
 - The window collides with reporting - accepted as cost (see Consequences).
 - Nobody asked for warm caches
+
+## Compliance
+
+- Enforced by: vibes - nothing here
+- Enforced by: test - `src/billing/nope.js` [`x`]
+- Enforced by: lint - `src/worker/index.js` [`noSuchFn`]
+- Enforced by: ci - no path named

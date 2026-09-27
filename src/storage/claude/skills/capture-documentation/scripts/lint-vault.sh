@@ -134,7 +134,7 @@ function flush(   s) {
     (h1 == "" ? "null" : h1), (first == "" ? "null" : first), (banner == "" ? "null" : banner), h2, heads, links
   printf "\"hook\":%s,\"markers\":[%s],\"governs\":%s,\"applies_to\":%s,\"gloss\":[%s],", \
     (s == "" ? "null" : "\"" esc(s) "\""), mk, (gov == "" ? "null" : "\"" esc(gov) "\""), (app == "" ? "null" : "\"" esc(app) "\""), gl
-  printf "\"opts\":[%s],\"osent\":%s,\"objs\":[%s],\"ilines\":[%s],", opts, (osent ? "true" : "false"), objs, ilines
+  printf "\"opts\":[%s],\"osent\":%s,\"objs\":[%s],\"ilines\":[%s],\"comp\":[%s],", opts, (osent ? "true" : "false"), objs, ilines, comp
   printf "\"surface\":%s}\n", (sline ? sprintf("{\"line\":%d,\"none\":%s,\"entries\":[%s]}", sline, (snone ? "true" : "false"), sent) : "null")
 }
 FNR == 1 {
@@ -146,7 +146,7 @@ FNR == 1 {
   bytes = 0; maxline = 0; maxline_no = 0
   delete seen
   hz = hdone = 0; hp = gov = app = mk = gl = gterm = gopen = glink = ""
-  cursec = opts = objs = ilines = ""; osent = 0
+  cursec = opts = objs = ilines = comp = ""; osent = 0
   isdec = (path ~ /^decisions\//); if (!isdec) hz = 1
 }
 {
@@ -161,7 +161,7 @@ infm {
     if ($0 ~ /^[ \t]*$/ || $0 ~ /^#/) next
     if (match($0, /^[a-z_][a-z0-9_]*:/)) {
       k = substr($0, 1, RLENGTH - 1); v = trim(substr($0, RLENGTH + 1))
-      if (v ~ /^[|>]/ || (v ~ /^\[/ && v !~ /^\[\[/ && !(k ~ /^(aliases|governs|applies_to|sources)$/ && v ~ /^\[.*\]$/)) || v ~ /^[{&*!]/) { fmbad = add(fmbad, pos(FNR, $0)); next }
+      if (v ~ /^[|>]/ || (v ~ /^\[/ && v !~ /^\[\[/ && !(k ~ /^(aliases|governs|applies_to|sources|revisit_if|consider|conflicts_with)$/ && v ~ /^\[.*\]$/)) || v ~ /^[{&*!]/) { fmbad = add(fmbad, pos(FNR, $0)); next }
       if (v ~ /^".*"$/ || (length(v) > 1 && substr(v, 1, 1) == q && substr(v, length(v), 1) == q)) v = substr(v, 2, length(v) - 2)
       if (k in seen) fmdup = add(fmdup, "\"" k "\"")
       seen[k] = 1
@@ -207,6 +207,16 @@ fence { next }
     objs = add(objs, sprintf("{\"line\":%d,\"disp\":%s}", FNR, od))
   }
   if (path == INDEX && line ~ /^[-*] /) ilines = add(ilines, pos(FNR, line))
+  if (cursec == "Compliance" && line ~ /^[-*] /) {
+    ck = cp = cs = ""
+    if (match(line, /^[-*][ \t]*Enforced by:[ \t]*[a-z]+/)) {
+      ck = substr(line, RSTART, RLENGTH); sub(/^[-*][ \t]*Enforced by:[ \t]*/, "", ck)
+      crest = substr(line, RSTART + RLENGTH)
+      cp = spans(crest, "path"); cs = spans(crest, "syms")
+      if (cs != "") { sub(/",.*/, "", cs); gsub(/"/, "", cs) }
+    }
+    comp = add(comp, sprintf("{\"line\":%d,\"kind\":\"%s\",\"path\":\"%s\",\"sym\":\"%s\"}", FNR, esc(ck), esc(cp), cs))
+  }
   if (!hdone && line !~ /^#/) {
     if (line ~ /^[ \t]*$/) { if (hp != "") hdone = 1 }
     else if (line ~ /^[ \t]*(>|[-*+][ \t]|[0-9]+[.)][ \t]|\|)/) { if (hp != "") hdone = 1 }
@@ -369,10 +379,11 @@ pass2c_probes() {
     ($scope[0] // []) as $sc |
     def flow: if type=="string" and test("^\\[.*\\]$") then (.[1:-1]|split(",")|map(gsub("^ +| +$";""))|map(select(.!=""))) else [] end;
     . as $r | $r.path as $p | select(($sc|length) == 0 or ($sc|index($p))) |
-    ( (($r.fm.sources // "") | flow[] | select(startswith("commit:") or startswith("doc:")) | [$p, ($r.fm_line.sources // 1), "src", .]),
-      (($r.fm.governs // "") | flow[] | [$p, ($r.fm_line.governs // 1), "governs", .]),
-      (($r.fm.applies_to // "") | flow[] | [$p, ($r.fm_line.applies_to // 1), "applies_to", .])
-    ) | join("\u001f")
+    ( (($r.fm.sources // "") | flow[] | select(startswith("commit:") or startswith("doc:")) | [$p, ($r.fm_line.sources // 1), "src", ., ""]),
+      (($r.fm.governs // "") | flow[] | [$p, ($r.fm_line.governs // 1), "governs", ., ""]),
+      (($r.fm.applies_to // "") | flow[] | [$p, ($r.fm_line.applies_to // 1), "applies_to", ., ""]),
+      (($r.comp // [])[] | select(.kind != "" and .kind != "review" and .path != "") | [$p, .line, "comp", .path, .sym])
+    ) | map(tostring) | join("\u001f")
   ' "$recs" 2>/dev/null > "$extracted"
 
   local missing_shas; missing_shas=$(mktemp "$TMP/p2c.XXXXXX")
@@ -392,9 +403,16 @@ pass2c_probes() {
   : > "$gacache"
 
   : > "$out"
-  while IFS=$'\x1f' read -r p ln kind item; do
+  while IFS=$'\x1f' read -r p ln kind item sym; do
     [ -n "$p" ] || continue
     case "$kind" in
+      comp)
+        if [ ! -e "$repo/$item" ]; then
+          printf '{"code":"ADR_COMPLIANCE_PATH_MISSING","path":"%s","line":%s,"msg":"%s does not exist"}\n' "$(json_esc "$p")" "$ln" "$(json_esc "$item")"
+        elif [ -n "$sym" ] && [ "$ingit" = 1 ] && ! git -C "$repo" grep -q -w -F -e "$sym" HEAD -- "$item" 2>/dev/null; then
+          printf '{"code":"ADR_COMPLIANCE_SYMBOL_MISSING","path":"%s","line":%s,"msg":"%s not in %s at HEAD"}\n' "$(json_esc "$p")" "$ln" "$(json_esc "$sym")" "$(json_esc "$item")"
+        fi
+        ;;
       src)
         case "$item" in
           commit:*)
@@ -618,7 +636,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
        else empty end),
       (($bs.enums // {}) | to_entries[] | . as $e | select($r.fm[$e.key] and (($e.value | index($r.fm[$e.key])) | not)) | f($r; "ENUM_INVALID"; ($r.fm_line[$e.key] // 1); "\($e.key) \($r.fm[$e.key])")),
       (($sc.field_patterns // {}) | to_entries[] | . as $e | select($r.fm[$e.key] and (($r.fm[$e.key] | test($e.value)) | not)) | f($r; "ENUM_INVALID"; ($r.fm_line[$e.key] // 1); "\($e.key) \($r.fm[$e.key])")),
-      (["created","last_verified","revisit_by"][] | datechk($r; .)),
+      (["created","last_verified","expires"][] | datechk($r; .)),
       (if $r.fm.status == "superseded" and (($r.fm.superseded_by // "") == "") then f($r; "SUPERSEDED_BY_REQUIRED"; ($r.fm_line.status // 1); "superseded without superseded_by") else empty end),
       (if ($r.fm.superseded_by // "") != "" then
          (if $r.fm.status != "superseded" then f($r; "SUPERSEDED_BY_STRAY"; ($r.fm_line.superseded_by // 1); "status is \($r.fm.status)") else empty end),
@@ -676,7 +694,19 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
           else (($it[($at + ($y | length)):]) | gsub("^[ \\-]+|[ ]+$"; "")) as $suffix |
                if ($suffix | length) > 60 then f($r; "ADR_INDEX_SUFFIX_LENGTH"; $ln; "\($suffix | length) chars after the y_statement") else empty end
           end)
-       else empty end)
+       else empty end),
+      ($r.fm.revisit_if // "") as $ri |
+      (if $ri == "" then
+         (if $st == "revisit" then f($r; "ADR_REVISIT_IF_REQUIRED"; ($r.fm_line.status // 1); "status revisit without revisit_if")
+          elif $live then f($r; "ADR_REVISIT_IF_MISSING"; ($r.fm_line.status // 1); "no revisit_if (typed items, or none - <reason>)")
+          else empty end)
+       elif ($ri | isflow) then
+         ($ri | flow[] | select(test("^(code|data|external):.+|^date:[0-9]{4}-[0-9]{2}-[0-9]{2}$") | not) | f($r; "ADR_REVISIT_IF_ITEM"; ($r.fm_line.revisit_if // 1); "\(.) (needs code:|data:|external:|date:YYYY-MM-DD)"))
+       elif ($ri | test("^none( - | \u2014 ).+")) then empty
+       else f($r; "ADR_REVISIT_IF_ITEM"; ($r.fm_line.revisit_if // 1); "\($ri) (a flow list, or none - <reason>)") end),
+      ($r.comp[]? | . as $c | select($c.kind == "" or ((["hook","lint","test","type","schema","ci","review"] | index($c.kind)) == null)) | f($r; "ADR_COMPLIANCE_FORMAT"; $c.line; "expects: - Enforced by: hook|lint|test|type|schema|ci - `path` [`Symbol`], or review - <what>")),
+      ($r.comp[]? | . as $c | select($c.kind != "" and $c.kind != "review" and ((["hook","lint","test","type","schema","ci"] | index($c.kind)) != null) and $c.path == "") | f($r; "ADR_COMPLIANCE_FORMAT"; $c.line; "\($c.kind) names no `path`")),
+      (if ($r.fm.expires // "") != "" and ($r.fm.expires | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and $r.fm.expires <= $today then f($r; "ADR_EXPIRES_PAST"; ($r.fm_line.expires // 1); "expired \($r.fm.expires)") else empty end)
      else empty end),
     (if $bs.banner then
       ($r.fm.status // "") as $st |

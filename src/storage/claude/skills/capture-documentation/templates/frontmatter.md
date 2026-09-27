@@ -36,7 +36,8 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 - **Any type:** `review_cadence: annual | semi-annual | quarterly | monthly | annual-or-on-material-change | <N>d` — overrides the vault default of 180 days (plan 30, research 90 while open).
 - **Decision, constraint:** `governs: [server/services/execution/**, cli/publish.py]` — git pathspecs the note constrains; `governs: []` says it constrains no code; a commit under one raises a drift flag.
 - **Any type:** `applies_to: [server/src/features/x/]` — directories the rule stub covers when the Reusable surface does not name them.
-- **Decision:** `revisit_by: YYYY-MM-DD` and `revisit_when: <one-sentence tripwire>` — either or both; the date shows up as overdue.
+- **Decision:** `revisit_if: [code:`path` condition, data:<metric condition>, external:<vendor or market fact>, date:YYYY-MM-DD]` or `revisit_if: none - <reason>` — the typed reopen tripwires; a `date:` item shows up as overdue, a `code:` item is checked against the tree by the audit, `data:`/`external:` are listed for a human. Required on `status: revisit`.
+- **Decision:** `tracking: <ticket>` and `expires: YYYY-MM-DD` — transitional decisions only; an expired one is flagged.
 - **Decision:** `y_statement: In the context of .., facing .., we decided for .. and neglected .., to achieve .., accepting ..` — one line, written once at capture, under 400 characters; its `_index.md` line repeats it verbatim.
 - **Decision:** `approved_by: <handle> YYYY-MM-DD` — only from the user's relayed words; `agent` on an unattended run; otherwise omitted.
 

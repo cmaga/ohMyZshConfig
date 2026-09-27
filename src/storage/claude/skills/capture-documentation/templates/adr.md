@@ -45,9 +45,17 @@ the components, constraints, or domain notes that this decision changes.>
 - <objection> - accepted as cost (see Consequences).
 - <objection> - rejected: <why>.
 - <objection> - deferred: revisit if <condition>.  (copy the condition into revisit_if)>
+
+## Compliance
+<Optional. What mechanically keeps the code inside this decision:
+- Enforced by: hook|lint|test|type|schema|ci - `path/to/guard` [`Symbol`]
+- Enforced by: review - <what a reviewer checks>
+The linter verifies the path and symbol exist; the audit reports an active ADR with `governs` and no mechanical entry as MISSING-GUARD.>
 ```
 
 An ADR written before this template gets `y_statement` and `## Considered options (recorded YYYY-MM-DD)` only when it is touched for another reason, and only from alternatives its body or the brief evidences; never invent options after the fact.
+
+Frontmatter also carries `revisit_if`: a flow list of typed tripwires (`code:` a path or symbol condition, `data:` a metric, `external:` a vendor or market fact, `date:YYYY-MM-DD`), or the scalar `none - <reason>`; a `deferred: revisit if` objection is copied in as an item. A transitional decision may add `tracking: <ticket>` and `expires: YYYY-MM-DD`. A structured tripwire reaches an old ADR only when it is touched for another reason, transcribed from tripwire prose the body already carries, never invented.
 
 A current ADR carries NO `> Status:` banner. Absence means "no known supersession," not "audited current" — readers still reconcile against code.
 

@@ -13,6 +13,7 @@ exit=0
 - [ADR-012: Replace eager retry with backoff](decisions/ADR-012-successor-silent.md): Switch worker from eager retry to exponential backoff.
 - [ADR-017: Pin the Node runtime](decisions/ADR-017-pin-node-runtime.md): Pin the worker to the current Node LTS through the repo's version file.
 - [ADR-018: Bad template fields](decisions/ADR-018-bad-template-fields.md): Rebuild nightly.
+- [ADR-020: Revisit without a tripwire](decisions/ADR-020-revisit-no-tripwire.md): Keep the cache layer until a tripwire fires. · revisit
 
 ## Constraints
 - [Legacy billing path is frozen](constraints/constraint-legacy-billing-freeze.md): The legacy billing path behind components/billing is frozen pending removal.
