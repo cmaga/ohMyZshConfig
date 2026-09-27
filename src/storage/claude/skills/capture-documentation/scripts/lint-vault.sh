@@ -228,8 +228,8 @@ fence { next }
     else if (line ~ /^[ \t]*$/) gclose()
     if (gopen && (line ~ /\[\[/ || line ~ /\]\(/)) glink = 1
   }
-  l = nocode(line)
-  while (match(l, /\[\[[^]]+\]\]/)) { links = add(links, sprintf("{\"line\":%d,\"wiki\":\"%s\"}", FNR, esc(substr(l, RSTART + 2, RLENGTH - 4)))); l = substr(l, RSTART + RLENGTH) }
+  l = nocode(line); hist = (l ~ /[Rr]etired|[Hh]istory|[Ff]ormerly|[Ss]uperseded|[Dd]eprecated|no longer|was live/) ? ",\"hist\":true" : ""
+  while (match(l, /\[\[[^]]+\]\]/)) { links = add(links, sprintf("{\"line\":%d,\"wiki\":\"%s\"%s}", FNR, esc(substr(l, RSTART + 2, RLENGTH - 4)), hist)); l = substr(l, RSTART + RLENGTH) }
   l = line; gsub(/`[^`]*`/, "", l)
   while (match(l, /\]\([^) ]+\.md(#[^)]*)?\)/)) { t = substr(l, RSTART + 2, RLENGTH - 3); if (t !~ /^[a-z]+:/) links = add(links, sprintf("{\"line\":%d,\"md\":\"%s\"}", FNR, esc(t))); l = substr(l, RSTART + RLENGTH) }
   ml = line
@@ -604,8 +604,8 @@ def resolve($src):
    ([ ($Lby[$p] // [])[] | select(.fm and .line == $ln and .kind == "note") ][0]) as $sl |
    select($sl != null) | {key: $p, value: $sl.to}) | from_entries) as $succ |
 def walk_succ($p): [limit(($succ | length) + 2; $p | recurse($succ[.] // empty))];
-($R | map(.path as $p | .surface.entries[]? | .line as $ln | .syms[]? | {sym: ., path: $p, line: $ln})) as $allSurf |
-($allSurf | group_by(.sym) | map(select((map(.path) | unique | length) > 1)) | flatten) as $dupSurf |
+($R | map(.path as $p | .surface.entries[]? | .line as $ln | .spath as $sp | .syms[]? | {sym: ., spath: $sp, path: $p, line: $ln})) as $allSurf |
+($allSurf | group_by([.sym, .spath]) | map(select((map(.path) | unique | length) > 1)) | flatten) as $dupSurf |
 JQEOF
 
 read -r -d '' PASS3_CHECKS <<'JQEOF' || true
@@ -778,11 +778,11 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
    else empty end),
 
   (if $r.first == null then f($r; "EMPTY_NOTE"; 1; "no content after the H1") else empty end),
-  (if $hub == null and $b != "decisions" and ($r.fm.status // "") != "deprecated" then
-     ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to != $r.path) | .to ]) as $outs |
+  (if $hub == null and $b != "decisions" and (($r.fm.status // "") | IN("deprecated", "superseded") | not) then
+     ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to != $r.path and (.hist | not)) | .to ]) as $outs |
      ($outs[] | . as $t | select((($byPath[$t].fm.status // "") == "deprecated") and (($t | bucket) != "decisions")) |
        select(($byPath[$t].fm.replaced_by // "") | test("\\[\\[" + ($r.path | base) + "(\\]\\]|\\|)") | not) |
-       f($r; "LINK_TO_RETIRED"; ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to == $t) ][0].line // 1); "links retired \($t)"))
+       f($r; "LINK_TO_RETIRED"; ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to == $t and (.hist | not)) ][0].line // 1); "links retired \($t)"))
    else empty end),
 
   (

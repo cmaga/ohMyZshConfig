@@ -14,3 +14,4 @@ disclosure obligations for [[customers/customer-selfserve-smb]].
 ## Reusable surface
 
 - `chargeCustomer` — `src/billing/charge.js` — a well-formed entry that is out of scope for the policies bucket, exercising SURFACE_OUT_OF_SCOPE.
+- `formatRow` — `src/billing/charge.js` — renders a charge row for the disclosure log.

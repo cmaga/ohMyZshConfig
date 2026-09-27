@@ -34,6 +34,5 @@ rc=0
 == lint
 WARN components/scheduler-backoff.md:17 SURFACE_DUPLICATE_HOME buildReport
 WARN components/scheduler.md:22 SURFACE_DUPLICATE_HOME claimNextJob
-WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 --- stderr ---
 

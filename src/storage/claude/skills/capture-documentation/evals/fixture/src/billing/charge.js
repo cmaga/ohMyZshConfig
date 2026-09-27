@@ -5,4 +5,8 @@ function chargeCustomer(customerId, amountCents) {
   return { customerId, amountCents, status: 'charged' };
 }
 
-module.exports = { chargeCustomer };
+function formatRow(charge) {
+  return `${charge.customerId}: ${charge.amountCents}`;
+}
+
+module.exports = { chargeCustomer, formatRow };

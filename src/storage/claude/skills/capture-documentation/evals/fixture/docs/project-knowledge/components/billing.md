@@ -9,5 +9,5 @@ applies_to: [src/billing/, src/ghost/]
 ## Overview
 
 Charges customers against the credit balance described in
-[[domain/domain-credit-lifecycle]]. No reusable surface is listed below on
+[[domain/domain-credit-lifecycle]]. Older charges came through [[legacy-queue]]. No reusable surface is listed below on
 purpose, exercising SURFACE_MISSING (components bucket requires one).

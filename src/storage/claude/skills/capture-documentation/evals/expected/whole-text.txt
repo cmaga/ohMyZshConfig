@@ -79,6 +79,7 @@ WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
+WARN components/billing.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 WARN components/reporting-pipeline.md:19 SURFACE_DUPLICATE_HOME buildReport
 WARN components/scheduler.md:29 SURFACE_DUPLICATE_HOME buildReport
 WARN components/scheduler.md:31 SURFACE_DUPLICATE_HOME claimNextJob
@@ -127,7 +128,6 @@ WARN decisions/ADR-018-bad-template-fields.md:9 ADR_EXPIRES_PAST expired 2020-01
 WARN decisions/ADR-020-revisit-no-tripwire.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-020-revisit-no-tripwire.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN domain/domain-bad-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
-WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 WARN domain/domain-marker-cases.md:11 MARKER_RECHECK_MISSING as of 2026-01-15 without a recheck comment
 WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
 WARN glossary.md:21 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
@@ -140,7 +140,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 726325 bytes
+INFO .:0 SIZE_VAULT vault is 726461 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
