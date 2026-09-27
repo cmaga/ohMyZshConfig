@@ -16,12 +16,17 @@
     "basis",
     "sources",
     "last_verified",
-    "applies_to"
+    "applies_to",
+    "obsoletion_reason",
+    "retired",
+    "replaced_by",
+    "consider"
   ],
   "field_patterns": {
     "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$",
     "approved_by": "^([a-z0-9._-]+ [0-9]{4}-[0-9]{2}-[0-9]{2}|agent)$",
-    "tracking": "^[A-Z][A-Z0-9]{1,9}-[0-9]+$"
+    "tracking": "^[A-Z][A-Z0-9]{1,9}-[0-9]+$",
+    "obsoletion_reason": "^(merged|split|removed|wrong)$"
   },
   "freshness": {
     "max_age_days": 180,
@@ -716,6 +721,36 @@
       "severity": "warn",
       "fix": "manual",
       "hint": "the transitional decision has expired; supersede, amend or extend expires"
+    },
+    "TOMBSTONE_FIELDS": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "a retired non-decision note carries obsoletion_reason, retired: YYYY-MM-DD and exactly one of replaced_by / consider; use vault-refactor.sh retire"
+    },
+    "TOMBSTONE_POINTER_UNRESOLVED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "replaced_by / consider must name existing notes"
+    },
+    "TOMBSTONE_POINTER_CHAIN": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "a tombstone points at a live note, never at another retired one"
+    },
+    "TOMBSTONE_BODY": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "a retired non-decision note keeps only its banner and the History: line; prose lives in git history"
+    },
+    "LINK_TO_RETIRED": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "point the link at the note the tombstone names instead"
+    },
+    "INDEX_LINE_CURRENCY_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "the index line of a superseded or deprecated ADR says so (- superseded by [[x]] / - deprecated)"
     }
   },
   "cache": {

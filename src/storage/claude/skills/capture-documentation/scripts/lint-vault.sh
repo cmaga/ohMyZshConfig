@@ -134,7 +134,7 @@ function flush(   s) {
     (h1 == "" ? "null" : h1), (first == "" ? "null" : first), (banner == "" ? "null" : banner), h2, heads, links
   printf "\"hook\":%s,\"markers\":[%s],\"governs\":%s,\"applies_to\":%s,\"gloss\":[%s],", \
     (s == "" ? "null" : "\"" esc(s) "\""), mk, (gov == "" ? "null" : "\"" esc(gov) "\""), (app == "" ? "null" : "\"" esc(app) "\""), gl
-  printf "\"opts\":[%s],\"osent\":%s,\"objs\":[%s],\"ilines\":[%s],\"comp\":[%s],", opts, (osent ? "true" : "false"), objs, ilines, comp
+  printf "\"opts\":[%s],\"osent\":%s,\"objs\":[%s],\"ilines\":[%s],\"comp\":[%s],\"bodyn\":%d,", opts, (osent ? "true" : "false"), objs, ilines, comp, bodyn
   printf "\"surface\":%s}\n", (sline ? sprintf("{\"line\":%d,\"none\":%s,\"entries\":[%s]}", sline, (snone ? "true" : "false"), sent) : "null")
 }
 FNR == 1 {
@@ -146,7 +146,7 @@ FNR == 1 {
   bytes = 0; maxline = 0; maxline_no = 0
   delete seen
   hz = hdone = 0; hp = gov = app = mk = gl = gterm = gopen = glink = ""
-  cursec = opts = objs = ilines = comp = ""; osent = 0
+  cursec = opts = objs = ilines = comp = ""; osent = 0; bodyn = 0
   isdec = (path ~ /^decisions\//); if (!isdec) hz = 1
 }
 {
@@ -167,7 +167,7 @@ infm {
       seen[k] = 1
       fm = add(fm, "\"" k "\":\"" esc(v) "\""); fml = add(fml, "\"" k "\":" FNR)
       if (k == "governs") gov = v; if (k == "applies_to") app = v
-      if (v ~ /\[\[/) { l = v; while (match(l, /\[\[[^]]+\]\]/)) { links = add(links, sprintf("{\"line\":%d,\"wiki\":\"%s\",\"fm\":true}", FNR, esc(substr(l, RSTART + 2, RLENGTH - 4)))); l = substr(l, RSTART + RLENGTH) } }
+      if (v ~ /\[\[/) { l = v; while (match(l, /\[\[[^]]+\]\]/)) { wl = substr(l, RSTART + 2, RLENGTH - 4); sub(/^\[+/, "", wl); links = add(links, sprintf("{\"line\":%d,\"wiki\":\"%s\",\"fm\":true}", FNR, esc(wl))); l = substr(l, RSTART + RLENGTH) } }
     } else fmbad = add(fmbad, pos(FNR, $0))
     next
   }
@@ -190,6 +190,7 @@ fence { next }
     if (lvl == 1) next
   }
   if (first == "" && line !~ /^[ \t]*$/) first = pos(FNR, line)
+  if (h1 != "" && line !~ /^[ \t]*$/ && line !~ /^>/ && line !~ /^History:/ && line !~ /^#/) bodyn++
   if (banner == "" && line ~ /^> *Status:/) banner = pos(FNR, line)
   if (insurf && line !~ /^#/) {
     if (line ~ /^[-*]?[ \t]*None/) snone = 1
@@ -708,6 +709,22 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
       ($r.comp[]? | . as $c | select($c.kind != "" and $c.kind != "review" and ((["hook","lint","test","type","schema","ci"] | index($c.kind)) != null) and $c.path == "") | f($r; "ADR_COMPLIANCE_FORMAT"; $c.line; "\($c.kind) names no `path`")),
       (if ($r.fm.expires // "") != "" and ($r.fm.expires | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and $r.fm.expires <= $today then f($r; "ADR_EXPIRES_PAST"; ($r.fm_line.expires // 1); "expired \($r.fm.expires)") else empty end)
      else empty end),
+    (if $b != "decisions" and $r.fm.status == "deprecated" then
+      ($r.fm.obsoletion_reason // "") as $why | ($r.fm.replaced_by // "") as $rb | ($r.fm.consider // "") as $cons |
+      (if $r.banner == null then f($r; "BANNER_MISSING"; 1; "status deprecated, no > Status: banner") else empty end),
+      (if $why == "" or ($r.fm.retired // "") == "" then f($r; "TOMBSTONE_FIELDS"; ($r.fm_line.status // 1); "a retired note carries obsoletion_reason and retired") else empty end),
+      (if ($rb != "" and $cons != "") or ($rb == "" and $cons == "") then f($r; "TOMBSTONE_FIELDS"; ($r.fm_line.status // 1); "exactly one of replaced_by / consider")
+       elif $why == "merged" and $rb == "" then f($r; "TOMBSTONE_FIELDS"; ($r.fm_line.obsoletion_reason // 1); "merged needs replaced_by")
+       elif $why == "split" and (($cons | flow | length) < 2) then f($r; "TOMBSTONE_FIELDS"; ($r.fm_line.obsoletion_reason // 1); "split needs consider with two or more notes")
+       else empty end),
+      ([ ($Lby[$r.path] // [])[] | select(.fm and .kind != "note") ][] | f($r; "TOMBSTONE_POINTER_UNRESOLVED"; .line; .raw)),
+      ([ ($Lby[$r.path] // [])[] | select(.fm and .kind == "note") | .to ][] | . as $t | select((($byPath[$t].fm.status // "") == "deprecated") or (($byPath[$t].fm.status // "") == "superseded")) | f($r; "TOMBSTONE_POINTER_CHAIN"; ($r.fm_line.replaced_by // $r.fm_line.consider // 1); "\($t) is itself retired")),
+      (if ($r.bodyn // 0) > 0 then f($r; "TOMBSTONE_BODY"; ($r.first.line // 1); "\($r.bodyn) prose line(s) beyond the banner and the History line") else empty end)
+     else empty end),
+    (if $b == "decisions" and ($r.fm.status == "superseded" or $r.fm.status == "deprecated") then
+      ([ ($Lby[$indexPath] // [])[] | select(.kind == "note" and .to == $r.path) | .line ]) as $ilns |
+      ($ilns[] | . as $ln | ([ ($byPath[$indexPath].ilines // [])[] | select(.line == $ln) ][0].text // "") | select(test("superseded|deprecated"; "i") | not) | f($r; "INDEX_LINE_CURRENCY_MISSING"; $ln; "index line does not say \($r.fm.status)"))
+     else empty end),
     (if $bs.banner then
       ($r.fm.status // "") as $st |
       (($r.banner.text // "") | sub("^> *Status: *"; "") | (split(" ")[0] // "") | ascii_upcase | rtrimstr(",")) as $kw |
@@ -722,7 +739,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
        else empty end),
       (if $st == "amended" and (([ $r.h2[].text | select(startswith("Amendment")) ]) | length) == 0 then f($r; "AMENDMENT_MISSING"; 1; "status amended, no ## Amendment") else empty end)
      else empty end),
-    (if $bs.surface == "required" and $r.surface == null then f($r; "SURFACE_MISSING"; 1; "no ## Reusable surface") else empty end),
+    (if $bs.surface == "required" and $r.surface == null and ($r.fm.status // "") != "deprecated" then f($r; "SURFACE_MISSING"; 1; "no ## Reusable surface") else empty end),
     (if $r.surface != null and $bs.surface == "forbidden" then f($r; "SURFACE_OUT_OF_SCOPE"; $r.surface.line; $b) else empty end),
     (if $r.surface != null and (($r.surface.entries | length) == 0) and ($r.surface.none | not) then f($r; "SURFACE_EMPTY"; $r.surface.line; "no entries, no None stanza") else empty end),
     (($S | map(select(.path == $r.path)))[]? | select(.st != "ok") | f($r; ({path: "SURFACE_PATH_MISSING", nopath: "SURFACE_ENTRY_FORMAT", symbol: "SURFACE_SYMBOL_MISSING"}[.st]); .line; "\(.sym) @ \(.spath)")),
@@ -738,13 +755,20 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
 
   (if $hub == null then
      (if $outc == 0 then f($r; "ORPHAN_NO_OUTBOUND"; 1; "0 resolved outbound links") else empty end),
-     (if ($inb | length) == 0 then f($r; "ORPHAN_NO_INBOUND"; 1; "0 notes link here")
+     (if $b != "decisions" and ($r.fm.status // "") == "deprecated" then empty
+      elif ($inb | length) == 0 then f($r; "ORPHAN_NO_INBOUND"; 1; "0 notes link here")
       elif $inbNonHub == 0 then f($r; "ORPHAN_HUB_ONLY_INBOUND"; 1; "only a hub links here")
       else empty end),
      (if $byPath[$indexPath] and $inbNonHub >= $hubThr and ((any(($Lby[$indexPath] // [])[]; .kind == "note" and .to == $r.path)) | not) then f($r; "HUB_MISSING_FROM_INDEX"; 1; "hub-ranked (\($inbNonHub) inbound) but not linked from \($indexPath)") else empty end)
    else empty end),
 
   (if $r.first == null then f($r; "EMPTY_NOTE"; 1; "no content after the H1") else empty end),
+  (if $hub == null and $b != "decisions" and ($r.fm.status // "") != "deprecated" then
+     ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to != $r.path) | .to ]) as $outs |
+     ($outs[] | . as $t | select((($byPath[$t].fm.status // "") == "deprecated") and (($t | bucket) != "decisions")) |
+       select(($byPath[$t].fm.replaced_by // "") | test("\\[\\[" + ($r.path | base) + "(\\]\\]|\\|)") | not) |
+       f($r; "LINK_TO_RETIRED"; ([ ($Lby[$r.path] // [])[] | select(.kind == "note" and .to == $t) ][0].line // 1); "links retired \($t)"))
+   else empty end),
 
   (
      ($r.markers // []) as $M |

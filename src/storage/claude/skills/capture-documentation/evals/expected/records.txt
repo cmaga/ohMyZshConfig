@@ -4,8 +4,11 @@ _index.md	Entry point into the vault.	0	-	-
 architecture/architecture-credit-deduction-flow.md	Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.	0	-	-
 architecture/architecture-payment-flow.md	Bare link to billing is deliberately ambiguous now that both `components/billing.md` and `plan/billing.md` exist,	0	-	-
 components/billing.md	Charges customers against the credit balance described in domain/domain-credit-lifecycle.	0	-	[src/billing/, src/ghost/]
+components/legacy-queue.md	History: git log --follow -- docs/project-knowledge/components/legacy-queue.md	0	-	-
 components/reporting-pipeline.md	Builds periodic reports from queue and billing activity.	0	-	-
+components/scheduler.md	Runs the cron table and the retry backoff for worker; see ADR-001-use-postgres for the queue it feeds.	0	-	-
 components/worker.md	Claims and processes queue rows against the Postgres queue from decisions/ADR-001-use-postgres, subject to	0	-	-
+constraints/constraint-bad-tombstone.md	No banner, an invalid reason, both pointers, a chain through legacy-queue, no retired date, and prose that should be	0	-	-
 constraints/constraint-legacy-billing-freeze.md	The legacy billing path behind components/billing is frozen pending removal.	0	-	-
 constraints/constraint-single-writer-db.md	Only one process may claim a queue row at a time; see components/worker and decisions/ADR-001-use-postgres.	0	[]	-
 constraints/constraint-webhook-idempotency-keys.md	Every inbound webhook handler must dedupe on an idempotency key.	0	-	-

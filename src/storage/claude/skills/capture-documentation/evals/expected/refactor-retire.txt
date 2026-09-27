@@ -1,0 +1,24 @@
+exit=0
+--- stdout ---
+== preview
+retire: domain/domain-marker-cases.md (removed)
+ + > Status: DEPRECATED 2026-09-26 — removed; consider [[worker]], [[reporting-pipeline]]. the marker cases live in the linter evals now
+ body -> tombstone (History: git log --follow -- docs/project-knowledge/domain/domain-marker-cases.md)
+ index: line removed
+preview only; re-run with --apply
+rc=0
+== apply
+retire: domain/domain-marker-cases.md (removed)
+ + > Status: DEPRECATED 2026-09-26 — removed; consider [[worker]], [[reporting-pipeline]]. the marker cases live in the linter evals now
+ body -> tombstone (History: git log --follow -- docs/project-knowledge/domain/domain-marker-cases.md)
+ index: line removed
+applied
+rc=0
+== status
+ M docs/project-knowledge/_index.md
+ M docs/project-knowledge/domain/domain-marker-cases.md
+== lint
+WARN _index.md:1 SIZE_HUB hub is 39968 bytes
+WARN _index.md:84 SIZE_HUB_LINE line is 1500 chars
+--- stderr ---
+

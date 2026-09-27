@@ -18,7 +18,7 @@ created: YYYY-MM-DD
 - `proposed` — drafted, not yet adopted.
 - `revisit` — decided, but with an explicit reopen tripwire (e.g. "revisit when cost > $50/mo"). Still in force until the tripwire fires.
 - `superseded` — re-decided by a later note. Pair with `superseded_by:` and a `> Status:` banner. (Decisions.)
-- `deprecated` — no longer applies and has no replacement (moot). Carry a `> Status:` banner saying why. (Decisions.)
+- `deprecated` — no longer applies. A decision keeps its body and carries a `> Status:` banner saying why. Any other note becomes a tombstone: `obsoletion_reason: merged | split | removed | wrong`, `retired: YYYY-MM-DD`, exactly one of `replaced_by: "[[note]]"` (merged) or `consider: [[[a]], [[b]]]` (split needs two or more), the banner, and a single `History: git log --follow -- <path>` line in place of the prose. Written by `vault-refactor.sh retire`, never by hand.
 - `amended` — the original Decision was overturned in place by a dated `## Amendment` block. Carry a `> Status:` banner pointing at it. (Decisions; see [`templates/adr.md`](adr.md).)
 - `open` | `closed` — lifecycle for research / plan notes.
 

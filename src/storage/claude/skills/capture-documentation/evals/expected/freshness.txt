@@ -8,8 +8,11 @@ paths	constraints/constraint-webhook-idempotency-keys.md	src/billing/does-not-ex
 time	architecture/architecture-credit-deduction-flow.md	due 2026-07-20 (max_age, 180d)
 time	architecture/architecture-payment-flow.md	due 2026-07-21 (max_age, 180d)
 time	components/billing.md	due 2026-07-24 (max_age, 180d)
+time	components/legacy-queue.md	due 2026-07-07 (max_age, 180d)
 time	components/reporting-pipeline.md	due 2026-07-25 (max_age, 180d)
+time	components/scheduler.md	due 2026-09-06 (max_age, 180d)
 time	components/worker.md	due 2026-07-31 (max_age, 180d)
+time	constraints/constraint-bad-tombstone.md	due 2026-07-08 (max_age, 180d)
 time	constraints/constraint-legacy-billing-freeze.md	due 2026-07-13 (max_age, 180d)
 time	constraints/constraint-single-writer-db.md	due 2026-07-10 (max_age, 180d)
 time	constraints/constraint-webhook-idempotency-keys.md	due 2026-07-15 (max_age, 180d)
@@ -32,7 +35,10 @@ time	research/research-warm-cache-spike.md	due 2026-04-30 (bucket:research, 90d)
 never-verified	architecture/architecture-credit-deduction-flow.md	created 2026-01-21
 never-verified	architecture/architecture-payment-flow.md	created 2026-01-22
 never-verified	components/billing.md	created 2026-01-25
+never-verified	components/legacy-queue.md	created 2026-01-08
 never-verified	components/reporting-pipeline.md	created 2026-01-26
+never-verified	components/scheduler.md	created 2026-03-10
+never-verified	constraints/constraint-bad-tombstone.md	created 2026-01-09
 never-verified	constraints/constraint-legacy-billing-freeze.md	created 2026-01-14
 never-verified	constraints/constraint-single-writer-db.md	created 2026-01-11
 never-verified	constraints/constraint-webhook-idempotency-keys.md	created 2026-01-16
@@ -52,6 +58,6 @@ never-verified	research/research-message-queue-eval.md	created 2026-02-01
 never-verified	research/research-sources-bad.md	created 2026-03-08
 never-verified	research/research-unclosed-frontmatter.md	created 2026-02-02
 never-verified	research/research-warm-cache-spike.md	created 2026-01-30
-vault-freshness: 29 overdue (3 drifted)
+vault-freshness: 32 overdue (3 drifted)
 --- stderr ---
 

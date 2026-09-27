@@ -1,0 +1,25 @@
+exit=0
+--- stdout ---
+== preview
+supersede: decisions/ADR-001-use-postgres.md -> decisions/ADR-009-scale-worker-pool.md
+ + status: superseded, superseded_by: "[[ADR-009-scale-worker-pool]]"
+ + > Status: SUPERSEDED by [[ADR-009-scale-worker-pool]] — read that instead.
+ index: suffix '— superseded by [[ADR-009-scale-worker-pool]]'
+preview only; re-run with --apply
+rc=0
+== apply
+supersede: decisions/ADR-001-use-postgres.md -> decisions/ADR-009-scale-worker-pool.md
+ + status: superseded, superseded_by: "[[ADR-009-scale-worker-pool]]"
+ + > Status: SUPERSEDED by [[ADR-009-scale-worker-pool]] — read that instead.
+ index: suffix '— superseded by [[ADR-009-scale-worker-pool]]'
+applied
+rc=0
+== status
+ M docs/project-knowledge/_index.md
+ M docs/project-knowledge/decisions/ADR-001-use-postgres.md
+== lint
+FAIL decisions/ADR-001-use-postgres.md:1 ADR_NUMBER_DUPLICATE ADR number 001 used by decisions/ADR-001-alt-name.md, decisions/ADR-001-use-postgres.md
+WARN _index.md:1 SIZE_HUB hub is 40049 bytes
+WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+--- stderr ---
+

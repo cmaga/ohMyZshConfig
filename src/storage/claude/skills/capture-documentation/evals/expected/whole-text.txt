@@ -5,6 +5,12 @@ FAIL components/billing.md:1 SURFACE_MISSING no ## Reusable surface
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL components/billing.md:5 APPLIES_TO_DEAD_GLOB src/ghost/ matches no file at HEAD
 FAIL components/reporting-pipeline.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
+FAIL constraints/constraint-bad-tombstone.md:1 BANNER_MISSING status deprecated, no > Status: banner
+FAIL constraints/constraint-bad-tombstone.md:3 TOMBSTONE_FIELDS a retired note carries obsoletion_reason and retired
+FAIL constraints/constraint-bad-tombstone.md:3 TOMBSTONE_FIELDS exactly one of replaced_by / consider
+FAIL constraints/constraint-bad-tombstone.md:6 ENUM_INVALID obsoletion_reason gone
+FAIL constraints/constraint-bad-tombstone.md:7 TOMBSTONE_POINTER_CHAIN components/legacy-queue.md is itself retired
+FAIL constraints/constraint-bad-tombstone.md:8 TOMBSTONE_POINTER_UNRESOLVED billing
 FAIL constraints/constraint-legacy-billing-freeze.md:15 SURFACE_EMPTY no entries, no None stanza
 FAIL constraints/constraint-webhook-idempotency-keys.md:16 SURFACE_ENTRY_FORMAT requireIdempotencyKey @ 
 FAIL constraints/constraint-webhook-idempotency-keys.md:17 SURFACE_PATH_MISSING anotherMissingFn @ src/billing/does-not-exist.js
@@ -67,7 +73,11 @@ WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
 WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
+WARN components/reporting-pipeline.md:19 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:27 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:28 SURFACE_DUPLICATE_HOME claimNextJob
 WARN components/worker.md:16 SURFACE_DUPLICATE_HOME claimNextJob
+WARN constraints/constraint-bad-tombstone.md:12 TOMBSTONE_BODY 2 prose line(s) beyond the banner and the History line
 WARN constraints/constraint-legacy-billing-freeze.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN constraints/constraint-legacy-billing-freeze.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN constraints/constraint-single-writer-db.md:17 SURFACE_DUPLICATE_HOME claimNextJob
@@ -83,9 +93,14 @@ WARN decisions/ADR-001-use-postgres.md:1 ADR_OPTIONS_MISSING no ## Considered op
 WARN decisions/ADR-001-use-postgres.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN decisions/ADR-001-use-postgres.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-002-drop-legacy-queue.md:6 ADR_TITLE_MISMATCH Legacy Queue Retirement
+WARN decisions/ADR-002-drop-legacy-queue.md:19 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-004-retire-batch-job.md:20 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-005-shrink-batch-window.md:21 INDEX_LINE_CURRENCY_MISSING index line does not say deprecated
 WARN decisions/ADR-006-consolidate-queues.md:1 SECTION_ORDER sections out of order
 WARN decisions/ADR-006-consolidate-queues.md:3 STATUS_UNEXPECTED status open in decisions/
 WARN decisions/ADR-007-cap-worker-concurrency.md:9 BANNER_NO_LINK > Status: SUPERSEDED, replaced by wider queue changes.
+WARN decisions/ADR-007-cap-worker-concurrency.md:23 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-008-switch-cache-layer.md:24 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-009-scale-worker-pool.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-009-scale-worker-pool.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
 WARN decisions/ADR-009-scale-worker-pool.md:3 GOVERNS_MISSING active with no governs: [..]
@@ -93,15 +108,20 @@ WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_Y_STATEMENT_MISSING no y_state
 WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-010-amend-worker-timeout.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN decisions/ADR-011-supersede-no-backlink.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN decisions/ADR-011-supersede-no-backlink.md:27 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-012-successor-silent.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-012-successor-silent.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN decisions/ADR-012-successor-silent.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-012-successor-silent.md:6 GOVERNS_DEAD_GLOB src/nonexistent/** matches no file at HEAD
 WARN decisions/ADR-012-successor-silent.md:24 MARKER_ADR_EVIDENCE until 2026-12-31 cites no [[link]] or Amendment (date)
+WARN decisions/ADR-013-cycle-a.md:29 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-014-cycle-b.md:30 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-015-banner-mismatch.md:31 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-018-bad-template-fields.md:9 ADR_EXPIRES_PAST expired 2020-01-01
 WARN decisions/ADR-020-revisit-no-tripwire.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-020-revisit-no-tripwire.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN domain/domain-bad-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 WARN domain/domain-marker-cases.md:11 MARKER_RECHECK_MISSING as of 2026-01-15 without a recheck comment
 WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
 WARN glossary.md:21 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
@@ -114,7 +134,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 722814 bytes
+INFO .:0 SIZE_VAULT vault is 724240 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
@@ -122,6 +142,6 @@ INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub li
 INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
-lint-vault: 61 FAIL, 53 WARN across 45 notes
+lint-vault: 67 FAIL, 67 WARN across 48 notes
 --- stderr ---
 

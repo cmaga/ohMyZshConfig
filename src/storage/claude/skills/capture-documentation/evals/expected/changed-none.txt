@@ -1,5 +1,5 @@
 exit=0
 --- stdout ---
-lint-vault: 0 FAIL, 0 WARN across 45 notes
+lint-vault: 0 FAIL, 0 WARN across 48 notes
 --- stderr ---
 

@@ -13,6 +13,9 @@ set -u
 
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
 export LC_ALL=C
+# The pre-commit hook runs this suite with git's hook environment set; a
+# relative GIT_INDEX_FILE breaks every git call inside the scratch repos.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR
 # Pins vault_today() (vault-lib.sh) so vault-freshness.sh's cadence/revisit
 # math and vault-drift.sh's flag "opened" date are wall-clock independent --
 # without this, every rank4/revisit_by comparison would drift with the
@@ -32,6 +35,7 @@ DRIFT="$SCRIPTS/vault-drift.sh"
 FRESHNESS="$SCRIPTS/vault-freshness.sh"
 GENRULES="$SCRIPTS/gen-vault-rules.sh"
 AUDIT="$SCRIPTS/vault-audit.sh"
+REFACTOR="$SCRIPTS/vault-refactor.sh"
 GUARD="$HERE/../../../hooks/guard-vault-write.sh"
 
 ARG="${1:-}"
@@ -648,6 +652,61 @@ finish_case audit-zero-drift
 C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case audit-hook-no-vault
+
+# ---------------------------------------------------------------------------
+# vault-refactor.sh (L11). Every command mutates the tree, so each case runs
+# on a fresh clone of $REPO at HEAD (no dirty-state additions): the preview,
+# then --apply, then the clone's git status and the linter's findings on the
+# touched notes only. VAULT_TODAY pins the retired/banner dates.
+# ---------------------------------------------------------------------------
+
+# refactor_case NAME CMD ARGS... : ARGS follow the vault path on the command
+# line; the clone's vault path is inserted by the helper.
+refactor_case() {
+  local name="$1" cmd="$2"; shift 2
+  local clone="$WORK/rf-$name" v touched
+  rm -rf "$clone"; must git clone -q "$REPO" "$clone"
+  v="$clone/docs/project-knowledge"
+  {
+    echo "== preview"; "$REFACTOR" "$cmd" "$v" "$@"; echo "rc=$?"
+    echo "== apply"; "$REFACTOR" "$cmd" "$v" "$@" --apply; echo "rc=$?"
+    echo "== status"; git -C "$clone" status --short | sort
+    echo "== lint"
+    touched="$(git -C "$clone" status --short | awk '{ print $NF }' | sed 's#^docs/project-knowledge/##' | "$JQ" -R . | "$JQ" -s .)"
+    "$LINT" --format json "$v" | "$JQ" -r --argjson t "$touched" \
+      '.findings[] | select(.path as $p | $t | index($p)) | "\(.sev | ascii_upcase) \(.path):\(.line) \(.code) \(.msg)"'
+  } >"$WORK/c_out" 2>"$WORK/c_err"
+  C_RC=$?
+  C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+  finish_case "refactor-$name"
+}
+
+# rename: constraints/flatfee.md becomes constraint-flat-fee.md; every link
+# spelling is rewritten, the old basename becomes an alias, git mv keeps the
+# history. Nothing outside the vault names flatfee, so no ! line.
+refactor_case rename rename flatfee constraint-flat-fee
+
+# merge: reporting-pipeline folds into worker. Links move to the survivor,
+# the survivor gains the loser's basename and H1 as aliases, the loser is a
+# merged tombstone with its index line removed. Prose is never moved.
+refactor_case merge merge reporting-pipeline worker
+
+# retire: a removed note with two consider pointers. The domain note becomes
+# a tombstone (consider as quoted wikilinks so the frontmatter extractor
+# resolves them); research-sources-bad still links it, so LINK_TO_RETIRED.
+refactor_case retire retire domain-marker-cases --reason removed --consider worker,reporting-pipeline --why "the marker cases live in the linter evals now"
+
+# supersede: ADR-001 by ADR-009, which already links back. The old ADR keeps
+# its body, gains the SUPERSEDED banner and superseded_by, and its index line
+# gets the suffix. A supersede without a backlink would print a ! line.
+refactor_case supersede supersede ADR-001-use-postgres ADR-009-scale-worker-pool
+
+# split: scheduler.md into two component notes by H2. Each new note carries
+# Split from [[scheduler]]; the parent keeps a Moved to stub per heading;
+# buildReport is mentioned only by the backoff section so it moves there,
+# claimNextJob is mentioned by both and stays with the parent.
+printf 'scheduler-backoff\tcomponents\tBackoff policy\nscheduler-cron\tcomponents\tCron parsing\n' > "$WORK/split-plan.tsv"
+refactor_case split split scheduler --plan "$WORK/split-plan.tsv"
 
 echo "evals: $OK_COUNT ok, $FAIL_COUNT failed"
 [ "$FAIL_COUNT" -eq 0 ] || exit 1

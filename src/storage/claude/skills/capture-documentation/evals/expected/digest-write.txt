@@ -33,6 +33,7 @@ exit=0
 ## Components
 - [Billing](components/billing.md): Charges customers against the credit balance described in domain/domain-credit-lifecycle. (hub)
 - [Reporting pipeline](components/reporting-pipeline.md): Builds periodic reports from queue and billing activity.
+- [Scheduler](components/scheduler.md): Runs the cron table and the retry backoff for worker; see ADR-001-use-postgres for the queue it feeds.
 - [Worker](components/worker.md): Claims and processes queue rows against the Postgres queue from decisions/ADR-001-use-postgres, subject to (hub)
 
 ## Policies
@@ -65,5 +66,7 @@ exit=0
 - [ADR-013: Batch writes ahead of the row-lock change](decisions/ADR-013-cycle-a.md): Batch writes before committing, superseded by the row-lock change in ADR-014-cycle-b. · superseded
 - [ADR-014: Row-lock the queue table](decisions/ADR-014-cycle-b.md): Introduce `SELECT ... FOR UPDATE SKIP LOCKED`, later superseded back to batching by ADR-013-cycle-a. · superseded
 - [ADR-015: Switch the backoff base delay](decisions/ADR-015-banner-mismatch.md): Fold into the backoff policy ADR-012-successor-silent introduces. · superseded
+- [Bad tombstone](constraints/constraint-bad-tombstone.md): No banner, an invalid reason, both pointers, a chain through legacy-queue, no retired date, and prose that should be · deprecated
+- [Legacy queue](components/legacy-queue.md): History: git log --follow -- docs/project-knowledge/components/legacy-queue.md · deprecated
 --- stderr ---
 

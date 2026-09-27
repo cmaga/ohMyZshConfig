@@ -1,0 +1,30 @@
+exit=0
+--- stdout ---
+== preview
+new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
+new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
+parent: components/scheduler.md 387 bytes after
+domain/domain-credit-lifecycle.md:13
+ - fed it, and the [[scheduler#Backoff policy]] paces retries.
+ + fed it, and the [[scheduler-backoff#Backoff policy]] paces retries.
+anchor sites: 1
+preview only; re-run with --apply
+rc=0
+== apply
+new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
+new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
+parent: components/scheduler.md 387 bytes after
+anchor sites: 1
+applied
+rc=0
+== status
+ M docs/project-knowledge/components/scheduler.md
+ M docs/project-knowledge/domain/domain-credit-lifecycle.md
+?? docs/project-knowledge/components/scheduler-backoff.md
+?? docs/project-knowledge/components/scheduler-cron.md
+== lint
+WARN components/scheduler-backoff.md:17 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:21 SURFACE_DUPLICATE_HOME claimNextJob
+WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
+--- stderr ---
+

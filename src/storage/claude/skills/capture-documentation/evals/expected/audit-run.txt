@@ -1,6 +1,6 @@
 exit=1
 --- stdout ---
-vault-audit (repo): RED - 64 FAIL, 59 WARN, 3 drift flags, 29 reviews overdue, 1 rechecks due, 4 ADR tripwires.
+vault-audit (repo): RED - 70 FAIL, 73 WARN, 3 drift flags, 32 reviews overdue, 1 rechecks due, 4 ADR tripwires.
 -- links --
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL decisions/ADR-002-drop-legacy-queue.md:3 SUPERSEDED_BY_REQUIRED superseded without superseded_by
@@ -13,7 +13,9 @@ FAIL decisions/ADR-011-supersede-no-backlink.md:4 SUPERSEDED_BY_NO_BACKLINK deci
 FAIL research/research-message-queue-eval.md:11 LINK_UNRESOLVED nonexistent-note-xyz
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
+WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 -- banners --
+FAIL constraints/constraint-bad-tombstone.md:1 BANNER_MISSING status deprecated, no > Status: banner
 FAIL decisions/ADR-002-drop-legacy-queue.md:1 BANNER_MISSING status superseded, no > Status: banner
 FAIL decisions/ADR-004-retire-batch-job.md:9 BANNER_STATUS_MISMATCH status superseded, banner says DEPRECATED
 FAIL decisions/ADR-005-shrink-batch-window.md:13 BANNER_NOT_FIRST banner is not the first body line
@@ -27,6 +29,9 @@ FAIL constraints/constraint-legacy-billing-freeze.md:15 SURFACE_EMPTY no entries
 FAIL constraints/constraint-webhook-idempotency-keys.md:16 SURFACE_ENTRY_FORMAT requireIdempotencyKey @ 
 FAIL constraints/constraint-webhook-idempotency-keys.md:17 SURFACE_PATH_MISSING anotherMissingFn @ src/billing/does-not-exist.js
 FAIL constraints/constraint-webhook-idempotency-keys.md:18 SURFACE_SYMBOL_MISSING notARealExport @ src/billing/charge.js
+WARN components/reporting-pipeline.md:19 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:27 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:28 SURFACE_DUPLICATE_HOME claimNextJob
 WARN components/worker.md:18 SURFACE_DUPLICATE_HOME claimNextJob
 WARN constraints/constraint-single-writer-db.md:17 SURFACE_DUPLICATE_HOME claimNextJob
 WARN policies/policy-incident-disclosure.md:14 SURFACE_OUT_OF_SCOPE policies
@@ -57,6 +62,11 @@ INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
 -- other --
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL components/billing.md:5 APPLIES_TO_DEAD_GLOB src/ghost/ matches no file at HEAD
+FAIL constraints/constraint-bad-tombstone.md:3 TOMBSTONE_FIELDS a retired note carries obsoletion_reason and retired
+FAIL constraints/constraint-bad-tombstone.md:3 TOMBSTONE_FIELDS exactly one of replaced_by / consider
+FAIL constraints/constraint-bad-tombstone.md:6 ENUM_INVALID obsoletion_reason gone
+FAIL constraints/constraint-bad-tombstone.md:7 TOMBSTONE_POINTER_CHAIN components/legacy-queue.md is itself retired
+FAIL constraints/constraint-bad-tombstone.md:8 TOMBSTONE_POINTER_UNRESOLVED billing
 FAIL constraints/flatfee.md:1 FILENAME_PATTERN flatfee.md
 FAIL constraints/flatfee.md:5 ENUM_INVALID severity critical
 FAIL customers/persona-enterprise-ops-lead.md:1 EMPTY_NOTE no content after the H1
@@ -93,12 +103,13 @@ FAIL research/research-sources-bad.md:5 SOURCE_REF_FORMAT jira:1
 FAIL research/research-sources-bad.md:5 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
 FAIL research/research-sources-bad.md:5 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
 FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
-WARN .claude/rules/vault:0 RULES_FILE_OVERMATCHED src/worker/index.js matched by 4 notes
+WARN .claude/rules/vault:0 RULES_FILE_OVERMATCHED src/worker/index.js matched by 5 notes
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN _index.md:1 SIZE_HUB hub is 40001 bytes
 WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
 WARN components/billing.md:6 FIELD_UNKNOWN governs
 WARN components/worker.md:5 FIELD_UNKNOWN governs
+WARN constraints/constraint-bad-tombstone.md:12 TOMBSTONE_BODY 2 prose line(s) beyond the banner and the History line
 WARN constraints/constraint-legacy-billing-freeze.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN constraints/constraint-webhook-idempotency-keys.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN constraints/flatfee.md:3 GOVERNS_MISSING active with no governs: [..]
@@ -110,18 +121,27 @@ WARN decisions/ADR-001-use-postgres.md:1 ADR_OPTIONS_MISSING no ## Considered op
 WARN decisions/ADR-001-use-postgres.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN decisions/ADR-001-use-postgres.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-002-drop-legacy-queue.md:6 ADR_TITLE_MISMATCH Legacy Queue Retirement
+WARN decisions/ADR-002-drop-legacy-queue.md:19 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-004-retire-batch-job.md:20 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-005-shrink-batch-window.md:21 INDEX_LINE_CURRENCY_MISSING index line does not say deprecated
 WARN decisions/ADR-006-consolidate-queues.md:1 SECTION_ORDER sections out of order
 WARN decisions/ADR-006-consolidate-queues.md:3 STATUS_UNEXPECTED status open in decisions/
+WARN decisions/ADR-007-cap-worker-concurrency.md:23 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-008-switch-cache-layer.md:24 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-009-scale-worker-pool.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-009-scale-worker-pool.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
 WARN decisions/ADR-009-scale-worker-pool.md:3 GOVERNS_MISSING active with no governs: [..]
 WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN decisions/ADR-009-scale-worker-pool.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
+WARN decisions/ADR-011-supersede-no-backlink.md:27 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-012-successor-silent.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-012-successor-silent.md:3 ADR_Y_STATEMENT_MISSING no y_statement
 WARN decisions/ADR-012-successor-silent.md:3 ADR_REVISIT_IF_MISSING no revisit_if (typed items, or none - <reason>)
 WARN decisions/ADR-012-successor-silent.md:6 GOVERNS_DEAD_GLOB src/nonexistent/** matches no file at HEAD
 WARN decisions/ADR-012-successor-silent.md:24 MARKER_ADR_EVIDENCE until 2026-12-31 cites no [[link]] or Amendment (date)
+WARN decisions/ADR-013-cycle-a.md:29 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-014-cycle-b.md:30 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
+WARN decisions/ADR-015-banner-mismatch.md:31 INDEX_LINE_CURRENCY_MISSING index line does not say superseded
 WARN decisions/ADR-016-revisit-cache-layer.md:1 ADR_OPTIONS_MISSING no ## Considered options
 WARN decisions/ADR-016-revisit-cache-layer.md:1 ADR_INDEX_LINE_MISSING no _index.md line links this ADR
 WARN decisions/ADR-016-revisit-cache-layer.md:3 ADR_Y_STATEMENT_MISSING no y_statement
@@ -135,7 +155,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 723728 bytes
+INFO .:0 SIZE_VAULT vault is 725154 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
@@ -150,8 +170,11 @@ paths	constraints/constraint-webhook-idempotency-keys.md	src/billing/does-not-ex
 time	architecture/architecture-credit-deduction-flow.md	due 2026-07-20 (max_age, 180d)
 time	architecture/architecture-payment-flow.md	due 2026-07-21 (max_age, 180d)
 time	components/billing.md	due 2026-07-24 (max_age, 180d)
+time	components/legacy-queue.md	due 2026-07-07 (max_age, 180d)
 time	components/reporting-pipeline.md	due 2026-07-25 (max_age, 180d)
+time	components/scheduler.md	due 2026-09-06 (max_age, 180d)
 time	components/worker.md	due 2026-07-31 (max_age, 180d)
+time	constraints/constraint-bad-tombstone.md	due 2026-07-08 (max_age, 180d)
 time	constraints/constraint-legacy-billing-freeze.md	due 2026-07-13 (max_age, 180d)
 time	constraints/constraint-single-writer-db.md	due 2026-07-10 (max_age, 180d)
 time	constraints/constraint-webhook-idempotency-keys.md	due 2026-07-15 (max_age, 180d)
@@ -174,7 +197,10 @@ time	research/research-warm-cache-spike.md	due 2026-04-30 (bucket:research, 90d)
 never-verified	architecture/architecture-credit-deduction-flow.md	created 2026-01-21
 never-verified	architecture/architecture-payment-flow.md	created 2026-01-22
 never-verified	components/billing.md	created 2026-01-25
+never-verified	components/legacy-queue.md	created 2026-01-08
 never-verified	components/reporting-pipeline.md	created 2026-01-26
+never-verified	components/scheduler.md	created 2026-03-10
+never-verified	constraints/constraint-bad-tombstone.md	created 2026-01-09
 never-verified	constraints/constraint-legacy-billing-freeze.md	created 2026-01-14
 never-verified	constraints/constraint-single-writer-db.md	created 2026-01-11
 never-verified	constraints/constraint-webhook-idempotency-keys.md	created 2026-01-16

@@ -3,10 +3,10 @@ exit=0
 <tmp>/repo/docs/project-knowledge/components/worker.md:14-17	2	320	## Reusable surface
 <tmp>/repo/docs/project-knowledge/decisions/ADR-017-pin-node-runtime.md:1-12	2	499	ADR-017: Pin the Node runtime
 <tmp>/repo/docs/project-knowledge/_index.md:15-35	1	1013	## Decisions
+<tmp>/repo/docs/project-knowledge/components/scheduler.md:19-24	1	189	## Backoff policy
+<tmp>/repo/docs/project-knowledge/components/scheduler.md:25-28	1	209	## Reusable surface
 <tmp>/repo/docs/project-knowledge/components/worker.md:8-13	1	170	## Overview
 <tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:1-9	1	124	Single writer owns the claim path
 <tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:10-14	1	129	## Context
-<tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:15-17	1	192	## Reusable surface
-<tmp>/repo/docs/project-knowledge/decisions/ADR-001-use-postgres.md:13-17	1	143	## Decision
 --- stderr ---
 
