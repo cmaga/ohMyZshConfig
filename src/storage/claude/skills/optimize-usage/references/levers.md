@@ -13,7 +13,7 @@ Last updated: 2026-09-21 · Method updated: 2026-07-21
 > which resolves ~40% effects; figures within ~25% of 1.0x are directional).
 > Rows 3-8 are per-token price-ratio estimates (fable 2x opus, sonnet 0.4x, haiku
 > 0.2x), tagged est. pending an agent-frontmatter benchmark runner. Ratios are not
-> additive points. Aliases currently bind: opus=Opus 5, sonnet=Sonnet 5,
+> additive points. Aliases currently bind (probed 2026-09-25, Claude Code 2.1.283): opus=Opus 5.5 ($4/$20, cache read $0.20; default effort medium, and top-level effortLevel does not reach it, so it needs a modelSettings key) — the measured ratios below were taken on Opus 5, so fable is now ~2.5x list vs opus, sonnet 0.5x, haiku 0.25x. Previously: opus=Opus 5, sonnet=Sonnet 5,
 > haiku=Haiku 4.5, fable=Fable 5.1 (Claude Code 2.1.257+; same list price as Fable 5,
 > but cache reads $0.25/MTok vs opus $0.50, so a cache-heavy session runs below the
 > 2x list ratio — unmeasured; the row 1 fable figure was measured on Fable 5).
