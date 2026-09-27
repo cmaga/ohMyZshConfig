@@ -5,16 +5,19 @@ new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
 new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
 parent: components/scheduler.md 387 bytes after
 domain/domain-credit-lifecycle.md:13
- - fed it, and the [[scheduler#Backoff policy]] paces retries.
- + fed it, and the [[scheduler-backoff#Backoff policy]] paces retries.
-anchor sites: 1
+ - fed it, and the [[scheduler#Backoff policy]] paces retries; cron fields follow
+ + fed it, and the [[scheduler-backoff#Backoff policy]] paces retries; cron fields follow
+domain/domain-credit-lifecycle.md:14
+ - [[scheduler#Field order]].
+ + [[scheduler-cron#Field order]].
+anchor sites: 2
 preview only; re-run with --apply
 rc=0
 == apply
 new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
 new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
 parent: components/scheduler.md 387 bytes after
-anchor sites: 1
+anchor sites: 2
 applied
 rc=0
 == status

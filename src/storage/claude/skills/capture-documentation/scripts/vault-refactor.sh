@@ -496,12 +496,14 @@ EOF
   local pbytes; pbytes=$(wc -c < "$TMP/parent.md" | tr -d ' ')
   echo "parent: $path $pbytes bytes after"
   [ "$pbytes" -gt "$NOTE_FAIL" ] && { echo "! $path still over $NOTE_FAIL bytes"; rc=3; }
-  # anchor rewrites for moved headings
+  # anchor rewrites for moved headings, the sub-headings inside each range too
   while IFS=$'\t' read -r name nbkt ranges; do
     [ -n "$ranges" ] || continue
-    for s in $(printf '%s' "$ranges" | tr ',' '\n' | cut -d- -f1); do
-      h=$(awk -F'\t' -v n="$s" '$1 == n { print $3 }' "$TMP/heads.tsv")
-      rewrite "[[$base#$h" "[[$name#$h"; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h"
+    for r in $(printf '%s' "$ranges" | tr ',' ' '); do
+      awk -F'\t' -v a="${r%-*}" -v b="${r#*-}" '$1 >= a && $1 <= b { print $3 }' "$TMP/heads.tsv" > "$TMP/moved.heads"
+      while IFS= read -r h; do
+        rewrite "[[$base#$h" "[[$name#$h"; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h"
+      done < "$TMP/moved.heads"
     done
   done < "$TMP/plan.tsv"
   echo "anchor sites: $SITES"
