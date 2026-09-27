@@ -19,6 +19,6 @@ rc=0
  M docs/project-knowledge/domain/domain-marker-cases.md
 == lint
 WARN _index.md:1 SIZE_HUB hub is 39968 bytes
-WARN _index.md:84 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:87 SIZE_HUB_LINE line is 1500 chars
 --- stderr ---
 

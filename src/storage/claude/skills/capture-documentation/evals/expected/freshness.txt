@@ -40,6 +40,7 @@ never-verified	components/reporting-pipeline.md	created 2026-01-26
 never-verified	components/scheduler.md	created 2026-03-10
 never-verified	constraints/constraint-bad-tombstone.md	created 2026-01-09
 never-verified	constraints/constraint-legacy-billing-freeze.md	created 2026-01-14
+never-verified	constraints/constraint-retry-cap.md	created 2026-09-21
 never-verified	constraints/constraint-single-writer-db.md	created 2026-01-11
 never-verified	constraints/constraint-webhook-idempotency-keys.md	created 2026-01-16
 never-verified	constraints/flatfee.md	created 2026-01-12
@@ -48,6 +49,7 @@ never-verified	customers/persona-enterprise-ops-lead.md	created 2026-01-30
 never-verified	domain/domain-bad-frontmatter.md	created 2026-01-19
 never-verified	domain/domain-credit-lifecycle.md	created 2026-01-18
 never-verified	domain/domain-marker-cases.md	created 2026-03-06
+never-verified	domain/domain-retry-policy.md	created 2026-09-20
 never-verified	misc/stray-note.md	created 2026-02-06
 never-verified	plan/2026-q3-roadmap.md	created 2026-02-03
 never-verified	plan/billing.md	created 2026-02-04
@@ -55,6 +57,7 @@ never-verified	policies/policy-data-retention.md	created 2026-01-28
 never-verified	policies/policy-incident-disclosure.md	created 2026-01-29
 never-verified	research/research-inferred-no-sources.md	created 2026-03-07
 never-verified	research/research-message-queue-eval.md	created 2026-02-01
+never-verified	research/research-retry-survey.md	created 2026-09-22
 never-verified	research/research-sources-bad.md	created 2026-03-08
 never-verified	research/research-unclosed-frontmatter.md	created 2026-02-02
 never-verified	research/research-warm-cache-spike.md	created 2026-01-30

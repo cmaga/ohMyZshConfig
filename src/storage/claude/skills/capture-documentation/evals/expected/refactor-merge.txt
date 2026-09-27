@@ -2,7 +2,7 @@ exit=0
 --- stdout ---
 == preview
 merge: components/reporting-pipeline.md -> components/worker.md (prose is not moved; fold it into the survivor first)
-_index.md:58
+_index.md:60
  - - [[components/reporting-pipeline]]
  + - [[components/worker]]
 research/research-no-frontmatter.md:7
@@ -29,7 +29,7 @@ rc=0
 FAIL components/worker.md:20 SURFACE_SYMBOL_MISSING processQueueItem @ src/worker/index.js
 FAIL research/research-no-frontmatter.md:1 FM_MISSING_OPEN no frontmatter
 WARN _index.md:1 SIZE_HUB hub is 39989 bytes
-WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 WARN components/worker.md:5 FIELD_UNKNOWN governs
 WARN components/worker.md:19 SURFACE_DUPLICATE_HOME claimNextJob
 INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here

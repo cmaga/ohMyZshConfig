@@ -3,6 +3,7 @@ exit=2
 
 --- stderr ---
 FAIL components/reporting-pipeline.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (limit 61440)
+FAIL components/worker.md:22 SURFACE_DUPLICATE_HOME buildReport
 FAIL decisions/ADR-019-new-without-v2.md:1 ADR_OPTIONS_MISSING no ## Considered options
 FAIL decisions/ADR-019-new-without-v2.md:1 ADR_INDEX_LINE_MISSING no _index.md line links this ADR
 FAIL decisions/ADR-019-new-without-v2.md:1 ORPHAN_NO_INBOUND 0 notes link here

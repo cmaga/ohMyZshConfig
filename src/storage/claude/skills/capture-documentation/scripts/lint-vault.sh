@@ -709,6 +709,19 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
       ($r.comp[]? | . as $c | select($c.kind != "" and $c.kind != "review" and ((["hook","lint","test","type","schema","ci"] | index($c.kind)) != null) and $c.path == "") | f($r; "ADR_COMPLIANCE_FORMAT"; $c.line; "\($c.kind) names no `path`")),
       (if ($r.fm.expires // "") != "" and ($r.fm.expires | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and $r.fm.expires <= $today then f($r; "ADR_EXPIRES_PAST"; ($r.fm_line.expires // 1); "expired \($r.fm.expires)") else empty end)
      else empty end),
+    (if $r.fm.conflicts_with != null then
+      ($r.fm.conflicts_with) as $cw | ($r.fm_line.conflicts_with // 1) as $cl |
+      ([ ($Lby[$r.path] // [])[] | select(.fm and .line == $cl) ]) as $cls |
+      (if ($cw | isflow | not) or ($cls | length) == 0 then f($r; "CONFLICT_FORMAT"; $cl; "conflicts_with must be a flow list of [[wikilinks]]")
+       else
+         ($cls[] | select(.kind != "note") | f($r; "CONFLICT_UNRESOLVED"; $cl; .raw)),
+         ($cls[] | select(.kind == "note") | .to as $t
+           | select(([ ($Lby[$t] // [])[] | select(.fm and .line == ($byPath[$t].fm_line.conflicts_with // -1) and .kind == "note" and .to == $r.path) ] | length) == 0)
+           | f($r; "CONFLICT_ASYMMETRIC"; $cl; "\($t) has no conflicts_with entry back")),
+         (if $r.banner == null or (($r.banner.text // "") | test("^> *Status: *CONTESTED with \\[\\[[^]]+\\]\\] on .+") | not)
+          then f($r; "CONFLICT_UNBANNERED"; ($r.banner.line // $r.first.line // 1); "no > Status: CONTESTED with [[other]] on <axis> banner") else empty end)
+       end)
+     else empty end),
     (if $b != "decisions" and $r.fm.status == "deprecated" then
       ($r.fm.obsoletion_reason // "") as $why | ($r.fm.replaced_by // "") as $rb | ($r.fm.consider // "") as $cons |
       (if $r.banner == null then f($r; "BANNER_MISSING"; 1; "status deprecated, no > Status: banner") else empty end),
@@ -731,7 +744,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
       (if ($st == "superseded" or $st == "deprecated" or $st == "amended") and $r.banner == null then f($r; "BANNER_MISSING"; 1; "status \($st), no > Status: banner")
        elif $r.banner != null and $r.first.line != $r.banner.line then f($r; "BANNER_NOT_FIRST"; $r.banner.line; "banner is not the first body line")
        else empty end),
-      (if $r.banner != null and (($st | ascii_upcase) != $kw) and ($st != "revisit" or $kw != "ACTIVE") then f($r; "BANNER_STATUS_MISMATCH"; $r.banner.line; "status \($st), banner says \($kw)") else empty end),
+      (if $r.banner != null and (($st | ascii_upcase) != $kw) and ($st != "revisit" or $kw != "ACTIVE") and ($st != "active" or $kw != "CONTESTED") then f($r; "BANNER_STATUS_MISMATCH"; $r.banner.line; "status \($st), banner says \($kw)") else empty end),
       (if $r.banner != null and $kw == "SUPERSEDED" and (($r.banner.text | test("\\[\\[")) | not) then f($r; "BANNER_NO_LINK"; $r.banner.line; $r.banner.text) else empty end),
       (if $r.banner != null and $succ[$r.path] then
          ([ ($Lby[$r.path] // [])[] | select((.fm|not) and .line == $r.banner.line) ][0]) as $bl |
@@ -781,6 +794,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
      ($M[] | select(.kind == "recheck" and (.date | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and .date <= $today) | f($r; "MARKER_RECHECK_DUE"; .line; "recheck \(.date) is due"))
   ),
   (if $hub.type == "glossary" then ($r.gloss[]? | select(.link | not) | f($r; "GLOSSARY_ENTRY_NO_LINK"; .line; .term)) else empty end),
+  (if $hub.type == "glossary" then (($r.gloss // []) | group_by(.term | norm) | .[] | select(length > 1) | .[0].line as $first | .[1:][] | f($r; "GLOSSARY_TERM_DUPLICATE"; .line; "\(.term) is already defined at line \($first)")) else empty end),
 
   (if $hub != null then
      (if $r.bytes > $sc.sizes.hub_fail then f($r; "SIZE_HUB_LIMIT"; 1; "hub is \($r.bytes) bytes (limit \($sc.sizes.hub_fail))") + {bytes: $r.bytes}
@@ -831,6 +845,28 @@ pass3() {
 }
 
 # ---------------------------------------------------------------------------
+# fragments_check TREE OUT : _fragments/<kind>/*.md are write-once records,
+# not notes. Each carries kind: and at: YYYY-MM-DD frontmatter; a ruling
+# names exactly two [[notes]]. Findings append to OUT as FRAGMENT_FORMAT.
+fragments_check() {
+  local tree="$1" out="$2" f rel kind at dir links
+  [ -d "$tree/_fragments" ] || return 0
+  find "$tree/_fragments" -name '*.md' | LC_ALL=C sort | while IFS= read -r f; do
+    rel="${f#"$tree"/}"
+    dir="${rel#_fragments/}"; case "$dir" in */*) dir="${dir%%/*}" ;; *) dir="" ;; esac
+    kind=$(awk 'NR==1 && $0!="---" { exit } NR>1 && $0=="---" { exit } NR>1 && index($0,"kind:")==1 { v=substr($0,6); sub(/^[ \t]+/,"",v); print v; exit }' "$f")
+    at=$(awk 'NR==1 && $0!="---" { exit } NR>1 && $0=="---" { exit } NR>1 && index($0,"at:")==1 { v=substr($0,4); sub(/^[ \t]+/,"",v); print v; exit }' "$f")
+    links=$(grep -o '\[\[[^]]*\]\]' "$f" | wc -l | tr -d ' ')
+    if [ -z "$dir" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"fragments live under _fragments/<kind>/"}\n' "$rel"
+    elif [ -z "$kind" ] || [ -z "$at" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"missing kind: or at: frontmatter"}\n' "$rel"
+    elif [ "$kind" != "$dir" ] && [ "${kind}s" != "$dir" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"kind %s does not match directory %s"}\n' "$rel" "$kind" "$dir"
+    elif ! printf '%s' "$at" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"at %s is not YYYY-MM-DD"}\n' "$rel" "$at"
+    elif [ "$kind" = ruling ] && [ "$links" != 2 ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"a ruling names exactly two [[notes]], found %s"}\n' "$rel" "$links"
+    fi
+  done >> "$out"
+  return 0
+}
+
 # Pass 1 driver: resolves the glossary hub path from the schema (awk needs it
 # verbatim to gate glossary-entry extraction to that one file) and the literal
 # em-dash (awk octal escapes don't match multi-byte UTF-8, see header note).
@@ -873,6 +909,7 @@ lint_tree() {
     : > "${pfx}.region.ndjson"
     : > "${pfx}.guard.ndjson"
   fi
+  fragments_check "$tree" "${pfx}.guard.ndjson"
   pass3 "${pfx}.recs.ndjson" "${pfx}.surf.ndjson" "${pfx}.region.ndjson" "${pfx}.guard.ndjson" "${pfx}.probe.ndjson" "$schema" "$out"
   local rc=$?
   rm -f "${pfx}".*

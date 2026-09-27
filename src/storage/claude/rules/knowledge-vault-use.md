@@ -21,6 +21,7 @@ Start at `docs/project-knowledge/.cache/_digest.md` if it exists (the SessionSta
 - Before proposing an approach, scan the Decisions section of `_index.md`; an option an ADR lists as rejected is a stop sign, not a suggestion.
 - To find what constrains X, grep `constraints/`, `policies/` and `domain/` for `[[X]]`.
 - A note with `basis: inferred` is a hypothesis. Report it as "the vault infers", never as fact.
+- When two live notes disagree, report both claims with both citations and never silently pick one. A code claim is settled by the code (the other note is drift). For intent, act on the higher source (accepted decision, then constraint or policy, then component, architecture or domain, then research, then external) and say which side you acted on; precedence decides what to act on, never which note to edit. A `> Status: CONTESTED` banner means the humans have not settled it yet.
 - An overdue freshness row means the note's code claims are unchecked. Re-check them against the code before relying on the note.
 - A decision note carrying a `> Status:` banner (or a `status` of `superseded` / `deprecated` / `amended`) is **not** current truth on its own. Read the notes it names before reporting what it decided; treat the banner as a hard stop, like a failing test. Absence of a banner means "no known supersession," not "audited current" — reconcile against code regardless.
 - Before writing code in a subsystem, read its vault note (component / architecture / domain / constraint) and reach for the symbols in `## Reusable surface` before writing new ones.

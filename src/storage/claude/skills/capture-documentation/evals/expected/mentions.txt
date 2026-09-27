@@ -1,6 +1,7 @@
 exit=0
 --- stdout ---
 HIGH	<tmp>/repo/docs/project-knowledge/components/reporting-pipeline.md:13	[[ADR-009-scale-worker-pool]]	"adr-009"	override (unlike decisions/ADR-009) and no prior over-limit finding
+HIGH	<tmp>/repo/docs/project-knowledge/decisions/ADR-011-supersede-no-backlink.md:20	[[domain-retry-policy]]	"retry policy"	Retire the eager retry policy in favor of the backoff policy
 HIGH	<tmp>/repo/docs/project-knowledge/decisions/ADR-002-drop-legacy-queue.md:15	[[legacy-queue]]	"legacy queue"	Retire the legacy queue in favor of the Postgres-backed queue. A later,
 HIGH	<tmp>/repo/docs/project-knowledge/decisions/ADR-004-retire-batch-job.md:11	[[legacy-queue]]	"legacy queue"	The nightly batch job that drained the legacy queue is gone now that
 HIGH	<tmp>/repo/docs/project-knowledge/policies/policy-data-retention.md:14	[[reporting-pipeline]]	"reporting pipeline"	surfaced by the reporting pipeline inherit the billing retention window

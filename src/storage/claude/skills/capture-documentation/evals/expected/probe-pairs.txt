@@ -1,0 +1,24 @@
+exit=0
+--- stdout ---
+components/worker.md	architecture/architecture-payment-flow.md	links
+components/worker.md	components/scheduler.md	links
+components/worker.md	constraints/constraint-retry-cap.md	links
+components/worker.md	constraints/constraint-single-writer-db.md	links
+components/worker.md	decisions/ADR-001-use-postgres.md	links
+components/worker.md	decisions/ADR-009-scale-worker-pool.md	links
+components/worker.md	decisions/ADR-012-successor-silent.md	links
+components/worker.md	decisions/ADR-017-pin-node-runtime.md	links
+components/worker.md	domain/domain-bad-frontmatter.md	links
+components/worker.md	domain/domain-retry-policy.md	links
+components/worker.md	misc/stray-note.md	links
+components/worker.md	policies/policy-data-retention.md	links
+components/worker.md	research/research-message-queue-eval.md	links
+components/worker.md	research/research-retry-survey.md	links
+components/worker.md	research/research-unclosed-frontmatter.md	links
+domain/domain-retry-policy.md	components/worker.md	links
+domain/domain-retry-policy.md	constraints/constraint-retry-cap.md	links
+domain/domain-retry-policy.md	domain/domain-credit-lifecycle.md	links
+domain/domain-retry-policy.md	architecture/architecture-credit-deduction-flow.md	shares domain/domain-credit-lifecycle.md
+domain/domain-retry-policy.md	components/billing.md	shares domain/domain-credit-lifecycle.md
+--- stderr ---
+

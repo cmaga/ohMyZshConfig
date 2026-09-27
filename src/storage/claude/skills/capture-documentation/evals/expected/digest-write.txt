@@ -17,6 +17,7 @@ exit=0
 
 ## Constraints
 - [Legacy billing path is frozen](constraints/constraint-legacy-billing-freeze.md): The legacy billing path behind components/billing is frozen pending removal.
+- [Retry cap](constraints/constraint-retry-cap.md): No job is retried more than three times: the fourth failure parks it so the worker pool cannot be pinned by one poison
 - [Single writer owns the claim path](constraints/constraint-single-writer-db.md): Only one process may claim a queue row at a time; see components/worker and decisions/ADR-001-use-postgres.
 - [Webhook idempotency keys required](constraints/constraint-webhook-idempotency-keys.md): Every inbound webhook handler must dedupe on an idempotency key.
 - [Flat platform fee](constraints/flatfee.md): A flat per-transaction fee constraint filed under a filename that does not start with `constraint-`, exercising
@@ -25,6 +26,7 @@ exit=0
 - [Domain note with malformed frontmatter](domain/domain-bad-frontmatter.md): The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket
 - [Credit lifecycle](domain/domain-credit-lifecycle.md): A customer's credit balance is granted, consumed, and expired through the flow described in
 - [Marker extraction edge cases](domain/domain-marker-cases.md): as of 2026-01-15.
+- [Retry policy](domain/domain-retry-policy.md): The worker retries a failed job five times before parking it; the product team treats the fifth attempt as the
 
 ## Architecture
 - [Credit deduction flow](architecture/architecture-credit-deduction-flow.md): Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.
@@ -52,6 +54,7 @@ exit=0
 - [Research: inferred sizing with no sources](research/research-inferred-no-sources.md): Sizing here is inferred from the queue behavior described in ADR-001-use-postgres, with no `sources` field attached,
 - [Research: message queue evaluation](research/research-message-queue-eval.md): Evaluated alternatives to the current worker queue.
 - [Research: no frontmatter block](research/research-no-frontmatter.md): This note has no frontmatter at all; the file starts directly with the H1 above, exercising FM_MISSING_OPEN.
+- [Retry survey](research/research-retry-survey.md): Notes from reading three queue libraries' retry defaults, disagreeing with worker on backoff, which never wrote the · open
 - [Research: malformed source references](research/research-sources-bad.md): Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit that does
 - [Research: unclosed frontmatter block](research/research-unclosed-frontmatter.md): The frontmatter block above never closes with a second `---`, exercising FM_MISSING_CLOSE.
 - [Research: warm cache spike](research/research-warm-cache-spike.md): A spike into pre-warming the cache layer touched by architecture/architecture-credit-deduction-flow.

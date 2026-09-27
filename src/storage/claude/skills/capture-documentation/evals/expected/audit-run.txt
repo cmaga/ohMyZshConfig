@@ -1,6 +1,6 @@
 exit=1
 --- stdout ---
-vault-audit (repo): RED - 70 FAIL, 73 WARN, 3 drift flags, 32 reviews overdue, 1 rechecks due, 4 ADR tripwires.
+vault-audit (repo): RED - 75 FAIL, 73 WARN, 3 drift flags, 32 reviews overdue, 1 rechecks due, 4 ADR tripwires.
 -- links --
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL decisions/ADR-002-drop-legacy-queue.md:3 SUPERSEDED_BY_REQUIRED superseded without superseded_by
@@ -56,10 +56,12 @@ WARN policies/policy-incident-disclosure.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+INFO research/research-retry-survey.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
 -- other --
+FAIL _fragments/rulings/bad-ruling.md:1 FRAGMENT_FORMAT missing kind: or at: frontmatter
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL components/billing.md:5 APPLIES_TO_DEAD_GLOB src/ghost/ matches no file at HEAD
 FAIL constraints/constraint-bad-tombstone.md:3 TOMBSTONE_FIELDS a retired note carries obsoletion_reason and retired
@@ -98,15 +100,19 @@ FAIL domain/domain-marker-cases.md:22 MARKER_REASON_MISSING recheck 2099-02-02 h
 FAIL misc/stray-note.md:1 BUCKET_UNKNOWN bucket "misc" not in schema
 FAIL plan/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL research/research-no-frontmatter.md:1 FM_MISSING_OPEN no frontmatter
-FAIL research/research-sources-bad.md:4 BASIS_ENUM basis guessed
-FAIL research/research-sources-bad.md:5 SOURCE_REF_FORMAT jira:1
-FAIL research/research-sources-bad.md:5 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
-FAIL research/research-sources-bad.md:5 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
+FAIL research/research-retry-survey.md:5 CONFLICT_UNRESOLVED ghost-retry-note
+FAIL research/research-retry-survey.md:5 CONFLICT_ASYMMETRIC components/worker.md has no conflicts_with entry back
+FAIL research/research-retry-survey.md:9 CONFLICT_UNBANNERED no > Status: CONTESTED with [[other]] on <axis> banner
+FAIL research/research-sources-bad.md:3 CONFLICT_FORMAT conflicts_with must be a flow list of [[wikilinks]]
+FAIL research/research-sources-bad.md:5 BASIS_ENUM basis guessed
+FAIL research/research-sources-bad.md:6 SOURCE_REF_FORMAT jira:1
+FAIL research/research-sources-bad.md:6 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
+FAIL research/research-sources-bad.md:6 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
 FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
 WARN .claude/rules/vault:0 RULES_FILE_OVERMATCHED src/worker/index.js matched by 5 notes
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN _index.md:1 SIZE_HUB hub is 40001 bytes
-WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 WARN components/billing.md:6 FIELD_UNKNOWN governs
 WARN components/worker.md:5 FIELD_UNKNOWN governs
 WARN constraints/constraint-bad-tombstone.md:12 TOMBSTONE_BODY 2 prose line(s) beyond the banner and the History line
@@ -152,10 +158,10 @@ WARN domain/domain-marker-cases.md:11 MARKER_RECHECK_MISSING as of 2026-01-15 wi
 WARN glossary.md:1 SIZE_HUB_LIMIT hub is 560001 bytes (limit 61440)
 WARN glossary.md:21 SIZE_HUB_LINE_LIMIT line is 2200 chars (limit 2048)
 WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferred with no sources
-WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
+WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 725184 bytes
+INFO .:0 SIZE_VAULT vault is 726499 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
@@ -202,6 +208,7 @@ never-verified	components/reporting-pipeline.md	created 2026-01-26
 never-verified	components/scheduler.md	created 2026-03-10
 never-verified	constraints/constraint-bad-tombstone.md	created 2026-01-09
 never-verified	constraints/constraint-legacy-billing-freeze.md	created 2026-01-14
+never-verified	constraints/constraint-retry-cap.md	created 2026-09-21
 never-verified	constraints/constraint-single-writer-db.md	created 2026-01-11
 never-verified	constraints/constraint-webhook-idempotency-keys.md	created 2026-01-16
 never-verified	constraints/flatfee.md	created 2026-01-12
@@ -210,6 +217,7 @@ never-verified	customers/persona-enterprise-ops-lead.md	created 2026-01-30
 never-verified	domain/domain-bad-frontmatter.md	created 2026-01-19
 never-verified	domain/domain-credit-lifecycle.md	created 2026-01-18
 never-verified	domain/domain-marker-cases.md	created 2026-03-06
+never-verified	domain/domain-retry-policy.md	created 2026-09-20
 never-verified	misc/stray-note.md	created 2026-02-06
 never-verified	plan/2026-q3-roadmap.md	created 2026-02-03
 never-verified	plan/billing.md	created 2026-02-04
@@ -217,6 +225,7 @@ never-verified	policies/policy-data-retention.md	created 2026-01-28
 never-verified	policies/policy-incident-disclosure.md	created 2026-01-29
 never-verified	research/research-inferred-no-sources.md	created 2026-03-07
 never-verified	research/research-message-queue-eval.md	created 2026-02-01
+never-verified	research/research-retry-survey.md	created 2026-09-22
 never-verified	research/research-sources-bad.md	created 2026-03-08
 never-verified	research/research-unclosed-frontmatter.md	created 2026-02-02
 never-verified	research/research-warm-cache-spike.md	created 2026-01-30

@@ -13,7 +13,7 @@
 set -u
 ROOT="${1:?usage: vault-mentions.sh VAULT_ROOT [--all]}"; ALL="${2:-}"
 [ -d "$ROOT" ] || exit 2
-find "$ROOT" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -print0 |
+find "$ROOT" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -not -path '*/_fragments/*' -print0 |
   LC_ALL=C sort -z |
   xargs -0 awk -v all="$ALL" '
 function slugterm(b,  t){ t=b; sub(/^(architecture|constraint|domain|policy|customer|persona|research)-/,"",t)

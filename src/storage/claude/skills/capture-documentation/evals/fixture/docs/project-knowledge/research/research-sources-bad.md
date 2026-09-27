@@ -1,5 +1,6 @@
 ---
 type: research
+conflicts_with: worker
 status: active
 basis: guessed
 sources: [ticket:stax-12, commit:0123456789abcdef0123456789abcdef01234567, doc:docs/missing.md, jira:1]

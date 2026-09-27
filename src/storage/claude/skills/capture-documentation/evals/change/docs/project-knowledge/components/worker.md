@@ -19,3 +19,4 @@ commit).
 
 - `claimNextJob` — `src/worker/index.js` — claims the next queued job row; this is the SURFACE_DUPLICATE_HOME/SURFACE_REGION_CHANGED demonstration entry, also listed in constraints/constraint-single-writer-db.md.
 - `processQueueItem` — `src/worker/index.js` — processes one claimed job row.
+- `buildReport` — `src/reporting/pipeline.js` — the report the worker triggers after a batch (an introduced duplicate home for the changed eval case).

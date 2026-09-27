@@ -20,7 +20,8 @@
     "obsoletion_reason",
     "retired",
     "replaced_by",
-    "consider"
+    "consider",
+    "conflicts_with"
   ],
   "field_patterns": {
     "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$",
@@ -751,6 +752,36 @@
       "severity": "warn",
       "fix": "manual",
       "hint": "the index line of a superseded or deprecated ADR says so (- superseded by [[x]] / - deprecated)"
+    },
+    "CONFLICT_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "conflicts_with is a flow list of quoted wikilinks: conflicts_with: [\"[[other]]\"]"
+    },
+    "CONFLICT_UNRESOLVED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "every conflicts_with entry names a live note"
+    },
+    "CONFLICT_ASYMMETRIC": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "the other note carries the reciprocal conflicts_with entry; contested state is written on both sides"
+    },
+    "CONFLICT_UNBANNERED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "a note with conflicts_with opens with > Status: CONTESTED with [[other]] on <axis>"
+    },
+    "GLOSSARY_TERM_DUPLICATE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "one glossary entry per term; fold the second into the first"
+    },
+    "FRAGMENT_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "a fragment lives under _fragments/<kind>/ with kind: and at: YYYY-MM-DD frontmatter; a ruling names exactly two [[notes]]"
     }
   },
   "cache": {
@@ -762,7 +793,9 @@
     "ADR_INDEX_LINE_MISSING",
     "ADR_REVISIT_IF_MISSING"
   ],
-  "promote_on_introduced": [],
+  "promote_on_introduced": [
+    "SURFACE_DUPLICATE_HOME"
+  ],
   "audit": {
     "churn_commits": 10
   }

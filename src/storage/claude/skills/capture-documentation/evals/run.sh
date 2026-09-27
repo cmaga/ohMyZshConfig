@@ -653,6 +653,29 @@ C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case audit-hook-no-vault
 
+# probe-pairs: candidate conflict pairs for two touched notes. worker.md
+# pairs with everything it links; the worker--billing pair is dropped by the
+# ruling fragment; domain-retry-policy shares domain-credit-lifecycle with
+# three notes. An unknown note exits 3.
+"$SCRIPTS/probe-pairs.sh" "$VAULT" components/worker.md domain-retry-policy >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case probe-pairs
+
+"$SCRIPTS/probe-pairs.sh" "$VAULT" no-such-note >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case probe-pairs-unknown
+
+# glossary-dup: a copied vault whose glossary defines Claim twice. Kept out
+# of the pristine tree so the search and mentions cases stay untouched.
+GD="$WORK/gdup"; rm -rf "$GD"; mkdir -p "$GD"; must cp -R "$VAULT/." "$GD/"
+printf -- '\n- **claim** - the same term again, capitalised differently; see [[components/worker]].\n' >> "$GD/glossary.md"
+"$LINT" "$GD" 2>/dev/null | grep -E 'GLOSSARY_TERM_DUPLICATE|^lint-vault' >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case glossary-dup
+
 # ---------------------------------------------------------------------------
 # vault-refactor.sh (L11). Every command mutates the tree, so each case runs
 # on a fresh clone of $REPO at HEAD (no dirty-state additions): the preview,

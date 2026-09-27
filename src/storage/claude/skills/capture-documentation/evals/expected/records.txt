@@ -10,6 +10,7 @@ components/scheduler.md	Runs the cron table and the retry backoff for worker; se
 components/worker.md	Claims and processes queue rows against the Postgres queue from decisions/ADR-001-use-postgres, subject to	0	-	-
 constraints/constraint-bad-tombstone.md	No banner, an invalid reason, both pointers, a chain through legacy-queue, no retired date, and prose that should be	0	-	-
 constraints/constraint-legacy-billing-freeze.md	The legacy billing path behind components/billing is frozen pending removal.	0	-	-
+constraints/constraint-retry-cap.md	No job is retried more than three times: the fourth failure parks it so the worker pool cannot be pinned by one poison	0	[]	-
 constraints/constraint-single-writer-db.md	Only one process may claim a queue row at a time; see components/worker and decisions/ADR-001-use-postgres.	0	[]	-
 constraints/constraint-webhook-idempotency-keys.md	Every inbound webhook handler must dedupe on an idempotency key.	0	-	-
 constraints/flatfee.md	A flat per-transaction fee constraint filed under a filename that does not start with `constraint-`, exercising	0	-	-
@@ -36,6 +37,7 @@ decisions/ADR-020-revisit-no-tripwire.md	Keep the cache layer until a tripwire f
 domain/domain-bad-frontmatter.md	The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket	0	-	-
 domain/domain-credit-lifecycle.md	A customer's credit balance is granted, consumed, and expired through the flow described in	0	-	-
 domain/domain-marker-cases.md	as of 2026-01-15.	7	-	-
+domain/domain-retry-policy.md	The worker retries a failed job five times before parking it; the product team treats the fifth attempt as the	0	-	-
 glossary.md	Shared vocabulary for the fixture vault.	0	-	-
 misc/stray-note.md	Lives under a `misc/` directory that is not one of the buckets listed in vault-schema.json, exercising BUCKET_UNKNOWN.	0	-	-
 plan/2026-q3-roadmap.md	Deliberately left unlinked from every hub and content note, exercising ORPHAN_NO_INBOUND.	0	-	-
@@ -45,6 +47,7 @@ policies/policy-incident-disclosure.md	Omits the required `steward` field, exerc
 research/research-inferred-no-sources.md	Sizing here is inferred from the queue behavior described in ADR-001-use-postgres, with no `sources` field attached,	0	-	-
 research/research-message-queue-eval.md	Evaluated alternatives to the current worker queue.	0	-	-
 research/research-no-frontmatter.md	This note has no frontmatter at all; the file starts directly with the H1 above, exercising FM_MISSING_OPEN.	0	-	-
+research/research-retry-survey.md	Notes from reading three queue libraries' retry defaults, disagreeing with worker on backoff, which never wrote the	0	-	-
 research/research-sources-bad.md	Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit that does	0	-	-
 research/research-unclosed-frontmatter.md	The frontmatter block above never closes with a second `---`, exercising FM_MISSING_CLOSE.	0	-	-
 research/research-warm-cache-spike.md	A spike into pre-warming the cache layer touched by architecture/architecture-credit-deduction-flow.	0	-	-

@@ -34,6 +34,7 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[ADR-020-revisit-no-tripwire]] - Keep the cache layer until a tripwire fires.
 
 ## Constraints
+- [[constraints/constraint-retry-cap]]
 
 - [[constraints/constraint-single-writer-db]]
 - [[constraints/flatfee]]
@@ -41,6 +42,7 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[constraints/constraint-webhook-idempotency-keys]]
 
 ## Domain
+- [[domain/domain-retry-policy]]
 
 - [[domain/domain-credit-lifecycle]]
 - [[domain/domain-bad-frontmatter]]
@@ -72,6 +74,7 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[plan/billing]]
 
 ## Research
+- [[research/research-retry-survey]]
 
 - [[research/research-message-queue-eval]]
 - [[research/research-no-frontmatter]]

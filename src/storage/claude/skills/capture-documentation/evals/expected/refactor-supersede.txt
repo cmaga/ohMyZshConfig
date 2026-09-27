@@ -20,6 +20,6 @@ rc=0
 == lint
 FAIL decisions/ADR-001-use-postgres.md:1 ADR_NUMBER_DUPLICATE ADR number 001 used by decisions/ADR-001-alt-name.md, decisions/ADR-001-use-postgres.md
 WARN _index.md:1 SIZE_HUB hub is 40049 bytes
-WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 --- stderr ---
 

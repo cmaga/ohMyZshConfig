@@ -2,7 +2,7 @@ exit=0
 --- stdout ---
 == preview
 rename: constraints/flatfee.md -> constraints/constraint-flat-fee.md
-_index.md:39
+_index.md:40
  - - [[constraints/flatfee]]
  + - [[constraints/constraint-flat-fee]]
 architecture/architecture-payment-flow.md:14
@@ -24,7 +24,7 @@ RM docs/project-knowledge/constraints/flatfee.md -> docs/project-knowledge/const
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL constraints/constraint-flat-fee.md:5 ENUM_INVALID severity critical
 WARN _index.md:1 SIZE_HUB hub is 40013 bytes
-WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/constraint-flat-fee.md

@@ -1,5 +1,6 @@
 exit=1
 --- stdout ---
+FAIL _fragments/rulings/bad-ruling.md:1 FRAGMENT_FORMAT missing kind: or at: frontmatter
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL components/billing.md:1 SURFACE_MISSING no ## Reusable surface
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
@@ -62,14 +63,18 @@ FAIL plan/2026-q3-roadmap.md:1 ORPHAN_NO_INBOUND 0 notes link here
 FAIL plan/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
 FAIL research/research-message-queue-eval.md:11 LINK_UNRESOLVED nonexistent-note-xyz
 FAIL research/research-no-frontmatter.md:1 FM_MISSING_OPEN no frontmatter
-FAIL research/research-sources-bad.md:4 BASIS_ENUM basis guessed
-FAIL research/research-sources-bad.md:5 SOURCE_REF_FORMAT jira:1
-FAIL research/research-sources-bad.md:5 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
-FAIL research/research-sources-bad.md:5 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
+FAIL research/research-retry-survey.md:5 CONFLICT_UNRESOLVED ghost-retry-note
+FAIL research/research-retry-survey.md:5 CONFLICT_ASYMMETRIC components/worker.md has no conflicts_with entry back
+FAIL research/research-retry-survey.md:9 CONFLICT_UNBANNERED no > Status: CONTESTED with [[other]] on <axis> banner
+FAIL research/research-sources-bad.md:3 CONFLICT_FORMAT conflicts_with must be a flow list of [[wikilinks]]
+FAIL research/research-sources-bad.md:5 BASIS_ENUM basis guessed
+FAIL research/research-sources-bad.md:6 SOURCE_REF_FORMAT jira:1
+FAIL research/research-sources-bad.md:6 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
+FAIL research/research-sources-bad.md:6 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
 FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN _index.md:1 SIZE_HUB hub is 40001 bytes
-WARN _index.md:85 SIZE_HUB_LINE line is 1500 chars
+WARN _index.md:88 SIZE_HUB_LINE line is 1500 chars
 WARN architecture/architecture-payment-flow.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN architecture/architecture-payment-flow.md:12 ANCHOR_UNRESOLVED worker#Nonexistent Heading
 WARN architecture/architecture-payment-flow.md:14 LINK_INTERNAL_MD ../constraints/flatfee.md
@@ -131,17 +136,18 @@ WARN policies/policy-data-retention.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub link
 WARN policies/policy-incident-disclosure.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 WARN policies/policy-incident-disclosure.md:14 SURFACE_OUT_OF_SCOPE policies
 WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferred with no sources
-WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
+WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 724270 bytes
+INFO .:0 SIZE_VAULT vault is 725585 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
+INFO research/research-retry-survey.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
-lint-vault: 67 FAIL, 67 WARN across 48 notes
+lint-vault: 72 FAIL, 67 WARN across 51 notes
 --- stderr ---
 
