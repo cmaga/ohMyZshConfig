@@ -649,7 +649,7 @@
     "ADR_Y_STATEMENT_LENGTH": {
       "severity": "warn",
       "fix": "manual",
-      "hint": "summarize the rejected options; keep the y_statement under 400 characters"
+      "hint": "summarize the rejected options; keep the y_statement short enough that its _index.md line stays under 400 characters"
     },
     "ADR_OPTIONS_MISSING": {
       "severity": "warn",

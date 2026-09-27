@@ -39,7 +39,7 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 - **Decision:** `revisit_if: [code:`path` condition, data:<metric condition>, external:<vendor or market fact>, date:YYYY-MM-DD]` or `revisit_if: none - <reason>` — the typed reopen tripwires; a `date:` item shows up as overdue, a `code:` item is checked against the tree by the audit, `data:`/`external:` are listed for a human. Required on `status: revisit`.
 - **Any type:** `conflicts_with: ["[[other]]"]` — the live note this one disagrees with on a claim the brief could not settle; written on both notes together with the `> Status: CONTESTED with [[other]] on <axis>` first body line, and removed from both when the owners rule.
 - **Decision:** `tracking: <ticket>` and `expires: YYYY-MM-DD` — transitional decisions only; an expired one is flagged.
-- **Decision:** `y_statement: In the context of .., facing .., we decided for .. and neglected .., to achieve .., accepting ..` — one line, written once at capture, under 400 characters; its `_index.md` line repeats it verbatim.
+- **Decision:** `y_statement: In the context of .., facing .., we decided for .. and neglected .., to achieve .., accepting ..` — one line, written once at capture, short enough that its `_index.md` line, which repeats it after the link, stays under 400 characters; its `_index.md` line repeats it verbatim.
 - **Decision:** `approved_by: <handle> YYYY-MM-DD` — only from the user's relayed words; `agent` on an unattended run; otherwise omitted.
 
 A key is added to this file only once a shipped script reads it, or when it changes whether the body is trusted before it is read.
