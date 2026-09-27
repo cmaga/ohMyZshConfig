@@ -1,0 +1,5 @@
+exit=0
+--- stdout ---
+RULES_FILE_OVERMATCHED	.claude/rules/vault	0	src/worker/index.js matched by 4 notes
+--- stderr ---
+

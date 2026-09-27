@@ -31,6 +31,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/skills/capture-documentation/scripts/vault-audit.sh\" --hook",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }

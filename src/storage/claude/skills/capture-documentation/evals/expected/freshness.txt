@@ -1,0 +1,56 @@
+exit=0
+--- stdout ---
+symbol-missing	components/worker.md	processQueueItem
+symbol-missing	constraints/constraint-webhook-idempotency-keys.md	notARealExport
+revisit_by	decisions/ADR-016-revisit-cache-layer.md	when the cache layer is replaced
+paths	constraints/constraint-webhook-idempotency-keys.md	src/billing/does-not-exist.js
+time	architecture/architecture-credit-deduction-flow.md	due 2026-07-20 (max_age, 180d)
+time	architecture/architecture-payment-flow.md	due 2026-07-21 (max_age, 180d)
+time	components/billing.md	due 2026-07-24 (max_age, 180d)
+time	components/reporting-pipeline.md	due 2026-07-25 (max_age, 180d)
+time	components/worker.md	due 2026-07-31 (max_age, 180d)
+time	constraints/constraint-legacy-billing-freeze.md	due 2026-07-13 (max_age, 180d)
+time	constraints/constraint-single-writer-db.md	due 2026-07-10 (max_age, 180d)
+time	constraints/constraint-webhook-idempotency-keys.md	due 2026-07-15 (max_age, 180d)
+time	constraints/flatfee.md	due 2026-07-11 (max_age, 180d)
+time	customers/customer-selfserve-smb.md	due 2026-07-30 (max_age, 180d)
+time	customers/persona-enterprise-ops-lead.md	due 2026-07-29 (max_age, 180d)
+time	domain/domain-bad-frontmatter.md	due 2026-07-18 (max_age, 180d)
+time	domain/domain-credit-lifecycle.md	due 2026-07-17 (max_age, 180d)
+time	domain/domain-marker-cases.md	due 2026-06-04 (cadence:90d, 90d)
+time	misc/stray-note.md	due 2026-08-05 (max_age, 180d)
+time	plan/2026-q3-roadmap.md	due 2026-03-05 (bucket:plan, 30d)
+time	plan/billing.md	due 2026-03-06 (bucket:plan, 30d)
+time	policies/policy-data-retention.md	due 2026-04-29 (cadence:quarterly, 91d)
+time	policies/policy-incident-disclosure.md	due 2026-04-30 (cadence:quarterly, 91d)
+time	research/research-inferred-no-sources.md	due 2026-06-05 (bucket:research, 90d)
+time	research/research-message-queue-eval.md	due 2026-05-02 (bucket:research, 90d)
+time	research/research-sources-bad.md	due 2026-06-06 (bucket:research, 90d)
+time	research/research-unclosed-frontmatter.md	due 2026-05-03 (bucket:research, 90d)
+time	research/research-warm-cache-spike.md	due 2026-04-30 (bucket:research, 90d)
+never-verified	architecture/architecture-credit-deduction-flow.md	created 2026-01-21
+never-verified	architecture/architecture-payment-flow.md	created 2026-01-22
+never-verified	components/billing.md	created 2026-01-25
+never-verified	components/reporting-pipeline.md	created 2026-01-26
+never-verified	constraints/constraint-legacy-billing-freeze.md	created 2026-01-14
+never-verified	constraints/constraint-single-writer-db.md	created 2026-01-11
+never-verified	constraints/constraint-webhook-idempotency-keys.md	created 2026-01-16
+never-verified	constraints/flatfee.md	created 2026-01-12
+never-verified	customers/customer-selfserve-smb.md	created 2026-01-31
+never-verified	customers/persona-enterprise-ops-lead.md	created 2026-01-30
+never-verified	domain/domain-bad-frontmatter.md	created 2026-01-19
+never-verified	domain/domain-credit-lifecycle.md	created 2026-01-18
+never-verified	domain/domain-marker-cases.md	created 2026-03-06
+never-verified	misc/stray-note.md	created 2026-02-06
+never-verified	plan/2026-q3-roadmap.md	created 2026-02-03
+never-verified	plan/billing.md	created 2026-02-04
+never-verified	policies/policy-data-retention.md	created 2026-01-28
+never-verified	policies/policy-incident-disclosure.md	created 2026-01-29
+never-verified	research/research-inferred-no-sources.md	created 2026-03-07
+never-verified	research/research-message-queue-eval.md	created 2026-02-01
+never-verified	research/research-sources-bad.md	created 2026-03-08
+never-verified	research/research-unclosed-frontmatter.md	created 2026-02-02
+never-verified	research/research-warm-cache-spike.md	created 2026-01-30
+vault-freshness: 28 overdue (3 drifted)
+--- stderr ---
+

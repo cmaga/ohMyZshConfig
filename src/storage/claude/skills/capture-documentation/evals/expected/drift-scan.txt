@@ -1,0 +1,8 @@
+exit=0
+--- stdout ---
+OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
+OPEN <sha7>-constraint-webhook-idempotency-keys-1 constraints/constraint-webhook-idempotency-keys.md src/billing/charge.js M via=surface:src/billing/charge.js commits=1 vanished=notARealExport
+OPEN <sha7>-ADR-001-use-postgres-1 decisions/ADR-001-use-postgres.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=
+vault-drift: 3 open
+--- stderr ---
+

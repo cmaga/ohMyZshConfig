@@ -13,6 +13,11 @@ set -u
 
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
 export LC_ALL=C
+# Pins vault_today() (vault-lib.sh) so vault-freshness.sh's cadence/revisit
+# math and vault-drift.sh's flag "opened" date are wall-clock independent --
+# without this, every rank4/revisit_by comparison would drift with the
+# machine's real date and could never produce a stable golden file.
+export VAULT_TODAY=2026-09-26
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FIXTURE="$HERE/fixture"
@@ -23,6 +28,10 @@ SCRIPTS="$HERE/../scripts"
 LINT="$SCRIPTS/lint-vault.sh"
 SEARCH="$SCRIPTS/vault-search.sh"
 MENTIONS="$SCRIPTS/vault-mentions.sh"
+DRIFT="$SCRIPTS/vault-drift.sh"
+FRESHNESS="$SCRIPTS/vault-freshness.sh"
+GENRULES="$SCRIPTS/gen-vault-rules.sh"
+AUDIT="$SCRIPTS/vault-audit.sh"
 GUARD="$HERE/../../../hooks/guard-vault-write.sh"
 
 ARG="${1:-}"
@@ -374,6 +383,272 @@ finish_case hook-block
 C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case hook-stop-active
+
+# ---------------------------------------------------------------------------
+# Wave 2: vault-drift.sh / vault-freshness.sh / gen-vault-rules.sh /
+# vault-audit.sh cases, built on further commits on top of commit2. Discard
+# the change/ overlay and the reporting-pipeline.md padding applied above
+# first -- every case that needed that dirty tree already ran and captured
+# its output, and committing on top of it here would fold that unrelated
+# content into commit3's frontmatter-only diff.
+# ---------------------------------------------------------------------------
+
+must git -C "$REPO" checkout -q -- .
+
+# Plant the drift marker at the current tip (commit2) before any drifting
+# commits land. cmd_scan's very first call on a repo only writes the marker
+# and exits -- there is no prior marker to diff against, so it can never
+# itself produce a flag; the golden here is empty, not a flag list.
+"$DRIFT" --scan "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case drift-first-run
+
+# commit3: governs/applies_to additions. billing.md gains `governs` (not
+# `applies_to`) because vault-drift.sh only ever matches governs/surface,
+# never applies_to -- an applies_to-only note would never flag on this demo.
+# ADR-001 and policy-data-retention gain applies_to on the literal file
+# src/worker/index.js, not a bare "src/worker/" directory reference: gen-
+# vault-rules.sh's Step 1 filters every surface/applies_to path through
+# PATHRE, which requires the string to end in an alnum char, so a trailing-
+# slash-only directory reference (the shape billing.md's applies_to uses for
+# lint-vault.sh's APPLIES_TO_DEAD_GLOB check) is silently dropped before it
+# ever reaches the overmatch scan. With a real file path instead, gen-vault-
+# rules.sh's overmatch guard sees 4 notes claiming src/worker/index.js
+# (worker.md + constraint-single-writer-db.md by surface, ADR-001 + policy-
+# data-retention by applies_to), tripping RULES_FILE_OVERMATCHED in
+# rules-write below.
+WORKER_NOTE="$VAULT/components/worker.md"
+awk '
+  /^---$/ { n++ }
+  n==2 && !done { print "governs: [src/worker/**]"; print "last_verified: 2026-02-01"; done=1 }
+  { print }
+' "$WORKER_NOTE" > "$WORK/worker.md.new"
+mv "$WORK/worker.md.new" "$WORKER_NOTE"
+
+BILLING_NOTE="$VAULT/components/billing.md"
+awk '
+  /^---$/ { n++ }
+  n==2 && !done { print "governs: [src/billing/**]"; done=1 }
+  { print }
+' "$BILLING_NOTE" > "$WORK/billing.md.new"
+mv "$WORK/billing.md.new" "$BILLING_NOTE"
+
+POLICY_NOTE="$VAULT/policies/policy-data-retention.md"
+awk '
+  /^---$/ { n++ }
+  n==2 && !done { print "applies_to: [src/worker/index.js]"; done=1 }
+  { print }
+' "$POLICY_NOTE" > "$WORK/policy.md.new"
+mv "$WORK/policy.md.new" "$POLICY_NOTE"
+
+ADR001_NOTE="$VAULT/decisions/ADR-001-use-postgres.md"
+awk '
+  /^---$/ { n++ }
+  n==2 && !done { print "applies_to: [src/worker/index.js]"; done=1 }
+  { print }
+' "$ADR001_NOTE" > "$WORK/adr001.md.new"
+mv "$WORK/adr001.md.new" "$ADR001_NOTE"
+
+cat > "$VAULT/decisions/ADR-016-revisit-cache-layer.md" <<'EOF'
+---
+type: decision
+status: revisit
+revisit_by: 2020-01-01
+revisit_when: when the cache layer is replaced
+created: 2026-02-10
+---
+# ADR-016: Revisit the cache layer
+
+## Context
+
+The current cache layer was a stopgap chosen for availability, not for its
+long-term fit; this note tracks that it is due for reconsideration rather
+than encoding a decision expected to stand indefinitely.
+
+## Decision
+
+Keep the existing cache layer for now; revisit once a replacement candidate
+is evaluated.
+
+## Consequences
+
+No banner is required for a `revisit` status (only superseded/deprecated/
+amended trigger BANNER_MISSING); vault-freshness.sh surfaces this note via
+its `revisit_by` date instead.
+EOF
+
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test add -A
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test commit -q -m "commit3: governs/applies_to frontmatter additions; add ADR-016 revisit"
+
+# commit4: rename processQueueItem -> handleQueueItem (declaration and the
+# module.exports reference both fall under this gsub). Vault-Exempt names
+# only constraint-single-writer-db -- that note's own claimed symbol
+# (claimNextJob) is genuinely untouched by this rename, but worker.md and
+# ADR-001-use-postgres both govern the whole src/worker/** tree and are
+# deliberately left to flag.
+awk '{ gsub(/processQueueItem/, "handleQueueItem"); print }' "$WORKER_JS" > "$WORK/index.js.new4"
+mv "$WORK/index.js.new4" "$WORKER_JS"
+
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test add -A
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test commit -q \
+  -m "commit4: rename processQueueItem to handleQueueItem" \
+  -m "Vault-Exempt: constraint-single-writer-db claim path untouched"
+
+# commit5: buildReport edit, fully exempted -- demonstrates a note that
+# legitimately regenerates its own tracked code producing zero flags at all,
+# not just a narrowed one.
+REPORTING_JS="$REPO/src/reporting/pipeline.js"
+awk '
+  { print }
+  /function buildReport/ && !done { print "  // buildReport: derived output, regenerated from raw activity rows"; done = 1 }
+' "$REPORTING_JS" > "$WORK/pipeline.js.new"
+mv "$WORK/pipeline.js.new" "$REPORTING_JS"
+
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test add -A
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test commit -q \
+  -m "commit5: buildReport body comment" \
+  -m "Vault-Exempt: reporting-pipeline generated code only"
+
+# commit6: chargeCustomer edit plus a billing.md touch in the SAME commit --
+# own-path suppression demo (no Vault-Exempt needed; the note updating
+# itself alongside the code it governs is enough to suppress the match).
+BILLING_JS="$REPO/src/billing/charge.js"
+awk '
+  { print }
+  /function chargeCustomer/ && !done { print "  // chargeCustomer: validates amount before charging"; done = 1 }
+' "$BILLING_JS" > "$WORK/charge.js.new"
+mv "$WORK/charge.js.new" "$BILLING_JS"
+
+printf '\nCharges are validated for a positive amount before reaching the processor.\n' >> "$BILLING_NOTE"
+
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test add -A
+must git -C "$REPO" -c user.name=eval -c user.email=eval@example.test commit -q -m "commit6: chargeCustomer validation note, billing.md updated in the same commit"
+
+# drift-scan: second scan sees commits 3-6. Three flags result: worker.md and
+# ADR-001-use-postgres.md both via governs:src/worker/** on commit4's rename
+# (commit3 touches no code path, commit5 is fully exempted, commit6 is
+# suppressed by its own-path touch -- see above), plus
+# constraint-webhook-idempotency-keys.md, a pre-existing fixture note whose
+# notARealExport surface entry against src/billing/charge.js (there only to
+# exercise lint-vault.sh's SURFACE_SYMBOL_MISSING) survives Step 5.5's
+# narrowing because that symbol was never real and so is always "vanished" --
+# and commit6 touches charge.js. Each flag id embeds a 7-char abbreviated
+# commit sha, non-deterministic across runs (fresh repo, no fixed
+# GIT_AUTHOR_DATE) -- normalized to a fixed placeholder before diffing. The
+# worker.md/ADR-001 pair shares one sha7 (both from commit4), but the
+# constraint-webhook-idempotency-keys flag's sha7 comes from commit6, so
+# cmd_list's own id-sort order between that pair and this flag is not stable
+# run to run; re-sorted here by note path instead, which is fixed. Plain
+# --list (not --json) is used since --json would additionally embed full
+# 40-char shas inside each flag's "commits" array.
+"$DRIFT" --scan "$REPO" >/dev/null 2>"$WORK/c_err1"
+"$DRIFT" --list "$REPO" >"$WORK/c_out" 2>"$WORK/c_err2"
+C_RC=$?
+OPEN_LINES="$(grep '^OPEN ' "$WORK/c_out" | sort -k3,3)"
+FOOTER="$(grep -v '^OPEN ' "$WORK/c_out")"
+C_OUT="$(printf '%s\n%s' "$OPEN_LINES" "$FOOTER" | sed -E 's/(OPEN |cleared )[0-9a-f]{7}-/\1<sha7>-/g')"
+C_ERR="$(cat "$WORK/c_err1" "$WORK/c_err2" 2>/dev/null)"
+finish_case drift-scan
+
+# drift-clear: clear the ADR-001-use-postgres flag by note path specifically,
+# not "the first by id" -- one of the remaining two flags shares commit4's
+# sha7 with it and the other comes from commit6, and with no fixed
+# GIT_AUTHOR_DATE, which sha7 sorts first is not stable run to run, so any
+# id-based selection would not be reproducible.
+CLEAR_ID=$("$DRIFT" --list "$REPO" --json | "$JQ" -r '.[] | select(.status=="open" and .note=="decisions/ADR-001-use-postgres.md") | .id')
+"$DRIFT" --clear "$REPO" "$CLEAR_ID" "reviewed: rename does not affect the documented claim path" >"$WORK/c_out1" 2>"$WORK/c_err1"
+C_RC=$?
+"$DRIFT" --list "$REPO" >"$WORK/c_out2" 2>"$WORK/c_err2"
+CLEARED_LINE="$(cat "$WORK/c_out1")"
+OPEN_LINES="$(grep '^OPEN ' "$WORK/c_out2" | sort -k3,3)"
+FOOTER="$(grep -v '^OPEN ' "$WORK/c_out2")"
+C_OUT="$(printf '%s\n%s\n%s' "$CLEARED_LINE" "$OPEN_LINES" "$FOOTER" | sed -E 's/(OPEN |cleared )[0-9a-f]{7}-/\1<sha7>-/g')"
+C_ERR="$(cat "$WORK/c_err1" "$WORK/c_err2" 2>/dev/null)"
+finish_case drift-clear
+
+"$FRESHNESS" "$VAULT" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case freshness
+
+# rules-check before any --write has ever run: .claude/rules/vault does not
+# exist yet, so this is the documented silent no-op, not a STALE report.
+"$GENRULES" "$REPO" --check >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case rules-check
+
+# rules-write: creates the stubs and, in the same pass, reports
+# RULES_FILE_OVERMATCHED for src/worker/index.js (4 notes now claim it --
+# see the commit3 comment above). No timestamps or shas appear in this
+# output, so no normalization is needed.
+"$GENRULES" "$REPO" --write >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case rules-write
+
+# audit-run: first-ever vault-audit.sh call on $REPO, no cache yet. Expect RED
+# (2 open drift flags survive drift-clear: worker.md and
+# constraint-webhook-idempotency-keys.md -- see the drift-scan comment above).
+# Its drift-flags section echoes vault-drift.sh's own id format, and since
+# those two flags come from different commits (commit4 and commit6) their
+# relative order there is not stable run to run either -- resorted by note
+# path for the same reason as drift-scan, then normalized.
+"$AUDIT" --format text "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+BEFORE="$(sed -n '1,/^-- drift flags --$/p' "$WORK/c_out")"
+DRIFT_BLOCK="$(sed -n '/^-- drift flags --$/,/^-- freshness --$/p' "$WORK/c_out" | sed '1d;$d' | sort -k3,3)"
+AFTER="$(sed -n '/^-- freshness --$/,$p' "$WORK/c_out")"
+C_OUT="$(printf '%s\n%s\n%s' "$BEFORE" "$DRIFT_BLOCK" "$AFTER" | sed -E 's/(OPEN |cleared )[0-9a-f]{7}-/\1<sha7>-/g')"
+C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-run
+
+# audit-hook-red: reuses the cache audit-run just wrote (prev_counts is
+# still null, since that first run had no prior cache of its own to compare
+# against), but colour=="red" is checked before the prev_counts comparison,
+# so it announces even with no baseline to compare against.
+"$JQ" -n --arg cwd "$REPO" '{cwd: $cwd, stop_hook_active: false}' | "$AUDIT" --hook >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-hook-red
+
+# audit-hook-cached: nothing changed since audit-hook-red (same head, same
+# dirty_sig), so this call must reuse the cache rather than rerun it --
+# proven by the cache's own "generated" timestamp staying byte-identical,
+# without needing to normalize or interpret the timestamp value itself. The
+# hook line is still non-empty: a red state announces on every call, cached
+# or not.
+CACHE_FILE="$REPO/.git/vault-audit.json"
+GEN_BEFORE="$("$JQ" -r '.generated' "$CACHE_FILE" 2>/dev/null)"
+"$JQ" -n --arg cwd "$REPO" '{cwd: $cwd, stop_hook_active: false}' | "$AUDIT" --hook >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+GEN_AFTER="$("$JQ" -r '.generated' "$CACHE_FILE" 2>/dev/null)"
+SAME=false
+[ "$GEN_BEFORE" = "$GEN_AFTER" ] && SAME=true
+C_OUT="$(printf 'cache-reused=%s\n%s\n' "$SAME" "$(cat "$WORK/c_out")")"
+C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-hook-cached
+
+# audit-zero-drift: clear the two surviving flags, then force a rerun. The
+# summary line must say "0 drift flags": with no OPEN line in the drift
+# listing the count fed to --argjson has to be a single "0", or jq rejects
+# it, nothing is written, and the stale 2-flag cache would print instead.
+for NOTE in components/worker.md constraints/constraint-webhook-idempotency-keys.md; do
+  CLEAR_ID=$("$DRIFT" --list "$REPO" --json | "$JQ" -r --arg n "$NOTE" '.[] | select(.status=="open" and .note==$n) | .id')
+  "$DRIFT" --clear "$REPO" "$CLEAR_ID" "reviewed: symbol renamed, the documented claim still holds" >/dev/null 2>&1
+done
+"$AUDIT" --force --format text "$REPO" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(head -n 1 "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-zero-drift
+
+# audit-hook-no-vault: reuses the no-vault fixture built for hook-no-vault
+# above -- same precondition (no docs/project-knowledge), same silent exit 0.
+"$JQ" -n --arg cwd "$NOVAULT" '{cwd: $cwd, stop_hook_active: false}' | "$AUDIT" --hook >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case audit-hook-no-vault
 
 echo "evals: $OK_COUNT ok, $FAIL_COUNT failed"
 [ "$FAIL_COUNT" -eq 0 ] || exit 1
