@@ -5,7 +5,7 @@ FAIL components/worker.md:22 SURFACE_DUPLICATE_HOME buildReport
 DRIFT components/reporting-pipeline.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN components/worker.md:20 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
-INFO .:0 SIZE_VAULT vault is 787959 bytes
+INFO .:0 SIZE_VAULT vault is 788111 bytes
 lint-vault: 2 FAIL, 2 WARN, 1 DRIFT across 52 notes
 --- stderr ---
 

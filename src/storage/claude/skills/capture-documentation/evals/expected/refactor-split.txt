@@ -1,23 +1,29 @@
 exit=0
 --- stdout ---
 == preview
-new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
-new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
-parent: components/scheduler.md 387 bytes after
+new: components/scheduler-backoff.md 493 bytes (1 sections, 1 surface entries)
+new: components/scheduler-cron.md 373 bytes (1 sections, 0 surface entries)
+parent: components/scheduler.md 440 bytes after
 domain/domain-credit-lifecycle.md:13
  - fed it, and the [[scheduler#Backoff policy]] paces retries; cron fields follow
  + fed it, and the [[scheduler-backoff#Backoff policy]] paces retries; cron fields follow
+components/scheduler-cron.md:12
+ - retries follow [[scheduler#Backoff policy]].
+ + retries follow [[scheduler-backoff#Backoff policy]].
 domain/domain-credit-lifecycle.md:14
  - [[scheduler#Field order]].
  + [[scheduler-cron#Field order]].
-anchor sites: 2
+components/scheduler.md:10
+ - [[scheduler#Field order]].
+ + [[scheduler-cron#Field order]].
+anchor sites: 4
 preview only; re-run with --apply
 rc=0
 == apply
-new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
-new: components/scheduler-cron.md 328 bytes (1 sections, 0 surface entries)
-parent: components/scheduler.md 387 bytes after
-anchor sites: 2
+new: components/scheduler-backoff.md 493 bytes (1 sections, 1 surface entries)
+new: components/scheduler-cron.md 373 bytes (1 sections, 0 surface entries)
+parent: components/scheduler.md 440 bytes after
+anchor sites: 4
 applied
 rc=0
 == status
@@ -27,7 +33,7 @@ rc=0
 ?? docs/project-knowledge/components/scheduler-cron.md
 == lint
 WARN components/scheduler-backoff.md:17 SURFACE_DUPLICATE_HOME buildReport
-WARN components/scheduler.md:21 SURFACE_DUPLICATE_HOME claimNextJob
+WARN components/scheduler.md:22 SURFACE_DUPLICATE_HOME claimNextJob
 WARN domain/domain-credit-lifecycle.md:12 LINK_TO_RETIRED links retired components/legacy-queue.md
 --- stderr ---
 

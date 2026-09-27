@@ -4,4 +4,8 @@ function buildReport(rows) {
   return rows.map((r) => ({ id: r.id, total: r.total }));
 }
 
-module.exports = { buildReport };
+function formatRow(r) {
+  return `${r.id}: ${r.total}`;
+}
+
+module.exports = { buildReport, formatRow };

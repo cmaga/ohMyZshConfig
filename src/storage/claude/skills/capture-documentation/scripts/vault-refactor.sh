@@ -171,6 +171,7 @@ rewrite() {
   [ -n "$files" ] || files=$(note_files)
   for f in $files; do
     rel="${f#"$VAULT"/}"
+    [ -s "$TMP/relmap.tsv" ] && rel=$(awk -F'\t' -v f="$f" -v d="$rel" '$1 == f { d = $2 } END { print d }' "$TMP/relmap.tsv")
     awk -v from="$from" -v to="$to" -v rel="$rel" -v mode="$APPLY" '
       function rep(s,  o, i) { o = ""; while ((i = index(s, from)) > 0) { o = o substr(s, 1, i - 1) to; s = substr(s, i + length(from)) } return o s }
       function rwline(s,  o, seg, i, code) { o = ""; code = 0
@@ -423,8 +424,12 @@ EOF
   # the parent links the child).
   # an entry is its bullet line plus the continuation lines up to the next
   # bullet, blank line or heading; blocks travel as one line joined by \001
-  awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 }
-       s && /^[-*] / { if (blk != "") print blk; blk = $0; next }
+  # a "(same file)" bullet with no path of its own is a follower of the
+  # path-carrying bullet before it and stays in that block
+  awk -v pathre="$PATHRE" '
+       function haspath(l,  t) { while (match(l, /`[^`]+`/)) { t = substr(l, RSTART + 1, RLENGTH - 2); l = substr(l, RSTART + RLENGTH); if (t ~ pathre) return 1 } return 0 }
+       /^## Reusable surface/ { s = 1; next } /^## / { s = 0 }
+       s && /^[-*] / { if (blk != "" && /same file/ && !haspath($0)) { blk = blk "\001" $0; next } if (blk != "") print blk; blk = $0; next }
        s && blk != "" && !/^[ \t]*$/ && !/^#/ { blk = blk "\001" $0; next }
        s { if (blk != "") print blk; blk = "" }
        END { if (blk != "") print blk }' "$src" > "$TMP/surfall.txt"
@@ -466,7 +471,7 @@ EOF
   # drop moved surface entries from the parent
   local moved; cat "$TMP"/surf.* 2>/dev/null | grep -v '^$' > "$TMP/surf.moved" || true
   if [ -s "$TMP/surf.moved" ]; then
-    awk -v mf="$TMP/surf.moved" 'BEGIN { while ((getline l < mf) > 0) { sub(/\001.*/, "", l); M[l] = 1 } }
+    awk -v mf="$TMP/surf.moved" 'BEGIN { while ((getline l < mf) > 0) { n = split(l, seg, "\001"); for (i = 1; i <= n; i++) if (seg[i] ~ /^[-*] /) M[seg[i]] = 1 } }
       /^## Reusable surface/ { s = 1 } /^## / && !/^## Reusable surface/ { s = 0 }
       s && /^[-*] / { skip = ($0 in M); if (skip) next }
       s && skip { if (/^[ \t]*$/ || /^#/) { skip = 0; print } next }
@@ -496,13 +501,20 @@ EOF
   local pbytes; pbytes=$(wc -c < "$TMP/parent.md" | tr -d ' ')
   echo "parent: $path $pbytes bytes after"
   [ "$pbytes" -gt "$NOTE_FAIL" ] && { echo "! $path still over $NOTE_FAIL bytes"; rc=3; }
-  # anchor rewrites for moved headings, the sub-headings inside each range too
+  # anchor rewrites for moved headings, the sub-headings inside each range
+  # too, over the vault with the staged parent and new notes in place of the
+  # parent on disk (relmap names them by their vault path)
+  local afiles; afiles="$(note_files | grep -v -x -F "$src" | tr '\n' ' ')$TMP/parent.md"
+  printf '%s\t%s\n' "$TMP/parent.md" "$path" > "$TMP/relmap.tsv"
+  while IFS=$'\t' read -r name nbkt ranges; do
+    afiles="$afiles $TMP/new.$name.md"; printf '%s\t%s\n' "$TMP/new.$name.md" "$nbkt/$name.md" >> "$TMP/relmap.tsv"
+  done < "$TMP/plan.tsv"
   while IFS=$'\t' read -r name nbkt ranges; do
     [ -n "$ranges" ] || continue
     for r in $(printf '%s' "$ranges" | tr ',' ' '); do
       awk -F'\t' -v a="${r%-*}" -v b="${r#*-}" '$1 >= a && $1 <= b { print $3 }' "$TMP/heads.tsv" > "$TMP/moved.heads"
       while IFS= read -r h; do
-        rewrite "[[$base#$h" "[[$name#$h"; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h"
+        rewrite "[[$base#$h" "[[$name#$h" $afiles; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h" $afiles
       done < "$TMP/moved.heads"
     done
   done < "$TMP/plan.tsv"

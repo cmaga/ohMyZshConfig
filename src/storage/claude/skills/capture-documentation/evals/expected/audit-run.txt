@@ -30,8 +30,8 @@ FAIL constraints/constraint-webhook-idempotency-keys.md:16 SURFACE_ENTRY_FORMAT 
 FAIL constraints/constraint-webhook-idempotency-keys.md:17 SURFACE_PATH_MISSING anotherMissingFn @ src/billing/does-not-exist.js
 FAIL constraints/constraint-webhook-idempotency-keys.md:18 SURFACE_SYMBOL_MISSING notARealExport @ src/billing/charge.js
 WARN components/reporting-pipeline.md:19 SURFACE_DUPLICATE_HOME buildReport
-WARN components/scheduler.md:27 SURFACE_DUPLICATE_HOME buildReport
-WARN components/scheduler.md:28 SURFACE_DUPLICATE_HOME claimNextJob
+WARN components/scheduler.md:29 SURFACE_DUPLICATE_HOME buildReport
+WARN components/scheduler.md:31 SURFACE_DUPLICATE_HOME claimNextJob
 WARN components/worker.md:18 SURFACE_DUPLICATE_HOME claimNextJob
 WARN constraints/constraint-single-writer-db.md:17 SURFACE_DUPLICATE_HOME claimNextJob
 WARN policies/policy-incident-disclosure.md:14 SURFACE_OUT_OF_SCOPE policies
@@ -162,7 +162,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 727087 bytes
+INFO .:0 SIZE_VAULT vault is 727239 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
