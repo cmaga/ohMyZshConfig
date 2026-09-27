@@ -3,7 +3,7 @@ exit=0
 == preview
 new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
 new: components/scheduler-surface-worker.md 368 bytes (0 sections, 1 surface entries)
-parent: components/scheduler.md 470 bytes after
+parent: components/scheduler.md 598 bytes after
 domain/domain-credit-lifecycle.md:13
  - fed it, and the [[scheduler#Backoff policy]] paces retries.
  + fed it, and the [[scheduler-backoff#Backoff policy]] paces retries.
@@ -13,7 +13,7 @@ rc=0
 == apply
 new: components/scheduler-backoff.md 439 bytes (1 sections, 1 surface entries)
 new: components/scheduler-surface-worker.md 368 bytes (0 sections, 1 surface entries)
-parent: components/scheduler.md 470 bytes after
+parent: components/scheduler.md 598 bytes after
 anchor sites: 1
 applied
 rc=0

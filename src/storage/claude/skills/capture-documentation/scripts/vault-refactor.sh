@@ -472,11 +472,18 @@ EOF
       s && skip { if (/^[ \t]*$/ || /^#/) { skip = 0; print } next }
       { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
   fi
+  # the parent's surface names each surface note, so a reader (and the
+  # orphan check) can follow the entries out
+  while IFS=$'\t' read -r name nbkt ranges; do
+    [ -s "$TMP/sprefix.$name" ] || continue
+    awk -v st="Entries under $(sed 's/.*/`&`/' "$TMP/sprefix.$name" | head -n 4 | tr '\n' ',' | sed 's/,$//; s/,/, /g')$([ "$(grep -c . "$TMP/sprefix.$name")" -gt 4 ] && printf ' and %d more' $(( $(grep -c . "$TMP/sprefix.$name") - 4 ))) moved to [[$name]]." '
+      /^## Reusable surface/ { print; print ""; print st; s = 1; next } s && /^[ \t]*$/ && !d { d = 1; next } { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
+  done < "$TMP/plan.tsv"
   # a parent surface emptied by the move gets the absence stanza
   if awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 } s && /^[-*] /' "$TMP/parent.md" | grep -q . ; then :
   elif grep -q '^## Reusable surface' "$TMP/parent.md"; then
     local names; names=$(cut -f1 "$TMP/plan.tsv" | tr '\n' ',' | sed 's/,$//')
-    awk -v st="None $EM moved to $(wikilist "$names")." '/^## Reusable surface/ { print; print ""; print st; s = 1; next } /^## / { s = 0 } s && /^[ \t]*$/ { next } { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
+    awk -v st="None $EM moved to $(wikilist "$names")." '/^## Reusable surface/ { print; h = 1; next } h && /^Entries under / { print; next } h { h = 0; print ""; print st; s = 1 } /^## / { s = 0 } s && /^[ \t]*$/ { next } { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
   fi
   squeeze "$TMP/parent.md"
   local pbytes; pbytes=$(wc -c < "$TMP/parent.md" | tr -d ' ')
