@@ -1,6 +1,5 @@
 exit=0
 --- stdout ---
-_digest.md	-	0	-	-
 _index.md	Entry point into the vault.	0	-	-
 architecture/architecture-credit-deduction-flow.md	Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.	0	-	-
 architecture/architecture-payment-flow.md	Bare link to billing is deliberately ambiguous now that both `components/billing.md` and `plan/billing.md` exist,	0	-	-

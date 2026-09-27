@@ -1,6 +1,5 @@
 exit=1
 --- stdout ---
-FAIL _digest.md:1 DIGEST_STALE differs from --digest-write output
 FAIL architecture/architecture-payment-flow.md:10 LINK_AMBIGUOUS billing -> components/billing.md, plan/billing.md
 FAIL components/billing.md:1 SURFACE_MISSING no ## Reusable surface
 FAIL components/billing.md:1 BASENAME_DUPLICATE basename billing also used in another bucket
@@ -88,7 +87,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:5 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 720188 bytes
+INFO .:0 SIZE_VAULT vault is 720013 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 INFO research/research-inferred-no-sources.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-message-queue-eval.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
@@ -96,6 +95,6 @@ INFO research/research-no-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub li
 INFO research/research-sources-bad.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-unclosed-frontmatter.md:1 ORPHAN_HUB_ONLY_INBOUND only a hub links here
 INFO research/research-warm-cache-spike.md:1 ORPHAN_NO_INBOUND 0 notes link here
-lint-vault: 50 FAIL, 38 WARN across 43 notes
+lint-vault: 49 FAIL, 38 WARN across 42 notes
 --- stderr ---
 

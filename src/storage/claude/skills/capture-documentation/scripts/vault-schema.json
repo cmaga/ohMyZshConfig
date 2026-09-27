@@ -51,9 +51,6 @@
     },
     "glossary.md": {
       "type": "glossary"
-    },
-    "_digest.md": {
-      "type": "digest"
     }
   },
   "buckets": {
@@ -592,16 +589,6 @@
       "fix": "manual",
       "hint": "applies_to directory matches nothing at HEAD"
     },
-    "DIGEST_STALE": {
-      "severity": "fail",
-      "fix": "auto",
-      "hint": "run lint-vault.sh --digest-write VAULT"
-    },
-    "DIGEST_MISSING": {
-      "severity": "info",
-      "fix": "auto",
-      "hint": "run lint-vault.sh --digest-write VAULT"
-    },
     "HUB_MISSING_FROM_INDEX": {
       "severity": "warn",
       "fix": "manual",
@@ -621,6 +608,14 @@
       "severity": "warn",
       "fix": "manual",
       "hint": "repo file matched by more than 3 notes; narrow the governs specs"
+    },
+    "DIGEST_LEGACY": {
+      "severity": "info",
+      "fix": "manual",
+      "hint": "git rm docs/project-knowledge/_digest.md; the digest is regenerated under .cache/"
     }
+  },
+  "cache": {
+    "digest": ".cache/_digest.md"
   }
 }

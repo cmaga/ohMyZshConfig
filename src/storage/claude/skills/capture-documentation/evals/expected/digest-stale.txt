@@ -1,6 +1,0 @@
-exit=1
---- stdout ---
-{"DIGEST_STALE":1,"DIGEST_MISSING":0}
-{"DIGEST_STALE":0,"DIGEST_MISSING":1}
---- stderr ---
-

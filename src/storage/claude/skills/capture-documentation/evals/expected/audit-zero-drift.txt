@@ -1,5 +1,5 @@
 exit=1
 --- stdout ---
-vault-audit (repo): RED - 53 FAIL, 41 WARN, 0 drift flags, 28 reviews overdue, 1 rechecks due.
+vault-audit (repo): RED - 52 FAIL, 41 WARN, 0 drift flags, 28 reviews overdue, 1 rechecks due.
 --- stderr ---
 

@@ -1,6 +1,6 @@
 exit=0
 --- stdout ---
 cache-reused=true
-vault-audit (repo): RED - 53 FAIL, 41 WARN, 2 drift flags, 28 reviews overdue, 1 rechecks due. Run: bash ~/.claude/skills/capture-documentation/scripts/vault-audit.sh
+vault-audit (repo): RED - 52 FAIL, 41 WARN, 2 drift flags, 28 reviews overdue, 1 rechecks due. Run: bash ~/.claude/skills/capture-documentation/scripts/vault-audit.sh
 --- stderr ---
 

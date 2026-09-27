@@ -6,7 +6,7 @@
 #   lint-vault.sh --hook                                       SubagentStop JSON on stdin; exit 0 or 2
 #   lint-vault.sh --next-adr VAULT_ROOT                        prints ADR-NNN, exit 0
 #   lint-vault.sh --records VAULT_ROOT                         pass-1-only NDJSON dump, exit 0
-#   lint-vault.sh --digest-write VAULT_ROOT                    (re)writes the digest hub, exit 0
+#   lint-vault.sh --digest-write VAULT_ROOT                    (re)writes <vault>/.cache/_digest.md, exit 0
 #
 # Exit: 0 clean, 1 FAIL present (--changed/--hook: any *introduced* FAIL), 2 usage/internal error.
 #
@@ -561,11 +561,10 @@ def resolve($src):
        elif ($n | test("^ADR-[0-9]+$") | not) and ($n | test($sc.ticket_pattern)) then {kind: "ticket"}
        else {kind: "missing"} end)
   end;
-[ $R[] | select(($sc.hubs[.path].type // "") != "digest") | . as $r | .links[] | . + (resolve($r.path)) | .src = $r.path ] as $L |
+[ $R[] | . as $r | .links[] | . + (resolve($r.path)) | .src = $r.path ] as $L |
 ($L | map(select(.kind == "note" and .to != .src)) | group_by(.to) | map({key: .[0].to, value: (map(.src) | unique)}) | from_entries) as $inbound |
 ($L | group_by(.src) | map({key: .[0].src, value: .}) | from_entries) as $Lby |
 ($sc.hubs | to_entries | map(select(.value.type == "index")) | .[0].key // "_index.md") as $indexPath |
-($sc.hubs | to_entries | map(select(.value.type == "digest")) | .[0].key // "_digest.md") as $digestPath |
 ([ $R[] | select($sc.hubs[.path] == null) | .path as $p | [ ($inbound[$p] // [])[] | select($sc.hubs[.] == null) ] | length ] | sort) as $deg |
 (if ($deg|length) == 0 then 0 else $deg[((($deg|length) * 0.9) | ceil) - 1] end) as $p90 |
 ([5, $p90] | max) as $hubThr |
@@ -678,7 +677,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
 
   (if $r.first == null then f($r; "EMPTY_NOTE"; 1; "no content after the H1") else empty end),
 
-  (if (($hub.type // "") != "digest") then
+  (
      ($r.markers // []) as $M |
      ($M[] | select(.kind == "asof") | . as $a | select(($M | map(select(.kind == "recheck" and .line == $a.line)) | length) == 0) | f($r; "MARKER_RECHECK_MISSING"; $a.line; "as of \($a.date) without a recheck comment")),
      ($M[] | select(.kind != "asof") | select((.date | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) | not) | f($r; "MARKER_DATE_FORMAT"; .line; "\(.kind) \(.date)")),
@@ -687,11 +686,10 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
        select((any(($Lby[$r.path] // [])[]; .line == $mk.line and ((.wiki // "") | startswith("#") | not))) | not) |
        f($r; "MARKER_ADR_EVIDENCE"; $mk.line; "\($mk.kind) \($mk.date) cites no [[link]] or Amendment (date)")),
      ($M[] | select(.kind == "recheck" and (.date | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and .date <= $today) | f($r; "MARKER_RECHECK_DUE"; .line; "recheck \(.date) is due"))
-   else empty end),
+  ),
   (if $hub.type == "glossary" then ($r.gloss[]? | select(.link | not) | f($r; "GLOSSARY_ENTRY_NO_LINK"; .line; .term)) else empty end),
 
-  (if ($hub.type // "") == "digest" then empty
-   elif $hub != null then
+  (if $hub != null then
      (if $r.bytes > $sc.sizes.hub_fail then f($r; "SIZE_HUB_LIMIT"; 1; "hub is \($r.bytes) bytes (limit \($sc.sizes.hub_fail))") + {bytes: $r.bytes}
       elif $r.bytes > $sc.sizes.hub_warn then f($r; "SIZE_HUB"; 1; "hub is \($r.bytes) bytes")
       else empty end),
@@ -714,10 +712,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
   else empty end
 ),
 ( $G[]? | {code, path, line, msg} ),
-(if $totalBytes and ($totalBytes > $sc.sizes.vault_info) then {code: "SIZE_VAULT", path: ".", line: 0, msg: "vault is \($totalBytes) bytes"} else empty end),
-(if $hasDigest == "1" then
-   (if $digest != digest_text($R; $sc; $inbound; $hubThr; $vname) then {code: "DIGEST_STALE", path: $digestPath, line: 1, msg: "differs from --digest-write output"} else empty end)
- else {code: "DIGEST_MISSING", path: $digestPath, line: 0, msg: "no digest; run --digest-write"} end)
+(if $totalBytes and ($totalBytes > $sc.sizes.vault_info) then {code: "SIZE_VAULT", path: ".", line: 0, msg: "vault is \($totalBytes) bytes"} else empty end)
 | . + (
     ($sc.buckets[(.path | bucket)] // {}) as $ovb |
     { sev: (
@@ -736,10 +731,10 @@ PASS3_JQ="$DIGEST_DEF"$'\n'"$PASS3_PRELUDE"$'\n'"$PASS3_CHECKS"
 DIGEST_JQ="$DIGEST_DEF"$'\n'"$PASS3_PRELUDE"$'\n''digest_text($R; $sc; $inbound; $hubThr; $vname)'
 
 pass3() {
-  local recs="$1" surf="$2" region="$3" guard="$4" probe="$5" schema="$6" has="$7" dfile="$8" out="$9"
+  local recs="$1" surf="$2" region="$3" guard="$4" probe="$5" schema="$6" out="$7"
   "$JQ" -n --slurpfile R "$recs" --slurpfile S "$surf" --slurpfile REG "$region" --slurpfile G "$guard" \
     --slurpfile P "$probe" --slurpfile schema "$schema" --arg today "$(date +%Y-%m-%d)" \
-    --arg vname "$VNAME" --arg hasDigest "$has" --rawfile digest "$dfile" "$PASS3_JQ" > "$out"
+    --arg vname "$VNAME" "$PASS3_JQ" > "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -752,7 +747,7 @@ pass1() {
   local files0; files0=$(mktemp "$TMP/p1.XXXXXX")
   local gloss
   gloss=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="glossary")|.key][0] // "glossary.md"' "$schema")
-  find "$tree" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -print0 | sort -z > "$files0"
+  find "$tree" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -not -path '*/_fragments/*' -not -path "$tree/_digest.md" -print0 | sort -z > "$files0"
   if [ -s "$files0" ]; then
     xargs -0 awk -v root="$tree/" -v q="'" -v DASH=" — " -v EM="$(printf '\342\200\224')" -v GLOSS="$gloss" \
       -v PATHRE="^[A-Za-z0-9_.@-]+/[^ ]*[A-Za-z0-9_]$" "$PASS1_AWK" < "$files0" > "$out"
@@ -779,15 +774,12 @@ lint_tree() {
     pass2b_region "${pfx}.recs.ndjson" "$repo" "${tree#"$repo"/}" "HEAD" "$scopef" "${pfx}.region.ndjson"
     guard_scan "$tree" "${pfx}.recs.ndjson" "$scopef" "${pfx}.guard.ndjson"
     rules_check "$repo" "${pfx}.guard.ndjson"
+    [ -f "$tree/_digest.md" ] && printf '{"code":"DIGEST_LEGACY","path":"_digest.md","line":0,"msg":"committed digest; it now lives in .cache/ (gitignored): git rm it"}\n' >> "${pfx}.guard.ndjson"
   else
     : > "${pfx}.region.ndjson"
     : > "${pfx}.guard.ndjson"
   fi
-  local digestPath has dfile
-  digestPath=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="digest")|.key][0] // "_digest.md"' "$schema")
-  dfile="${pfx}.digest.md"
-  if [ -f "$tree/$digestPath" ]; then cp "$tree/$digestPath" "$dfile"; has=1; else : > "$dfile"; has=0; fi
-  pass3 "${pfx}.recs.ndjson" "${pfx}.surf.ndjson" "${pfx}.region.ndjson" "${pfx}.guard.ndjson" "${pfx}.probe.ndjson" "$schema" "$has" "$dfile" "$out"
+  pass3 "${pfx}.recs.ndjson" "${pfx}.surf.ndjson" "${pfx}.region.ndjson" "${pfx}.guard.ndjson" "${pfx}.probe.ndjson" "$schema" "$out"
   local rc=$?
   rm -f "${pfx}".*
   return $rc
@@ -810,7 +802,7 @@ load_exceptions() {
 }
 
 note_count() {
-  find "$1" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' | wc -l | tr -d ' '
+  find "$1" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -not -path '*/_fragments/*' -not -path "$1/_digest.md" | wc -l | tr -d ' '
 }
 
 # ---------------------------------------------------------------------------
@@ -913,6 +905,7 @@ do_changed() {
   while IFS= read -r rp; do
     [ -n "$rp" ] || continue
     case "$rp" in
+      "$relvault"/.cache/*) : ;;
       "$relvault"/*.md) printf '%s\n' "${rp#"$relvault"/}" >> "$TMP/touched.txt" ;;
     esac
   done < "$TMP/touched_repo_rel.txt"
@@ -994,7 +987,7 @@ if [ "${1:-}" = "--digest-write" ]; then
   trap 'rm -rf "$TMP"' EXIT
   merge_schema "$VAULT" "$TMP/schema.json" || exit 2
   pass1 "$VAULT" "$TMP/schema.json" "$TMP/recs.ndjson"
-  digestPath=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="digest")|.key][0] // "_digest.md"' "$TMP/schema.json")
+  digestPath=$("$JQ" -r '.cache.digest // ".cache/_digest.md"' "$TMP/schema.json"); mkdir -p "$VAULT/$(dirname "$digestPath")"
   "$JQ" -j -n --slurpfile R "$TMP/recs.ndjson" --slurpfile schema "$TMP/schema.json" \
     --arg vname "$(basename "$VAULT")" "$DIGEST_JQ" > "$TMP/digest.md" && cp "$TMP/digest.md" "$VAULT/$digestPath"
   exit 0

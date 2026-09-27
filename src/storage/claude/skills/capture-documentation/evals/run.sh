@@ -263,10 +263,9 @@ C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case next-adr
 
 # ---------------------------------------------------------------------------
-# --records / --digest-write / digest staleness (Wave 2): still pristine-state,
-# same as next-adr above -- run before the dirty-tree overlay so digest-stale
-# can restore the fixture's original (deliberately stale) _digest.md before
-# any later case observes the vault.
+# --records / --digest-write (Wave 2; Wave 3 moved the digest under .cache/,
+# gitignored, so there is no staleness case): still pristine-state, same as
+# next-adr above -- run before the dirty-tree overlay.
 # ---------------------------------------------------------------------------
 
 "$LINT" --records "$VAULT" >"$WORK/c_records.jsonl" 2>"$WORK/c_err"
@@ -277,33 +276,9 @@ finish_case records
 
 "$LINT" --digest-write "$VAULT" >"$WORK/c_out" 2>"$WORK/c_err"
 C_RC=$?
-C_OUT="$(cat "$VAULT/_digest.md" 2>>"$WORK/c_err")"
+C_OUT="$(cat "$VAULT/.cache/_digest.md" 2>>"$WORK/c_err")"
 C_ERR="$(cat "$WORK/c_err")"
 finish_case digest-write
-
-# digest-write above just replaced _digest.md with a freshly generated (thus
-# non-stale) one -- restore the fixture's originally-committed, deliberately
-# stale digest first so digest-stale's "before" snapshot below actually
-# observes staleness instead of the digest-write case's own output.
-must git -C "$REPO" checkout -q -- docs/project-knowledge/_digest.md
-
-"$LINT" --format json "$VAULT" >"$WORK/c_json1" 2>"$WORK/c_err1"
-before_bycode="$("$JQ" -c '.by_code | {DIGEST_STALE: (.DIGEST_STALE // 0), DIGEST_MISSING: (.DIGEST_MISSING // 0)}' "$WORK/c_json1" 2>>"$WORK/c_err1")"
-
-rm -f "$VAULT/_digest.md"
-
-"$LINT" --format json "$VAULT" >"$WORK/c_json2" 2>"$WORK/c_err2"
-C_RC=$?
-after_bycode="$("$JQ" -c '.by_code | {DIGEST_STALE: (.DIGEST_STALE // 0), DIGEST_MISSING: (.DIGEST_MISSING // 0)}' "$WORK/c_json2" 2>>"$WORK/c_err2")"
-
-# Restore the fixture's originally-committed, deliberately-stale digest so
-# every later case (search, mentions, hook-*, changed) sees the vault exactly
-# as checked in, undisturbed by this case's write/remove.
-must git -C "$REPO" checkout -q -- docs/project-knowledge/_digest.md
-
-C_OUT="$(printf '%s\n%s\n' "$before_bycode" "$after_bycode")"
-C_ERR="$(cat "$WORK/c_err1" "$WORK/c_err2" 2>/dev/null)"
-finish_case digest-stale
 
 "$SEARCH" "$VAULT" "claim" 8 >"$WORK/c_out" 2>"$WORK/c_err"
 C_RC=$?

@@ -60,7 +60,7 @@ LOCK="$CACHE.lock"
 
 dirty_sig() {
   { git -C "$REPO" diff HEAD -- docs/project-knowledge
-    git -C "$REPO" ls-files --others --exclude-standard -- docs/project-knowledge
+    git -C "$REPO" ls-files --others --exclude-standard -- docs/project-knowledge ":!docs/project-knowledge/.cache"
   } | git hash-object --stdin
 }
 
@@ -150,6 +150,7 @@ if [ "$need_rerun" -eq 1 ] && [ "$got_lock" -eq 1 ]; then
 
   bash "$HERE/lint-vault.sh" --format json "$VAULT" > "$TMP/lint.json" 2>/dev/null || true
   [ -s "$TMP/lint.json" ] || echo '{}' > "$TMP/lint.json"
+  bash "$HERE/lint-vault.sh" --digest-write "$VAULT" >/dev/null 2>&1 || true
   bash "$HERE/vault-drift.sh" --scan "$REPO" >/dev/null 2>&1 || true
   bash "$HERE/vault-drift.sh" --list "$REPO" > "$TMP/drift.txt" 2>/dev/null || true
   bash "$HERE/vault-freshness.sh" "$VAULT" --lint-json "$TMP/lint.json" --json > "$TMP/freshness.json" 2>/dev/null || true
