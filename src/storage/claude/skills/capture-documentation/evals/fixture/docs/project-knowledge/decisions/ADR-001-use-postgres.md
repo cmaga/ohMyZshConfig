@@ -1,6 +1,7 @@
 ---
 type: decision
 status: active
+governs: [src/worker/**]
 created: 2026-01-05
 ---
 # ADR-001: Use Postgres for the job queue

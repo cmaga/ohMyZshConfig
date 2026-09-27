@@ -4,7 +4,7 @@ FAIL components/reporting-pipeline.md:1 SIZE_NOTE_LIMIT note is 62001 bytes (lim
 DRIFT components/reporting-pipeline.md:1 ORPHAN_NO_OUTBOUND 0 resolved outbound links
 WARN .vault-lint-exceptions:0 EXCEPTION_STALE SIZE_NOTE decisions/ADR-001-use-postgres.md
 WARN components/worker.md:20 SURFACE_REGION_CHANGED region around claimNextJob in src/worker/index.js changed since the note last touched it
-INFO .:0 SIZE_VAULT vault is 776342 bytes
-lint-vault: 1 FAIL, 2 WARN, 1 DRIFT across 34 notes
+INFO .:0 SIZE_VAULT vault is 781819 bytes
+lint-vault: 1 FAIL, 2 WARN, 1 DRIFT across 43 notes
 --- stderr ---
 

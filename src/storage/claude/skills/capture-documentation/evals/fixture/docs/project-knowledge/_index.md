@@ -24,6 +24,11 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[decisions/ADR-008-switch-cache-layer]]
 - [[decisions/ADR-009-scale-worker-pool]]
 - [[decisions/ADR-010-amend-worker-timeout]]
+- [[decisions/ADR-011-supersede-no-backlink]]
+- [[decisions/ADR-012-successor-silent]]
+- [[decisions/ADR-013-cycle-a]]
+- [[decisions/ADR-014-cycle-b]]
+- [[decisions/ADR-015-banner-mismatch]]
 
 ## Constraints
 
@@ -36,6 +41,7 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 
 - [[domain/domain-credit-lifecycle]]
 - [[domain/domain-bad-frontmatter]]
+- [[domain/domain-marker-cases]]
 
 ## Architecture
 
@@ -67,6 +73,8 @@ exercise ORPHAN_NO_INBOUND, so do not add links to them here.
 - [[research/research-message-queue-eval]]
 - [[research/research-no-frontmatter]]
 - [[research/research-unclosed-frontmatter]]
+- [[research/research-inferred-no-sources]]
+- [[research/research-sources-bad]]
 
 ## Misc
 

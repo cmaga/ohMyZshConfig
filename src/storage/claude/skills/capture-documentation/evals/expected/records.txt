@@ -1,0 +1,47 @@
+exit=0
+--- stdout ---
+_digest.md	-	0	-	-
+_index.md	Entry point into the vault.	0	-	-
+architecture/architecture-credit-deduction-flow.md	Charges flow through components/billing and consume the balance described in domain/domain-credit-lifecycle.	0	-	-
+architecture/architecture-payment-flow.md	Bare link to billing is deliberately ambiguous now that both `components/billing.md` and `plan/billing.md` exist,	0	-	-
+components/billing.md	Charges customers against the credit balance described in domain/domain-credit-lifecycle.	0	-	[src/billing/, src/ghost/]
+components/reporting-pipeline.md	Builds periodic reports from queue and billing activity.	0	-	-
+components/worker.md	Claims and processes queue rows against the Postgres queue from decisions/ADR-001-use-postgres, subject to	0	-	-
+constraints/constraint-legacy-billing-freeze.md	The legacy billing path behind components/billing is frozen pending removal.	0	-	-
+constraints/constraint-single-writer-db.md	Only one process may claim a queue row at a time; see components/worker and decisions/ADR-001-use-postgres.	0	[]	-
+constraints/constraint-webhook-idempotency-keys.md	Every inbound webhook handler must dedupe on an idempotency key.	0	-	-
+constraints/flatfee.md	A flat per-transaction fee constraint filed under a filename that does not start with `constraint-`, exercising	0	-	-
+customers/customer-selfserve-smb.md	A self-serve small business account with no outbound links from this note, exercising ORPHAN_NO_OUTBOUND.	0	-	-
+customers/persona-enterprise-ops-lead.md	-	0	-	-
+decisions/ADR-001-alt-name.md	Same decision as ADR-001-use-postgres, different filename.	0	-	-
+decisions/ADR-001-use-postgres.md	Use a single Postgres table with `SELECT ... FOR UPDATE SKIP LOCKED` as the job queue, claimed by worker via	0	[src/worker/**]	-
+decisions/ADR-002-drop-legacy-queue.md	Retire the legacy queue in favor of the Postgres-backed queue.	0	-	-
+decisions/ADR-004-retire-batch-job.md	Delete the batch job; rely on worker claiming continuously instead.	0	-	-
+decisions/ADR-005-shrink-batch-window.md	Shrink the nightly window from six hours to one.	0	-	-
+decisions/ADR-006-consolidate-queues.md	Investigate consolidating per-tenant queues into the single queue from ADR-001-use-postgres.	0	-	-
+decisions/ADR-007-cap-worker-concurrency.md	Remove the cap now that `SELECT ... FOR UPDATE SKIP LOCKED` makes it safe for worker to run with more than one process.	0	-	-
+decisions/ADR-008-switch-cache-layer.md	Not relevant to the findings this file exists to trigger.	0	-	-
+decisions/ADR-009-scale-worker-pool.md	Run more worker processes against the same worker claim path.	0	-	-
+decisions/ADR-010-amend-worker-timeout.md	Extend the claim timeout; no `## Amendment` section follows below, exercising AMENDMENT_MISSING.	0	-	-
+decisions/ADR-011-supersede-no-backlink.md	Retire the eager retry policy in favor of the backoff policy ADR-012-successor-silent introduces.	0	-	-
+decisions/ADR-012-successor-silent.md	Switch worker from eager retry to exponential backoff.	1	[src/nonexistent/**]	-
+decisions/ADR-013-cycle-a.md	Batch writes before committing, superseded by the row-lock change in ADR-014-cycle-b.	1	-	-
+decisions/ADR-014-cycle-b.md	Introduce `SELECT ... FOR UPDATE SKIP LOCKED`, later superseded back to batching by ADR-013-cycle-a.	0	src/worker	-
+decisions/ADR-015-banner-mismatch.md	Fold into the backoff policy ADR-012-successor-silent introduces.	0	-	-
+domain/domain-bad-frontmatter.md	The `type:` key above appears twice with the same value, exercising FM_DUPLICATE_KEY without also causing a bucket	0	-	-
+domain/domain-credit-lifecycle.md	A customer's credit balance is granted, consumed, and expired through the flow described in	0	-	-
+domain/domain-marker-cases.md	as of 2026-01-15.	7	-	-
+glossary.md	Shared vocabulary for the fixture vault.	0	-	-
+misc/stray-note.md	Lives under a `misc/` directory that is not one of the buckets listed in vault-schema.json, exercising BUCKET_UNKNOWN.	0	-	-
+plan/2026-q3-roadmap.md	Deliberately left unlinked from every hub and content note, exercising ORPHAN_NO_INBOUND.	0	-	-
+plan/billing.md	Planning note for components/billing work; shares a basename with that component note, exercising BASENAME_DUPLICATE.	0	-	-
+policies/policy-data-retention.md	Governs how long job queue and billing records are kept, touching components/worker and components/billing.	0	-	-
+policies/policy-incident-disclosure.md	Omits the required `steward` field, exercising FIELD_REQUIRED.	0	-	-
+research/research-inferred-no-sources.md	Sizing here is inferred from the queue behavior described in ADR-001-use-postgres, with no `sources` field attached,	0	-	-
+research/research-message-queue-eval.md	Evaluated alternatives to the current worker queue.	0	-	-
+research/research-no-frontmatter.md	This note has no frontmatter at all; the file starts directly with the H1 above, exercising FM_MISSING_OPEN.	0	-	-
+research/research-sources-bad.md	Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit that does	0	-	-
+research/research-unclosed-frontmatter.md	The frontmatter block above never closes with a second `---`, exercising FM_MISSING_CLOSE.	0	-	-
+research/research-warm-cache-spike.md	A spike into pre-warming the cache layer touched by architecture/architecture-credit-deduction-flow.	0	-	-
+--- stderr ---
+

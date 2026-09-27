@@ -3,6 +3,7 @@ type: constraint
 status: active
 created: 2026-01-11
 severity: high
+governs: []
 ---
 # Single writer owns the claim path
 

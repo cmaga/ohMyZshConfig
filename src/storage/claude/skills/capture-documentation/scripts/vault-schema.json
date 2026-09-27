@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "ticket_pattern": "^(STAX|NOV|EN)-[0-9]+$",
+  "ticket_pattern": "^[A-Z][A-Z0-9]{1,9}-[0-9]+$",
   "status": [
     "active",
     "proposed",
@@ -12,15 +12,36 @@
     "closed"
   ],
   "optional_global": [
-    "aliases"
+    "aliases",
+    "basis",
+    "sources",
+    "last_verified",
+    "applies_to"
   ],
+  "field_patterns": {
+    "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$"
+  },
+  "freshness": {
+    "max_age_days": 180,
+    "buckets": {
+      "plan": 30,
+      "research": 90
+    },
+    "cadence_days": {
+      "annual": 365,
+      "semi-annual": 182,
+      "quarterly": 91,
+      "monthly": 30,
+      "annual-or-on-material-change": 365
+    }
+  },
   "sizes": {
     "note_warn": 36864,
     "note_fail": 61440,
     "line_warn": 2048,
-    "hub_warn": 30720,
+    "hub_warn": 24576,
     "hub_fail": 61440,
-    "hub_line_warn": 1024,
+    "hub_line_warn": 400,
     "hub_line_fail": 2048,
     "vault_info": 614400
   },
@@ -30,6 +51,9 @@
     },
     "glossary.md": {
       "type": "glossary"
+    },
+    "_digest.md": {
+      "type": "digest"
     }
   },
   "buckets": {
@@ -42,7 +66,10 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "governs",
+        "revisit_by",
+        "revisit_when"
       ],
       "statuses": [
         "active",
@@ -71,7 +98,9 @@
         "severity"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "governs",
+        "review_cadence"
       ],
       "enums": {
         "severity": [
@@ -92,7 +121,8 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "review_cadence"
       ],
       "surface": "conditional"
     },
@@ -105,7 +135,8 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "review_cadence"
       ],
       "surface": "conditional"
     },
@@ -118,7 +149,8 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "review_cadence"
       ],
       "surface": "required"
     },
@@ -128,11 +160,12 @@
       "required": [
         "type",
         "status",
-        "created",
+        "created"
+      ],
+      "optional": [
         "steward",
         "review_cadence"
       ],
-      "optional": [],
       "surface": "forbidden"
     },
     "customers": {
@@ -143,7 +176,9 @@
         "status",
         "created"
       ],
-      "optional": [],
+      "optional": [
+        "review_cadence"
+      ],
       "surface": "forbidden"
     },
     "plan": {
@@ -155,7 +190,8 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "review_cadence"
       ],
       "surface": "forbidden"
     },
@@ -168,7 +204,8 @@
         "created"
       ],
       "optional": [
-        "superseded_by"
+        "superseded_by",
+        "review_cadence"
       ],
       "surface": "forbidden",
       "orphan": "info"
@@ -208,7 +245,7 @@
     "ENUM_INVALID": {
       "severity": "fail",
       "fix": "manual",
-      "hint": "value outside the allowed set"
+      "hint": "value must match the field pattern"
     },
     "STATUS_UNEXPECTED": {
       "severity": "warn",
@@ -223,12 +260,12 @@
     "DATE_INVALID": {
       "severity": "fail",
       "fix": "manual",
-      "hint": "created is YYYY-MM-DD and a real date"
+      "hint": "created/last_verified/revisit_by is YYYY-MM-DD and a real date"
     },
     "DATE_FUTURE": {
       "severity": "warn",
       "fix": "manual",
-      "hint": "created is after today"
+      "hint": "created/last_verified/revisit_by is after today"
     },
     "FILENAME_PATTERN": {
       "severity": "fail",
@@ -464,6 +501,126 @@
       "severity": "fail",
       "fix": "manual",
       "hint": "note sits outside every schema bucket"
+    },
+    "SUPERSEDED_BY_NO_BACKLINK": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "successor must link back to the note it supersedes"
+    },
+    "SUPERSESSION_CYCLE": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "superseded_by chain loops; break the cycle"
+    },
+    "BANNER_SUCCESSOR_MISMATCH": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "banner's first [[link]] must be the superseded_by target"
+    },
+    "BASIS_ENUM": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "basis is user-stated or inferred"
+    },
+    "SOURCE_REF_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "sources: [ticket:ID, pr:N, commit:sha, doc:path]"
+    },
+    "SOURCE_COMMIT_UNRESOLVED": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "commit sha not in this repo"
+    },
+    "SOURCE_DOC_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "doc: path does not exist"
+    },
+    "SOURCE_TICKET_PATTERN": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "ticket id does not match ticket_pattern (override in .vault-lint.json)"
+    },
+    "BASIS_INFERRED_NO_SOURCES": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "inferred claims cite at least one source"
+    },
+    "MARKER_RECHECK_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "pair 'as of DATE' with <!-- recheck YYYY-MM-DD: reason --> on the same line"
+    },
+    "MARKER_DATE_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "marker date is YYYY-MM-DD"
+    },
+    "MARKER_REASON_MISSING": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "until/deprecated/recheck markers carry a reason after the dash or colon"
+    },
+    "MARKER_ADR_EVIDENCE": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "in an ADR, cite the [[note]] or Amendment (date) that set the marker"
+    },
+    "MARKER_RECHECK_DUE": {
+      "severity": "info",
+      "fix": "manual",
+      "hint": "recheck date has passed; re-verify and move the date"
+    },
+    "GOVERNS_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "active decisions and constraints list governs: [pathspec, ...] ([] when nothing in-repo)"
+    },
+    "GOVERNS_FORMAT": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "governs/applies_to is a flow list [a, b]"
+    },
+    "GOVERNS_DEAD_GLOB": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "pathspec matches nothing at HEAD"
+    },
+    "APPLIES_TO_DEAD_GLOB": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "applies_to directory matches nothing at HEAD"
+    },
+    "DIGEST_STALE": {
+      "severity": "fail",
+      "fix": "auto",
+      "hint": "run lint-vault.sh --digest-write VAULT"
+    },
+    "DIGEST_MISSING": {
+      "severity": "info",
+      "fix": "auto",
+      "hint": "run lint-vault.sh --digest-write VAULT"
+    },
+    "HUB_MISSING_FROM_INDEX": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "heavily linked note; add it to _index.md"
+    },
+    "GLOSSARY_ENTRY_NO_LINK": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "glossary entry should link the note that owns the term"
+    },
+    "RULES_STALE": {
+      "severity": "fail",
+      "fix": "auto",
+      "hint": "run gen-vault-rules.sh REPO"
+    },
+    "RULES_FILE_OVERMATCHED": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "repo file matched by more than 3 notes; narrow the governs specs"
     }
   }
 }

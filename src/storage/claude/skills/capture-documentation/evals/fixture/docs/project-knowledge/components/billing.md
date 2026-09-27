@@ -2,6 +2,7 @@
 type: component
 status: active
 created: 2026-01-25
+applies_to: [src/billing/, src/ghost/]
 ---
 # Billing
 
