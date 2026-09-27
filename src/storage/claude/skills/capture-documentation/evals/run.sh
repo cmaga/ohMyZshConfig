@@ -754,6 +754,12 @@ refactor_case retire-backfill retire constraint-bad-tombstone --reason wrong --r
 # claimNextJob is mentioned by both and stays with the parent.
 printf 'scheduler-backoff\tcomponents\tBackoff policy\nscheduler-cron\tcomponents\tCron parsing\n' > "$WORK/split-plan.tsv"
 refactor_case split split scheduler --plan "$WORK/split-plan.tsv"
+# split-surface: a surface: item routes every entry under the prefix to the
+# line's note, a surface-only line makes a surface note pointing back at the
+# parent, and the parent's emptied section gets the None stanza. Mention
+# based moves are off once any line routes by prefix.
+printf 'scheduler-backoff\tcomponents\tBackoff policy\tsurface:src/reporting\nscheduler-surface-worker\tcomponents\tsurface:src/worker\n' > "$WORK/split-plan2.tsv"
+refactor_case split-surface split scheduler --plan "$WORK/split-plan2.tsv"
 
 echo "evals: $OK_COUNT ok, $FAIL_COUNT failed"
 [ "$FAIL_COUNT" -eq 0 ] || exit 1

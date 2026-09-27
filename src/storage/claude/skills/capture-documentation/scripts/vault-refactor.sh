@@ -26,7 +26,11 @@
 # parent keeps each moved heading with "Moved to [[new]]."; Reusable-surface
 # entries whose path is mentioned only in moved sections move along;
 # [[NOTE#Heading]] links are rewritten vault-wide. _index.md is never touched
-# by split.
+# by split. An item "surface:<path-prefix>" routes every Reusable-surface
+# entry under that prefix to the line's note (a line may hold only such
+# items: the note is then a surface note pointing back at the parent); when
+# any line routes by prefix, mention-based moves are off and entries no
+# prefix claims stay with the parent.
 
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -65,6 +69,9 @@ vault_merge_schema "$VAULT" "$TMP/schema.json"
 NOTE_FAIL=$("$JQ" -r '.sizes.note_fail // 61440' "$TMP/schema.json")
 INDEX=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="index")|.key][0] // "_index.md"' "$TMP/schema.json")
 TODAY=$(vault_today)
+# the backticked span of a Reusable-surface entry that is its path: a slash
+# path or a bare file name with a code/config extension (never a dotted symbol)
+PATHRE='^(\./)?([A-Za-z0-9_.-]+/)+[A-Za-z0-9_.*{}-]+$|^[A-Za-z0-9_-]+\.(py|js|ts|tsx|jsx|mjs|sh|zsh|bash|md|toml|yaml|yml|json|sql|service|timer|env|txt|cfg|ini|tf|Makefile)$'
 EM=$(printf '\342\200\224')
 BANG=0
 
@@ -342,6 +349,7 @@ do_split() {
   awk '/^[ \t]*(```|~~~)/ { f = !f; next } f { next } match($0, /^#+ /) { t = substr($0, RLENGTH + 1); sub(/[ #]+$/, "", t); print NR "\t" (RLENGTH - 1) "\t" t }' "$src" > "$TMP/heads.tsv"
   local total; total=$(wc -l < "$src" | tr -d ' ')
   local ranges_all="" n=0 line name nbkt heads
+  BYPREFIX=0
   : > "$TMP/plan.tsv"
   while IFS= read -r line; do
     [ -n "$line" ] || continue; case "$line" in \#*) continue ;; esac
@@ -351,9 +359,11 @@ do_split() {
     [ -e "$VAULT/$nbkt/$name.md" ] && { echo "vault-refactor: $nbkt/$name.md exists (clobber)" >&2; exit 3; }
     "$JQ" -e --arg b "$nbkt" '.buckets[$b] != null' "$TMP/schema.json" >/dev/null 2>&1 || { bang "$name: unknown bucket $nbkt"; continue; }
     local ranges="" h hl lvl endl
+    : > "$TMP/sprefix.$name"
     while IFS= read -r h; do
       [ -n "$h" ] || continue
-      case "$h" in "Reusable surface") bang "$name: the Reusable surface section stays with the parent"; continue ;; esac
+      case "$h" in surface:*) printf '%s\n' "${h#surface:}" >> "$TMP/sprefix.$name"; BYPREFIX=1; continue ;; esac
+      case "$h" in "Reusable surface") bang "$name: the Reusable surface section stays with the parent; route its entries with surface:<prefix> items"; continue ;; esac
       hl=$(awk -F'\t' -v t="$h" '$3 == t { print $1 "\t" $2; exit }' "$TMP/heads.tsv")
       [ -n "$hl" ] || hl=$(awk -F'\t' -v t="$h" 'tolower($3) == tolower(t) { print $1 "\t" $2; exit }' "$TMP/heads.tsv")
       [ -n "$hl" ] || { bang "$name: heading not found: $h"; continue; }
@@ -365,7 +375,7 @@ do_split() {
     done <<EOF
 $(printf '%s\n' "$heads" | tr '\t' '\n')
 EOF
-    [ -n "$ranges" ] || continue
+    [ -n "$ranges" ] || [ -s "$TMP/sprefix.$name" ] || continue
     ranges_all="$ranges_all|$ranges"
     printf '%s\t%s\t%s\n' "$name" "$nbkt" "$ranges" >> "$TMP/plan.tsv"
     n=$((n + 1))
@@ -374,7 +384,7 @@ EOF
   # parent remainder (moved ranges replaced by pointer stubs)
   local allr; allr=$(cut -f3 "$TMP/plan.tsv" | tr '\n' ',' | sed 's/,$//')
   awk -v ranges="$allr" -v plan="$TMP/plan.tsv" '
-    BEGIN { while ((getline l < plan) > 0) { split(l, P, "\t"); m = split(P[3], R, ","); for (i = 1; i <= m; i++) { split(R[i], se, "-"); S[se[1]] = se[2]; N[se[1]] = P[1] } } }
+    BEGIN { while ((getline l < plan) > 0) { split(l, P, "\t"); if (P[3] == "") continue; m = split(P[3], R, ","); for (i = 1; i <= m; i++) { split(R[i], se, "-"); S[se[1]] = se[2]; N[se[1]] = P[1] } } }
     NR in S { hdr = $0; print hdr; print ""; print "Moved to [[" N[NR] "]]."; skipto = S[NR]; next }
     skipto && NR <= skipto { if (NR == skipto) { skipto = 0; print "" } next }
     { print }' "$src" > "$TMP/parent.md"
@@ -388,6 +398,10 @@ EOF
       if [ "$nbkt" = constraints ]; then sev=$(fm_get "$src" severity); echo "severity: ${sev:-medium}"; fi
       echo "---"
     } > "$TMP/new.$name.md"
+    if [ -z "$ranges" ]; then
+      { echo "# $(h1_of "$src"): surface for $(tr '\n' ' ' < "$TMP/sprefix.$name" | sed 's/ $//; s/ /, /g')"; echo ""; echo "Split from [[$base]] ($TODAY). The behaviour behind these entries is described in [[$base]]; this note only anchors the symbols."; } >> "$TMP/new.$name.md"
+      continue
+    fi
     awk -v ranges="$ranges" -v parent="$base" -v today="$TODAY" '
       BEGIN { m = split(ranges, R, ","); for (i = 1; i <= m; i++) { split(R[i], se, "-"); S[i] = se[1]; E[i] = se[2] } }
       { L[NR] = $0 }
@@ -404,16 +418,35 @@ EOF
       }' "$src" >> "$TMP/new.$name.md"
   done < "$TMP/plan.tsv"
   # surface entries move to the one new note whose moved text names their
-  # path, and only when the parent's remaining prose no longer does; a path
-  # two new notes both mention stays with the parent.
-  awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 } s && /^[-*] /' "$src" > "$TMP/surfall.txt"
-  local e p owner cnt
+  # path; a path no new note mentions, or two mention, stays with the parent
+  # (the parent's own prose may still name it: the child owns the symbol,
+  # the parent links the child).
+  # an entry is its bullet line plus the continuation lines up to the next
+  # bullet, blank line or heading; blocks travel as one line joined by \001
+  awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 }
+       s && /^[-*] / { if (blk != "") print blk; blk = $0; next }
+       s && blk != "" && !/^[ \t]*$/ && !/^#/ { blk = blk "\001" $0; next }
+       s { if (blk != "") print blk; blk = "" }
+       END { if (blk != "") print blk }' "$src" > "$TMP/surfall.txt"
+  local e p owner cnt best ml
   while IFS=$'\t' read -r name nbkt ranges; do : > "$TMP/surf.$name"; done < "$TMP/plan.tsv"
-  if [ -s "$TMP/surfall.txt" ]; then
+  if [ -s "$TMP/surfall.txt" ] && [ "$BYPREFIX" = 1 ]; then
     while IFS= read -r e; do
-      p=$(printf '%s' "$e" | grep -o '`[^`]*`' | tr -d '`' | grep -E "$PATHRE" | head -n 1)
+      p=$(printf '%s' "${e%%$'\001'*}" | grep -o '`[^`]*`' | tr -d '`' | grep -E "$PATHRE" | head -n 1)
       [ -n "$p" ] || continue
-      grep -qF -- "$p" "$TMP/parent.prose" && continue
+      owner=""; best=0
+      while IFS=$'\t' read -r name nbkt ranges; do
+        [ -s "$TMP/sprefix.$name" ] || continue
+        # the longest matching prefix wins, whichever line carries it
+        ml=$(awk -v p="$p" '(p == $0 || index(p, $0 "/") == 1) && length($0) > m { m = length($0) } END { print m + 0 }' "$TMP/sprefix.$name")
+        [ "$ml" -gt "$best" ] && { best=$ml; owner="$name"; }
+      done < "$TMP/plan.tsv"
+      [ -n "$owner" ] && printf '%s\n' "$e" >> "$TMP/surf.$owner"
+    done < "$TMP/surfall.txt"
+  elif [ -s "$TMP/surfall.txt" ]; then
+    while IFS= read -r e; do
+      p=$(printf '%s' "${e%%$'\001'*}" | grep -o '`[^`]*`' | tr -d '`' | grep -E "$PATHRE" | head -n 1)
+      [ -n "$p" ] || continue
       owner=""; cnt=0
       while IFS=$'\t' read -r name nbkt ranges; do
         if grep -qF -- "$p" "$TMP/new.$name.md"; then owner="$name"; cnt=$((cnt + 1)); fi
@@ -423,7 +456,7 @@ EOF
   fi
   local bytes
   while IFS=$'\t' read -r name nbkt ranges; do
-    if [ -s "$TMP/surf.$name" ]; then { echo ""; echo "## Reusable surface"; echo ""; cat "$TMP/surf.$name"; } >> "$TMP/new.$name.md"
+    if [ -s "$TMP/surf.$name" ]; then { echo ""; echo "## Reusable surface"; echo ""; tr '\001' '\n' < "$TMP/surf.$name"; } >> "$TMP/new.$name.md"
     elif [ "$nbkt" = components ]; then { echo ""; echo "## Reusable surface"; echo ""; echo "None $EM symbols stay with [[$base]]."; } >> "$TMP/new.$name.md"; fi
     squeeze "$TMP/new.$name.md"
     bytes=$(wc -c < "$TMP/new.$name.md" | tr -d ' ')
@@ -433,7 +466,11 @@ EOF
   # drop moved surface entries from the parent
   local moved; cat "$TMP"/surf.* 2>/dev/null | grep -v '^$' > "$TMP/surf.moved" || true
   if [ -s "$TMP/surf.moved" ]; then
-    awk -v mf="$TMP/surf.moved" 'BEGIN { while ((getline l < mf) > 0) M[l] = 1 } /^## Reusable surface/ { s = 1 } /^## / && !/^## Reusable surface/ { s = 0 } s && ($0 in M) { next } { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
+    awk -v mf="$TMP/surf.moved" 'BEGIN { while ((getline l < mf) > 0) { sub(/\001.*/, "", l); M[l] = 1 } }
+      /^## Reusable surface/ { s = 1 } /^## / && !/^## Reusable surface/ { s = 0 }
+      s && /^[-*] / { skip = ($0 in M); if (skip) next }
+      s && skip { if (/^[ \t]*$/ || /^#/) { skip = 0; print } next }
+      { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
   fi
   # a parent surface emptied by the move gets the absence stanza
   if awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 } s && /^[-*] /' "$TMP/parent.md" | grep -q . ; then :
@@ -447,6 +484,7 @@ EOF
   [ "$pbytes" -gt "$NOTE_FAIL" ] && { echo "! $path still over $NOTE_FAIL bytes"; rc=3; }
   # anchor rewrites for moved headings
   while IFS=$'\t' read -r name nbkt ranges; do
+    [ -n "$ranges" ] || continue
     for s in $(printf '%s' "$ranges" | tr ',' '\n' | cut -d- -f1); do
       h=$(awk -F'\t' -v n="$s" '$1 == n { print $3 }' "$TMP/heads.tsv")
       rewrite "[[$base#$h" "[[$name#$h"; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h"
