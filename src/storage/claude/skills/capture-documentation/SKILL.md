@@ -57,6 +57,10 @@ This skill normally runs inside the `vault-scribe-agent` subagent: the caller di
 
     Each bullet is the fact as recorded — never an edit description ("added a deviation note", "updated the banner") and never ADR bookkeeping ("this amends ADR-002", "marked superseded"). State a decision's standing as what holds and what no longer holds: "nightly batch retires at migration cutover", not "ADR-002 is now superseded". The caller may reply with tweaks: apply them through this same workflow, re-run step 14, and re-emit the full handoff.
 
+## Corrections
+
+A correction brief names the claim as written, the right claim, and the evidence (a `path:line`, a commit, or the user's words). Work it in four steps. (1) Confirm the right claim in code and cite `path:line`; when the code sides with the vault, or against the user, write nothing and report `Not corrected: <claim> - code shows <what> at <path:line>`. (2) Grep `docs/project-knowledge/` and `CLAUDE.md` for the claim and its key terms, and open every note that links the affected note. (3) Fix at the source surface: an ADR only by Amendment or supersession (step 10), a restated copy becomes a link with attribution (`per [[owner]]`), an out-of-vault copy is reported for the caller. (4) Re-run the grep and fix or justify every remaining hit. Hand off `Corrected: <wrong> -> <right> (confirmed in code at path:line); also fixed where it was restated: <notes>`.
+
 ## Anti-Patterns
 
 - Writing a new note without first finding link targets. Every note belongs in a neighborhood.

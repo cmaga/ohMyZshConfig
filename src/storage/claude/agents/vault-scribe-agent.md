@@ -29,6 +29,7 @@ The caller passes inline:
 
 - The facts to capture — decisions, numbers, constraints, and the why behind them.
 - Each fact carries an origin tag: `user-stated`, `code`, `claude-inferred`, or `third-party`. `user-stated` needs the user's quoted words; an approval relayed by the caller is `claude-inferred`.
+- Or a correction brief: the claim as written, the right claim, and the evidence (a `path:line`, a commit, or the user's words).
 - Ticket/PR references if relevant.
 - Optionally, which existing note(s) this touches or supersedes.
 
