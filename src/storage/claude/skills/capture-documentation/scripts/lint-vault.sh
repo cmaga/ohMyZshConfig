@@ -1023,7 +1023,7 @@ if [ "${1:-}" = "--hook" ]; then
   {
     "$JQ" -r '.findings[] | select(.sev == "fail") | "FAIL \(.path):\(.line) \(.code) \(.msg)"' "$ENV" 2>/dev/null
     "$JQ" -r '[.findings[] | select(.sev == "drift")][0:40][] | "DRIFT \(.path):\(.line) \(.code) \(.msg)"' "$ENV" 2>/dev/null
-    echo 'Fix every FAIL above before handing off. Copy each DRIFT line into the handoff as "Drift found: <what the vault states> - <what the code shows>".'
+    echo 'Fix every FAIL above before handing off; a FAIL you cannot fix without breaking a skill rule goes in the handoff as "Blocked: <the FAIL line> - <why>" and you hand off anyway. Copy each DRIFT line into the handoff as "Drift found: <what the vault states> - <what the code shows>".'
   } >&2
   exit 2
 fi
