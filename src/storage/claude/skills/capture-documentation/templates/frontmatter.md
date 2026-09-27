@@ -28,7 +28,14 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 
 - **Decision (ADR):** add `superseded_by: "[[ADR-NNN-name]]"` (a clean wikilink, never free text) when superseded. When a later note has weakened a premise but the question has not been re-decided, keep `status: active` and carry a `> Status: ACTIVE, premise weakened by [[ADR-NNN]] ...` banner — do not invent a half-superseded status value.
 - **Constraint:** add `severity: blocking | high | medium | low`.
-- **Policy:** add `steward:` (the role responsible for the policy — e.g. `founder` for a solo operation, or a named role like `head of engineering` / `CISO` once those exist; never a personal name) and `review_cadence:` (e.g. `annual`, `semi-annual`, `annual-or-on-material-change`).
+- **Policy:** add `steward:` (the role responsible for the policy — e.g. `founder` for a solo operation, or a named role like `head of engineering` / `CISO` once those exist; never a personal name) and `review_cadence:` (grammar below).
 - **Any type:** add `aliases: [other name, other name]` when the subject goes by names its title does not carry.
+- **Any type:** `last_verified: YYYY-MM-DD` — the day the note's code claims were last checked; equals `created` at capture and moves only after a full re-verification.
+- **Any type:** `basis: user-stated | inferred` — where the non-code claims came from; `inferred` marks a hypothesis.
+- **Any type:** `sources: [ticket:EN-123, pr:45, commit:abc1234, doc:docs/x.md]` — resolved refs only; never a vault note.
+- **Any type:** `review_cadence: annual | semi-annual | quarterly | monthly | annual-or-on-material-change | <N>d` — overrides the vault default of 180 days (plan 30, research 90 while open).
+- **Decision, constraint:** `governs: [server/services/execution/**, cli/publish.py]` — git pathspecs the note constrains; `governs: []` says it constrains no code; a commit under one raises a drift flag.
+- **Any type:** `applies_to: [server/src/features/x/]` — directories the rule stub covers when the Reusable surface does not name them.
+- **Decision:** `revisit_by: YYYY-MM-DD` and `revisit_when: <one-sentence tripwire>` — either or both; the date shows up as overdue.
 
 A key is added to this file only once a shipped script reads it, or when it changes whether the body is trusted before it is read.
