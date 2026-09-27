@@ -483,7 +483,14 @@ EOF
   if awk '/^## Reusable surface/ { s = 1; next } /^## / { s = 0 } s && /^[-*] /' "$TMP/parent.md" | grep -q . ; then :
   elif grep -q '^## Reusable surface' "$TMP/parent.md"; then
     local names; names=$(cut -f1 "$TMP/plan.tsv" | tr '\n' ',' | sed 's/,$//')
-    awk -v st="None $EM moved to $(wikilist "$names")." '/^## Reusable surface/ { print; h = 1; next } h && /^Entries under / { print; next } h { h = 0; print ""; print st; s = 1 } /^## / { s = 0 } s && /^[ \t]*$/ { next } { print }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
+    awk -v st="None $EM moved to $(wikilist "$names")." '
+      function stanza() { if (h) { print st; print ""; h = 0; s = 1 } }
+      /^## Reusable surface/ { print; h = 1; next }
+      h && /^Entries under / { print; next }
+      h && /^[ \t]*$/ { next }
+      h { print ""; stanza() }
+      /^## / { s = 0 } s && /^[ \t]*$/ { next } { print }
+      END { if (h) { print ""; stanza() } }' "$TMP/parent.md" > "$TMP/parent2.md" && mv "$TMP/parent2.md" "$TMP/parent.md"
   fi
   squeeze "$TMP/parent.md"
   local pbytes; pbytes=$(wc -c < "$TMP/parent.md" | tr -d ' ')
