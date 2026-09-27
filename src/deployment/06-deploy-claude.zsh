@@ -280,6 +280,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # notifications. That trade is not worth a status checklist, and the env var
     # above makes it unnecessary. It is deleted rather than merely omitted so
     # machines that took the interim deploy get it stripped.
+    # ANTHROPIC_DEFAULT_SONNET_MODEL binds the `sonnet` alias to the 1M window,
+    # so a per-call Agent `model: "sonnet"` (an enum with no [1m] form) gets it
+    # too; a bare alias gets 200k under an Opus parent, and large-input Sonnet
+    # agents died of it. Probed 2.1.283 on 2026-09-27: init model and subagent
+    # modelUsage both read claude-sonnet-5[1m], contextWindow 1000000; `sonnet[1m]`
+    # under the remap resolves the same, with no double suffix.
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
@@ -289,7 +295,8 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         jq '.env = ((.env // {}) + {
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
                 "BASH_MAX_TIMEOUT_MS":"3600000",
-                "CLAUDE_CODE_ENABLE_TODO_TOOLS":"1"
+                "CLAUDE_CODE_ENABLE_TODO_TOOLS":"1",
+                "ANTHROPIC_DEFAULT_SONNET_MODEL":"claude-sonnet-5[1m]"
             }) | del(.env.DISABLE_GROWTHBOOK,
                      .env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
@@ -297,7 +304,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi
@@ -374,7 +381,7 @@ echo "  - Skills -> $CLAUDE_SKILLS_DEST"
 echo "  - Agents -> $CLAUDE_AGENTS_DEST"
 echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
-echo "  - BashTool timeouts + telemetry env -> $SETTINGS_DEST (env)"
+echo "  - BashTool timeouts, task tools, sonnet 1M alias env -> $SETTINGS_DEST (env)"
 echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
 
 print_status "success" "Claude Code deployment complete!"

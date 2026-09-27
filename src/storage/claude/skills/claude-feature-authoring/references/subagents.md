@@ -26,7 +26,7 @@ Markdown file with YAML frontmatter. The markdown body becomes the subagent's sy
 name: code-review-agent
 description: Reviews code for quality, readability, and best practices
 tools: Read, Grep, Glob
-model: sonnet
+model: sonnet[1m]
 memory: project
 ---
 
@@ -47,7 +47,7 @@ Present findings as a prioritized list with file:line references.
 | `description`     | string                                           | —         | When Claude should delegate to this agent             |
 | `tools`           | comma-separated                                  | all       | Restricts available tools (omit to inherit all)       |
 | `disallowedTools` | comma-separated                                  | none      | Deny list — inverse of `tools`                        |
-| `model`           | `sonnet`, `opus`, `haiku`, `inherit`                                     | `inherit` | Prefer aliases — they auto-resolve to the latest version              |
+| `model`           | `sonnet[1m]`, `opus`, `haiku`, `inherit`         | `inherit` | Prefer aliases — they auto-resolve to the latest version. A bare `sonnet` gets 200k unless the parent session runs `sonnet[1m]`; append `[1m]` for the 1M window |
 | `memory`          | `user`, `project`, `local`, or omit              | none      | Persistent learning across sessions                   |
 | `maxTurns`        | number                                           | —         | Limit agentic loop iterations                         |
 | `skills`          | list of skill names                              | —         | Skills preloaded at startup (full content injected)   |

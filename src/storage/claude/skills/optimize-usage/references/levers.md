@@ -1,6 +1,6 @@
 # Lever inventory
 
-Last updated: 2026-09-21 · Method updated: 2026-07-21
+Last updated: 2026-09-27 · Method updated: 2026-07-21
 
 > **Effort is not auditable.** A dispatched agent's record carries its model and never its
 > effort (measured: 0 of 61 agent records in one run). So every `*_effort` row below is
@@ -18,24 +18,31 @@ Last updated: 2026-09-21 · Method updated: 2026-07-21
 > but cache reads $0.25/MTok vs opus $0.50, so a cache-heavy session runs below the
 > 2x list ratio — unmeasured; the row 1 fable figure was measured on Fable 5).
 
+> **Sonnet is `sonnet[1m]`.** A bare `sonnet` agent under an Opus parent gets the 200k
+> window, and Sonnet agents on large inputs died of it. Frontmatter takes the suffix;
+> per-call `model` opts (rows 7a-7f, 10) cannot, so they pass `sonnet` and the settings
+> remap `ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-5[1m]` binds the alias to 1M
+> (probed 2026-09-27, 2.1.283). The remap pins the alias to Sonnet 5; re-point it in
+> `06-deploy-claude.zsh` when a new Sonnet ships.
+
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet<br>haiku | fable 2.08x (measured on Fable 5)<br>opus 1.00x<br>sonnet 0.86x (directional)<br>haiku 0.18x | 100 |
+| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet[1m]<br>haiku | fable 2.08x (measured on Fable 5)<br>opus 1.00x<br>sonnet 0.86x (directional)<br>haiku 0.18x | 100 |
 | 2 | Session effort | settings.json, `--effort`, `CLAUDE_CODE_EFFORT_LEVEL` (live) | max<br>xhigh<br>high<br>medium<br>low | max 1.22x<br>xhigh 1.11x (directional)<br>high 1.00x<br>medium unmeasured<br>low 0.74x<br>(measured on opus, which the session also runs) | 50 |
-| 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios (fable 2x, opus 1x, sonnet 0.4x, haiku 0.2x); measured swaps run shallower than price (sonnet 0.86x at session) | 60 |
+| 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet[1m]<br>haiku | est. — price ratios (fable 2x, opus 1x, sonnet 0.4x, haiku 0.2x); measured swaps run shallower than price (sonnet 0.86x at session) | 60 |
 | 4 | Review effort | `effort:` frontmatter in the same review agent files | max<br>xhigh<br>high<br>medium<br>low | est. — effort measured shallow at session (max 1.22x / high 1.00x / low 0.74x) | 35 |
-| 5 | Worker model | `agents/worker-agent.md` `model:` — the only place a worker's model is set; dev-workflow never passes one | fable<br>opus<br>deepseek-flash (proxy)<br>sonnet<br>haiku | est. — Claude models: price ratios as row 3. deepseek-flash (DeepSeek-V4.1-Flash): 0x on the Claude limit, billed separately by DeepSeek at ~0.03x opus per token off-peak, double that at peak; `deepseek-v4-pro` (DeepSeek-V4-Pro-0813) is ~4x the flash price and dominated by it. Fails in a session not launched through `oc` | 30 |
+| 5 | Worker model | `agents/worker-agent.md` `model:` — the only place a worker's model is set; dev-workflow never passes one | fable<br>opus<br>deepseek-flash (proxy)<br>sonnet[1m]<br>haiku | est. — Claude models: price ratios as row 3. deepseek-flash (DeepSeek-V4.1-Flash): 0x on the Claude limit, billed separately by DeepSeek at ~0.03x opus per token off-peak, double that at peak; `deepseek-v4-pro` (DeepSeek-V4-Pro-0813) is ~4x the flash price and dominated by it. Fails in a session not launched through `oc` | 30 |
 | 6 | Worker effort | `agents/worker-agent.md` `effort:` | max<br>xhigh<br>high<br>medium<br>low | est. — shallow per session effort data; bounded by review gates | 10 |
-| 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 4.1 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read/summarize; sonnet ~price-ratio cheap, safe | 8 |
-| 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |
-| 7c | Review fan-out model | `lever-state.json` `review_fanout_model` — read by `agents/code-review-agent.md` for the `model` opt on its finder and disproof subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — detection happens here; a finder's miss is caught by nothing downstream | 45 |
+| 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 4.1 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — read/summarize; sonnet ~price-ratio cheap, safe | 8 |
+| 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — task-dependent; sonnet may save less than price implies | 20 |
+| 7c | Review fan-out model | `lever-state.json` `review_fanout_model` — read by `agents/code-review-agent.md` for the `model` opt on its finder and disproof subagents | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — detection happens here; a finder's miss is caught by nothing downstream | 45 |
 | 7d | Review fan-out effort | `lever-state.json` `review_fanout_effort` — same agents, `effort` opt | inherit (session)<br>max<br>xhigh<br>high<br>medium<br>low | est. — disproof is single-claim and near effort-flat; open-ended finding is not | 25 |
-| 7e | Parent fan-out model | `lever-state.json` `parent_fanout_model` — read by dev-workflow for the `model` opt on every agent a run dispatches that no other alias covers | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; the largest uncovered surface before this row existed (one measured run: 31 of 62 agents, 46% of output tokens, none of it on a lever) | 40 |
-| 7f | Scoping fan-out model | `lever-state.json` `scoping_fanout_model` — read by `agents/scoping-agent.md` for the `model` opt on its subagents | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — read-and-report threads; the judgment stays in the scoping agent | 12 |
-| 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
-| 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per medium/large ticket | 50 |
-| 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user, and by exit triage, where the same agent folds or escalates each loose end | inherit (session)<br>fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; dispatched on escalation and once per run at exit triage when there are loose ends | 55 |
-| 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet<br>haiku | est. — price ratios as row 3; one dispatch per ticket at Step 2 | 45 |
+| 7e | Parent fan-out model | `lever-state.json` `parent_fanout_model` — read by dev-workflow for the `model` opt on every agent a run dispatches that no other alias covers | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — price ratios as row 3; the largest uncovered surface before this row existed (one measured run: 31 of 62 agents, 46% of output tokens, none of it on a lever) | 40 |
+| 7f | Scoping fan-out model | `lever-state.json` `scoping_fanout_model` — read by `agents/scoping-agent.md` for the `model` opt on its subagents | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — read-and-report threads; the judgment stays in the scoping agent | 12 |
+| 8 | Vault-scribe model | `agents/vault-scribe-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | est. — occasional dispatch, small share | 15 (est.) |
+| 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | est. — price ratios as row 3; one dispatch per medium/large ticket | 50 |
+| 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user, and by exit triage, where the same agent folds or escalates each loose end | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | est. — price ratios as row 3; dispatched on escalation and once per run at exit triage when there are loose ends | 55 |
+| 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | est. — price ratios as row 3; one dispatch per ticket at Step 2 | 45 |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)
 

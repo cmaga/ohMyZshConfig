@@ -54,6 +54,9 @@ while [ $# -gt 0 ]; do
 done
 case "$MODEL" in haiku|sonnet) ;; *) usage ;; esac
 case "$JUDGE" in haiku|sonnet) ;; *) usage ;; esac
+# sonnet runs on the 1M window; labels and receipt keys keep the bare name
+cli_model() { case "$1" in sonnet) echo "sonnet[1m]" ;; *) echo "$1" ;; esac; }
+RUN_MODEL=$(cli_model "$MODEL"); RUN_JUDGE=$(cli_model "$JUDGE")
 case "$REPL$JOBS" in *[!0-9]*|'') usage ;; esac
 [ "$REPL" -ge 1 ] && [ "$JOBS" -ge 1 ] || usage
 [ -f "$PROBES" ] && [ -f "$JUDGE_FILE" ] && [ -d "$FIXTURE" ] || { echo "run-probes: fixture, probes.jsonl or judge.md missing" >&2; exit 2; }
@@ -105,7 +108,7 @@ else
   "$JQ" -j --argjson n "$REPL" '. as $p | range(1; $n + 1) | "\($p.id)\u0000\(.)\u0000\($p.question)\u0000"' "$PROBES" > "$TMP/tasks.nul"
   run_one() {
     local id="$1" rep="$2" q="$3" out
-    out=$(cd "$SCR" && claude -p "$q" --model "$MODEL" --output-format json \
+    out=$(cd "$SCR" && claude -p "$q" --model "$RUN_MODEL" --output-format json \
           --disallowedTools Write,Edit,NotebookEdit,Bash,WebFetch,WebSearch </dev/null 2>/dev/null)
     [ -n "$out" ] || out='{}'
     printf '%s' "$out" | "$JQ" -c --arg id "$id" --argjson rep "$rep" '
@@ -115,7 +118,7 @@ else
       || printf '{"id":"%s","rep":%s,"answer":"","is_error":true,"tokens":0,"cost":0,"duration_ms":0}\n' "$id" "$rep" > "$TMP/runs/$id.$rep.json"
   }
   export -f run_one
-  export SCR MODEL TMP JQ
+  export SCR RUN_MODEL TMP JQ
   xargs -0 -P "$JOBS" -n 3 bash -c 'run_one "$0" "$1" "$2"' < "$TMP/tasks.nul"
 
   # judge every run
@@ -142,7 +145,7 @@ REFERENCE:
 $(printf '%s' "$probe" | "$JQ" -r '.expect.reference')
 
 ANSWER:
-${ans:-(empty)}" --model "$JUDGE" --output-format json --disallowedTools Write,Edit,NotebookEdit,Bash,WebFetch,WebSearch,Read,Glob,Grep </dev/null 2>/dev/null | "$JQ" -r '.result // ""' | tr -d '\r')
+${ans:-(empty)}" --model "$RUN_JUDGE" --output-format json --disallowedTools Write,Edit,NotebookEdit,Bash,WebFetch,WebSearch,Read,Glob,Grep </dev/null 2>/dev/null | "$JQ" -r '.result // ""' | tr -d '\r')
       reason=$(printf '%s' "$verdict" | sed -n '2,$p' | tr '\n' ' ' | cut -c1-300)
       verdict=$(printf '%s' "$verdict" | head -n 1 | awk '{ print toupper($1) }' | tr -d '*.:')
       [ "$verdict" = PASS ] || pass=0
@@ -150,7 +153,7 @@ ${ans:-(empty)}" --model "$JUDGE" --output-format json --disallowedTools Write,E
     "$JQ" -c --argjson pass "$pass" --arg judged "$judged" --arg reason "$reason" '. + {pass: ($pass == 1), judged_by: $judged, judge_reason: $reason}' "$f" > "$f.judged" && mv "$f.judged" "$f"
   }
   export -f judge_one
-  export PROBES JUDGE JUDGE_FILE
+  export PROBES JUDGE RUN_JUDGE JUDGE_FILE
   find "$TMP/runs" -name '*.json' -print0 | xargs -0 -P "$JOBS" -n 1 bash -c 'judge_one "$0"'
 
   cat "$TMP/runs"/*.json | "$JQ" -s --slurpfile probes <("$JQ" -c . "$PROBES" | "$JQ" -s .) --slurpfile lint "$TMP/lint_counts.json" \

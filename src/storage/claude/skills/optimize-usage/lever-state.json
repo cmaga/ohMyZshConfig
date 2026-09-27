@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25",
+  "updated": "2026-09-27",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -22,12 +22,12 @@
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
     "worker_model": {
-      "value": "sonnet",
+      "value": "sonnet[1m]",
       "kind": "runtime",
       "native": "agents/worker-agent.md model:"
     },
     "tester_model": {
-      "value": "sonnet",
+      "value": "sonnet[1m]",
       "kind": "runtime",
       "native": "agents/tester-agent.md model:"
     },
@@ -45,7 +45,7 @@
       "native": "agents/worker-agent.md effort: (unset)"
     },
     "vault_scribe_model": {
-      "value": "sonnet",
+      "value": "sonnet[1m]",
       "kind": "runtime",
       "native": "agents/vault-scribe-agent.md model:"
     },
@@ -57,7 +57,7 @@
       ]
     },
     "code_fanout_model": {
-      "value": "sonnet",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.2"
@@ -78,7 +78,7 @@
       ]
     },
     "parent_fanout_model": {
-      "value": "sonnet",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Prerequisite 2"

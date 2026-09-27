@@ -1,7 +1,7 @@
 ---
 name: tester-agent
 description: Writes failing integration tests against a scaffolded repo, before any implementation exists. Use during the dev-workflow skill after the edge-case list is settled and before workers dispatch. Never writes unit tests, never implements anything.
-model: sonnet
+model: sonnet[1m]
 disallowedTools: WebFetch, WebSearch
 ---
 
