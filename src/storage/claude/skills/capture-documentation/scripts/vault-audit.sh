@@ -360,7 +360,13 @@ if [ "$HOOK" -eq 1 ]; then
       term(($c.adr_tripwires // 0); "ADR tripwires"; ($p.adr_tripwires // null)) + ". Run: " + $script
     else "" end
   ' "$CACHE" 2>/dev/null)
-  [ -n "$LINE" ] && printf '%s\n' "$LINE"
+  if [ -n "$LINE" ]; then
+    printf '%s\n' "$LINE"
+    # a rise is reported once: the counts it rose to become the new baseline,
+    # so the next session start is silent until something moves again (red
+    # keeps printing until the FAILs are gone)
+    "$JQ" '.prev_counts = .counts' "$CACHE" > "$CACHE.ack" 2>/dev/null && mv "$CACHE.ack" "$CACHE"
+  fi
   exit 0
 fi
 
