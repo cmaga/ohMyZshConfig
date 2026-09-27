@@ -18,6 +18,7 @@ Start at `docs/project-knowledge/.cache/_digest.md` if it exists (the SessionSta
 - Open drift flags come from `bash ~/.claude/skills/capture-documentation/scripts/vault-drift.sh --list .`. Judge each per `~/.claude/skills/capture-documentation/references/drift-triage.md`; clear it with a reason, or send the scribe a brief carrying the SHA.
 - Follow `[[wikilinks]]`. They are load-bearing context, not decoration.
 - To find what currently holds, follow `superseded_by` from note to note until a note has none.
+- Before proposing an approach, scan the Decisions section of `_index.md`; an option an ADR lists as rejected is a stop sign, not a suggestion.
 - To find what constrains X, grep `constraints/`, `policies/` and `domain/` for `[[X]]`.
 - A note with `basis: inferred` is a hypothesis. Report it as "the vault infers", never as fact.
 - An overdue freshness row means the note's code claims are unchecked. Re-check them against the code before relying on the note.

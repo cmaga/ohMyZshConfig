@@ -19,7 +19,8 @@
     "applies_to"
   ],
   "field_patterns": {
-    "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$"
+    "review_cadence": "^(annual|semi-annual|quarterly|monthly|annual-or-on-material-change|[0-9]+d)$",
+    "approved_by": "^([a-z0-9._-]+ [0-9]{4}-[0-9]{2}-[0-9]{2}|agent)$"
   },
   "freshness": {
     "max_age_days": 180,
@@ -66,7 +67,9 @@
         "superseded_by",
         "governs",
         "revisit_by",
-        "revisit_when"
+        "revisit_when",
+        "y_statement",
+        "approved_by"
       ],
       "statuses": [
         "active",
@@ -83,7 +86,15 @@
       ],
       "banner": true,
       "surface": "forbidden",
-      "size_limit": "warn"
+      "size_limit": "warn",
+      "section_order": [
+        "Context",
+        "Decision",
+        "Considered options",
+        "Consequences",
+        "Objections considered",
+        "Compliance"
+      ]
     },
     "constraints": {
       "type": "constraint",
@@ -613,9 +624,70 @@
       "severity": "info",
       "fix": "manual",
       "hint": "git rm docs/project-knowledge/_digest.md; the digest is regenerated under .cache/"
+    },
+    "ADR_Y_STATEMENT_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "add y_statement: In the context of .., facing .., we decided .., to achieve .., accepting .. (new ADRs: FAIL)"
+    },
+    "ADR_Y_STATEMENT_ORDER": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "y_statement clauses must run: In the context of, facing, we decided, [neglected], to achieve, accepting"
+    },
+    "ADR_Y_STATEMENT_LENGTH": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "summarize the rejected options; keep the y_statement under 400 characters"
+    },
+    "ADR_OPTIONS_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "add ## Considered options, chosen first; an old ADR gets it on its next touch as ## Considered options (recorded YYYY-MM-DD) (new ADRs: FAIL)"
+    },
+    "ADR_OPTIONS_EMPTY": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "list the options, or write _Only option: <why>._ or _No alternatives recorded: brief named none._"
+    },
+    "ADR_OPTIONS_CHOSEN_FIRST": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "the first bullet under ## Considered options is the chosen one, marked (chosen)"
+    },
+    "ADR_APPROVED_BY_AGENT": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "an unattended run approved this ADR; a human handle and date replaces it on review"
+    },
+    "ADR_OBJECTION_DISPOSITION": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "every ## Objections considered bullet ends with accepted as cost, rejected: <why>, or deferred: revisit if <condition>"
+    },
+    "ADR_INDEX_LINE_MISSING": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "every ADR has one _index.md line: - [[ADR-NNN-slug]] - <y_statement> (new ADRs: FAIL)"
+    },
+    "ADR_INDEX_LINE_MISMATCH": {
+      "severity": "fail",
+      "fix": "manual",
+      "hint": "the _index.md line carries the y_statement verbatim after the dash"
+    },
+    "ADR_INDEX_SUFFIX_LENGTH": {
+      "severity": "warn",
+      "fix": "manual",
+      "hint": "the currency suffix after the y_statement stays under 60 characters"
     }
   },
   "cache": {
     "digest": ".cache/_digest.md"
-  }
+  },
+  "promote_on_new_note": [
+    "ADR_Y_STATEMENT_MISSING",
+    "ADR_OPTIONS_MISSING",
+    "ADR_INDEX_LINE_MISSING"
+  ],
+  "promote_on_introduced": []
 }

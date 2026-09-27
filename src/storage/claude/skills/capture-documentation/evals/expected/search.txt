@@ -1,13 +1,12 @@
 exit=0
 --- stdout ---
 <tmp>/repo/docs/project-knowledge/components/worker.md:14-17	2	320	## Reusable surface
+<tmp>/repo/docs/project-knowledge/_index.md:15-34	1	932	## Decisions
 <tmp>/repo/docs/project-knowledge/components/worker.md:8-13	1	170	## Overview
 <tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:1-9	1	124	Single writer owns the claim path
 <tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:10-14	1	129	## Context
 <tmp>/repo/docs/project-knowledge/constraints/constraint-single-writer-db.md:15-17	1	192	## Reusable surface
 <tmp>/repo/docs/project-knowledge/decisions/ADR-001-use-postgres.md:13-17	1	143	## Decision
 <tmp>/repo/docs/project-knowledge/decisions/ADR-001-use-postgres.md:18-27	1	452	## Consequences
-<tmp>/repo/docs/project-knowledge/decisions/ADR-004-retire-batch-job.md:1-13	1	320	ADR-004: Retire the nightly batch job
-    > Status: DEPRECATED, folded into the queue-based flow.
 --- stderr ---
 

@@ -134,6 +134,7 @@ function flush(   s) {
     (h1 == "" ? "null" : h1), (first == "" ? "null" : first), (banner == "" ? "null" : banner), h2, heads, links
   printf "\"hook\":%s,\"markers\":[%s],\"governs\":%s,\"applies_to\":%s,\"gloss\":[%s],", \
     (s == "" ? "null" : "\"" esc(s) "\""), mk, (gov == "" ? "null" : "\"" esc(gov) "\""), (app == "" ? "null" : "\"" esc(app) "\""), gl
+  printf "\"opts\":[%s],\"osent\":%s,\"objs\":[%s],\"ilines\":[%s],", opts, (osent ? "true" : "false"), objs, ilines
   printf "\"surface\":%s}\n", (sline ? sprintf("{\"line\":%d,\"none\":%s,\"entries\":[%s]}", sline, (snone ? "true" : "false"), sent) : "null")
 }
 FNR == 1 {
@@ -145,6 +146,7 @@ FNR == 1 {
   bytes = 0; maxline = 0; maxline_no = 0
   delete seen
   hz = hdone = 0; hp = gov = app = mk = gl = gterm = gopen = glink = ""
+  cursec = opts = objs = ilines = ""; osent = 0
   isdec = (path ~ /^decisions\//); if (!isdec) hz = 1
 }
 {
@@ -181,7 +183,8 @@ fence { next }
     if (isdec) hz = (lvl == 2 && t == "Decision")
     gclose(); if (path == GLOSS && lvl == 3) { gopen = 1; gterm = t; gline = FNR; glink = 0 }
     if (lvl == 1 && h1 == "") h1 = pos(FNR, t)
-    if (lvl == 2) h2 = add(h2, pos(FNR, t))
+    if (lvl == 2) { h2 = add(h2, pos(FNR, t)); cursec = t }
+    if (lvl == 1) cursec = ""
     if (lvl <= 2) { emit(); insurf = (lvl == 2 && t ~ /^Reusable surface/) }
     if (insurf) sline = FNR
     if (lvl == 1) next
@@ -194,6 +197,16 @@ fence { next }
     else if (ent != "" && line ~ /^[ \t]+[^ \t]/) ent = ent " " line
     else emit()
   }
+  if (cursec == "Considered options" && line !~ /^#/) {
+    if (line ~ /^[-*] /) opts = add(opts, sprintf("{\"line\":%d,\"chosen\":%s}", FNR, (line ~ /\(chosen\)/) ? "true" : "false"))
+    else if (line ~ /^_(Only option|No alternatives recorded)/) osent = 1
+  }
+  if (cursec == "Objections considered" && line ~ /^[-*] /) {
+    od = "null"
+    if (line ~ /accepted as cost/) od = "\"accepted\""; else if (line ~ /rejected:/) od = "\"rejected\""; else if (line ~ /deferred: revisit if/) od = "\"deferred\""
+    objs = add(objs, sprintf("{\"line\":%d,\"disp\":%s}", FNR, od))
+  }
+  if (path == INDEX && line ~ /^[-*] /) ilines = add(ilines, pos(FNR, line))
   if (!hdone && line !~ /^#/) {
     if (line ~ /^[ \t]*$/) { if (hp != "") hdone = 1 }
     else if (line ~ /^[ \t]*(>|[-*+][ \t]|[0-9]+[.)][ \t]|\|)/) { if (hp != "") hdone = 1 }
@@ -636,8 +649,34 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
     (if $bs.sections then
       ($bs.sections as $want | [ $r.h2[].text ] as $have |
         ($want[] | select(. as $w | ($have | index($w)) | not) | f($r; "SECTION_MISSING"; 1; "## \(.)")),
-        (([ $want[] | . as $w | ($have | index($w)) | select(. != null) ]) as $order | if $order != ($order | sort) then f($r; "SECTION_ORDER"; 1; "sections out of order") else empty end)),
+        (([ ($bs.section_order // $want)[] | . as $w | ($have | index($w)) | select(. != null) ]) as $order | if $order != ($order | sort) then f($r; "SECTION_ORDER"; 1; "sections out of order") else empty end)),
       (([$file | capture("^(?<n>ADR-[0-9]{3})") | .n] | .[0]) as $n | if $n and (($r.h1.text // "") | startswith($n + ":") | not) then f($r; "ADR_TITLE_MISMATCH"; ($r.h1.line // 1); ($r.h1.text // "no H1")) else empty end)
+     else empty end),
+    (if $b == "decisions" then
+      ($r.fm.status // "") as $st | ($st == "active" or $st == "proposed" or $st == "revisit") as $live |
+      ($r.fm.y_statement // "") as $y |
+      (if $live and $y == "" then f($r; "ADR_Y_STATEMENT_MISSING"; ($r.fm_line.status // 1); "no y_statement") else empty end),
+      (if $y != "" then
+         ([ ("in the context of","facing","we decided","to achieve","accepting") | . as $k | ($y | ascii_downcase | index($k)) ]) as $pos |
+         (if any($pos[]; . == null) or $pos != ($pos | sort) then f($r; "ADR_Y_STATEMENT_ORDER"; ($r.fm_line.y_statement // 1); "expects: In the context of .., facing .., we decided .., [neglected ..,] to achieve .., accepting ..") else empty end),
+         (if ($y | length) > 400 then f($r; "ADR_Y_STATEMENT_LENGTH"; ($r.fm_line.y_statement // 1); "\($y | length) chars") else empty end)
+       else empty end),
+      ([ $r.h2[] | select(.text == "Considered options") ][0]) as $os |
+      (if $live and $os == null then f($r; "ADR_OPTIONS_MISSING"; 1; "no ## Considered options") else empty end),
+      (if $os != null and (($r.opts | length) == 0) and ($r.osent | not) then f($r; "ADR_OPTIONS_EMPTY"; $os.line; "no option bullets and no _Only option_ / _No alternatives recorded_ line") else empty end),
+      (if ($r.opts | length) > 0 and ($r.opts[0].chosen | not) then f($r; "ADR_OPTIONS_CHOSEN_FIRST"; $r.opts[0].line; "first option is not marked (chosen)") else empty end),
+      (if $r.fm.approved_by == "agent" then f($r; "ADR_APPROVED_BY_AGENT"; ($r.fm_line.approved_by // 1); "approved by agent (unattended run)") else empty end),
+      ($r.objs[] | select(.disp == null) | f($r; "ADR_OBJECTION_DISPOSITION"; .line; "objection needs: accepted as cost / rejected: <why> / deferred: revisit if <condition>")),
+      ([ ($Lby[$indexPath] // [])[] | select(.kind == "note" and .to == $r.path) | .line ]) as $ilns |
+      (if $live and ($ilns | length) == 0 then f($r; "ADR_INDEX_LINE_MISSING"; 1; "no _index.md line links this ADR") else empty end),
+      (if $y != "" and ($ilns | length) > 0 then
+         ($ilns[0]) as $ln | ([ ($byPath[$indexPath].ilines // [])[] | select(.line == $ln) ][0].text // "") as $it |
+         ($it | ascii_downcase | index($y | ascii_downcase)) as $at |
+         (if $at == null then f($r; "ADR_INDEX_LINE_MISMATCH"; $ln; "index line does not carry the y_statement")
+          else (($it[($at + ($y | length)):]) | gsub("^[ \\-]+|[ ]+$"; "")) as $suffix |
+               if ($suffix | length) > 60 then f($r; "ADR_INDEX_SUFFIX_LENGTH"; $ln; "\($suffix | length) chars after the y_statement") else empty end
+          end)
+       else empty end)
      else empty end),
     (if $bs.banner then
       ($r.fm.status // "") as $st |
@@ -747,9 +786,10 @@ pass1() {
   local files0; files0=$(mktemp "$TMP/p1.XXXXXX")
   local gloss
   gloss=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="glossary")|.key][0] // "glossary.md"' "$schema")
+  local index; index=$("$JQ" -r '[.hubs|to_entries[]|select(.value.type=="index")|.key][0] // "_index.md"' "$schema")
   find "$tree" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.cache/*' -not -path '*/_fragments/*' -not -path "$tree/_digest.md" -print0 | sort -z > "$files0"
   if [ -s "$files0" ]; then
-    xargs -0 awk -v root="$tree/" -v q="'" -v DASH=" — " -v EM="$(printf '\342\200\224')" -v GLOSS="$gloss" \
+    xargs -0 awk -v root="$tree/" -v q="'" -v DASH=" — " -v EM="$(printf '\342\200\224')" -v GLOSS="$gloss" -v INDEX="$index" \
       -v PATHRE="^[A-Za-z0-9_.@-]+/[^ ]*[A-Za-z0-9_]$" "$PASS1_AWK" < "$files0" > "$out"
   else
     : > "$out"
@@ -863,9 +903,10 @@ build_baseline() {
 }
 
 assemble_changed() {
-  local cur="$1" base="$2" exc="$3" n="$4" touched="$5" out="$6"
-  "$JQ" -s --slurpfile B "$base" --slurpfile exc "$exc" --slurpfile touched "$touched" --argjson n "$n" '
-    ($touched[0] // []) as $touched | $exc[0] as $exc | $B as $baseAll |
+  local cur="$1" base="$2" exc="$3" n="$4" touched="$5" newf="$6" schema="$7" out="$8"
+  "$JQ" -s --slurpfile B "$base" --slurpfile exc "$exc" --slurpfile touched "$touched" --slurpfile newf "$newf" --slurpfile sc "$schema" --argjson n "$n" '
+    ($touched[0] // []) as $touched | $exc[0] as $exc | $B as $baseAll | ($newf[0] // []) as $newf |
+    ($sc[0].promote_on_new_note // []) as $pNew | ($sc[0].promote_on_introduced // []) as $pIntro |
     def hit($e): .code == $e.code and (.path == $e.path or (($e.path | endswith("*")) and (.path | startswith($e.path | rtrimstr("*")))));
     (map(select(.code != "MARKER_RECHECK_DUE")) |
      map(if (.code | endswith("_LIMIT")) and .sev == "fail" then
@@ -873,13 +914,15 @@ assemble_changed() {
             if ($b | length) == 0 then $x
             elif ($x.bytes // 0) > ($b[0].bytes // 0) then $x
             else ($x + {sev: "warn"}) end)
-         else . end)) as $curRatcheted |
+         else . end) |
+     map(if (.code as $c | $pNew | index($c)) != null and (.path as $p | $newf | index($p)) != null then . + {sev: "fail"} else . end)) as $curRatcheted |
     (([ $curRatcheted[] | . as $x | select((any($exc[]; . as $e | $x | hit($e))) | not) ])
       + ([ $exc[] | . as $e | select(([ $curRatcheted[] | select(hit($e)) ] | length) == 0) | {code: "EXCEPTION_STALE", path: ".vault-lint-exceptions", line: 0, msg: "\($e.code) \($e.path)", sev: "warn", fix: "auto", hint: "allowlist entry matches nothing; delete it"} ])
     ) as $curFiltered |
     ([ $baseAll[] | . as $x | select((any($exc[]; . as $e | $x | hit($e))) | not) ]) as $baseFiltered |
     ($baseFiltered | map({key: (.code + "\u0001" + .path + "\u0001" + .msg), value: true}) | from_entries) as $baseKeys |
-    ($curFiltered | map(select((($baseKeys[.code + "\u0001" + .path + "\u0001" + .msg]) // false) | not))) as $introduced |
+    ($curFiltered | map(select((($baseKeys[.code + "\u0001" + .path + "\u0001" + .msg]) // false) | not))
+       | map(if (.code as $c | $pIntro | index($c)) != null and .sev == "warn" then . + {sev: "fail"} else . end)) as $introduced |
     ($curFiltered | map(select(.sev == "fail" and (($baseKeys[.code + "\u0001" + .path + "\u0001" + .msg]) // false) and (.path as $p | $touched | index($p)))) | map(. + {sev: "drift"})) as $drift |
     (($introduced + $drift) | sort_by([{fail:0,drift:1,warn:2,info:3}[.sev] // 9, .path, .line])) as $F |
     { ok: (([ $F[] | select(.sev == "fail") ] | length) == 0),
@@ -914,10 +957,16 @@ do_changed() {
     return 0
   fi
   "$JQ" -R . "$TMP/touched.txt" | "$JQ" -s . > "$TMP/touched.json"
+  : > "$TMP/newfiles.txt"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    git -C "$repo" cat-file -e "HEAD:$relvault/$rel" 2>/dev/null || printf '%s\n' "$rel" >> "$TMP/newfiles.txt"
+  done < "$TMP/touched.txt"
+  "$JQ" -R . "$TMP/newfiles.txt" | "$JQ" -s . > "$TMP/newfiles.json"
   lint_tree "$vault" "$repo" "$TMP/schema.json" "$TMP/touched.json" 1 "$TMP/cur.raw.ndjson" || return 2
   build_baseline "$vault" "$repo" "$relvault" "$TMP/touched.txt" "$TMP/base" || return 2
   lint_tree "$TMP/base" "$repo" "$TMP/schema.json" "$TMP/touched.json" 0 "$TMP/base.raw.ndjson" || return 2
-  assemble_changed "$TMP/cur.raw.ndjson" "$TMP/base.raw.ndjson" "$TMP/exc.json" "$(note_count "$vault")" "$TMP/touched.json" "$out"
+  assemble_changed "$TMP/cur.raw.ndjson" "$TMP/base.raw.ndjson" "$TMP/exc.json" "$(note_count "$vault")" "$TMP/touched.json" "$TMP/newfiles.json" "$TMP/schema.json" "$out"
 }
 
 # ---------------------------------------------------------------------------

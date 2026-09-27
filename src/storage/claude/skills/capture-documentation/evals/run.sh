@@ -326,22 +326,6 @@ finish_case hook-worktree
 must cp -R "$CHANGE/." "$REPO/"
 pad_to_bytes "$VAULT/components/reporting-pipeline.md" 62000
 
-# KNOWN lint-vault.sh BUG (report-only, not fixed here -- see the eval's final
-# report): direct `--changed VAULT_ROOT` resolves repo=$(git -C "$VAULT"
-# rev-parse --show-toplevel) (symlink-resolved) but vault=$(cd "$VAULT" &&
-# pwd) (symlink-preserving). Under mktemp's default TMPDIR, which sits behind
-# a symlink on macOS (/tmp -> /private/tmp, /var -> /private/var), those two
-# disagree, so do_changed()'s relvault="${vault#"$repo"/}" prefix-strip is a
-# silent no-op: relvault keeps the full absolute vault path instead of
-# becoming repo-relative. git diff/ls-files still run fine against that
-# absolute pathspec, but the later `case "$rp" in "$relvault"/*.md)` match
-# tests it against git's repo-*relative* output, which can never match --
-# touched.txt stays empty and do_changed() takes its clean early-exit. This
-# is why `changed` below is byte-identical to `changed-none`: --changed
-# cannot see the overlay/padding at all on this platform. --hook does not
-# hit this, because it derives repo from the hook JSON's cwd and builds
-# vault from that same already-resolved repo, so the two stay consistent;
-# hook-block (below) is what actually demonstrates the SIZE_NOTE_LIMIT fail.
 "$LINT" --changed "$VAULT" >"$WORK/c_out" 2>"$WORK/c_err"
 C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
@@ -352,6 +336,37 @@ finish_case changed
 C_RC=$?
 C_OUT="$(cat "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
 finish_case hook-block
+
+# hook-new-adr: an ADR file that does not exist at HEAD gets the lazy
+# template-v2 presence classes promoted to FAIL (schema promote_on_new_note),
+# while the same classes stay WARN on the committed pre-v2 ADRs.
+cat > "$VAULT/decisions/ADR-019-new-without-v2.md" <<'EOF'
+---
+type: decision
+status: active
+created: 2026-04-01
+governs: []
+---
+# ADR-019: New without v2 fields
+
+## Context
+
+Links [[worker]] so it is not an orphan on the outbound side.
+
+## Decision
+
+Exists only for the hook-new-adr eval case.
+
+## Consequences
+
+None.
+EOF
+"$JQ" -n --arg cwd "$REPO" '{cwd: $cwd, stop_hook_active: false}' > "$WORK/hook_newadr.json"
+"$LINT" --hook <"$WORK/hook_newadr.json" >"$WORK/c_out" 2>"$WORK/c_err"
+C_RC=$?
+C_OUT="$(grep -E 'ADR-019|^lint-vault' "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+finish_case hook-new-adr
+rm -f "$VAULT/decisions/ADR-019-new-without-v2.md"
 
 "$JQ" -n --arg cwd "$REPO" '{cwd: $cwd, stop_hook_active: true}' > "$WORK/hook_stopactive.json"
 "$LINT" --hook <"$WORK/hook_stopactive.json" >"$WORK/c_out" 2>"$WORK/c_err"

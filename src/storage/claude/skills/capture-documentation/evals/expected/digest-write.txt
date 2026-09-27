@@ -11,6 +11,8 @@ exit=0
 - [ADR-009: Scale the worker pool horizontally](decisions/ADR-009-scale-worker-pool.md): Run more worker processes against the same worker claim path.
 - [ADR-010: Amend the worker timeout](decisions/ADR-010-amend-worker-timeout.md): Extend the claim timeout; no `## Amendment` section follows below, exercising AMENDMENT_MISSING. · amended
 - [ADR-012: Replace eager retry with backoff](decisions/ADR-012-successor-silent.md): Switch worker from eager retry to exponential backoff.
+- [ADR-017: Pin the Node runtime](decisions/ADR-017-pin-node-runtime.md): Pin the worker to the current Node LTS through the repo's version file.
+- [ADR-018: Bad template fields](decisions/ADR-018-bad-template-fields.md): Rebuild nightly.
 
 ## Constraints
 - [Legacy billing path is frozen](constraints/constraint-legacy-billing-freeze.md): The legacy billing path behind components/billing is frozen pending removal.

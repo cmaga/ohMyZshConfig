@@ -37,5 +37,7 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 - **Decision, constraint:** `governs: [server/services/execution/**, cli/publish.py]` — git pathspecs the note constrains; `governs: []` says it constrains no code; a commit under one raises a drift flag.
 - **Any type:** `applies_to: [server/src/features/x/]` — directories the rule stub covers when the Reusable surface does not name them.
 - **Decision:** `revisit_by: YYYY-MM-DD` and `revisit_when: <one-sentence tripwire>` — either or both; the date shows up as overdue.
+- **Decision:** `y_statement: In the context of .., facing .., we decided for .. and neglected .., to achieve .., accepting ..` — one line, written once at capture, under 400 characters; its `_index.md` line repeats it verbatim.
+- **Decision:** `approved_by: <handle> YYYY-MM-DD` — only from the user's relayed words; `agent` on an unattended run; otherwise omitted.
 
 A key is added to this file only once a shipped script reads it, or when it changes whether the body is trusted before it is read.
