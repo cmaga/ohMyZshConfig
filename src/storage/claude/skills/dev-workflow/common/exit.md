@@ -27,12 +27,14 @@ Everything else fails: a finding you fixed, anything a ticket already owns, an `
 
 ### Triage
 
-Decide what you can first. A candidate your own recommendation would fold — it rides this branch — is folded now, never sent on and never asked. Only what you cannot settle quickly from the code goes to the escalation agent — a `general-purpose` agent on `ESCALATION_MODEL`, one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence (`file:line`, the finding or marker verbatim, the Jira search result) and the ticket's intent. It returns one verdict per candidate:
+Decide what you can first. A candidate your own recommendation would fold — it rides this branch — is folded now, never sent on and never asked. Only what you cannot settle quickly from the code goes to the escalation agent — a `general-purpose` agent on `ESCALATION_MODEL`, one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence (`file:line`, the finding or marker verbatim, the Jira search result). It returns one verdict per candidate:
 
-- **`fold`** — the fix rides this branch: it stays inside the ticket's intent, needs no decision only the user can make, and does not double the diff. It names the fix.
-- **`escalate`** — only the user can answer it. It says why, and gives its recommendation.
+- **`fold`** — the fix rides this branch: it needs no decision only the user can make, and does not double the diff. Never judge it on the ticket's intent or the defect's age. It names the fix.
+- **`escalate`** — only the user can answer it: it needs knowledge or authority only they hold. It names that, and gives its recommendation.
 
-Apply every `fold` yourself, commit as `fold triaged loose ends`, send the commits to the review gate's same agent as its next round, and re-run the full suite. Every `escalate` becomes a tracker task carrying the agent's reasoning.
+An `escalate` whose recommendation needs nothing only the user holds is a decision the agent made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides.
+
+Apply every `fold` yourself, commit as `fold triaged loose ends`, send the commits to the review gate's same agent as its next round, and re-run the full suite. Every `escalate` becomes a tracker task carrying the agent's reasoning. A candidate that turns up after the batch — in the fold's re-gate, say — goes through this same triage as a follow-up batch; nothing reaches the tracker any other way.
 
 ### Working it
 
