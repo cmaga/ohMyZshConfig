@@ -286,6 +286,8 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # agents died of it. Probed 2.1.283 on 2026-09-27: init model and subagent
     # modelUsage both read claude-sonnet-5[1m], contextWindow 1000000; `sonnet[1m]`
     # under the remap resolves the same, with no double suffix.
+    # The mcp__claude_ai_Notion deny drops the unused Notion connector's tools from
+    # every session and subagent: ~57K of a 109K-token prefix (measured 2026-09-27).
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
         if [ ! -f "$SETTINGS_DEST" ]; then
@@ -300,11 +302,13 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             }) | del(.env.DISABLE_GROWTHBOOK,
                      .env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
-                     .env.OTEL_METRIC_EXPORT_INTERVAL)' \
+                     .env.OTEL_METRIC_EXPORT_INTERVAL)
+            | .permissions.deny = ((.permissions.deny // [])
+                | if any(. == "mcp__claude_ai_Notion") then . else . + ["mcp__claude_ai_Notion"] end)' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion tools denied"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi
