@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27",
+  "updated": "2026-09-28",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -7,7 +7,7 @@
       "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json"
     },
     "session_effort": {
-      "value": "xhigh",
+      "value": "high",
       "kind": "runtime",
       "native": "~/.claude/settings.json modelSettings[\"claude-opus-5-5\"].effortLevel (top-level effortLevel no longer applies to Opus 5.5; it still covers Fable 5.1 and Opus 5)"
     },
@@ -22,7 +22,7 @@
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
     "worker_model": {
-      "value": "sonnet[1m]",
+      "value": "deepseek-flash[1m]",
       "kind": "runtime",
       "native": "agents/worker-agent.md model:"
     },
