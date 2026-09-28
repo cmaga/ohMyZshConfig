@@ -264,7 +264,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # Merge BashTool timeout env vars into ~/.claude/settings.json, and strip the
     # retired cost-tracker telemetry vars (removed 2026-07-21: the tracker's agent
     # attribution could not measure per-lever slices and the pipeline was not worth
-    # its maintenance; lever costs now come from the optimize-usage benchmark plus
+    # its maintenance; lever costs now come from Artificial Analysis cost per task plus
     # published research).
     # CLAUDE_CODE_ENABLE_TODO_TOOLS restores the task-list tools (TaskCreate /
     # TaskUpdate / TaskList / TaskGet), which newer models suppress by default.

@@ -47,13 +47,14 @@
     "vault_scribe_model": {
       "value": "sonnet[1m]",
       "kind": "runtime",
-      "native": "agents/vault-scribe-agent.md model:"
+      "native": "agents/vault-scribe-agent.md and agents/adr-auditor-agent.md model:"
     },
     "research_fanout_model": {
       "value": "haiku",
       "kind": "skill",
       "readers": [
-        "dev-workflow SKILL.md Step 4.1"
+        "dev-workflow SKILL.md Step 4.1",
+        "dev-workflow common/ultra.md Precedent research"
       ]
     },
     "code_fanout_model": {
