@@ -30,8 +30,6 @@ Once step 2 has the waves, seed the task tracker with one item per wave, `Integr
 
        /goal every component of <SPEC-TICKET> merged into spec/<SPEC-TICKET> with the full suite green on that branch
 
-   Say in the same message that `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=10` is worth setting for a run this long.
-
    After any interruption, ask the user to re-arm the goal.
 
 4. **File the spec's tickets, under an epic.** Create the epic first, named for the spec and linked to the ultra ticket — never convert the ultra ticket into one. File one child per `## C-N:` section, plus one per **Post-deploy** item and per hole the spec left as a ticket, each naming its section. **Read the epic's children and the ultra ticket's links first** and match to `C-N` ids — top up, never duplicate. An **Open question** still in a component's section is a spec defect: settle it per [escalation](#escalation) before its wave opens; only one that goes to the user withholds that wave — run the waves before it.
