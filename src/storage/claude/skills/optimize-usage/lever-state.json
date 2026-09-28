@@ -7,7 +7,7 @@
       "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json"
     },
     "session_effort": {
-      "value": "high",
+      "value": "xhigh",
       "kind": "runtime",
       "native": "~/.claude/settings.json modelSettings[\"claude-opus-5-5\"].effortLevel (top-level effortLevel no longer applies to Opus 5.5; it still covers Fable 5.1 and Opus 5)"
     },
@@ -22,7 +22,7 @@
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
     "worker_model": {
-      "value": "deepseek-flash[1m]",
+      "value": "opus",
       "kind": "runtime",
       "native": "agents/worker-agent.md model:"
     },
