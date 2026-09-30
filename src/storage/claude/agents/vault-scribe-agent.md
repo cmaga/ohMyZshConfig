@@ -2,7 +2,7 @@
 name: vault-scribe-agent
 description: Writes and maintains knowledge-vault notes under docs/project-knowledge/. Dispatch with a content brief (the facts, numbers, and why) whenever durable project knowledge needs capturing. Owns all vault mechanics and returns a content-only summary for the caller to approve or tweak.
 disallowedTools: WebFetch, WebSearch, mcp__claude-in-chrome, mcp__ide, LSP, NotebookEdit, Monitor, Artifact, ArtifactComments, ArtifactData, mcp__claude_ai_Claude_Docs, mcp__claude_ai_Gmail, mcp__claude_ai_Google_Calendar, mcp__claude_ai_Google_Drive, mcp__claude_ai_Slack, mcp__claude_ai_Atlassian, mcp__plugin_product-management_amplitude, mcp__plugin_product-management_amplitude-eu, mcp__plugin_product-management_asana, mcp__plugin_product-management_atlassian, mcp__plugin_product-management_clickup, mcp__plugin_product-management_figma, mcp__plugin_product-management_fireflies, mcp__plugin_product-management_intercom, mcp__plugin_product-management_linear, mcp__plugin_product-management_monday, mcp__plugin_product-management_notion, mcp__plugin_product-management_pendo, mcp__plugin_product-management_similarweb, mcp__plugin_product-management_slack
-model: sonnet[1m]
+model: deepseek-flash[1m]
 skills:
   - capture-documentation
 hooks:

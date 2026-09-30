@@ -20,7 +20,7 @@ The user relies heavily on LLM tools for software development. Their primary goa
 
 - Config edits go to the source repo `~/dev/personal/ohMyZshConfig/src/storage/claude/` — never to `~/.claude/`, which deploy clobbers. Live-only settings are edited in `~/.claude/settings.json` or per session.
 - Never set `CLAUDE_CODE_SUBAGENT_MODEL`, `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` or `CLAUDE_CODE_EFFORT_LEVEL`, and keep `availableModels`/`enforceAvailableModels`/`deniedModels`/`maxEffortLevel` unset — blunt global overrides and caps that silently clobber the model/effort levers.
-- DeepSeek models are options for the worker lever only. They resolve only through the local claude-proxy (sessions launched with `oc`), and the proxy's `DEEPSEEK_MODELS` allowlist is the option list.
+- DeepSeek models are options for the worker and vault levers only. They resolve only through the local claude-proxy (sessions launched with `oc`), and the proxy's `DEEPSEEK_MODELS` allowlist is the option list.
 - Changes must be approved by the user first.
 - Verification **MUST** be performed regardless of mode once changes are complete.
 

@@ -1,6 +1,6 @@
 # Lever inventory
 
-Last updated: 2026-09-28 · Method updated: 2026-09-28
+Last updated: 2026-09-30 · Method updated: 2026-09-28
 
 > **Effort is not auditable.** A dispatched agent's record carries its model and never its
 > effort (measured: 0 of 61 agent records in one run). So every `*_effort` row below is
@@ -42,7 +42,7 @@ Last updated: 2026-09-28 · Method updated: 2026-09-28
 | 7d | Review fan-out effort | `lever-state.json` `review_fanout_effort` — same agents, `effort` opt | inherit (session)<br>max<br>xhigh<br>high<br>medium<br>low | as row 4; disproof is single-claim and near effort-flat; open-ended finding is not | 25 |
 | 7e | Parent fan-out model | `lever-state.json` `parent_fanout_model` — read by dev-workflow for the `model` opt on every agent a run dispatches that no other alias covers | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; the largest uncovered surface before this row existed (one measured run: 31 of 62 agents, 46% of output tokens, none of it on a lever) | 40 |
 | 7f | Scoping fan-out model | `lever-state.json` `scoping_fanout_model` — read by `agents/scoping-agent.md` for the `model` opt on its subagents | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; read-and-report threads; the judgment stays in the scoping agent | 12 |
-| 8 | Vault model | `agents/vault-scribe-agent.md` and `agents/adr-auditor-agent.md` `model:` — one lever for both vault agents | fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; occasional dispatch, small share | 15 (est.) |
+| 8 | Vault model | `agents/vault-scribe-agent.md` and `agents/adr-auditor-agent.md` `model:` — one lever for both vault agents | fable<br>opus<br>deepseek-flash[1m] (proxy)<br>sonnet[1m]<br>haiku | as row 3; deepseek-flash[1m] as row 5, 0 on the Claude limit, and fails in a session not launched through `oc` — the vault agents dispatch from any session that writes the vault, not only dev-workflow; occasional dispatch, small share | 15 (est.) |
 | 9 | Tester model | `agents/tester-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; one dispatch per medium/large ticket | 50 |
 | 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user, and by exit triage, where the same agent folds or escalates each loose end | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; dispatched on escalation and once per run at exit triage when there are loose ends | 55 |
 | 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; one dispatch per ticket at Step 2 | 45 |
