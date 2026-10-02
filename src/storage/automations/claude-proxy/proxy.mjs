@@ -121,6 +121,25 @@ function chooseTarget(req, body) {
   return { upstream: "deepseek" };
 }
 
+// DeepSeek validates tool-schema regexes in a narrower dialect than Anthropic
+// and rejects the whole request over one it cannot parse (Claude Code's own
+// Artifact tool ships `^[^\0]*$`). Drop every `pattern` keyword from tool
+// schemas; Claude Code still validates tool input itself. Only string values
+// are keywords — a property *named* pattern (Grep's) is an object and stays.
+function stripSchemaPatterns(node) {
+  if (Array.isArray(node)) return node.forEach(stripSchemaPatterns);
+  if (node === null || typeof node !== "object") return;
+  if (typeof node.pattern === "string") delete node.pattern;
+  Object.values(node).forEach(stripSchemaPatterns);
+}
+
+function sanitizeForDeepSeek(body) {
+  const payload = JSON.parse(body.toString("utf8"));
+  if (!Array.isArray(payload.tools)) return body;
+  payload.tools.forEach((tool) => stripSchemaPatterns(tool.input_schema));
+  return Buffer.from(JSON.stringify(payload));
+}
+
 const server = http.createServer(async (req, res) => {
   // Lets `oc` check whether the proxy is up before pointing Claude Code at it.
   if ((req.url ?? "").split("?")[0] === "/health") {
@@ -154,6 +173,7 @@ const server = http.createServer(async (req, res) => {
     headers.delete("authorization");
     headers.delete("x-api-key");
     headers.set("x-api-key", key);
+    body = sanitizeForDeepSeek(body);
   }
 
   let upstream;
