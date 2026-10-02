@@ -66,6 +66,17 @@ oc() {
   env $via_proxy claude --dangerously-skip-permissions "$@"
 }
 
+# oc on DeepSeek Flash as the session model. Needs the proxy, so it refuses to
+# start without it rather than open a session whose model cannot resolve.
+# Shadows /usr/bin/od (octal dump); reach that with `command od`.
+od() {
+  if ! curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
+    print -u2 "od: claude-proxy is not up; DeepSeek models need it"
+    return 1
+  fi
+  oc --model 'deepseek-flash[1m]' "$@"
+}
+
 # Task Planner - launch plan execution via Claude Code CLI
 TASK_PLANNER_LAUNCHER="$HOME/.cline/skills/task-planner/scripts/launch.zsh"
 run-small()  { $TASK_PLANNER_LAUNCHER --small "$@"; }

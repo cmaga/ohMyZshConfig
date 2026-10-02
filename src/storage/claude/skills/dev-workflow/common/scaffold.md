@@ -10,7 +10,7 @@ The design, in a form the user can hold: real code, all structure, no behavior. 
 - Migration DDL, including the constraints and indexes that enforce something
 - Doc comments on the contracts
 
-Every function body is exactly the unimplemented throw, in the language's idiom.
+Every new body is exactly the unimplemented throw, in the language's idiom; [Editing existing code](#editing-existing-code) covers code that already exists.
 
 ## Doc comments
 
@@ -52,6 +52,8 @@ The scaffold must let the work split into disjoint file sets, one per worker. If
 ## Editing existing code
 
 Scaffold whatever the change adds or moves at the interface level, however small. When nothing does — a pure body rewrite — record `## Scaffold: none — no interface changed` in the plan and carry on; the tests bind to the surface that already existed.
+
+Throw only where behavior is changing, whatever the unit: function, method, class or service. Existing code the change merely moves, or extends with a parameter that defaults to today's behavior, keeps its implementation. A new call from code existing tests already run goes on a worker's card, not into the scaffold. A migration never throws: write its DDL or leave its body empty.
 
 If the project has no integration suite, stop and ask the user whether to build one or skip it. Unattended: stand up a minimal harness covering this ticket's integration points and continue.
 
