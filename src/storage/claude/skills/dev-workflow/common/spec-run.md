@@ -62,15 +62,15 @@ A manager that cannot load this skill or create its worktree halts the chain. Ne
 
 ## Integrating a wave
 
-Components build in parallel and integrate one at a time. Serial integration is the backstop for collisions the set above missed: textual ones surface as rebase conflicts, semantic ones as a red suite, while the manager is still alive.
+Components build in parallel and integrate one at a time. Serial integration is the backstop for collisions the set above missed: textual ones surface as rebase conflicts, semantic ones as red tests, while the manager is still alive.
 
 **You touch one working tree — your own.** Never a component's: a rebase belongs to whoever owns the tree, and conflicts are resolved by resuming that manager.
 
 Once every component in the wave has returned, in wave order:
 
-1. **Resume its manager**: rebase onto `spec/<SPEC-TICKET>` and run the full suite. Nothing to fetch or push — the ref is local and shared.
+1. **Resume its manager**: rebase onto `spec/<SPEC-TICKET>` and run its own tests plus the integration tests of every sibling already merged — the collision surface, not the full suite. Nothing to fetch or push — the ref is local and shared.
 2. **Check it against its acceptance list** — [done-when](done-when.md), before the merge. Green and reviewed does not mean the contract holds.
-3. **Green** — merge in your own worktree (a fast-forward), run the full suite there yourself, then transition the ticket to done via the `jira` skill.
+3. **Green** — merge in your own worktree (a fast-forward; step 1 already tested this tree), then transition the ticket to done via the `jira` skill.
 4. **Conflict, red, or an acceptance line that fails** — send back what failed and resume. **Three non-green returns**, counting step 1's rebase, and the chain halts on it. A question only the user can answer costs no round and pauses the chain per [escalation](#escalation); a red suite alongside it waits with it.
 
 Leave every component's worktree and branch standing until [hand-back](#hand-back) — the resume path needs them.
@@ -110,7 +110,7 @@ When the last wave integrates:
    [done-when](done-when.md)'s hygiene binds every check here.
 2. **Classify every deviation before repairing any.** **Improvement** — keep the code, repair the spec. **Regression** — fix the code. **Missing** — a gap the size of a component is not repaired here; name it, say what closing it takes, leave the call to the user.
 3. **Plan the regressions, then fix them yourself.** Write the list first — it is what the report owes. **No implementation subagents past this line.**
-4. **Run the review gate** over your fixes, up to the five-round backstop in [SKILL.md](../SKILL.md). Then the full suite in your worktree, and step 1's checks again against the repaired branch.
+4. **Run the review gate** over your fixes, up to the five-round backstop in [SKILL.md](../SKILL.md). Then the full suite in your worktree — the chain's one full run, owed whether or not there were fixes — and step 1's checks again against the repaired branch.
 5. **Retire the planning artifacts**, in order — never on a [halt](#halting):
    - Dispatch `vault-scribe-agent` to write one vault note per `## C-N:` section, from the **final** spec.
    - Attach the spec file to the ultra ticket via the `jira` skill.

@@ -42,7 +42,7 @@ On the smallest tickets there is no plan file and no task card — the parent's 
 2. Read 1-2 similar existing implementations in the codebase for pattern reference.
 3. Implement the change, one file at a time.
 4. Run the project's linter and type checker on modified files. Fix issues before reporting done.
-5. Run the tests your task names until they pass. Iterate as many times as it takes — they are the ground truth, not a formality.
+5. Run the tests your task names, plus the unit tests of the files you changed, until they pass. Iterate as many times as it takes — they are the ground truth, not a formality. Never run the full suite or a whole test tier: the parent runs it once, after all work is done.
 
 ## Stop and escalate
 

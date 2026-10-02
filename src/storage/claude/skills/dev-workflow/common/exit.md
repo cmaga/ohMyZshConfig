@@ -6,10 +6,11 @@ Every tier ends here before returning control.
 2. **Create the PR** via the `git-provider` skill. Skip on a spec-descended run: the branch is local and the whole spec goes up once.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — below. Skip on `small`, except unattended: there the gate is the only thing that reads the code.
-5. **[Triage](#triage) the loose ends.** Folds go back through the review gate and the full suite before the next step.
-6. **Wait on the PR's required checks** — unattended only. Red halts; the merge is the user's. A spec-descended run has no PR — see [Landing unattended](#landing-unattended).
-7. **Render the [exit report](../templates/exit-report.md)**. Say the run is finished so the `/goal` evaluator can see it.
-8. **Seed the [loose-end tracker](#the-loose-end-tracker)** with what triage escalated and present its first item. That item, not the report, is the last thing on screen.
+5. **[Triage](#triage) the loose ends.** Folds go back through the review gate and the tests they affect before the next step.
+6. **Run the full suite once**, now that the last change is in: merge the current base branch first, then run the project's gate command. This is the run's only full run. Red: fix, re-run the failures, then the full suite again. A base branch that moves afterwards and merges in cleanly needs no re-run.
+7. **Wait on the PR's required checks** — unattended only. Red halts; the merge is the user's. A spec-descended run has no PR — see [Landing unattended](#landing-unattended).
+8. **Render the [exit report](../templates/exit-report.md)**. Say the run is finished so the `/goal` evaluator can see it.
+9. **Seed the [loose-end tracker](#the-loose-end-tracker)** with what triage escalated and present its first item. That item, not the report, is the last thing on screen.
 
 ## The loose-end tracker
 
@@ -34,7 +35,7 @@ Decide what you can first. A candidate your own recommendation would fold — it
 
 An `escalate` whose recommendation needs nothing only the user holds is a decision the agent made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides.
 
-Apply every `fold` yourself, commit as `fold triaged loose ends`, send the commits to the review gate's same agent as its next round, and re-run the full suite. Every `escalate` becomes a tracker task carrying the agent's reasoning. A candidate that turns up after the batch — in the fold's re-gate, say — goes through this same triage as a follow-up batch; nothing reaches the tracker any other way.
+Apply every `fold` yourself, commit as `fold triaged loose ends`, send the commits to the review gate's same agent as its next round, and re-run the tests the folds affect. Every `escalate` becomes a tracker task carrying the agent's reasoning. A candidate that turns up after the batch — in the fold's re-gate, say — goes through this same triage as a follow-up batch; nothing reaches the tracker any other way.
 
 ### Working it
 
@@ -86,7 +87,7 @@ Four kinds of finding. **Only bugs block the gate.**
 
 - **Read the whole path before editing.** A finding names a symptom and a line; the defect is often neither. Read every function on the path end to end, then edit from that reading.
 - Apply the fix yourself. Never dispatch a worker for one.
-- **Small enough** — apply, re-run the tests, commit as `address code review findings`, push unless spec-descended.
+- **Small enough** — apply, re-run the tests the fix affects, commit as `address code review findings`, push unless spec-descended.
 - **Too big** — a [triage](#triage) candidate, after the Jira search. A candidate counts as handled.
 - A recurring finding lists examples only; sweep the diff for the rest.
 - **Sweep for the claim, not the symbol.** Everywhere that *quotes* the old behavior is stale, and a grep for the symbol will not find it — check the wiring module, the entry point, the README.
