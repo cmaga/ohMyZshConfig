@@ -2,7 +2,7 @@
 name: code-review-agent
 description: Final code review before a PR ships. Reads the branch diff, checks it against what the change was supposed to do, and returns findings as JSON. Never edits files. Re-run after fixes until it reports pass.
 tools: Read, Grep, Glob, Bash, Agent
-model: fable
+model: opus
 effort: xhigh
 memory: project
 ---

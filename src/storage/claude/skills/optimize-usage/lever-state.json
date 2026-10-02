@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30",
+  "updated": "2026-10-02",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -12,7 +12,7 @@
       "native": "~/.claude/settings.json modelSettings[\"claude-opus-5-5\"].effortLevel (top-level effortLevel no longer applies to Opus 5.5; it still covers Fable 5.1 and Opus 5)"
     },
     "review_model": {
-      "value": "fable",
+      "value": "opus",
       "kind": "runtime",
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
@@ -32,7 +32,7 @@
       "native": "agents/tester-agent.md model:"
     },
     "escalation_model": {
-      "value": "fable",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent",
