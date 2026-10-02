@@ -4,7 +4,7 @@ A ticket whose spec is approved. Every component the spec carves is built and me
 
 This Driver is the whole run; only Step 1's first item ran before it. The chain never merges to the base branch and never deploys: it ends with the whole spec on an integration branch the user runs, tests, and merges.
 
-`<SPEC-TICKET>` is the ultra ticket; its description carries the spec's path, which resolves in the main checkout. `<COMPONENT-TICKET>` is one component's ticket.
+`<SPEC-TICKET>` is the spec's epic; its description carries the spec's path, which resolves in the main checkout. `<COMPONENT-TICKET>` is one component's ticket.
 
 Three roles: **you are the parent**, one per spec. A **manager** is the agent you dispatch per component — it runs this skill for its own ticket. You address managers; what they spawn is theirs.
 
@@ -32,7 +32,7 @@ Once step 2 has the waves, seed the task tracker with one item per wave, `Integr
 
    After any interruption, ask the user to re-arm the goal.
 
-4. **File the spec's tickets, under an epic.** Create the epic first, named for the spec and linked to the ultra ticket — never convert the ultra ticket into one. File one child per `## C-N:` section, plus one per **Post-deploy** item and per hole the spec left as a ticket, each naming its section. **Read the epic's children and the ultra ticket's links first** and match to `C-N` ids — top up, never duplicate. An **Open question** still in a component's section is a spec defect: settle it per [escalation](#escalation) before its wave opens; only one that goes to the user withholds that wave — run the waves before it.
+4. **Check the epic's tickets.** The ultra run filed them when the spec merged. Read the epic's children and match them to `C-N` ids; file one for any section missing it, naming its section — never duplicate. An **Open question** still in a component's section is a spec defect: settle it per [escalation](#escalation) before its wave opens; only one that goes to the user withholds that wave — run the waves before it.
 
 5. **Take the integration branch and a worktree on it.** Local, never pushed until [hand-back](#hand-back). Cut only if step 2 found none:
 
@@ -113,7 +113,7 @@ When the last wave integrates:
 4. **Run the review gate** over your fixes, up to the five-round backstop in [SKILL.md](../SKILL.md). Then the full suite in your worktree — the chain's one full run, owed whether or not there were fixes — and step 1's checks again against the repaired branch.
 5. **Retire the planning artifacts**, in order — never on a [halt](#halting):
    - Dispatch `vault-scribe-agent` to write one vault note per `## C-N:` section, from the **final** spec.
-   - Attach the spec file to the ultra ticket via the `jira` skill.
+   - Attach the spec file to the epic via the `jira` skill.
    - Delete the spec from the repo on this branch.
 6. **Push the branch and open the one PR** — `git push -u origin spec/<SPEC-TICKET>`, then the `git-provider` skill. Red checks are reported, not fixed.
 7. **Move every component ticket to match the branch** — the branch is the truth.

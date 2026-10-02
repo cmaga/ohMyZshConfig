@@ -30,7 +30,7 @@ Still stops the run: the prerequisite gates, a review gate at its five-round bac
 
 Read the ticket first (Step 1.1), then run Prerequisites 1-4. A **chain** skips Steps 1-4 and runs [the chain](common/spec-run.md) instead; its Driver seeds tracking and runs the main-checkout gate itself.
 
-A chain is an ultra ticket — its description names a spec path — whose spec is approved: the path resolves in the main checkout on the base branch. If it does not resolve, the ticket's status says why. **In review**: say so and stop; the user merging it starts the run. **Done**: the chain already ran; say so and stop. Issue type never overrides this — an epic carrying the path is the chain's ticket, not a container to look inside. `manual` does not apply to a chain.
+A chain is the epic carrying an approved spec's path: the path resolves in the main checkout on the base branch. An ultra ticket whose spec has merged but has no epic yet runs [ultra wrap-up step 4](common/ultra.md#wrap-up) and stops. If the path does not resolve, the ticket's status says why. **In review**: say so and stop; the user merging it is what files the epic. **Done**: say so and stop. `manual` does not apply to a chain.
 
 Everything else, a component ticket included, runs the steps below.
 
@@ -50,7 +50,7 @@ Everything else, a component ticket included, runs the steps below.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
 
-Every step below is labelled **internal** or **user-facing**. An internal step prints nothing between its tool calls and never ends a turn — the task list is the status surface. Every message that waits on the user is at most four sentences of plain words, plus anything it has to show (a file list, a `/goal` line), then each thing that needs their answer, numbered. Detail is what they ask for next.
+Every step below is labelled **internal** or **user-facing**. An internal step prints nothing between its tool calls and never ends a turn — the task list is the status surface. Every message that waits on the user aims for two sentences of plain words — what the thing is and what is wrong with it, then the approach — with four the ceiling, plus anything it has to show (a file list, a `/goal` line), then each thing that needs their answer, numbered: one line each, naming your recommendation, no reasoning. Detail is what they ask for next.
 
 ## Step 1: Understanding The Goal — internal
 
@@ -67,7 +67,7 @@ One line surfaces from this step: the ticket read, assigned, and moved to In Pro
 
 ## Step 3: User brief — user-facing
 
-Explain the goal to the user as simply as possible — no code, no jargon. **Four sentences at most, plus the one thing you need them to weigh in on.** Depth is on request. Do not proceed until the user says go: your framing of the problem must be approved. A solution they suggest is an option to consider, not gospel.
+Explain the goal to the user as simply as possible — no code, no jargon. **Two sentences, four at most, plus the one thing you need them to weigh in on.** Depth is on request. Do not proceed until the user says go: your framing of the problem must be approved. A solution they suggest is an option to consider, not gospel.
 
 ## Step 4: High Level Solution Research — internal until Present (item 5)
 
@@ -121,7 +121,7 @@ The complete list; a step not named here does not wait, whatever its procedure f
 
 After that the run does not stop until the PR is out. Only escalation breaks it: the review gate returns `escalate` or hits its five-round backstop, a worker escalation you cannot decide from the code, or a hard blocker. **A question whose answer is in the repo is not an escalation** — read the code and decide it.
 
-**Before an escalation reaches the user, give it to the escalation agent** — a `general-purpose` agent on `ESCALATION_MODEL` — with the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user. The same agent [triages](common/exit.md#triage) the loose ends at exit.
+**Before an escalation reaches the user, give it to the escalation agent** — a `general-purpose` agent on `ESCALATION_MODEL` — with the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user. An `escalate` whose recommendation needs nothing only the user holds is a decision it made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides. The same agent [triages](common/exit.md#triage) the loose ends at exit.
 
 ### Small
 

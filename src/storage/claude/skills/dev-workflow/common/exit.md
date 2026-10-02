@@ -33,8 +33,6 @@ Decide what you can first. A candidate your own recommendation would fold — it
 - **`fold`** — the fix rides this branch: it needs no decision only the user can make, and does not double the diff. Never judge it on the ticket's intent or the defect's age. It names the fix.
 - **`escalate`** — only the user can answer it: it needs knowledge or authority only they hold. It names that, and gives its recommendation.
 
-An `escalate` whose recommendation needs nothing only the user holds is a decision the agent made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides.
-
 Apply every `fold` yourself, commit as `fold triaged loose ends`, send the commits to the review gate's same agent as its next round, and re-run the tests the folds affect. Every `escalate` becomes a tracker task carrying the agent's reasoning. A candidate that turns up after the batch — in the fold's re-gate, say — goes through this same triage as a follow-up batch; nothing reaches the tracker any other way.
 
 ### Working it
