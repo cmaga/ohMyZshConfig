@@ -10,7 +10,7 @@ Memory grows one write at a time and shrinks only here. Sessions file skill less
 
 Keep is the default. A lesson that keeps working stays, and a review that changes nothing is a correct outcome.
 
-With a skill name as the argument, run Part 1 for that skill only and skip Part 2.
+With a skill name as the argument, run Part 1 for that skill only, skip Part 2, and still run Part 3.
 
 ## Part 1: Skill lessons
 
@@ -21,14 +21,15 @@ Run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memo
 3. **Set aside resolved lessons.** A lesson marked `Resolved:` whose change has shipped — it is in the deployed copy under `~/.claude/skills/<name>/` for a global skill, or on the project's base branch for a project skill — is proposed for deletion in step 6. One with a recurrence dated after the change shipped is a fix that did not take: group it with the rest. Keep one whose change has not shipped.
 4. **Group by cause, not by wording.** Two lessons naming different files are one group when the same missing sentence produced both, and the same cause filed in two projects is one group. For each group, count sightings — each lesson's `Date` is one, and every date on its `Recurrences:` line is another — and note their spread in time.
 5. **Rule each group.** A lesson marked `Declined:` stays out of the groups unless it has a recurrence dated after the decline.
-   - **Defect** — the text is wrong, missing, or contradicts itself elsewhere. Two sightings, or one that names a cost worth the change.
-   - **Anecdote** — one sighting, no cost past the moment. Leave it exactly where it is. It resolves by never recurring, and deleting it destroys the evidence its second sighting would need.
+   - **Defect** — the text is wrong, missing, or contradicts itself elsewhere, with three or more sightings.
+   - **Anecdote** — fewer than three sightings. Leave it exactly where it is, unmentioned. It resolves by never recurring, and deleting it destroys the evidence its next sighting would need.
    - **Not the skill** — the run misread text that was clear, or the friction was really the code. Propose deleting it, unless its **How to apply** still prevents something.
 6. **Present the groups before drafting anything**, defects first, then not-the-skill groups and shipped resolutions, one line each: what recurs, how many times, and the change you would make. The user picks.
 7. **Read the surrounding text before writing a word of the fix.** A rule that already exists is a fix that did not take — the most important thing a review can find. A second copy of it elsewhere makes the skill worse; the defect is where the rule sits. Verify the lesson's claim against the file as it stands now — lessons age, and the sentence may already have changed.
-8. **Draft each picked change** through the `claude-feature-authoring` skill, which owns the authoring rules. Edits land in the source from step 2.
-9. **Show the rendered instruction, not the diff** — the text a future run will read, before and after.
-10. **Resolve on approval.** Mark each acted-on lesson `Resolved: <commit subject or worktree path>` instead of deleting it, so it keeps working until the change ships; a later review deletes it at step 3. Delete the picked not-the-skill lessons and shipped resolutions: the topic file, its `MEMORY.md` line, and the section heading once the section is empty. A group the user declined stays where it is, with `Declined: <date>` and one line of why appended to each lesson, so the next review does not re-litigate it.
+8. **Agree each change in plain words first,** one picked group at a time: the problem, then what changes. Show no drafted text until the user agrees.
+9. **Draft the agreed change** through the `claude-feature-authoring` skill, which owns the authoring rules. Edits land in the source from step 2.
+10. **Show the rendered instruction, not the diff** — the text a future run will read, before and after.
+11. **Resolve on approval.** Mark each acted-on lesson `Resolved: <commit subject or worktree path>` instead of deleting it, so it keeps working until the change ships; the sweep deletes it once deployed (Part 3 step 1). Delete the picked not-the-skill lessons and shipped resolutions: the topic file, its `MEMORY.md` line, and the section heading once the section is empty. A group the user declined stays where it is, with `Declined: <date>` and one line of why appended to each lesson, so the next review does not re-litigate it.
 
 ## Part 2: Everything else
 
@@ -41,15 +42,23 @@ Run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memo
 2. **Present the proposals before changing anything**, grouped by class, one line each: the entry, what happens to it, and where it goes. Keep entries are not listed. The user picks. Append `Declined: <date>` and one line of why to each entry they decline.
 3. **Apply each picked change.**
    - **Belongs elsewhere:** confirm its home holds it, and put it there first when it does not — the vault per the `knowledge-vault-use` rule, Jira through the `jira` skill. Then delete the entry.
-   - **Promote:** draft the rule, skill, hook, or CLAUDE.md text through `claude-feature-authoring` and show the rendered text. Once approved, mark the entry `Resolved: <commit subject or worktree path>`; a later review deletes it once the change ships.
+   - **Promote:** agree the change in plain words, then draft the rule, skill, hook, or CLAUDE.md text through `claude-feature-authoring` and show the rendered text. Once approved, mark the entry `Resolved: <commit subject or worktree path>`; a later review deletes it once the change ships.
    - **Stale:** name what contradicts it, then correct or delete it.
    - **Duplicate:** fold it into the entry that stays.
-4. **Leave `MEMORY.md` consistent:** every line points at a file that exists, and no line points at a deleted one.
+
+## Part 3: Sweep
+
+Every review ends here. Say what the sweep will delete and merge, one line each, and apply it on the user's word.
+
+1. **Delete what shipped during the run.** A lesson or entry marked `Resolved:` whose change is now deployed goes, as in Part 1 step 3.
+2. **Rebuild the index.** One entry per `MEMORY.md` line, each with a short hook, under the heading it belongs to, skill sections on top. No file is linked twice. Check each hook against its topic file and fix one that has gone stale.
+3. **Stay under the read limit.** Keep `MEMORY.md` under 140 lines and well under 25 KB. When it is over, merge topic files that share a theme into one, each original kept whole under its own heading, and repoint `[[links]]` to the merged name. Never drop a fact to fit.
+4. **Leave it consistent:** every line points at a file that exists, and every topic file has a line.
 
 ## Rules
 
 - Change nothing the user did not pick.
 - Edit skill and rule sources in ohMyZshConfig or the project's repository, never their deployed copies under `~/.claude/skills/` or `~/.claude/rules/`, which the next deploy overwrites. Memory edits under `~/.claude/projects/` are this skill's job.
 - Commit global config edits in ohMyZshConfig with `make lint` passing. Make project repository edits in a new worktree of that repository and leave them uncommitted; its own merge rules apply, and a dirty main checkout blocks other work. Never deploy — `make deploy-claude` is the user's call.
-- Recurrence is what separates a defect from a bad day. One lesson earns a skill change only when it names what it cost.
+- Recurrence is what separates a defect from a bad day. A skill change takes three sightings.
 - Every change is the smallest edit that would have prevented the lesson. Lessons are a machine for accreting rules, and a skill nobody can hold in context is worse than one with a gap in it.
