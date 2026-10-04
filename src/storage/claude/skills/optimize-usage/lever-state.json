@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02",
+  "updated": "2026-10-04",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -96,6 +96,11 @@
       "readers": [
         "agents/scoping-agent.md Subagent settings"
       ]
+    },
+    "advisor_model": {
+      "value": "off",
+      "kind": "runtime",
+      "native": "advisorModel in ~/.claude/settings.json (unset); /advisor or --advisor per session"
     }
   }
 }
