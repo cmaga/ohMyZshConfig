@@ -2,9 +2,10 @@
   "updated": "2026-10-04",
   "levers": {
     "session_model": {
-      "value": "opus",
+      "value": "sonnet[1m]",
       "kind": "runtime",
-      "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json"
+      "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json",
+      "note": "one-week trial from 2026-10-04, advisor off; revert to opus if plan quality drops"
     },
     "session_effort": {
       "value": "high",
@@ -17,7 +18,7 @@
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
-      "value": "xhigh",
+      "value": "high",
       "kind": "runtime",
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
@@ -65,7 +66,7 @@
       ]
     },
     "review_fanout_model": {
-      "value": "opus",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"

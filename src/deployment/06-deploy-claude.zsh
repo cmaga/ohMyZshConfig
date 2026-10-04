@@ -285,8 +285,9 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # too; a bare alias gets 200k under an Opus parent, and large-input Sonnet
     # agents died of it. Probed 2.1.283 on 2026-09-27: init model and subagent
     # modelUsage both read claude-sonnet-5[1m], contextWindow 1000000; `sonnet[1m]`
-    # under the remap resolves the same, with no double suffix.
-    # The mcp__claude_ai_Notion deny drops the unused Notion connector's tools from
+    # under the remap resolves the same, with no double suffix. Re-pointed to
+    # Sonnet 5.5 and re-probed on 2.1.289, 2026-10-04: claude-sonnet-5-5[1m], 1000000.
+    # The mcp__claude_ai_Notion and Google_Drive denies drop unused connectors' tools from
     # every session and subagent: ~57K of a 109K-token prefix (measured 2026-09-27).
     # Idempotent: same keys overwritten with same values on re-deploy.
     if command_exists jq; then
@@ -298,17 +299,17 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
                 "BASH_MAX_TIMEOUT_MS":"3600000",
                 "CLAUDE_CODE_ENABLE_TODO_TOOLS":"1",
-                "ANTHROPIC_DEFAULT_SONNET_MODEL":"claude-sonnet-5[1m]"
+                "ANTHROPIC_DEFAULT_SONNET_MODEL":"claude-sonnet-5-5[1m]"
             }) | del(.env.DISABLE_GROWTHBOOK,
                      .env.CLAUDE_CODE_ENABLE_TELEMETRY, .env.OTEL_METRICS_EXPORTER,
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
                      .env.OTEL_METRIC_EXPORT_INTERVAL)
             | .permissions.deny = ((.permissions.deny // [])
-                | if any(. == "mcp__claude_ai_Notion") then . else . + ["mcp__claude_ai_Notion"] end)' \
+                | reduce ("mcp__claude_ai_Notion", "mcp__claude_ai_Google_Drive") as $d (.; if any(. == $d) then . else . + [$d] end))' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion tools denied"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion and Google Drive tools denied"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi

@@ -18,7 +18,7 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > Claude limit. Rows 3-11 reuse the row 1-2 ratios. Ratios are not additive points.
 > Aliases bound (Claude Code 2.1.283): opus=Opus 5.5 ($4/$20, cache read $0.20; default
 > effort medium, and top-level effortLevel does not reach it, so it needs a modelSettings
-> key), fable=Fable 5.1, sonnet=Sonnet 5 [1m] via the remap below, haiku=Haiku 4.5;
+> key), fable=Fable 5.1, sonnet=Sonnet 5.5 [1m] via the remap below, haiku=Haiku 4.5;
 > deepseek-flash=DeepSeek-V4.1-Flash, deepseek-v4-pro=DeepSeek-V4-Pro-0813.
 
 > Perf column: Terminal-Bench 4.0, agentic coding, independently run — Artificial Analysis
@@ -31,14 +31,13 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > window, and Sonnet agents on large inputs died of it. Frontmatter takes the suffix;
 > per-call `model` opts (rows 7a-7f, 10) cannot, so they pass `sonnet` and the settings
 > remap `ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-5[1m]` binds the alias to 1M
-> (probed 2026-09-27, 2.1.283). The remap pins the alias to Sonnet 5; re-point it in
-> `06-deploy-claude.zsh` when a new Sonnet ships. Sonnet 5.5 shipped at the same per-token
-> price: 0.62x and Perf 63.6 (64.1), against Sonnet 5's 0.98x and (9.6). Its `[1m]` binding
-> is unprobed.
+> (probed 2026-09-27, 2.1.283). The remap pins the alias to Sonnet 5.5 (re-pointed and
+> probed 2026-10-04, 2.1.289); re-point it in `06-deploy-claude.zsh` when a new Sonnet ships.
+> Sonnet 5 was 0.98x and (9.6).
 
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Perf (TB 4.0) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet[1m]<br>haiku | fable 2.15x<br>opus 1.00x<br>sonnet 0.98x<br>haiku 0.15x | fable 52.0 (58.1)<br>opus 59.6 (65.2)<br>sonnet — (9.6)<br>haiku — | 100 |
+| 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet[1m]<br>haiku | fable 2.15x<br>opus 1.00x<br>sonnet 0.62x<br>haiku 0.15x | fable 52.0 (58.1)<br>opus 59.6 (65.2)<br>sonnet 63.6 (64.1)<br>haiku — | 100 |
 | 2 | Session effort | `/effort` or the `/model` picker (live, hand-set; saves per model under `modelSettings` in user settings — a top-level `effortLevel` there does not reach Opus 5.5, and `max` is never saved), `--effort`, `CLAUDE_CODE_EFFORT_LEVEL` | max<br>xhigh<br>high<br>medium<br>low | max 3.29x<br>xhigh 1.90x<br>high 1.00x<br>medium 0.74x<br>low 0.30x<br>(Opus 5.5) | max 59.6<br>xhigh 59.6<br>others unpublished<br>(Opus 5.5) | 50 |
 | 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet[1m]<br>haiku | as row 1 (fable 2.15x, opus 1x, sonnet 0.98x, haiku 0.15x) | as row 1 | 60 |
 | 4 | Review effort | `effort:` frontmatter in the same review agent files | max<br>xhigh<br>high<br>medium<br>low | as row 2 (max 3.29x / xhigh 1.90x / high 1.00x / medium 0.74x / low 0.30x) | as row 2 | 35 |
