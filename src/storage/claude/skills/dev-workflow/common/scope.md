@@ -1,5 +1,6 @@
 # Scope
 
+- Start from the Step 2 case file and Step 4.2's mapping; read only what they leave open.
 - Identify what changes are required to implement the chosen solution.
 - Identify affected files — search symbols, read neighbors.
 - Identify relevant documentation on the affected files and systems.

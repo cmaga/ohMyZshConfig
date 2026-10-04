@@ -67,28 +67,29 @@ One line surfaces from this step: the ticket read, assigned, and moved to In Pro
 
 ## Step 3: User brief — user-facing
 
-Explain the goal to the user as simply as possible — no code, no jargon. **Two sentences, four at most, plus the one thing you need them to weigh in on.** Depth is on request. Do not proceed until the user says go: your framing of the problem must be approved. A solution they suggest is an option to consider, not gospel.
+Explain the goal to the user as simply as possible — no code, no jargon. **Two sentences, four at most, plus the one thing you need them to weigh in on**, and a numbered line on online research: recommend running it only when the repo has no precedent for this kind of problem, else skipping. Depth is on request. Do not proceed until the user says go: your framing of the problem must be approved. A solution they suggest is an option to consider, not gospel.
 
 ## Step 4: High Level Solution Research — internal until Present (item 5)
 
 Gather multiple solutions and pick the best one. Fan out only over sets you enumerate yourself — never per-item over a set a subagent produced.
 
-1. Use `ultracode` (fan-out agents on `RESEARCH_FANOUT_MODEL`) for deep online research on industry standards and clean solutions to this type of problem. Weigh any direction the user shared.
-2. **Codebase fit** — map the leading solution onto this repo: where each new piece lives, which existing symbols it reuses. Fan out on `CODE_FANOUT_MODEL` when the surface is too large for one agent. Verify every placement and reuse claim at `file:line` before trusting it. A bad pattern is not to be followed because it is convention.
+1. Only when the user chose it at Step 3: use `ultracode` (fan-out agents on `RESEARCH_FANOUT_MODEL`) for deep online research on industry standards and clean solutions to this type of problem. Weigh any direction the user shared.
+2. **Codebase fit** — map the leading solution onto this repo: where each new piece lives, which existing symbols it reuses. Start from the Step 2 case file and read only what it leaves open. Fan out on `CODE_FANOUT_MODEL` when the surface is too large for one agent. Verify every placement and reuse claim at `file:line` before trusting it. A bad pattern is not to be followed because it is convention.
 3. **Synthesize** — converge on one recommended solution, challenging every assumption. If the target behavior is not settled enough to converge, recommend `ultra` instead and carry the research into the spec.
 4. **Implementation Routing** Determine a recommended implementation tier
    | Tier | When | Where the user is |
    | -------- | ----------------------------------------------------------------------------------------- | ------------------------ |
    | `small` | The whole change states in a sentence and one worker can do it against an obvious check | Intent only |
-   | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the PR |
+   | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the scaffold, the PR |
    | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
    Unattended, nobody is watching, so read the last column as what a user *would* need to see: `large` is where new structure or a moved boundary appears, whether or not anyone reviews the scaffold.
-5. **Present** — user-facing. Four parts, in this order, nothing else:
+5. **Present** — user-facing. Five parts, in this order, nothing else:
    1. **Where we are.** `Research complete for <the problem, restated in one line>.`
    2. **The approach.** Plain language. No jargon, file paths, or symbol names. Short.
    3. **The tier**, with one clause on why.
-   4. **The `/goal` line to paste**, unless the take said `manual` — see [Unattended runs](#unattended-runs). Pasting it is the go; pasting nothing means they stay in the loop.
+   4. **Open calls** — the strategic calls the run can already see it would otherwise decide alone, one numbered line each with your recommendation. Their answers bind the run. Omit the part when there are none.
+   5. **The `/goal` line to paste**, unless the take said `manual` — see [Unattended runs](#unattended-runs). Pasting it is the go; pasting nothing means they stay in the loop.
 
    Then stop. Walk the solution point by point only if they ask — one piece per message, advancing on "next", the one-line problem restatement at the top of each. The user says "go" and implementation begins. For understanding: UI artifact prototypes (mocked data) for ambiguous UI changes; architectural diagrams for complex systems.
 
@@ -116,12 +117,12 @@ Run the sequence for the confirmed tier. Each step links to its procedure file. 
 The complete list; a step not named here does not wait, whatever its procedure file says:
 
 - `large` — one wait, before any code is written: the [scaffold](common/scaffold.md) review.
-- `medium` — none.
+- `medium` — the same [scaffold](common/scaffold.md) review.
 - `small` — none.
 
 After that the run does not stop until the PR is out. Only escalation breaks it: the review gate returns `escalate` or hits its five-round backstop, a worker escalation you cannot decide from the code, or a hard blocker. **A question whose answer is in the repo is not an escalation** — read the code and decide it.
 
-**Before an escalation reaches the user, give it to the escalation agent** — a `general-purpose` agent on `ESCALATION_MODEL` — with the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user. An `escalate` whose recommendation needs nothing only the user holds is a decision it made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides. The same agent [triages](common/exit.md#triage) the loose ends at exit.
+**Unattended, give an escalation to the escalation agent before it reaches the user**; attended, it goes straight to the user with your recommendation. The escalation agent is a `general-purpose` agent on `ESCALATION_MODEL`; send it the question and the evidence, told to decide it and spawn nothing. Act on its decision without reporting it; only what it cannot decide reaches the user. An `escalate` whose recommendation needs nothing only the user holds is a decision it made: send it back once, told that folding into this ticket is available and that it must decide, and act on what it decides. Unattended, the same agent [triages](common/exit.md#triage) the loose ends at exit.
 
 ### Small
 
@@ -130,10 +131,10 @@ After that the run does not stop until the PR is out. Only escalation breaks it:
 
 ### Medium
 
-The full pipeline, no waits.
+The full pipeline; attended, one wait at the scaffold.
 
 1. [Scope](common/scope.md)
-2. [Scaffold](common/scaffold.md) — commit it as soon as it is written
+2. [Scaffold](common/scaffold.md) — attended, wait for the user as in large; unattended, commit it as soon as it is written
 3. [Edge cases](common/edge-cases.md) — produce the full list and carry it straight into the tester
 4. [Tests first](common/tests-first.md)
 5. [Plan](common/plan.md)
@@ -146,7 +147,7 @@ The full pipeline, no waits.
 Medium, plus the user in the scaffolding code and two review gates on it.
 
 1. [Scope](common/scope.md)
-2. [Scaffold](common/scaffold.md) — left uncommitted and **wait for the user**; commit once their corrections are in, then invoke `plan-review-agent` against that commit. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls to the user.
+2. [Scaffold](common/scaffold.md) — left uncommitted and **wait for the user**; commit once their corrections are in. Unattended only, invoke `plan-review-agent` against that commit, standing in for that read. Ask for: architecture fit, missing edge cases, risk concentrations. Fix obvious issues; surface judgment calls to the user.
 3. [Edge cases](common/edge-cases.md) — produce the full list and carry it straight into the tester
 4. [Tests first](common/tests-first.md)
 5. [Plan](common/plan.md)

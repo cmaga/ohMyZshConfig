@@ -35,7 +35,7 @@ Run them in one context — they feed each other.
 
 1. **Problem in code.** Does the problem exist as described? Find where.
 2. **Documentation.** What do the project docs and the knowledge vault (`docs/project-knowledge/`, if present) say about the affected area? Where are they stale?
-3. **History.** Related tickets, the commits that introduced the behavior, whether it is recurring, whether it is a symptom of something larger. Use `git --no-pager` for every git command.
+3. **History.** Only when the ticket or the code suggests the behavior recurred or regressed; otherwise report `skipped`. Related tickets, the commits that introduced the behavior, whether it is recurring, whether it is a symptom of something larger. Use `git --no-pager` for every git command.
 4. **Is this needed?** Business-level implications, a simpler solution, a reason not to do it.
 
 ## Subagent settings
@@ -49,7 +49,7 @@ Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state
 
 **Problem in code**: [confirmed / not found / different than described] — `file:line`
 **Docs**: [what they claim; where stale] — `file:line`
-**History**: [related tickets, introducing commits, recurring?]
+**History**: [related tickets, introducing commits, recurring? — or skipped]
 **Needed?**: [yes / no — one line of why]
 **Hypotheses**: [each implementation noun from the ticket: holds / beaten, one line]
 **Needs parent attention**: [anything blocking, or none]

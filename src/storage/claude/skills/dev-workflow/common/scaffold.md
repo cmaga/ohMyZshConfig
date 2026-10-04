@@ -57,9 +57,9 @@ Throw only where behavior is changing, whatever the unit: function, method, clas
 
 If the project has no integration suite, stop and ask the user whether to build one or skip it. Unattended: stand up a minimal harness covering this ticket's integration points and continue.
 
-## Reviewing it (`large`)
+## Reviewing it (`medium` and `large`)
 
-Unattended: commit and continue; the `plan-review-agent` pass still runs.
+Unattended: commit and continue; on `large`, the `plan-review-agent` pass runs.
 
 Attended: **leave the scaffold uncommitted until the user has read it** — the editor's source control panel is the file list. Open the worktree in their editor:
 
@@ -73,5 +73,3 @@ If `code` is not on `PATH`, give the absolute path instead. Then say in two line
 4. What is conspicuously missing?
 
 Commit once their corrections are in — before the tester, before any dispatch.
-
-In `medium`, commit the scaffold as soon as it is written.

@@ -2,7 +2,7 @@
 
 Every tier ends here before returning control.
 
-1. **Verify behavior** by driving the change in the real app via the `run` skill. If the change alters a shared interface, exercise each consumer flow. Skip only when the change has no runtime surface; state the reason. If verification needs a browser and the project has no Playwright MCP config — or a drive hits Chromium's profile lock — run `playwright-mcp-setup` first.
+1. **Verify behavior** by driving the change in the real app via the `run` skill. If the change alters a shared interface, exercise each consumer flow. Skip only when the change has no runtime surface; state the reason. Attended, when the drive needs a browser, give the user a two-line manual check instead. If verification needs a browser and the project has no Playwright MCP config — or a drive hits Chromium's profile lock — run `playwright-mcp-setup` first.
 2. **Create the PR** via the `git-provider` skill. Skip on a spec-descended run: the branch is local and the whole spec goes up once.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — below. Skip on `small`, except unattended: there the gate is the only thing that reads the code.
@@ -28,7 +28,7 @@ Everything else fails: a finding you fixed, anything a ticket already owns, an `
 
 ### Triage
 
-Decide what you can first. A candidate your own recommendation would fold — it rides this branch — is folded now, never sent on and never asked. Only what you cannot settle quickly from the code goes to the escalation agent — a `general-purpose` agent on `ESCALATION_MODEL`, one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence (`file:line`, the finding or marker verbatim, the Jira search result). It returns one verdict per candidate:
+Decide what you can first. A candidate your own recommendation would fold — it rides this branch — is folded now, never sent on and never asked. Only what you cannot settle quickly from the code goes on: attended, straight to the tracker with your recommendation; unattended, to the escalation agent — a `general-purpose` agent on `ESCALATION_MODEL`, one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence (`file:line`, the finding or marker verbatim, the Jira search result). It returns one verdict per candidate:
 
 - **`fold`** — the fix rides this branch: it needs no decision only the user can make, and does not double the diff. Never judge it on the ticket's intent or the defect's age. It names the fix.
 - **`escalate`** — only the user can answer it: it needs knowledge or authority only they hold. It names that, and gives its recommendation.
