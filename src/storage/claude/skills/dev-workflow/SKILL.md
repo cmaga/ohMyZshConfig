@@ -79,7 +79,7 @@ Gather multiple solutions and pick the best one. Fan out only over sets you enum
 4. **Implementation Routing** Determine a recommended implementation tier
    | Tier | When | Where the user is |
    | -------- | ----------------------------------------------------------------------------------------- | ------------------------ |
-   | `small` | The whole change states in a sentence and one worker can do it against an obvious check | Intent only |
+   | `small` | The whole change states in a sentence and the parent can make it directly against an obvious check | Intent only |
    | `medium` | Real implementation work, but no structure the user needs to see before the PR | Intent, approach, the scaffold, the PR |
    | `large` | New structure, or a boundary moves that the user needs to see. Not a size call: a 400-line rewrite behind an unchanged signature is not large; a 40-line new interface two modules consume is | In the scaffold |
    | `ultra` | Target behavior is itself unsettled and must be agreed as a spec before it can be planned | Throughout |
@@ -126,7 +126,7 @@ After that the run does not stop until the PR is out. Only escalation breaks it:
 
 ### Small
 
-1. Dispatch any number of `worker-agent` with changes to be made to implement your approach.
+1. Make the change yourself in the parent session. Dispatch no worker; briefing one costs more than a small change.
 2. [Exit](common/exit.md).
 
 ### Medium
