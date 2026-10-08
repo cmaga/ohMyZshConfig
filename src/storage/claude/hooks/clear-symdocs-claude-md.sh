@@ -25,12 +25,17 @@ set -u
 
 input="$(cat)"
 
-tool_name="$(printf '%s' "$input" | /usr/bin/jq -r '.tool_name // empty' 2>/dev/null)"
+# Resolve jq from PATH (Git Bash has no /usr/bin/jq). A native Windows jq.exe
+# writes CRLF unless given -b, and the stray CR breaks every comparison below.
+JQ=$(command -v jq || echo /usr/bin/jq)
+case "$OSTYPE" in msys*|cygwin*) JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;; esac
+
+tool_name="$(printf '%s' "$input" | "$JQ" -r '.tool_name // empty' 2>/dev/null)"
 [[ "$tool_name" != "EnterWorktree" ]] && exit 0
 
 # Resolve the new worktree path. Try the tool response first (explicit),
 # fall back to $PWD (the parent session's cwd post-EnterWorktree).
-candidate="$(printf '%s' "$input" | /usr/bin/jq -r '
+candidate="$(printf '%s' "$input" | "$JQ" -r '
   .tool_response.path
   // .tool_response.worktree_path
   // .tool_response.cwd
@@ -42,13 +47,13 @@ if [[ -z "$candidate" || ! -d "$candidate" ]]; then
 fi
 
 # Confirm this is a paperlives worktree before touching anything.
-remote="$(/usr/bin/git -C "$candidate" config --get remote.origin.url 2>/dev/null)"
+remote="$(git -C "$candidate" config --get remote.origin.url 2>/dev/null)"
 [[ "$remote" != *paperlives* ]] && exit 0
 
 claude_md="$candidate/CLAUDE.md"
 [[ -f "$claude_md" ]] || exit 0
 
-/usr/bin/git -C "$candidate" update-index --skip-worktree CLAUDE.md 2>/dev/null
+git -C "$candidate" update-index --skip-worktree CLAUDE.md 2>/dev/null
 : > "$claude_md"
 
 exit 0

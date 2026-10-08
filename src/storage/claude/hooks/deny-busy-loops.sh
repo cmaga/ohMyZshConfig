@@ -17,11 +17,16 @@ set -u
 
 input="$(cat)"
 
+# Resolve jq from PATH (Git Bash has no /usr/bin/jq). A native Windows jq.exe
+# writes CRLF unless given -b, and the stray CR breaks every comparison below.
+JQ=$(command -v jq || echo /usr/bin/jq)
+case "$OSTYPE" in msys*|cygwin*) JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;; esac
+
 # Fast path: only Bash tool invocations are relevant.
-tool_name="$(printf '%s' "$input" | /usr/bin/jq -r '.tool_name // empty' 2>/dev/null)"
+tool_name="$(printf '%s' "$input" | "$JQ" -r '.tool_name // empty' 2>/dev/null)"
 [[ "$tool_name" != "Bash" ]] && exit 0
 
-command="$(printf '%s' "$input" | /usr/bin/jq -r '.tool_input.command // empty' 2>/dev/null)"
+command="$(printf '%s' "$input" | "$JQ" -r '.tool_input.command // empty' 2>/dev/null)"
 [[ -z "$command" ]] && exit 0
 
 # Pattern library. Each regex matches a known-bad no-yield loop body. Extend
