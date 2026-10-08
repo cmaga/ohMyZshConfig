@@ -49,7 +49,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 [ -n "$OUT" ] || OUT="$VAULT/.cache/coverage"
-REPO=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) || REPO="$VAULT"
+REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
 TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
 TAB=$(printf '\t')
@@ -156,7 +156,7 @@ if [ "$PROPOSE" -gt 0 ]; then
 fi
 
 if [ "$JSON" = 1 ]; then
-  "$JQ" -R -s --arg src "$SRC" --argjson anchored "$anchored" --argjson total "$total" --argjson pct "$pct" --rawfile stale <(printf '%s\n' "$stale") '
+  "$JQ" -R -s --arg src "$SRC" --argjson anchored "$anchored" --argjson total "$total" --argjson pct "$pct" --arg stale "$stale" '
     {src: $src, rows: (split("\n") | map(select(length > 0) | split("\t") | {label: .[0], symbol: .[1], path: .[2], detail: .[3]})),
      anchored: $anchored, total: $total, coverage: $pct, stale: ($stale | split("\n") | map(select(length > 0)))}' "$TMP/rows.tsv"
   exit 0

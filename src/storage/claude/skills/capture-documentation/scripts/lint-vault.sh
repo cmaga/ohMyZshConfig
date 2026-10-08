@@ -27,6 +27,12 @@
 set -u
 
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
+# A native Windows jq.exe writes CRLF unless given -b, and the stray CR breaks
+# every downstream read; route "$JQ" through -b there.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*)
+  [ "$JQ" = jq_lf ] && JQ=$(command -v jq)
+  JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;;
+esac
 export LC_ALL=C
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -1119,7 +1125,7 @@ if [ "${1:-}" = "--next-adr" ]; then
   VAULT="${2:-}"
   [ -n "$VAULT" ] && [ -d "$VAULT" ] || { usage; exit 2; }
   VAULT=$(cd "$VAULT" && pwd -P)
-  REPO=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) || { usage; exit 2; }
+  REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || { usage; exit 2; }
   next_adr "$VAULT" "$REPO"
   exit 0
 fi
@@ -1156,7 +1162,7 @@ if [ "${1:-}" = "--hook" ]; then
   stop_active=$(printf '%s' "$IN" | "$JQ" -r '.stop_hook_active // false' 2>/dev/null)
   [ -n "$cwd" ] || exit 0
   [ "$stop_active" = "true" ] && exit 0
-  REPO=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || exit 0
+  REPO=$(r=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || exit 0
   VAULT="$REPO/docs/project-knowledge"
   VNAME=$(basename "$VAULT")
   [ -d "$VAULT" ] || exit 0
@@ -1189,7 +1195,7 @@ VAULT="${1:-}"
 [ -n "$VAULT" ] && [ -d "$VAULT" ] || { usage; exit 2; }
 shift
 VAULT=$(cd "$VAULT" && pwd -P)
-REPO=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) || REPO="$VAULT"
+REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
 VNAME=$(basename "$VAULT")
 
 TMP=$(mktemp -d) || { echo "lint-vault: cannot create temp dir" >&2; exit 2; }

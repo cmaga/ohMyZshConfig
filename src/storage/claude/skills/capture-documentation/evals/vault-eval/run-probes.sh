@@ -34,6 +34,12 @@ PROBES="$HERE/probes.jsonl"
 JUDGE_FILE="$HERE/judge.md"
 RECEIPTS="$HERE/receipts"
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
+# A native Windows jq.exe writes CRLF unless given -b, and the stray CR breaks
+# every downstream read; route "$JQ" through -b there.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*)
+  [ "$JQ" = jq_lf ] && JQ=$(command -v jq)
+  JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;;
+esac
 
 MODEL=haiku; JUDGE=haiku; REPL=3; JOBS=4; RULE_LINE=""; LABEL=""; REGRESS=0; DRY=0; FORCE=0
 usage() { sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
@@ -64,6 +70,9 @@ command -v git >/dev/null || { echo "run-probes: git is required" >&2; exit 2; }
 [ "$DRY" = 1 ] || command -v claude >/dev/null || { echo "run-probes: claude is not on PATH" >&2; exit 2; }
 # The pre-commit hook may invoke this with git's hook environment set.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR
+# Git for Windows ships core.autocrlf=true system-wide; the scratch repos must
+# stay LF and quiet, so pin it off for every git call below.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.autocrlf GIT_CONFIG_VALUE_0=false
 
 TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
@@ -119,6 +128,8 @@ else
   }
   export -f run_one
   export SCR RUN_MODEL TMP JQ
+  # On Windows JQ names the jq_lf wrapper, which the xargs children need too.
+  if declare -F jq_lf >/dev/null; then export -f jq_lf; export JQ_BIN; fi
   xargs -0 -P "$JOBS" -n 3 bash -c 'run_one "$0" "$1" "$2"' < "$TMP/tasks.nul"
 
   # judge every run
@@ -156,7 +167,9 @@ ${ans:-(empty)}" --model "$RUN_JUDGE" --output-format json --disallowedTools Wri
   export PROBES JUDGE RUN_JUDGE JUDGE_FILE
   find "$TMP/runs" -name '*.json' -print0 | xargs -0 -P "$JOBS" -n 1 bash -c 'judge_one "$0"'
 
-  cat "$TMP/runs"/*.json | "$JQ" -s --slurpfile probes <("$JQ" -c . "$PROBES" | "$JQ" -s .) --slurpfile lint "$TMP/lint_counts.json" \
+  # A real file, not <(...): a native Windows jq.exe cannot open /dev/fd paths.
+  "$JQ" -c . "$PROBES" | "$JQ" -s . > "$TMP/probes.json"
+  cat "$TMP/runs"/*.json | "$JQ" -s --slurpfile probes "$TMP/probes.json" --slurpfile lint "$TMP/lint_counts.json" \
     --arg model "$MODEL" --arg judge "$JUDGE" --argjson repl "$REPL" --arg rule "$RULE_LINE" --arg label "$LABEL" \
     --arg corpus "$CORPUS8" --arg prompt "$PROMPT8" --arg models "$MODELS8" --arg rubric "$RUBRIC8" --arg gen "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
     . as $runs |

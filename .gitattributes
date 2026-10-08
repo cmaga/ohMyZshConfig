@@ -1,6 +1,4 @@
-# Enforce LF line endings for shell-sensitive files (required for Make, zsh, bash)
-Makefile    text eol=lf
-*.zsh       text eol=lf
-*.zshrc     text eol=lf
-.zshrc      text eol=lf
-*.sh        text eol=lf
+# Enforce LF line endings everywhere. Everything here runs under zsh/bash/Make
+# or is compared byte-for-byte by evals, and Git for Windows defaults to
+# core.autocrlf=true, which would otherwise check text out as CRLF.
+* text=auto eol=lf

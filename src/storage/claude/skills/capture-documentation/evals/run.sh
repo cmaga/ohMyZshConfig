@@ -12,10 +12,19 @@
 set -u
 
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
+# A native Windows jq.exe writes CRLF unless given -b, and the stray CR breaks
+# every downstream read; route "$JQ" through -b there.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*)
+  [ "$JQ" = jq_lf ] && JQ=$(command -v jq)
+  JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;;
+esac
 export LC_ALL=C
 # The pre-commit hook runs this suite with git's hook environment set; a
 # relative GIT_INDEX_FILE breaks every git call inside the scratch repos.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR
+# Git for Windows ships core.autocrlf=true system-wide; the scratch repos must
+# stay LF and quiet, so pin it off for every git call below.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.autocrlf GIT_CONFIG_VALUE_0=false
 # Pins vault_today() (vault-lib.sh) so vault-freshness.sh's cadence/revisit
 # math and vault-drift.sh's flag "opened" date are wall-clock independent --
 # without this, every rank4/revisit_by comparison would drift with the

@@ -61,7 +61,7 @@ done
 set -- $POS
 
 VAULT=$(cd "$VAULT_ARG" && pwd -P)
-REPO=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) || REPO="$VAULT"
+REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
 RELV="${VAULT#"$REPO"/}"
 TMP=$(mktemp -d) || { echo "vault-refactor: cannot create temp dir" >&2; exit 2; }
 trap 'rm -rf "$TMP"' EXIT
@@ -426,7 +426,9 @@ EOF
   # bullet, blank line or heading; blocks travel as one line joined by \001
   # a "(same file)" bullet with no path of its own is a follower of the
   # path-carrying bullet before it and stays in that block
-  awk -v pathre="$PATHRE" '
+  # pathre goes through ENVIRON, not -v: -v processes escapes, so gawk would
+  # turn the regex's \. into a bare . that matches any character.
+  PATHRE="$PATHRE" awk 'BEGIN { pathre = ENVIRON["PATHRE"] }
        function haspath(l,  t) { while (match(l, /`[^`]+`/)) { t = substr(l, RSTART + 1, RLENGTH - 2); l = substr(l, RSTART + RLENGTH); if (t ~ pathre) return 1 } return 0 }
        /^## Reusable surface/ { s = 1; next } /^## / { s = 0 }
        s && /^[-*] / { if (blk != "" && /same file/ && !haspath($0)) { blk = blk "\001" $0; next } if (blk != "") print blk; blk = $0; next }

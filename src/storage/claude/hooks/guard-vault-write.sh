@@ -29,6 +29,12 @@
 set -u
 
 JQ=${JQ:-$(command -v jq || echo /usr/bin/jq)}
+# A native Windows jq.exe writes CRLF unless given -b, and the stray CR breaks
+# every downstream read; route "$JQ" through -b there.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*)
+  [ "$JQ" = jq_lf ] && JQ=$(command -v jq)
+  JQ_BIN=$JQ; jq_lf() { "$JQ_BIN" -b "$@"; }; JQ=jq_lf ;;
+esac
 
 TAB="$(printf '\t')"
 
