@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Automation deployment script
 # Discovers automation.toml files in two locations and registers a launchd
-# job for each on macOS, or a systemd user service on Linux (keepalive only):
+# job for each on macOS, a systemd user service on Linux, or a per-user Task
+# Scheduler logon task on Windows (Linux and Windows: keepalive only):
 #   1. Skill-bundled: ~/.claude/skills/<name>/automation.toml
 #      Triggered run script: ~/.claude/skills/<name>/dependencies/scripts/run.zsh
 #   2. Standalone:   src/storage/automations/<name>/automation.toml
@@ -9,11 +10,10 @@
 #      (deployed to ~/.local/share/cmagana-automations/<name>/ at install time)
 #
 # An automation runs on macOS unless its toml sets `platforms`, a space-separated
-# list of macos|linux. Linux supports keepalive automations only; scheduled ones
-# are skipped there.
+# list of macos|linux|windows. Linux and Windows support keepalive automations
+# only; scheduled ones are skipped there.
 #
-# Idempotent: existing plists/units are unloaded and rewritten on each deploy.
-# No-op on Windows.
+# Idempotent: existing plists/units/tasks are unloaded and rewritten on each deploy.
 
 set -e
 
@@ -41,8 +41,12 @@ case "$OS" in
         SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
         mkdir -p "$LOG_DIR" "$SYSTEMD_USER_DIR"
         ;;
+    windows)
+        LOG_DIR="$HOME/AppData/Local/cmagana-automations/logs"
+        mkdir -p "$LOG_DIR"
+        ;;
     *)
-        print_status "info" "Skipping automation deployment — only macOS (launchd) and Linux (systemd) are supported"
+        print_status "info" "Skipping automation deployment — only macOS (launchd), Linux (systemd), and Windows (Task Scheduler) are supported"
         exit 0
         ;;
 esac
@@ -242,6 +246,59 @@ unregister_plist() {
     fi
 }
 
+# PowerShell that stops the $env:TASK_NAME task and everything it started.
+# Stop-ScheduledTask ends only conhost, leaving zsh and node orphaned on the
+# port, so it also kills every process whose command line points into the
+# automation's deployed directory.
+STOP_WINDOWS_TASK_PS='
+    Stop-ScheduledTask -TaskPath "\cmagana\" -TaskName $env:TASK_NAME -ErrorAction SilentlyContinue
+    $pattern = "cmagana-automations[\/]+" + [regex]::Escape($env:TASK_NAME) + "[\/]"
+    Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match $pattern } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+'
+
+# Windows counterpart of register_keepalive_plist: a logon task under \cmagana\
+# that runs keepalive.zsh, which relaunches run.zsh whenever it exits.
+# conhost --headless keeps a console window from showing. A redeploy stops the
+# running instance first, so it restarts on the fresh copy.
+# Values reach PowerShell through the environment to avoid nested quoting.
+# Args: name run_script
+register_windows_task() {
+    local name="$1"
+    local run_script="$2"
+
+    local zsh_exe=$(cygpath -w /usr/bin/zsh.exe)
+    local args="--headless \"$zsh_exe\" -l \"$STANDALONE_DEST/keepalive.zsh\" \"$run_script\" \"$LOG_DIR/$name.log\""
+
+    if TASK_NAME="$name" TASK_ARGS="$args" powershell.exe -NoProfile -NonInteractive -Command "$STOP_WINDOWS_TASK_PS"'
+        $ErrorActionPreference = "Stop"
+        $action = New-ScheduledTaskAction -Execute "conhost.exe" -Argument $env:TASK_ARGS
+        $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+        $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew
+        Register-ScheduledTask -TaskPath "\cmagana\" -TaskName $env:TASK_NAME -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+        Start-ScheduledTask -TaskPath "\cmagana\" -TaskName $env:TASK_NAME
+    '; then
+        print_status "success" "Registered Windows logon task '$name' (log: $LOG_DIR/$name.log)"
+    else
+        print_status "warning" "Task Scheduler registration failed for '$name'"
+    fi
+}
+
+# Windows counterpart of unregister_plist: stop and remove the task.
+unregister_windows_task() {
+    local name="$1"
+    local removed=$(TASK_NAME="$name" powershell.exe -NoProfile -NonInteractive -Command '
+        if (Get-ScheduledTask -TaskPath "\cmagana\" -TaskName $env:TASK_NAME -ErrorAction SilentlyContinue) {
+            '"$STOP_WINDOWS_TASK_PS"'
+            Unregister-ScheduledTask -TaskPath "\cmagana\" -TaskName $env:TASK_NAME -Confirm:$false
+            "removed"
+        }
+    ')
+    if [[ "$removed" == removed* ]]; then
+        print_status "info" "Automation '$name' disabled — removed its Windows logon task"
+    fi
+}
+
 # Process one automation.toml.
 # Args: name run_script toml
 process_automation() {
@@ -256,7 +313,22 @@ process_automation() {
     local platforms=$(toml_string platforms "$toml")
 
     if [[ " ${platforms:-macos} " != *" $OS "* ]]; then
-        [[ "$OS" == "linux" ]] && unregister_unit "$name"
+        case "$OS" in
+            linux) unregister_unit "$name" ;;
+            windows) unregister_windows_task "$name" ;;
+        esac
+        return 0
+    fi
+
+    # Windows runs KeepAlive daemons only.
+    if [[ "$OS" == "windows" ]]; then
+        if [[ "$enabled" != "true" || "$keepalive" != "true" ]]; then
+            unregister_windows_task "$name"
+        elif [ ! -f "$run_script" ]; then
+            print_status "warning" "Automation '$name' has automation.toml but no run.zsh at $run_script — skipping"
+        else
+            register_windows_task "$name" "$run_script"
+        fi
         return 0
     fi
 
@@ -314,8 +386,8 @@ for name in cost-tracker litellm-proxy; do
     fi
 done
 
-# 1. Skill-bundled automations under ~/.claude/skills/<name>/
-if [ -d "$CLAUDE_SKILLS_DEST" ]; then
+# 1. Skill-bundled automations under ~/.claude/skills/<name>/ (macOS only)
+if [[ "$OS" == "macos" && -d "$CLAUDE_SKILLS_DEST" ]]; then
     for skill_dir in "$CLAUDE_SKILLS_DEST"/*/; do
         skill_dir="${skill_dir%/}"
         toml="$skill_dir/automation.toml"
@@ -331,6 +403,7 @@ fi
 # independent of the source repo location.
 if [ -d "$STANDALONE_SOURCE" ]; then
     mkdir -p "$STANDALONE_DEST"
+    [[ "$OS" == "windows" ]] && cp "$STANDALONE_SOURCE/keepalive.zsh" "$STANDALONE_DEST/keepalive.zsh"
     for src_dir in "$STANDALONE_SOURCE"/*/; do
         [ -d "$src_dir" ] || continue
         name=$(basename "${src_dir%/}")

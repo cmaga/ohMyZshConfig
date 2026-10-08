@@ -143,7 +143,7 @@ deploy-claude: ## Deploy Claude Code configs (CLAUDE.md, rules, skills, agents)
 	fi
 	@"$(DEPLOYMENT_DIR)/06-deploy-claude.zsh"
 
-deploy-automations: ## Register launchd jobs (macOS) or systemd user services (Linux) for automations
+deploy-automations: ## Register launchd jobs (macOS), systemd user services (Linux), or Task Scheduler logon tasks (Windows) for automations
 	@printf "$(BLUE)Deploying automations...$(NC)\n"
 	@if [ ! -f "$(DEPLOYMENT_DIR)/08-deploy-automations.zsh" ]; then \
 		printf "$(RED)src/deployment/08-deploy-automations.zsh not found$(NC)\n"; \
@@ -198,5 +198,5 @@ setup: ## Initial setup to prepare system for deployments and updates
 	@printf "  - $(YELLOW)make deploy-zsh$(NC) - Deploy zsh (includes plugins if needed)\n"
 	@printf "  - $(YELLOW)make deploy-git$(NC) - Deploy git configs\n"
 	@printf "  - $(YELLOW)make deploy-claude$(NC) - Deploy Claude Code configs\n"
-	@printf "  - $(YELLOW)make deploy-automations$(NC) - Register launchd/systemd jobs for automations\n"
+	@printf "  - $(YELLOW)make deploy-automations$(NC) - Register launchd/systemd jobs / Windows logon tasks for automations\n"
 	@printf "  - $(YELLOW)make lint$(NC) - Validate configuration before commits\n"
