@@ -50,38 +50,52 @@ check_install_zsh() {
     fi
 }
 
+# Print the user's configured login shell. $SHELL only reflects the current
+# session, so it stays stale after chsh until the next login.
+get_login_shell() {
+    case "$(detect_os)" in
+        macos) dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}' ;;
+        linux) getent passwd "$USER" | cut -d: -f7 ;;
+        *)     echo "$SHELL" ;;
+    esac
+}
+
 # Function to set zsh as the default shell
 set_default_shell() {
     print_status "info" "Checking default shell..."
-    
-    local zsh_path=$(which zsh)
-    
-    if [[ "$SHELL" == "$zsh_path" ]]; then
-        print_status "success" "Zsh is already the default shell"
+
+    # Git Bash has no chsh; the Windows bootstrap makes .bashrc exec zsh instead
+    if [[ "$(detect_os)" == "windows" ]]; then
+        if grep -q "exec zsh" "$HOME/.bashrc" 2>/dev/null; then
+            print_status "success" "Found 'exec zsh' in .bashrc - shell setup complete"
+        else
+            print_status "warning" "Git Bash will not launch zsh - run src/deployment/bootstrap/windows/01-bootstrap.sh"
+        fi
         return 0
     fi
-    
-    # Check for exec zsh workaround in .bashrc (for restricted environments)
-    if [[ -f "$HOME/.bashrc" ]] && grep -q "exec zsh" "$HOME/.bashrc" 2>/dev/null; then
-        print_status "success" "Found 'exec zsh' workaround in .bashrc - shell setup complete"
-        print_status "info" "Skipping chsh (using bashrc workaround for restricted environments)"
+
+    local zsh_path=$(command -v zsh)
+    local login_shell=$(get_login_shell)
+
+    # Compare by name: /bin/zsh and /usr/bin/zsh are the same shell on merged-/usr distros
+    if [[ "${login_shell:t}" == "zsh" ]]; then
+        print_status "success" "Zsh is already the default shell ($login_shell)"
         return 0
     fi
-    
-    local current_shell=$(basename "$SHELL")
-    print_status "warning" "Current shell is $current_shell"
+
+    print_status "warning" "Current login shell is ${login_shell:-unknown}"
     print_status "action" "Setting zsh as default shell..."
-    
-    # Check if zsh is in /etc/shells
-    if ! grep -q "$zsh_path" /etc/shells 2>/dev/null; then
-        print_status "action" "Adding zsh to /etc/shells..."
+
+    if ! grep -qx "$zsh_path" /etc/shells 2>/dev/null; then
+        print_status "action" "Adding $zsh_path to /etc/shells..."
         echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
     fi
-    
-    # Change default shell
-    if chsh -s "$zsh_path" 2>/dev/null; then
+
+    # chsh prompts for the account password on stderr, so stderr must stay visible
+    print_status "info" "chsh will ask for your login password"
+    if chsh -s "$zsh_path"; then
         print_status "success" "Default shell changed to zsh"
-        print_status "warning" "You'll need to restart your terminal for this to take effect"
+        print_status "warning" "Log out and back in for this to take effect"
     else
         print_status "error" "Failed to change default shell"
         echo "You may need to run: chsh -s $zsh_path"

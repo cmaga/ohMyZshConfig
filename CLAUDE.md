@@ -49,7 +49,7 @@ Adding plugins: append to `plugins.txt`, then `plugins=(…)` array in `src/stor
 
 ### Claude Code deployment (`06-deploy-claude.zsh`)
 
-Installs `@anthropic-ai/claude-code` via npm (skipped on Windows), then deploys from `src/storage/claude/` to `~/.claude/`:
+Installs the Claude CLI with the native installer (`claude.ai/install.sh`, into `~/.local/bin`; skipped on Windows), then deploys from `src/storage/claude/` to `~/.claude/`:
 
 - `CLAUDE.md` → `~/.claude/CLAUDE.md` (this is the **global** CLAUDE.md for all projects — separate from the repo-root one you're reading now).
 - `rules/*.md` → `~/.claude/rules/`.

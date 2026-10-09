@@ -12,16 +12,6 @@ echo
 print_status "success" "All deployments complete!"
 echo
 
-# Offer to source the new configuration (skip when stdin is not a terminal)
-if [[ -t 0 ]]; then
-    read "REPLY?Would you like to apply the new configuration now? (Y/n) "
-    if [[ -z $REPLY || $REPLY =~ ^[Yy]$ ]]; then
-        log "Sourcing ~/.zshrc..."
-        source ~/.zshrc
-        log "Done! Your new Zsh configuration is now active."
-    else
-        log "Remember to run 'source ~/.zshrc' to apply the changes."
-    fi
-else
-    log "Remember to run 'source ~/.zshrc' to apply the changes."
-fi
+# A child process cannot change the calling shell, so sourcing ~/.zshrc here
+# applies nothing (and aborts under set -e when Oh-My-Zsh helpers return nonzero).
+log "Run 'exec zsh' to apply the new configuration."

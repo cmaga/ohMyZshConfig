@@ -28,8 +28,11 @@ else
     print_status "warning" "Claude CLI not found"
     print_status "download" "Installing Claude CLI..."
 
-    if npm install -g @anthropic-ai/claude-code 2>/dev/null; then
+    # Native installer writes to ~/.local/bin. npm -g depends on whichever npm the
+    # calling shell resolves (root-owned system npm, or none before nvm loads).
+    if curl -fsSL https://claude.ai/install.sh | bash; then
         print_status "success" "Claude CLI installed successfully"
+        [[ ":$PATH:" == *":$HOME/.local/bin:"* ]] || export PATH="$HOME/.local/bin:$PATH"
 
         # Verify installation
         if command_exists claude; then
