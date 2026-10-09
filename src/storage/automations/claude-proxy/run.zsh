@@ -4,12 +4,10 @@
 # Binds 127.0.0.1 only. DEEPSEEK_API_KEY comes from ~/.zshrc.local and is added
 # by hand. Without it the proxy still serves Anthropic traffic and only DeepSeek
 # requests fail, with a 503 naming the missing key. Runs in the foreground; the
-# com.cmagana.claude-proxy KeepAlive agent relaunches it.
+# com.cmagana.claude-proxy KeepAlive agent (macOS) or the cmagana-claude-proxy
+# systemd user service (Linux) relaunches it.
 
-# macOS only — launchd; no-op elsewhere.
-[[ "$(uname)" == "Darwin" ]] || exit 0
-
-# launchd hands the job a minimal PATH; node is installed via nvm.
+# launchd and systemd hand the job a minimal PATH; node is installed via nvm.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 
 # before `set -e` on purpose: the file is an interactive rc and may hold commands that return non-zero outside an interactive shell.

@@ -338,10 +338,10 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     fi
 
     # claude-proxy backs the DeepSeek model names. deploy-automations registers
-    # the launchd agent (src/storage/automations/claude-proxy/); the proxy needs
-    # only node, which bootstrap already installs. The DeepSeek key is a secret
-    # and stays manual. macOS only, like the agent.
-    if [[ "$(detect_os)" == "macos" ]]; then
+    # the launchd agent or systemd user service (src/storage/automations/claude-proxy/);
+    # the proxy needs only node, which bootstrap already installs. The DeepSeek
+    # key is a secret and stays manual. macOS and Linux, like the service.
+    if [[ "$(detect_os)" == "macos" || "$(detect_os)" == "linux" ]]; then
         ZSHRC_LOCAL="$HOME/.zshrc.local"
         if ! grep -q '^export DEEPSEEK_API_KEY=' "$ZSHRC_LOCAL" 2>/dev/null; then
             print_status "warning" "DEEPSEEK_API_KEY not set — add 'export DEEPSEEK_API_KEY=<key>' to $ZSHRC_LOCAL"

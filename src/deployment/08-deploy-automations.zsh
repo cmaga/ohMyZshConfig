@@ -1,15 +1,19 @@
 #!/bin/zsh
 # Automation deployment script
 # Discovers automation.toml files in two locations and registers a launchd
-# job for each on macOS:
+# job for each on macOS, or a systemd user service on Linux (keepalive only):
 #   1. Skill-bundled: ~/.claude/skills/<name>/automation.toml
 #      Triggered run script: ~/.claude/skills/<name>/dependencies/scripts/run.zsh
 #   2. Standalone:   src/storage/automations/<name>/automation.toml
 #      Triggered run script: src/storage/automations/<name>/run.zsh
 #      (deployed to ~/.local/share/cmagana-automations/<name>/ at install time)
 #
-# Idempotent: existing plists are unloaded and rewritten on each deploy.
-# No-op on Linux/Windows.
+# An automation runs on macOS unless its toml sets `platforms`, a space-separated
+# list of macos|linux. Linux supports keepalive automations only; scheduled ones
+# are skipped there.
+#
+# Idempotent: existing plists/units are unloaded and rewritten on each deploy.
+# No-op on Windows.
 
 set -e
 
@@ -20,15 +24,28 @@ PROJECT_ROOT="${SCRIPT_DIR:h:h}"
 STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 STANDALONE_SOURCE="${STORAGE_DIR}/automations"
 STANDALONE_DEST="$HOME/.local/share/cmagana-automations"
-LOG_DIR="$HOME/Library/Logs/cmagana-automations"
-LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+OS="$(detect_os)"
 
-if [[ "$(detect_os)" != "macos" ]]; then
-    print_status "info" "Skipping automation deployment — only macOS launchd is supported"
-    exit 0
-fi
-
-mkdir -p "$LOG_DIR" "$LAUNCH_AGENTS_DIR"
+case "$OS" in
+    macos)
+        LOG_DIR="$HOME/Library/Logs/cmagana-automations"
+        LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+        mkdir -p "$LOG_DIR" "$LAUNCH_AGENTS_DIR"
+        ;;
+    linux)
+        if ! command_exists systemctl || ! systemctl --user show-environment >/dev/null 2>&1; then
+            print_status "info" "Skipping automation deployment — no systemd user manager"
+            exit 0
+        fi
+        LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cmagana-automations"
+        SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+        mkdir -p "$LOG_DIR" "$SYSTEMD_USER_DIR"
+        ;;
+    *)
+        print_status "info" "Skipping automation deployment — only macOS (launchd) and Linux (systemd) are supported"
+        exit 0
+        ;;
+esac
 
 # Read a quoted-string value: key = "value"
 toml_string() {
@@ -169,6 +186,51 @@ EOF
     fi
 }
 
+# Render and start a systemd user service — the Linux counterpart of
+# register_keepalive_plist. Restarted whenever it exits, throttled the same way.
+# Args: name run_script
+register_keepalive_unit() {
+    local name="$1"
+    local run_script="$2"
+
+    local unit="cmagana-$name.service"
+
+    cat > "$SYSTEMD_USER_DIR/$unit" <<EOF
+[Unit]
+Description=cmagana automation: $name
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=$(command -v zsh) $run_script
+Restart=always
+RestartSec=15
+StandardOutput=append:$LOG_DIR/$name.log
+StandardError=append:$LOG_DIR/$name.log
+
+[Install]
+WantedBy=default.target
+EOF
+
+    systemctl --user daemon-reload
+    if systemctl --user enable "$unit" >/dev/null 2>&1 && systemctl --user restart "$unit"; then
+        print_status "success" "Registered systemd user service '$unit'"
+    else
+        print_status "warning" "systemctl --user failed to start $unit"
+    fi
+}
+
+# Linux counterpart of unregister_plist.
+unregister_unit() {
+    local name="$1"
+    local unit="cmagana-$name.service"
+    if [ -f "$SYSTEMD_USER_DIR/$unit" ]; then
+        systemctl --user disable --now "$unit" >/dev/null 2>&1 || true
+        rm -f "$SYSTEMD_USER_DIR/$unit"
+        systemctl --user daemon-reload
+        print_status "info" "Automation '$name' disabled — removed $unit"
+    fi
+}
+
 # Disabled automation: tear down any existing plist for this name.
 unregister_plist() {
     local name="$1"
@@ -191,9 +253,15 @@ process_automation() {
     local keepalive=$(toml_bool keepalive "$toml")
     local cron=$(toml_string cron "$toml")
     local repo_path=$(toml_string repo_path "$toml")
+    local platforms=$(toml_string platforms "$toml")
+
+    if [[ " ${platforms:-macos} " != *" $OS "* ]]; then
+        [[ "$OS" == "linux" ]] && unregister_unit "$name"
+        return 0
+    fi
 
     if [[ "$enabled" != "true" ]]; then
-        unregister_plist "$name"
+        if [[ "$OS" == "linux" ]]; then unregister_unit "$name"; else unregister_plist "$name"; fi
         return 0
     fi
 
@@ -205,7 +273,16 @@ process_automation() {
 
     # KeepAlive daemon — no cron; relaunched whenever it exits.
     if [[ "$keepalive" == "true" ]]; then
-        register_keepalive_plist "$name" "$run_script"
+        if [[ "$OS" == "linux" ]]; then
+            register_keepalive_unit "$name" "$run_script"
+        else
+            register_keepalive_plist "$name" "$run_script"
+        fi
+        return 0
+    fi
+
+    if [[ "$OS" == "linux" ]]; then
+        print_status "info" "Automation '$name': scheduled jobs are macOS-only — skipping"
         return 0
     fi
 
@@ -222,6 +299,7 @@ print_status "info" "Deploying automations..."
 # Retired automations: unload and remove anything previously registered that is not in source.
 # Runs before registration so a successor that takes over a retired agent's port can bind it.
 for name in cost-tracker litellm-proxy; do
+    [[ "$OS" == "macos" ]] || break
     label="com.cmagana.$name"
     plist="$LAUNCH_AGENTS_DIR/$label.plist"
     if launchctl list 2>/dev/null | grep -q "$label"; then

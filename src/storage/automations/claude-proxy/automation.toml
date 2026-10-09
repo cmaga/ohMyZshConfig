@@ -4,8 +4,8 @@
 # and routes DeepSeek model names to DeepSeek's Anthropic-compatible endpoint.
 # Not a scheduled job — a KeepAlive daemon, so it declares `keepalive`
 # instead of `cron`.
-# macOS only (launchd); the deploy script no-ops on Linux/Windows.
-# Only `enabled` and `keepalive` are read by the deploy script.
+# Runs as a launchd agent on macOS and a systemd user service on Linux.
 
 enabled = true
 keepalive = true
+platforms = "macos linux"
