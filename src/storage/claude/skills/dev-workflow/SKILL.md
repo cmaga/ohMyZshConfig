@@ -11,7 +11,7 @@ Single orchestrated flow for ticket-driven software engineering, at four depths:
 
 ## Unattended runs
 
-A run is unattended when the user pastes a `/goal`; `manual` in the take keeps it attended. Steps 1-4 run the same either way. The goal is the go: draft it, hand it over, create nothing until they paste it.
+A run is unattended when the user pastes a `/goal`; `manual` in the take keeps it attended. The [milestone build](common/milestone-build.md) takes no goal: ultracode starts it, and it runs until its workflows are done. Steps 1-4 run the same either way. The goal is the go: draft it, hand it over, create nothing until they paste it.
 
     /goal <one measurable end state, and the check that settles it>
 

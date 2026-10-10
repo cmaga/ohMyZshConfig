@@ -19,18 +19,22 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
        git worktree add "$(git rev-parse --show-toplevel)/.claude/worktrees/spec-<EPIC>" spec/<EPIC>
 
    This is `<tree>`. Drive it by absolute path and `git -C`; never enter it. Every agent in the build works in this one tree. Proven milestones: `git -C <tree> log --oneline --grep '^\[<EPIC>\] M-'` — resume at the first one missing.
-3. **Gather.** Run the Workflow tool with `scriptPath` `~/.claude/skills/dev-workflow/scripts/gather.workflow.js` and args `{spec, tree, components: ["C-1", ...], model: CODE_FANOUT_MODEL}` (omit `model` when the lever is unset). One read-only agent per `## C-N:` section maps it onto today's code: what moves, what adapts, what is new and the spec sentence forcing it, and every check today's code performs there. Its questions go to [Escalation](#escalation) before planning.
+3. **Gather.** Run the Workflow tool with `scriptPath` `~/.claude/skills/dev-workflow/scripts/gather.workflow.js` and args `{spec, tree, components: ["C-1", ...], model: CODE_FANOUT_MODEL}` (omit `model` when the lever is unset). One read-only agent per `## C-N:` section maps it onto today's code: what moves, what adapts, what is new and the spec sentence forcing it, and every check today's code performs there. Its questions go to [Escalation](#escalation) before planning; one the code or the spec answers you decide, and record it as `[ASSUMED: ...]` at the top of the plan.
 4. **Plan the milestones** into `<tree>/.claude-artifacts/workflows/dev-workflow/milestones.md` from the [milestone plan template](../templates/milestone-plan-template.md), after `F="$(git rev-parse --git-common-dir)/info/exclude"; grep -qxF '.claude-artifacts/' "$F" || echo '.claude-artifacts/' >> "$F"`.
    - **M-1 is the thinnest path through the new system that runs end to end.** For a restructure: the new shape starts and serves one real path while the old system still works.
    - Each later milestone adds one capability across whatever components it touches, and ends runnable.
    - Every milestone names its **proof**: one command that fails before the milestone and passes after.
+   - **A milestone is cheap enough to throw away whole.** The first one most of all: it is where a wrong plan costs least to find.
    - **Move before writing.** Each task says what it moves, adapts, or writes new, from the gather. New code only where a contract sentence forces it, quoted.
    - Every check today's code performs lands on a task: moved, adapted, or retired with its reason.
    - A task is what one worker holds. Batch small changes; never one task per file. Tasks with no `After` edge between them own disjoint files.
    - Every `Owns` line and every Tests scenario lands in exactly one milestone.
-5. **Approve.** Dispatch `plan-review-agent` with the spec, the gather results, and the plan. Ask for: an `Owns` line or Tests scenario no milestone reaches, an M-1 that does not run end to end, two parallel tasks sharing a file, new code where a move exists, a check with no fate. Fix what it finds. Then present one line per milestone — what becomes runnable, and its proof — and the goal:
+5. **Approve.** Dispatch `plan-review-agent` with the spec, the gather results, and the plan. Ask for: an `Owns` line or Tests scenario no milestone reaches, an M-1 that does not run end to end, two parallel tasks sharing a file, new code where a move exists, a check with no fate. Fix what it finds. Then present one line per milestone — what becomes runnable, and its proof — marking the ones you recommend pausing after: M-1 always, then any milestone a wrong turn would make expensive to unwind. The user picks the pauses; write each as `Pause: yes` in the plan. Then the two lines that start the build:
 
-       /goal every milestone of <EPIC> proven on spec/<EPIC> with the full suite green on that branch
+       /effort ultracode
+       build <EPIC>
+
+   Typing them is the approval. Ultracode keeps workflows opted in across the turns each milestone's result starts. The build takes no `/goal`: a workflow runs until it is done, and its result starts your next turn.
 
    Then stop. This list is the build's one gate; the user's corrections go into the plan before anything is built.
 6. **Build each milestone** in order, per below. File the last milestone's skill lessons before opening the next.
@@ -43,7 +47,8 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
 3. **A returned question** goes to [Escalation](#escalation). Resume with `resumeFromRunId` and the answer under `decisions[<key>]`, the key the result names; agents before it replay from cache and it re-runs.
 4. **Check the milestone yourself** — never on an agent's word, under [done-when](done-when.md)'s hygiene. Run its proof, the tests of every changed file, and every earlier milestone's proof. `git -C <tree> grep -n NotImplementedError -- <the milestone's files>` prints nothing.
 5. **Findings left after verify.** A bug that loses data, money, or a safety check, or a fix that broke something already passed: resume once with `decisions.fold` naming it. Everything else is a [triage](exit.md#triage) candidate.
-6. **Mark it proven:** `git -C <tree> commit --allow-empty -m "[<EPIC>] M-N proven: <proof>"`. Open the next.
+6. **Mark it proven:** `git -C <tree> commit --allow-empty -m "[<EPIC>] M-N proven: <proof>"`.
+7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, and anything step 5 left open. Open the next milestone on their go. Otherwise open it now.
 
 A milestone the plan got wrong — its proof cannot pass without work another milestone owns — is a plan defect: amend the plan, say so in the report, carry on. A change to what the spec says is an escalation.
 
@@ -53,7 +58,7 @@ You answer what the spec answers; you hold the whole document and every result. 
 
 **A deferral is not a question.** A thing that must happen first is a plan; a thing that cannot happen is a blocker.
 
-Asking pauses the build: let the running workflow finish, then ask — the question, what it overturns, what it blocks — and stop. Ask the user to re-arm the goal if the pause was long.
+Asking pauses the build: let the running workflow finish, then ask — the question, what it overturns, what it blocks — and stop. When they answer, carry on; after a long pause, ask them to type `build <EPIC>` again.
 
 ## Halting
 

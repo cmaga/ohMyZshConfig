@@ -34,7 +34,7 @@ Report, citing file:line for every claim:
 - adapts: code that moves but must change where it connects to the new system, and why.
 - new: behavior with no home in today's code. Quote the spec sentence that forces it in forcedBy; without one it is not new, it is a move you have not found.
 - checks: every check, guard, limit, or gate today's code performs in this area. Each must be kept or retired on purpose, so missing one drops it silently.
-- questions: what the spec leaves undecided that the build needs answered.
+- questions: only observable behavior the spec leaves undecided (what a user or caller would see). How to build it — names, module layout, API shape, where code lives — is the planner's call: never ask it.
 
 Read only: edit nothing, spawn nothing.`
 

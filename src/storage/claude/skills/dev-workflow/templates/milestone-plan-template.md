@@ -28,6 +28,8 @@ milestone is a plan defect. -->
 
 **Proof:** `<one command that fails now and passes when this milestone is done>`
 
+**Pause:** <yes | no — the user's pick at approval>
+
 **Scaffold:** <moves first, from → to, one commit each; then every new file,
 signature, type, and schema the tasks fill, with bodies that raise>
 
