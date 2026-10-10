@@ -11,7 +11,7 @@ export const meta = {
   ],
 }
 
-const { epic, spec, tree, base, milestone: m, decisions = {} } = args
+const { epic, spec, tree, base, projectBase, milestone: m, decisions = {} } = args
 
 const STR = { type: 'string' }
 const REPORT = {
@@ -61,6 +61,7 @@ const tests = await agent(
   `${CONTEXT}
 
 Write the failing integration tests that prove this milestone, against the scaffold now committed. ${m.tests}
+Drive the real entry point on the settings a fresh install ships with (code defaults and shipped config templates, no test-only overrides), over data shaped like real use: realistic ages, volumes, and refresh cadence. Doubles only at external boundaries; never a double that re-implements this system's own logic.
 List each test path in files, and put its failing output in notes.
 
 ${SHARED}${decided('tests')}`,
@@ -75,6 +76,7 @@ Files you own: ${t.files.join(', ')}
 ${t.card}
 
 The milestone's failing tests: ${tests.files.join(', ')}. Make the ones your task covers pass. Run them and the unit tests of your files.
+Prove each test you turn green: break the line it guards in your own file, run it and see it fail, restore the line by editing it back, and run it green again. Commit only the restored code; put each test and its break in notes.
 Running beside you: ${layer.filter(s => s.id !== t.id).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.
 
 ${SHARED}${decided(t.id)}`
@@ -99,7 +101,8 @@ phase('Review')
 const review = await agent(
   `Round 1 of the review gate, for milestone ${m.id} of ${epic}.
 Why the change was made: ${CONTEXT}
-The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}, not main.`,
+The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}, not main.
+Also compare behavior against ${projectBase}: for every threshold, default, limit, timeout, and enabled or armed state the diff adds, moves, or changes, read ${projectBase}'s value (\`git -C ${tree} --no-pager show ${projectBase}:<path>\`). A difference the spec does not order is a finding of class bug; one it orders, cite the spec line. A new test that would pass with its change reverted is a finding of class bug.`,
   { agentType: 'code-review-agent', label: `${m.id} review`, phase: 'Review', schema: REVIEW })
 if (!review || review.gate === 'escalate') return stopped('review', 'review', review, { built })
 

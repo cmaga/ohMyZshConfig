@@ -24,9 +24,19 @@ milestone is a plan defect. -->
 | Check | Where | Fate (moved / adapted / retired: why) | Task |
 | ----- | ----- | ------------------------------------- | ---- |
 
+## Behavior in code the build deletes or rewrites
+
+<!-- From the gather's sweep: one row per behavior, claimed or not. A leaving
+file with no row is a plan defect. Omit the section when the sweep is empty. -->
+
+| Behavior | Where | Fate (moved / adapted / retired: why) | Task |
+| -------- | ----- | ------------------------------------- | ---- |
+
 ## M-1: <what becomes runnable>
 
-**Proof:** `<one command that fails now and passes when this milestone is done>`
+**Proof:** `<one command that fails now and passes when this milestone is done.
+It runs the real entry point on the settings a fresh install ships with, over
+data shaped like real use; doubles only at external boundaries>`
 
 **Pause:** <yes | no — the user's pick at approval>
 
