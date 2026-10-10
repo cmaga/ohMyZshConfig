@@ -1,14 +1,14 @@
 {
-  "updated": "2026-10-04",
+  "updated": "2026-10-10",
   "levers": {
     "session_model": {
-      "value": "sonnet[1m]",
+      "value": "opus",
       "kind": "runtime",
-      "native": "live per session (/model, --model, ANTHROPIC_MODEL); no model key in ~/.claude/settings.json",
-      "note": "one-week trial from 2026-10-04, advisor off; revert to opus if plan quality drops"
+      "native": "model in ~/.claude/settings.json (live); /model, --model, ANTHROPIC_MODEL per session",
+      "note": "max-quality pass 2026-10-10: Sonnet trial ended; saved as model in ~/.claude/settings.json; bare opus resolves to a 1M window (probed 2.1.296)"
     },
     "session_effort": {
-      "value": "high",
+      "value": "xhigh",
       "kind": "runtime",
       "native": "~/.claude/settings.json modelSettings[\"claude-opus-5-5\"].effortLevel (top-level effortLevel no longer applies to Opus 5.5; it still covers Fable 5.1 and Opus 5)"
     },
@@ -18,12 +18,12 @@
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
-      "value": "high",
+      "value": "xhigh",
       "kind": "runtime",
       "native": "agents/code-review-agent.md effort:; the other three inherit"
     },
     "worker_model": {
-      "value": "deepseek-flash[1m]",
+      "value": "opus",
       "kind": "runtime",
       "native": "agents/worker-agent.md model:"
     },
@@ -46,12 +46,12 @@
       "native": "agents/worker-agent.md effort: (unset)"
     },
     "vault_scribe_model": {
-      "value": "deepseek-flash[1m]",
+      "value": "opus",
       "kind": "runtime",
       "native": "agents/vault-scribe-agent.md and agents/adr-auditor-agent.md model:"
     },
     "research_fanout_model": {
-      "value": "haiku",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.1",
@@ -59,28 +59,28 @@
       ]
     },
     "code_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.2"
       ]
     },
     "review_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "review_fanout_effort": {
-      "value": "high",
+      "value": "xhigh",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "parent_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Prerequisite 2"
@@ -92,7 +92,7 @@
       "native": "agents/scoping-agent.md model:"
     },
     "scoping_fanout_model": {
-      "value": "haiku",
+      "value": "opus",
       "kind": "skill",
       "readers": [
         "agents/scoping-agent.md Subagent settings"
@@ -101,7 +101,8 @@
     "advisor_model": {
       "value": "off",
       "kind": "runtime",
-      "native": "advisorModel in ~/.claude/settings.json (unset); /advisor or --advisor per session"
+      "native": "advisorModel in ~/.claude/settings.json (unset); /advisor or --advisor per session",
+      "note": "kept off 2026-10-10 by user decision: too slow"
     }
   }
 }
