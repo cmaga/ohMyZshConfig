@@ -64,7 +64,7 @@ In order:
        git ls-remote --heads origin <branch>   # prints anything → git push origin --delete <branch>
 
    `-D`, not `-d`: squash and rebase merges leave the branch "unmerged" by git's heuristic; step 2 confirmed `MERGED`. Done when `git worktree list` no longer shows `<path>`.
-4. Update the local base branch: main-checkout gate, then check out the base branch and `git pull --ff-only`; skip the pull with no upstream. A spec-descended ticket's base branch is the local integration branch — leave it as it is.
+4. Update the local base branch: main-checkout gate, then check out the base branch and `git pull --ff-only`; skip the pull with no upstream.
 5. Kill any shells still running.
 
 ### 5. Report

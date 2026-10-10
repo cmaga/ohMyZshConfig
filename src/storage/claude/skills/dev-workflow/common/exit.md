@@ -3,12 +3,12 @@
 Every tier ends here before returning control.
 
 1. **Verify behavior** by driving the change in the real app via the `run` skill. If the change alters a shared interface, exercise each consumer flow. Skip only when the change has no runtime surface; state the reason. Attended, when the drive needs a browser, give the user a two-line manual check instead. If verification needs a browser and the project has no Playwright MCP config — or a drive hits Chromium's profile lock — run `playwright-mcp-setup` first.
-2. **Create the PR** via the `git-provider` skill. Skip on a spec-descended run: the branch is local and the whole spec goes up once.
+2. **Create the PR** via the `git-provider` skill.
 3. **Transition the ticket** to "in review" via the `jira` skill.
 4. **Run the review gate** — below. Skip on `small`, except unattended: there the gate is the only thing that reads the code.
 5. **[Triage](#triage) the loose ends.** Folds go back through the review gate and the tests they affect before the next step.
 6. **Run the full suite once**, now that the last change is in: merge the current base branch first, then run the project's gate command. This is the run's only full run. Red: fix, re-run the failures, then the full suite again. A base branch that moves afterwards and merges in cleanly needs no re-run.
-7. **Wait on the PR's required checks** — unattended only. Red halts; the merge is the user's. A spec-descended run has no PR — see [Landing unattended](#landing-unattended).
+7. **Wait on the PR's required checks** — unattended only. Red halts; the merge is the user's.
 8. **Render the [exit report](../templates/exit-report.md)**. Say the run is finished so the `/goal` evaluator can see it.
 9. **Seed the [loose-end tracker](#the-loose-end-tracker)** with what triage escalated and present its first item. That item, not the report, is the last thing on screen.
 
@@ -43,8 +43,6 @@ One at a time: what it is, why it could not ride the branch, the triage agent's 
 
 **More than three tasks means the run deferred instead of finishing** — go back and fix the ones that could have ridden the branch. Zero is the common outcome: say in one line that there is nothing left to decide.
 
-A component inside a [chain](spec-run.md) triages and seeds nothing; its candidates ride its report to the parent, which triages them.
-
 ### Example
 
 > **Concurrent venue probes on the trader's start floor — file it, or leave it?**
@@ -64,7 +62,7 @@ Spawn `code-review-agent` once, fix what it finds, send the fixes back to **the 
 ### What to pass it
 
 - **Tell it to diff every stated claim against the mechanism that backs it.** Bounds, coverage figures, and every-X-is-handled sentences are where changes go wrong, always in the safe-looking direction.
-- **First round** — what explains the change (the spec if one exists — a component sends its own `C-N` section and the ones its Needs names — else the scaffold commit and plan, else the ticket), the ticket, and the base branch if not `main`.
+- **First round** — what explains the change (the scaffold commit and plan, else the ticket), the ticket, and the base branch if not `main`.
 - **Later rounds** — `SendMessage` to the same agent: what you did about each finding and which commits hold the fixes. Never re-send the diff, the plan, or its own findings.
 - **If that agent is gone** — spawn fresh with the first-round inputs, the round-count file, and what was done about last round's findings. Note the cold restart in the exit report.
 
@@ -85,7 +83,7 @@ Four kinds of finding. **Only bugs block the gate.**
 
 - **Read the whole path before editing.** A finding names a symptom and a line; the defect is often neither. Read every function on the path end to end, then edit from that reading.
 - Apply the fix yourself. Never dispatch a worker for one.
-- **Small enough** — apply, re-run the tests the fix affects, commit as `address code review findings`, push unless spec-descended.
+- **Small enough** — apply, re-run the tests the fix affects, commit as `address code review findings`, push.
 - **Too big** — a [triage](#triage) candidate, after the Jira search. A candidate counts as handled.
 - A recurring finding lists examples only; sweep the diff for the rest.
 - **Sweep for the claim, not the symbol.** Everywhere that *quotes* the old behavior is stale, and a grep for the symbol will not find it — check the wiring module, the entry point, the README.
@@ -93,13 +91,7 @@ Four kinds of finding. **Only bugs block the gate.**
 ### When to stop
 
 - **`"gate": "pass"`** — done.
-- **`"gate": "escalate"`** — stop. Take its `reason` to the escalation agent in [Step 6](../SKILL.md#what-stops-attended), then the user; inside a chain, return it to the parent. Do not open another round to prove it wrong.
+- **`"gate": "escalate"`** — stop. Take its `reason` to the escalation agent in [Step 6](../SKILL.md#what-stops-attended), then the user. Do not open another round to prove it wrong.
 - **Five failed rounds** — advisory backstop. Say it fired in the exit report and carry on.
 
 Whatever is still open becomes a [triage](#triage) candidate with its disposition. A PR comment is not a disposition.
-
-## Landing unattended
-
-**A component inside a [chain](spec-run.md) does not land.** No PR, no push: committed work, a passed gate, and a green suite in its worktree is finished. It returns its exit report with the worktree still entered; the parent merges.
-
-**A spec-descended unattended run that owns its own ticket** merges **locally** into the integration branch once the gate passes — no push, no PR — then goes straight to [cleanup](cleanup.md). Attended, it stops with the branch green and the user says when to merge.

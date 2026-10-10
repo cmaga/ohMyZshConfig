@@ -21,16 +21,13 @@ The spec is written with the user, one question at a time. Steps 2-8 are a loop:
 6. **Probe in the background.** When a question needs real data, dispatch it as a background workflow and keep discussing. Queue the result in the tracker. Brainstorming is messy — guiding the user back to the order the system flows in is your job.
 
 7. **Cohesion pass.** Read the draft end to end and fix what only shows at that scale. Then check the template's wiring:
-   - Every component is buildable alone and closes with its Tests.
-   - Every `Needs` line matches its `needs` in the dispatch graph, names a defined component, and the edges hold no cycle.
-   - **The dispatch graph has one entry per `## C-N:` heading and none without one.**
-   - **At least one component declares a non-empty `needs`** — else state in the spec that ordering lives in the tracker.
-   - A grouping is not a component: no graph entry, no `Needs` line, never `## C-N:`.
+   - Every component closes with its Tests.
+   - Every `Needs` line names a defined component, and the edges hold no cycle.
+   - A grouping is not a component: no `Needs` line, never `## C-N:`.
    - Every `Owns` names something no other component claims.
    - The map's nodes and arrows match the sections and their edges.
    - No component body describes how a thing is built, beyond a named mechanism it adopts and what it buys.
-   - No component carries an edge it does not need — for each, name what it cannot do until that component is merged.
-   - A component whose work lands across the tree carries `exclusive: true`; no other does.
+   - No component carries an edge it does not need — for each, name what it cannot do without that component.
    - **Nothing the spec declines to close survives as a sentence.** A named hole is a component if doable now, a ticket if not. A hole with no owner is a defect the spec agreed to in advance.
 
    **Then publish the view.** Load `artifact-design`, author the document as HTML into the scratchpad as `<name>-spec.html`, publish with the `Artifact` tool; the map as a `mermaid` block. Republish to the same path whenever the markdown changes — never edit the Artifact directly.
@@ -45,7 +42,7 @@ The spec is written with the user, one question at a time. Steps 2-8 are a loop:
 
 ## Wrap-up
 
-1. Present the spec: what it decided, the components, what is still open — open questions and post-deploy items counted separately. Plain language, 5-15 lines. Lead with the republished Artifact link; give the repo path on its own line. Say that **merging the PR is what starts the build** and files the tickets.
+1. Present the spec: what it decided, the components, what is still open — open questions and post-deploy items counted separately. Plain language, 5-15 lines. Lead with the republished Artifact link; give the repo path on its own line. Say that **merging the PR is what starts the build** and files the epic.
 2. Create the PR via the `git-provider` skill.
-3. Transition the ultra ticket to "in review" via the `jira` skill, and record the spec's repo path on it — the [chain](spec-run.md) reads it there.
-4. **File when the spec merges, never before** — a spec under review is still moving. On the merge, in this run or the next run of this ticket: create the epic, named for the spec, carrying its path, linked to this ticket. If this ticket is already an Epic, it is the epic. File one child per `## C-N:` section, plus one per **Post-deploy** item and per hole the spec left as a ticket, each naming its section. Then close this ticket. The [chain](spec-run.md) runs from the epic.
+3. Transition the ultra ticket to "in review" via the `jira` skill, and record the spec's repo path on it — the epic carries it on.
+4. **File when the spec merges, never before** — a spec under review is still moving. On the merge, in this run or the next run of this ticket: create the epic, named for the spec, carrying its path, linked to this ticket. If this ticket is already an Epic, it is the epic. File no children. Each **Post-deploy** item and each hole the spec left as a ticket is a standalone ticket linked to the epic, naming its section. Then close this ticket. [The milestone build](milestone-build.md) runs from the epic.

@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, list the edge cases, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, before any planning or code. A run the user arms with a `/goal` continues unattended from there to a complete, reviewed PR.
+description: End-to-end implementation workflow. Use when the user says "take <TICKET>" to work on an existing Jira ticket, "new take" to scope and create a ticket before working on it, or "cleanup" to tear down after a PR is merged. Handles small/medium/large/ultra tiers. Medium and large scaffold the design in real code, list the edge cases, write failing integration tests, then fill bodies with worker subagents. The ultra tier co-writes a spec of target behavior, adversarially reviewed, then builds it in runnable milestones, one dynamic workflow per milestone. A run the user arms with a `/goal` continues unattended from there to a complete, reviewed PR.
 ---
 
 # Dev Workflow
@@ -15,24 +15,23 @@ A run is unattended when the user pastes a `/goal`; `manual` in the take keeps i
 
     /goal <one measurable end state, and the check that settles it>
 
-Name something whose evidence lands in the transcript — *every component merged with the suite green* — never a posture. Schedule nothing alongside it. A run that notices any interruption asks the user to re-arm.
+Name something whose evidence lands in the transcript — *every milestone proven with the suite green* — never a posture. Schedule nothing alongside it. A run that notices any interruption asks the user to re-arm.
 
 An armed goal converts these gates, and only these, to decide-record-and-continue:
 
 - The [scaffold](common/scaffold.md) review wait and blast-radius interrupt
 - A strategic plan marker — decide it, rewrite as `[ASSUMED: ...]`, carry it to [triage](common/exit.md#triage)
-- Ticket filing — file nothing; every discovered issue goes to triage. Exception: a chain filing a component ticket the spec calls for
-- A spec component's local merge into its integration branch
+- Ticket filing — file nothing; every discovered issue goes to triage
 
-Still stops the run: the prerequisite gates, a review gate at its five-round backstop or an `escalate` the [escalation agent](#what-stops-attended) cannot decide, a red required PR check. Inside a chain the component returns instead and the parent decides. The run ends on the tracker's first item — that is the hand-back.
+Still stops the run: the prerequisite gates, a review gate at its five-round backstop or an `escalate` the [escalation agent](#what-stops-attended) cannot decide, a red required PR check. The run ends on the tracker's first item — that is the hand-back.
 
 ## Routing
 
-Read the ticket first (Step 1.1), then run Prerequisites 1-4. A **chain** skips Steps 1-4 and runs [the chain](common/spec-run.md) instead; its Driver seeds tracking and runs the main-checkout gate itself.
+Read the ticket first (Step 1.1), then run Prerequisites 1-4. A **build** skips Steps 1-4 and runs [the milestone build](common/milestone-build.md) instead; its Driver seeds tracking and runs the main-checkout gate itself.
 
-A chain is the epic carrying an approved spec's path: the path resolves in the main checkout on the base branch. An ultra ticket whose spec has merged but has no epic yet runs [ultra wrap-up step 4](common/ultra.md#wrap-up) and stops. If the path does not resolve, the ticket's status says why. **In review**: say so and stop; the user merging it is what files the epic. **Done**: say so and stop. `manual` does not apply to a chain.
+A build is the epic carrying an approved spec's path: the path resolves in the main checkout on the base branch. An ultra ticket whose spec has merged but has no epic yet runs [ultra wrap-up step 4](common/ultra.md#wrap-up) and stops. If the path does not resolve, the ticket's status says why. **In review**: say so and stop; the user merging it is what files the epic. **Done**: say so and stop.
 
-Everything else, a component ticket included, runs the steps below.
+Everything else runs the steps below.
 
 ## Prerequisites
 
@@ -45,7 +44,7 @@ Everything else, a component ticket included, runs the steps below.
    6. Implementation
    7. Exit
 2. **Lever aliases.** Read `~/.claude/skills/optimize-usage/lever-state.json` and bind its `kind: "skill"` levers to the all-caps form of their keys: `RESEARCH_FANOUT_MODEL`, `CODE_FANOUT_MODEL`, `ESCALATION_MODEL`, and `PARENT_FANOUT_MODEL` (every dispatch no other alias covers, except `worker-agent`, which takes a `model` opt only to replace one that hit a rate limit). `inherit`, an absent key, or a missing file means omit the `model` opt. A value carrying `[1m]` goes to the `model` opt without the suffix, which its enum lacks; the settings remap `ANTHROPIC_DEFAULT_SONNET_MODEL` supplies the 1M window. Re-read the file after compaction. Prefix every dispatched agent's `description` with its alias and value — `code-fanout(opus): seam check on the intake path` — since the model is recorded nowhere else.
-3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value, until Step 5.3 rebinds it for a spec-descended run.
+3. **Base branch.** Read `baseBranch` from `<project-root>/.claude/skills/jira/config.json`; if the file or field is absent, it is `main`. Every later mention of "the base branch" means this value.
 4. **Main-checkout gate.** In the main checkout, run `git status --porcelain`. If it prints anything, stop, show the user the dirty files, and wait for their decision — never stash, commit, or discard main-checkout changes to unblock yourself. When it prints nothing, check out the base branch if not already current, then `git pull --ff-only`. Skip the pull if the branch has no upstream. Leave the main checkout on the base branch — nothing later in the flow moves it, and a session that finds it elsewhere is looking at a bug.
 
 **All numbered steps must be done sequentially in order. Bullets can be done in parallel**
@@ -54,16 +53,15 @@ Every step below is labelled **internal** or **user-facing**. An internal step p
 
 ## Step 1: Understanding The Goal — internal
 
-1. Read the ticket via the jira skill (a `new take` has none; use the user's context). Blocked or parked: stop and tell the user. **Run the ticket you were handed** — never substitute a child or sibling; if it cannot be run, stop and say why. Otherwise assign it to me and transition it to "In Progress" now. If it is a spec's ticket — its own or one component's — read the entire spec. A ticket for one component of an approved spec is spec-descended — the spec's own epic is a chain, routed above, never here — and its `## C-N:` section is what to build. Note it for Step 5.
+1. Read the ticket via the jira skill (a `new take` has none; use the user's context). Blocked or parked: stop and tell the user. **Run the ticket you were handed** — never substitute a child or sibling; if it cannot be run, stop and say why. Otherwise assign it to me and transition it to "In Progress" now.
 2. Restate intent with zero implementation nouns from the ticket. Every implementation noun it carries is a hypothesis to be beaten by code analysis before it is adopted. Working notes, not a post.
 
 One line surfaces from this step: the ticket read, assigned, and moved to In Progress.
 
 ## Step 2: Verify context/ticket claims — internal
 
-1. Dispatch `scoping-agent` with the ticket and Step 1's restatement; spec-descended, add the spec path and component id. Read the case file; do not repeat its reading.
+1. Dispatch `scoping-agent` with the ticket and Step 1's restatement. Read the case file; do not repeat its reading.
    - Not needed → stop, report to the user in plain words, and undo Step 1: previous status, unassigned. Blocked or Won't Do is their call.
-   - Spec-descended: the spec settled the brief and the solution, so Steps 3 and 4 do not re-open them; pick the tier only, never ultra. A surviving Open question is a spec defect: attended, ask that one at Step 3 and nothing else; in a chain, return it to the parent per [escalation](common/spec-run.md#escalation).
 
 ## Step 3: User brief — user-facing
 
@@ -97,14 +95,7 @@ Gather multiple solutions and pick the best one. Fan out only over sets you enum
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
 2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
-3. **Spec-descended runs only — resolve the base branch.** A component builds against the spec's integration branch, `spec/<SPEC-TICKET>`; cut it from the project base if it does not exist. **It is local and never pushed** — the whole spec goes up as one PR. From here on, "the base branch" means that branch. The main checkout stays on the project base.
-4. **Enter the worktree.**
-   - **Ordinary runs:** `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
-   - **Spec-descended runs:** `EnterWorktree` by name branches from the default branch, which a component must not build on. Create it yourself, then `EnterWorktree` with that `path`:
-
-         git worktree add -b <TICKET>-<tier> "$(git rev-parse --show-toplevel)/.claude/worktrees/<TICKET>-<tier>" spec/<SPEC-TICKET>
-
-     A refusal saying the tool only switches from inside a worktree is expected when dispatched at the repo root, as a chain's manager is: carry on by absolute path and `git -C`. `ExitWorktree` only `keep`s a worktree entered this way; [cleanup](common/cleanup.md) removes it with git.
+3. **Enter the worktree:** `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel`.
    - Until `ExitWorktree`, git reaches nothing outside the worktree: `cd` out, `git -C`, `--git-dir`, `GIT_DIR`, and any Bash whose shape hides where it lands are refused. When one is, write the commands to a scratchpad script and run it by absolute path.
 
@@ -158,10 +149,10 @@ Medium, plus the user in the scaffolding code and two review gates on it.
 
 ### Ultra
 
-The target behavior is settled as a spec, carved into independently buildable components, before anything is coded. This tier ends in tickets, not a PR of code.
+The target behavior is settled as a spec of components and what each owns, before anything is coded. This run ends in the spec's PR; the build is a later run.
 
 1. [Write the spec](common/ultra.md)
-2. Each component's ticket re-enters this workflow at Step 1 at its own tier, merging locally into the spec's integration branch. No component opens a PR — the whole spec goes up once, by [the chain](common/spec-run.md) or, walked by hand, by the run that finishes the last component: check the spec against the branch as [hand-back](common/spec-run.md#hand-back) step 1 does, then, when the user asks, push the branch and open the PR.
+2. Its merge files the epic. `take <EPIC>` runs [the milestone build](common/milestone-build.md): a plan of runnable milestones the user approves, then one workflow per milestone.
 
 ## Critical Rules
 
@@ -175,12 +166,12 @@ The target behavior is settled as a spec, carved into independently buildable co
   - Leave it only when it genuinely cannot ride — a different subsystem, a design decision the user owns, a scope that would double the diff. If your own answer is that it rides, that answer is final: fold it. Then open it as a task, with your recommendation and why it could not ride; [triage](common/exit.md#triage) at exit folds it or escalates it. A third candidate means re-ask whether any could have been fixed.
   - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every close candidate; search component and file names too. An existing ticket ends the matter: cite its key.
   - **File only after the user says to.** An unfiled item is an open task on the [loose-end tracker](common/exit.md#the-loose-end-tracker) until they answer. Prose in a plan, PR description, vault note, or exit report is not an owner.
-- Never merge a PR into the base branch; an armed goal is not that ask. The one exception is a component's local merge into its spec's integration branch, by whoever owns the component's ticket — a chain merges its components; a component dispatched inside a chain merges nothing.
+- Never merge a PR into the base branch; an armed goal is not that ask. The milestone build commits straight to its spec's local integration branch and merges nothing.
 - A refused tool call is not a blocker until every route to the same information is refused. Take the other route and carry on; never stop to ask whether to use it.
 - Nothing dispatched parks waiting for an answer. A decision you cannot make goes back as your report — **end your turn and return the question** — with what you did and what a replacement would need. `SendMessage` to `main` carries nothing of the work; it is for a [skill lesson](../memory-review/lesson-format.md) only.
-- **Three levels, and the worker level is the floor.** A session dispatches managers, a manager dispatches workers, a worker dispatches nothing — a deeper completion surfaces to the main session and its asker waits forever. Say it in every dispatch prompt: *anything you spawn reports to me, not to you; do the work yourself.* Too large for one agent → the level that can hold the results splits it. This binds the reviewer: if a review needs more than one agent, whoever spawned the reviewer runs them.
+- **You are the only coordinator.** You dispatch every agent, directly or through a workflow, and an agent dispatches nothing; the reviewer's own disproof agents are the one exception. Say it in every dispatch prompt: *do the work yourself; spawn nothing.* Too large for one agent → you split it.
   - **When an agent goes quiet, read its status with `ListAgents` before believing anything.** A finished agent whose result never reached its waiter was mis-addressed — check your queue and relay it. Replace only an agent that is no longer running and delivered nothing.
-  - **An agent that dies or stalls is replaced, never finished by you.** One that hit a rate limit goes again on the same card with a `model` override that has quota — the one time a pinned agent takes one — and the report says so. A silent one's committed, verified-red files count as delivered; its replacement gets a disjoint file set. A manager without `ListAgents` reports the quiet agent up, and its parent reads the status. When no replacement can start, stop and hand back: on a tier that dispatches, you never write a body a worker should have.
+  - **An agent that dies or stalls is replaced, never finished by you.** One that hit a rate limit goes again on the same card with a `model` override that has quota — the one time a pinned agent takes one — and the report says so. A silent one's committed, verified-red files count as delivered; its replacement gets a disjoint file set. When no replacement can start, stop and hand back: on a tier that dispatches, you never write a body a worker should have.
 - **Cap every return.** Put this in every dispatch prompt: *return only what I act on — files and commits touched, the answer with `file:line`, what needs deciding. Keep the reasoning; I can ask.* An uncapped report lands whole in the parent's context.
 - Browser tool split: Playwright MCP only for verifying the change under test (Exit). Built-in Chrome for everything else.
 - Fan-out sizing: fan out only when one agent cannot hold the work (~200k). Split along what the agents do *not* share. Never shorten the item list to cut the agent count.

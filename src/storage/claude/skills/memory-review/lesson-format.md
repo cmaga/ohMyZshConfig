@@ -24,35 +24,34 @@ None of these is a lesson: the code was hard, a test was flaky, a tool call was 
 The topic file:
 
     ---
-    name: wave-opens-on-merge
-    description: Opened a wave before its exclusive component merged
+    name: milestone-opens-on-proof
+    description: Opened a milestone before the last one's proof passed
     metadata:
       type: feedback
     ---
 
     **Skill:** dev-workflow
-    **File:** common/spec-run.md
+    **File:** common/milestone-build.md
     **Trigger:** correction
     **Date:** 2026-08-27
     **Run:** EN-326
 
-    **What I did:** dispatched the wave before the exclusive component had merged.
+    **What I did:** ran the next milestone's workflow while the last one's proof was red.
 
-    **What the text said:** step 3 says an exclusive component runs "first, in that
-    wave's place" — it never says the siblings wait for it to merge rather than to
-    start.
+    **What the text said:** step 6 says "open the next" after the proven commit — it
+    never says a red proof forbids writing that commit.
 
-    **What it cost:** two managers rebased across the whole move.
+    **What it cost:** the next milestone's scaffold landed on a broken path.
 
-    **How to apply:** open the next wave only once its exclusive component has merged.
+    **How to apply:** open a milestone only once the last one's proof passes.
 
-    **What would have helped:** one line saying the wave opens on the merge.
+    **What would have helped:** one line saying the proven commit waits on a green proof.
 
     Recurrences:
 
 Its `MEMORY.md` line, under the skill's section:
 
     ## Skill: dev-workflow
-    - [Wave opens on merge](feedback_wave_opens_on_merge.md) — siblings wait for the exclusive component to merge, not start
+    - [Milestone opens on proof](feedback_milestone_opens_on_proof.md) — the next milestone waits for a green proof, not the last workflow's return
 
 `Trigger` is `correction` or `underdetermined`. `Date` is the first sighting; each date on `Recurrences:` is another. `Run` names the ticket, or what you were doing when there is none. `File` names the skill file you were reading when it happened, `SKILL.md` for the entrypoint; `unknown` is a real answer and beats a guess. **How to apply** is what you do next time, and is what makes the lesson work before the skill changes. Drop **What would have helped** unless the answer is obvious — a guessed fix costs the reviewer more than no fix.
