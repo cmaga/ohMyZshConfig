@@ -18,9 +18,10 @@
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
-      "value": "xhigh",
+      "value": "max",
       "kind": "runtime",
-      "native": "agents/code-review-agent.md effort:; the other three inherit"
+      "native": "agents/code-review-agent.md effort:; the other three inherit",
+      "note": "max on code-review-agent only, by user decision 2026-10-10; plan-review and qa-planner inherit session effort"
     },
     "worker_model": {
       "value": "opus",
@@ -33,7 +34,7 @@
       "native": "agents/tester-agent.md model:"
     },
     "escalation_model": {
-      "value": "opus",
+      "value": "fable",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent",
@@ -51,7 +52,7 @@
       "native": "agents/vault-scribe-agent.md and agents/adr-auditor-agent.md model:"
     },
     "research_fanout_model": {
-      "value": "opus",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.1",
@@ -66,7 +67,7 @@
       ]
     },
     "review_fanout_model": {
-      "value": "opus",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
@@ -92,7 +93,7 @@
       "native": "agents/scoping-agent.md model:"
     },
     "scoping_fanout_model": {
-      "value": "opus",
+      "value": "sonnet[1m]",
       "kind": "skill",
       "readers": [
         "agents/scoping-agent.md Subagent settings"
