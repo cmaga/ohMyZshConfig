@@ -4,8 +4,14 @@ export const meta = {
   phases: [{ title: 'Gather' }, { title: 'Sweep' }],
 }
 
-const { spec, tree, components, model } = args
-const pin = model ? { model } : {}
+const { spec, tree, components, levels } = args
+if (!levels) throw new Error('pass levels: the contents of scripts/levels.json')
+
+const run = (level, prompt, opts) => {
+  const l = levels[level]
+  if (!l) throw new Error(`no level named ${level}`)
+  return agent(prompt, { ...opts, model: l.model, effort: l.effort, label: `${level}(${l.model}/${l.effort}): ${opts.label}` })
+}
 
 const ITEMS = (props, required) => ({
   type: 'array',
@@ -53,7 +59,7 @@ Read only: edit nothing, spawn nothing.`
 
 phase('Gather')
 const results = await parallel(components.map(id => () =>
-  agent(prompt(id), { label: `gather ${id}`, phase: 'Gather', schema: GATHER, ...pin })))
+  run('judgment', prompt(id), { label: `gather ${id}`, phase: 'Gather', schema: GATHER })))
 
 const missing = components.filter((_, i) => !results[i])
 if (missing.length) log(`no result for ${missing.join(', ')}`)
@@ -63,13 +69,13 @@ const leaving = [...new Set(found.flatMap(r => r.leaves.map(l => l.path)))]
 if (!leaving.length) return { results: found, missing, leaving: [], sweep: [] }
 
 phase('Sweep')
-const listed = await agent(
+const listed = await run('routine',
   `List every tracked file under these paths in the tree at ${tree}, expanding each directory to all its files: \`git -C ${tree} ls-files -- <path>\`. Return paths exactly as git prints them.
 
 ${leaving.join('\n')}
 
 Read only: edit nothing, spawn nothing.`,
-  { label: 'sweep: list files', phase: 'Sweep', schema: FILES, effort: 'low', ...pin })
+  { label: 'sweep: list files', phase: 'Sweep', schema: FILES })
 const files = listed ? listed.files : []
 
 const claims = JSON.stringify(found.map(r => ({
@@ -81,7 +87,7 @@ const CHUNK = 15
 const chunks = []
 for (let i = 0; i < files.length; i += CHUNK) chunks.push(files.slice(i, i + CHUNK))
 
-const swept = await parallel(chunks.map((chunk, i) => () => agent(
+const swept = await parallel(chunks.map((chunk, i) => () => run('routine',
   `The build deletes or rewrites these files, in the tree at ${tree}. Behavior in them that no spec component carries forward disappears silently.
 
 ${chunk.join('\n')}
@@ -91,7 +97,7 @@ Read each file whole. List every behavior it implements that a user, a caller, o
 Spec: ${spec}. What each component's gather covers: ${claims}
 
 Read only: edit nothing, spawn nothing.`,
-  { label: `sweep ${i + 1}/${chunks.length}`, phase: 'Sweep', schema: SWEEP, ...pin })))
+  { label: `sweep ${i + 1}/${chunks.length}`, phase: 'Sweep', schema: SWEEP })))
 
 const lost = chunks.filter((_, i) => !swept[i]).flat()
 if (lost.length) log(`sweep returned nothing for ${lost.length} files: ${lost.join(', ')}`)

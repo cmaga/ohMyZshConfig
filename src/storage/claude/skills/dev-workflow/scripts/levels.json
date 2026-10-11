@@ -1,0 +1,5 @@
+{
+  "routine": { "model": "sonnet", "effort": "xhigh" },
+  "judgment": { "model": "opus", "effort": "xhigh" },
+  "critical": { "model": "opus", "effort": "max" }
+}
