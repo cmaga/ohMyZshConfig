@@ -11,7 +11,7 @@ export const meta = {
   ],
 }
 
-const { epic, spec, tree, base, projectBase, scripts, levels, milestone: m, decisions = {} } = args
+const { epic, spec, tree, base, projectBase, scripts, levels, milestone: m, decisions = {}, settled = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
@@ -109,7 +109,7 @@ ${t.card}
 - Prove each test you turn green: break the line it guards in your own file, run it and see it fail, restore the line by editing it back, and run it green again. Commit only the restored code; put each test and its break in notes.
 - Set green only when every milestone test your task covers passes.
 
-Running beside you: ${layer.filter(s => s.id !== t.id).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.${handed(t).length ? `
+Running beside you: ${layer.filter(s => s.id !== t.id && !settled[s.id]).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.${handed(t).length ? `
 
 Finished tasks' reports that name yours:
 ${handed(t).join('\n\n')}` : ''}
@@ -117,6 +117,8 @@ ${handed(t).join('\n\n')}` : ''}
 ${SHARED}${decided(t.id)}`
 
 const build = async (t, layer, last) => {
+  // A resume re-runs every agent call after the first changed one, so finished tasks come back as settled reports.
+  if (settled[t.id]) return settled[t.id]
   const first = await run(t.level, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
   if (!stuck(first, last) || t.level === 'critical') return first && { ...first, level: t.level }
   const up = ORDER[ORDER.indexOf(t.level) + 1]
