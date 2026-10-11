@@ -16,7 +16,7 @@ The build reads no lever but `ESCALATION_MODEL`, and its agent types are only th
 - **Judgment:** the gather's mapping, plan review, scaffold, failing tests, review finders, fold, verify, and the hand-back census. Also a task that writes new code a spec sentence forces, or turns a direct call into a message across a system boundary.
 - **Critical:** a task whose mistake loses money, data, or a safety check. In a trading system: code that places, sizes, cancels, or settles orders, moves positions, or runs a risk limit, kill switch, stop, or watchdog. Its review finder, and a fold or verify touching it, run critical too.
 
-A worker that stops short reruns once, one level up; a critical one returns its question.
+A worker that stops short reruns once, one level up; a critical one returns its question. Before the last layer, a worker whose own part is done counts as finished though its milestone tests still fail, since they need later tasks; the last layer must turn them green. A finished worker's report reaches each later worker whose task id it names.
 
 ## Driver
 

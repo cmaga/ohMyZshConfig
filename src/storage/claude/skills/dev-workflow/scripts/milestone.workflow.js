@@ -58,7 +58,8 @@ const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. O
 const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[key]}` : '')
 const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, usage: { used, promoted }, ...rest })
 const asked = r => !r || r.status === 'question'
-const stuck = r => asked(r) || r.green === false
+// A milestone's tests run end to end, so only the last layer's workers can turn them green.
+const stuck = (r, last) => asked(r) || (last && r.green === false)
 
 const unlevelled = m.tasks.filter(t => !levels[t.level]).map(t => t.id)
 if (unlevelled.length) return stopped('plan', 'plan', null, { reason: `no level on ${unlevelled.join(', ')}` })
@@ -92,6 +93,8 @@ ${SHARED}${decided('tests')}`,
   { label: `${m.id} tests`, phase: 'Tests', schema: REPORT })
 if (asked(tests)) return stopped('tests', 'tests', tests, { scaffold })
 
+const word = id => new RegExp(`\\b${id.replace(/\./g, '\\.')}\\b`)
+const handed = t => built.filter(b => b.notes && word(t.id).test(b.notes)).map(b => `${b.id}: ${b.notes}`)
 const card = (t, layer) => `${CONTEXT}
 
 Task ${t.id}: ${t.title}
@@ -106,13 +109,16 @@ ${t.card}
 - Prove each test you turn green: break the line it guards in your own file, run it and see it fail, restore the line by editing it back, and run it green again. Commit only the restored code; put each test and its break in notes.
 - Set green only when every milestone test your task covers passes.
 
-Running beside you: ${layer.filter(s => s.id !== t.id).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.
+Running beside you: ${layer.filter(s => s.id !== t.id).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.${handed(t).length ? `
+
+Finished tasks' reports that name yours:
+${handed(t).join('\n\n')}` : ''}
 
 ${SHARED}${decided(t.id)}`
 
-const build = async (t, layer) => {
+const build = async (t, layer, last) => {
   const first = await run(t.level, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
-  if (!stuck(first) || t.level === 'critical') return first && { ...first, level: t.level }
+  if (!stuck(first, last) || t.level === 'critical') return first && { ...first, level: t.level }
   const up = ORDER[ORDER.indexOf(t.level) + 1]
   promoted.push(t.id)
   const second = await run(up,
@@ -131,9 +137,10 @@ let pending = [...m.tasks]
 while (pending.length) {
   const layer = pending.filter(t => (t.after || []).every(a => done.has(a)))
   if (!layer.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${pending.map(t => t.id).join(', ')}`, built })
-  const reports = await parallel(layer.map(t => () => build(t, layer)))
+  const last = layer.length === pending.length
+  const reports = await parallel(layer.map(t => () => build(t, layer, last)))
   layer.forEach((t, i) => built.push({ id: t.id, ...reports[i] }))
-  const open = layer.filter((_, i) => stuck(reports[i]))
+  const open = layer.filter((_, i) => stuck(reports[i], last))
   if (open.length) return stopped('build', open[0].id, reports[layer.indexOf(open[0])], { built })
   layer.forEach(t => done.add(t.id))
   pending = pending.filter(t => !layer.includes(t))
