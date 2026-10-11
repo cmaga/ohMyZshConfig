@@ -1,0 +1,345 @@
+<!--
+The milestone build's plan view (common/milestone-build.md, Driver step 5).
+Never edit a copy by hand: scripts/plan-view.py fills /*PLAN*/ from the plan and
+the narrative file, and its header lists the narrative's fields.
+-->
+<meta charset="utf-8">
+<title>/*TITLE*/</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#e8ecf0; --line:#cfd6de; --ink:#16202b; --muted:#5a6876;
+  --s1:#0e7c86; --s2:#b26a00; --s3:#3f5bd0; --s4:#c0396b; --s5:#5b6b7c; --s6:#2f7d32; --old:#8a96a3;
+  --moved:#2f8f5b; --on-strong:#ffffff; --adapted:#3f6fb5; --retired:#9aa5b1; --pause:#d9480f; --accent:#0e7c86;
+  --lv-r:#5f9fc2; --lv-j:#5b4fc4; --lv-c:#c62f3f; --pause-soft:#fde3d6;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#161e26; --sunk:#1d2730; --line:#2c3844; --ink:#e6ebf0; --muted:#9aa8b6;
+  --s1:#3cb8c2; --s2:#e3a23b; --s3:#8a9ef5; --s4:#ec7aa2; --s5:#9aabbd; --s6:#6cc070; --old:#6c7886;
+  --moved:#4cbb7f; --on-strong:#0f151b; --adapted:#6f9be0; --retired:#5f6b77; --pause:#ff7a3d; --accent:#3cb8c2;
+  --lv-r:#7fc0e0; --lv-j:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#161e26; --sunk:#1d2730; --line:#2c3844; --ink:#e6ebf0; --muted:#9aa8b6;
+  --s1:#3cb8c2; --s2:#e3a23b; --s3:#8a9ef5; --s4:#ec7aa2; --s5:#9aabbd; --s6:#6cc070; --old:#6c7886;
+  --moved:#4cbb7f; --on-strong:#0f151b; --adapted:#6f9be0; --retired:#5f6b77; --pause:#ff7a3d; --accent:#3cb8c2;
+  --lv-r:#7fc0e0; --lv-j:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
+.wrap{max-width:1560px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800;font-stretch:112%;letter-spacing:-.01em;line-height:1.05}
+h2{font-size:22px;font-weight:700;font-stretch:108%}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{color:var(--muted);max-width:75ch;font-size:16px}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+section[hidden]{display:none}
+.sec-head{display:flex;flex-direction:column;gap:4px}
+.sec-head p{color:var(--muted);max-width:68ch}
+header{display:flex;flex-direction:column;gap:18px}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px;padding-top:6px}
+.stat{display:flex;align-items:baseline;gap:8px}
+.stat b{font-family:var(--f-display);font-size:28px;font-weight:800;font-stretch:105%;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:14px}
+.arch{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
+.arch svg{display:block;width:100%;max-width:1200px;min-width:640px;height:auto;margin-inline:auto}
+.arch text{font-family:var(--f-body)}
+.arch .lbl{paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round}
+.route{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 16px 18px;overflow-x:auto}
+.track{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(96px,1fr));min-width:calc(var(--n) * 98px)}
+.track::before{content:"";position:absolute;left:calc(50% / var(--n));right:calc(50% / var(--n));top:23px;height:4px;border-radius:2px;background:var(--grad)}
+.stop{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:0 4px;cursor:pointer;background:none;border:0;color:inherit;font:inherit}
+.stop:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.dot{width:50px;height:50px;border-radius:50%;background:var(--surface);border:4px solid var(--c);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:17px;position:relative;z-index:1;transition:transform .15s}
+.stop:hover .dot{transform:scale(1.06)}
+.stop.paused .dot::after{content:"";position:absolute;top:-9px;right:-9px;width:18px;height:18px;background:var(--pause);transform:rotate(45deg);border-radius:3px;border:3px solid var(--surface)}
+.stop .nm{font-weight:600;font-size:13.5px;line-height:1.25}
+.stop .tc{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);margin-top:14px;padding-inline:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.legend .pz{width:11px;height:11px;border-radius:2px;transform:rotate(45deg);background:var(--pause)}
+.matrix-wrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto}
+table.matrix{border-collapse:separate;border-spacing:4px;min-width:720px;width:100%}
+.matrix th{font-weight:600;font-size:12.5px;color:var(--muted);text-align:center;padding:2px 0}
+.matrix th.row{text-align:left;color:var(--ink);font-size:13.5px;white-space:nowrap;padding-right:10px}
+.matrix th.row i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:0}
+.matrix td{height:34px;border-radius:5px;text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--ink);background:var(--sunk)}
+.matrix td.runs{background:repeating-linear-gradient(135deg,var(--sunk) 0 6px,var(--line) 6px 8px);color:var(--muted);font-family:var(--f-body);font-size:11.5px}
+.matrix td.removed{background:var(--pause-soft);color:var(--pause);font-family:var(--f-body);font-weight:600;font-size:11.5px}
+.matrix td.gone{background:transparent;color:var(--muted);font-family:var(--f-body);font-size:11.5px}
+.note{font-size:13px;color:var(--muted)}
+.lvl-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.lvl{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.lvl .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.lvl h3{font-size:18px}
+.lvl .n{font-family:var(--f-display);font-size:28px;font-weight:700;color:var(--c);font-variant-numeric:tabular-nums}
+.lvl .mdl{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.lvl p{font-size:13.5px;line-height:1.45}
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:minmax(110px,250px) minmax(0,1fr) auto;gap:7px 12px;align-items:center}
+.bars .lbl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bars .bar{display:flex;height:16px;border-radius:3px;overflow:hidden;background:var(--sunk)}
+.bars .bar div{font:600 10.5px var(--f-mono);color:var(--on-strong);display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.bars .val{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.fates{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:18px}
+.fates .bars{border:0;padding:0}
+.bigbar{display:flex;height:38px;border-radius:6px;overflow:hidden}
+.bigbar div{display:flex;align-items:center;padding-left:10px;color:var(--on-strong);font-weight:600;font-size:13px;white-space:nowrap;min-width:0;overflow:hidden}
+.keys{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px}
+.keys span{display:flex;align-items:center;gap:7px}
+.keys i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.keys b{font-variant-numeric:tabular-nums}
+.lessons{display:grid;gap:10px}
+.lesson{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1.15fr);align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.lesson .then{color:var(--muted);font-size:14px}
+.lesson .arrow{color:var(--accent);font-size:20px;text-align:center}
+.lesson .now{font-size:14px}
+.mtag{font-family:var(--f-mono);font-size:11.5px;background:var(--sunk);border-radius:4px;padding:1px 6px;margin-right:6px}
+@media (max-width:640px){.lesson{grid-template-columns:1fr}.lesson .arrow{text-align:left;transform:rotate(90deg);width:20px}}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:11px;min-width:0;scroll-margin-top:16px}
+.card.flash{animation:flash 1.2s ease}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.card-top{display:flex;align-items:center;gap:12px}
+.badge{flex:none;width:38px;height:38px;border-radius:50%;border:3px solid var(--c);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:14px}
+.card-top h3{flex:1;min-width:0}
+.pz-tag{flex:none;font-size:11.5px;font-weight:600;color:var(--pause);background:var(--pause-soft);padding:3px 8px;border-radius:999px}
+.card .does{font-size:14.5px}
+.proof{background:var(--sunk);border-radius:7px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.proof .mono{color:var(--muted);overflow-wrap:anywhere}
+.proof p{font-size:13.5px}
+.guard,.you{font-size:13px;display:flex;gap:8px;align-items:flex-start}
+.guard b{color:var(--moved);flex:none;font-weight:600}
+.you b{color:var(--pause);flex:none;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--cs) 16%,var(--surface));color:var(--ink)}
+.lvmix{display:flex;gap:10px;font-family:var(--f-mono);font-size:12px;flex-wrap:wrap}
+.lvmix span{display:flex;align-items:center;gap:5px}
+.lvmix i{width:9px;height:9px;border-radius:2px;display:inline-block}
+details.crit{font-size:13px;border-top:1px dashed var(--line);padding-top:8px}
+details.crit summary{cursor:pointer;color:var(--lv-c);font-weight:600}
+details.crit ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.meta{display:flex;gap:16px;font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:auto;padding-top:2px}
+.dgroups{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:14px}
+.dgroup{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dgroup ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.dgroup li{font-size:13.5px;display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start}
+.dgroup li.flag{background:var(--pause-soft);margin:0 -8px;padding:8px;border-radius:7px}
+.tag{font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:1px}
+.tag.kept{background:color-mix(in srgb,var(--s1) 16%,var(--surface));color:var(--s1)}
+.tag.spec{background:color-mix(in srgb,var(--s3) 16%,var(--surface));color:var(--s3)}
+.tag.check{background:var(--pause-soft);color:var(--pause)}
+.tag.plan{background:var(--sunk);color:var(--muted)}
+.move{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:20px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px}
+@media (max-width:760px){.move{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.picks{display:flex;flex-wrap:wrap;gap:8px}
+.pick{position:relative}
+.pick input{position:absolute;opacity:0;pointer-events:none}
+.pick label{display:flex;align-items:center;gap:7px;padding:7px 12px;border:1.5px solid var(--line);border-radius:999px;cursor:pointer;font-size:13.5px;user-select:none;background:var(--bg)}
+.pick label .d{width:11px;height:11px;border-radius:2px;transform:rotate(45deg);border:2px solid var(--line)}
+.pick input:checked + label{border-color:var(--pause);background:var(--pause-soft)}
+.pick input:checked + label .d{background:var(--pause);border-color:var(--pause)}
+.pick input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+.pick label small{color:var(--muted);font-size:11px}
+.cmd{background:var(--ink);color:var(--bg);border-radius:9px;padding:14px 16px;font-family:var(--f-mono);font-size:13.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.copy{align-self:flex-start;font:600 13.5px var(--f-body);padding:8px 16px;border-radius:8px;border:0;background:var(--accent);color:var(--on-strong);cursor:pointer}
+.copy:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.todo{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.todo li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14px}
+.todo .when{font-family:var(--f-mono);font-size:11.5px;background:var(--pause-soft);color:var(--pause);border-radius:4px;padding:2px 7px;height:max-content;margin-top:1px}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Build plan · ready for your approval</div>
+  <h1 id="title"></h1>
+  <p class="lede" id="lede"></p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<section id="arch-sec">
+  <div class="sec-head"><div class="eyebrow">The target</div><h2 id="arch-h"></h2><p id="arch-p"></p></div>
+  <div class="arch" id="arch"></div>
+</section>
+
+<section id="route">
+  <div class="sec-head"><div class="eyebrow">The route</div><h2 id="route-h"></h2>
+  <p>Each stop adds one capability and ends with a test that runs the real programs on the settings that ship. Tap a stop to jump to its card. The diamonds mark the pauses you've picked below.</p></div>
+  <div class="route"><div class="track" id="track"></div><div class="legend" id="legend"></div></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">Who changes when</div><h2>Where the work lands</h2><p id="matrix-p"></p></div>
+  <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">Who builds what</div><h2>Every task has a level, and the level picks the model</h2>
+  <p>The levels are fixed in the build itself. No agent falls back to the session's model. A worker that gets stuck reruns once, one level up.</p></div>
+  <div class="lvl-cards" id="lvlcards"></div>
+  <div class="bars" id="lvlbars"></div>
+  <p class="note">Every milestone also runs its scaffold, failing tests, one reviewer per task (at that task's level, never below judgment), the fix pass and the re-check at judgment or above. Checks that try to disprove each review finding run at routine.</p>
+</section>
+
+<section id="fates-sec">
+  <div class="sec-head"><div class="eyebrow">Today's code is the floor</div><h2>Every check and behavior has a destination</h2><p id="fates-p"></p></div>
+  <div class="fates"><div class="bigbar" id="bigbar"></div><div class="keys" id="keys"></div><div class="bars" id="minibars"></div></div>
+</section>
+
+<section id="lessons-sec">
+  <div class="sec-head"><div class="eyebrow">What went wrong last time</div><h2 id="lessons-h"></h2></div>
+  <div class="lessons" id="lessons"></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">Milestone by milestone</div><h2>What you can do after each one</h2></div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section id="dec-sec">
+  <div class="sec-head"><div class="eyebrow">Calls I made</div><h2 id="dec-h"></h2><p id="dec-p"></p></div>
+  <div class="dgroups" id="dgroups"></div>
+</section>
+
+<section id="move">
+  <div class="sec-head"><div class="eyebrow">Your move</div><h2>Pick the pauses, then start the build</h2></div>
+  <div class="move">
+    <div class="col">
+      <h3>Pause after</h3>
+      <div class="picks" id="picks"></div>
+      <p class="note" id="pause-why"></p>
+      <div class="cmd" id="cmd"></div>
+      <button class="copy" id="copy" type="button">Copy reply</button>
+    </div>
+    <div class="col" id="todo-col">
+      <h3>What needs you along the way</h3>
+      <ul class="todo" id="todos"></ul>
+    </div>
+  </div>
+</section>
+
+<footer id="footer"></footer>
+</div>
+
+<script>
+const P=/*PLAN*/null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COLOR={};P.systems.forEach((s,i)=>COLOR[s.short]=`var(--s${i%6+1})`);
+const colorOf=k=>COLOR[k]||'var(--s5)';
+const LEVELS=[['critical','c','--lv-c','Code whose mistake loses money, data or a safety check.'],['judgment','j','--lv-j','New code a spec sentence requires, or a direct call becoming a message between systems.'],['routine','r','--lv-r','Moving and adapting code, renames, import changes, test and config housekeeping.']];
+const KEY='plan-view-pauses-'+P.epic;
+let picked=new Set(P.pauses.recommended);
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(s))picked=new Set(s)}catch(e){}
+const show=(id,on)=>{$(id).hidden=!on};
+const list=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+
+function renderHeader(){document.title=P.title;$('title').textContent=P.title;$('lede').textContent=P.lede;
+ $('stats').innerHTML=P.stats.map(s=>`<div class="stat"><b>${esc(s.n)}</b><span>${esc(s.label)}</span></div>`).join('');
+ $('footer').textContent=P.footer||'This page is a view of the plan for review. Nothing has been built yet.'}
+
+function renderArch(){const nodes=[...(P.external||[]).map(x=>({...x,ext:true})),...P.systems].filter(n=>n.at);
+ show('arch-sec',nodes.length>1&&(P.flows||[]).length);if(!nodes.length)return;
+ $('arch-h').textContent=P.archTitle||`${P.systems.length} systems, each with its own job`;
+ $('arch-p').textContent=P.archNote||'Arrows show what flows between the systems.';
+ const W=172,H=80,GX=262,GY=136,PX=24,PY=34;
+ const cols=Math.max(...nodes.map(n=>n.at[0]))+1,rows=Math.max(...nodes.map(n=>n.at[1]))+1;
+ const vw=PX*2+(cols-1)*GX+W,vh=PY*2+(rows-1)*GY+H;
+ const box={};nodes.forEach(n=>{const x=PX+n.at[0]*GX,y=PY+n.at[1]*GY;box[n.short||n.name]={x,y,cx:x+W/2,cy:y+H/2,n}});
+ const clip=(b,dx,dy)=>{const t=Math.min(dx?(W/2+4)/Math.abs(dx):1e9,dy?(H/2+4)/Math.abs(dy):1e9);return[b.cx+dx*t,b.cy+dy*t]};
+ let paths='',labels='';
+ P.flows.forEach(f=>{const a=box[f.from],b=box[f.to];if(!a||!b)return;
+  const dx=b.cx-a.cx,dy=b.cy-a.cy,len=Math.hypot(dx,dy);const[x1,y1]=clip(a,dx,dy),[x2,y2]=clip(b,-dx,-dy);
+  const bend=(f.bend||0)*len*.14,nx=-dy/len,ny=dx/len;const cx=(x1+x2)/2+nx*bend,cy=(y1+y2)/2+ny*bend;
+  paths+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}"${f.dashed?' stroke-dasharray="5 5"':''}/>`;
+  const t=f.labelAt??.5,q=(a,c,b)=>(1-t)*(1-t)*a+2*(1-t)*t*c+t*t*b;
+  const side=bend?Math.sign(bend):Math.abs(ny)>1e-6?(ny>0?-1:1):(nx<0?-1:1),lx=q(x1,cx,x2)+nx*11*side,ly=q(y1,cy,y2)+ny*11*side;
+  labels+=`<text class="lbl" x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle">${esc(f.label)}</text>`});
+ const rects=Object.values(box).map(({x,y,cx,n})=>{const c=n.ext?'var(--muted)':colorOf(n.short);
+  const fill=n.ext?'var(--sunk)':`color-mix(in srgb, ${c} 16%, var(--surface))`;const lines=n.lines||[];const top=y+H/2-(lines.length*15)/2+2;
+  return `<rect x="${x}" y="${y}" width="${W}" height="${H}" rx="10" fill="${fill}" stroke="${n.ext?'var(--line)':c}" stroke-width="${n.ext?1:2}"/>`+
+   `<text x="${cx}" y="${top}" text-anchor="middle" font-size="${n.ext?14:16}" font-weight="800" fill="${n.ext?'var(--ink)':c}" font-family="var(--f-display)">${esc(n.name)}</text>`+
+   lines.map((l,i)=>`<text x="${cx}" y="${top+17+i*15}" text-anchor="middle" font-size="11.5" fill="${n.ext?'var(--muted)':'var(--ink)'}">${esc(l)}</text>`).join('')}).join('');
+ $('arch').innerHTML=`<svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="The systems and what flows between them"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs><g fill="none" stroke="var(--muted)" stroke-width="1.6" marker-end="url(#ah)">${paths}</g><g font-size="12.5" fill="var(--muted)">${labels}</g>${rects}</svg>`}
+
+function renderTrack(){const t=$('track'),n=P.milestones.length;t.style.setProperty('--n',n);
+ t.style.setProperty('--grad',`linear-gradient(90deg,${P.milestones.map((m,i)=>`${colorOf(m.lead)} ${(i/(Math.max(n-1,1))*100).toFixed(0)}%`).join(',')})`);
+ t.innerHTML='';$('route-h').textContent=`${n} milestones, each one runnable`;
+ P.milestones.forEach(m=>{const b=document.createElement('button');b.type='button';b.className='stop'+(picked.has(m.n)?' paused':'');b.style.setProperty('--c',colorOf(m.lead));
+  b.setAttribute('aria-label',`M-${m.n}: ${m.short}`);
+  b.innerHTML=`<span class="dot">M${m.n}</span><span class="nm">${esc(m.short)}</span><span class="tc">${m.tasks} tasks</span>`;
+  b.onclick=()=>{const c=$('m'+m.n);c.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')};
+  t.appendChild(b)});
+ $('legend').innerHTML=P.systems.map(s=>`<span><i style="background:${colorOf(s.short)}"></i>${esc(s.short)}</span>`).join('')+'<span><i class="pz"></i>Pause for your review</span>'}
+
+function renderMatrix(){const ms=P.milestones;let max=1;P.systems.forEach(s=>ms.forEach(m=>max=Math.max(max,m.touch[s.short]||0)));
+ let html='<tr><th></th>'+ms.map(m=>`<th>M-${m.n}</th>`).join('')+'</tr>';
+ P.systems.forEach(s=>{const c=colorOf(s.short);html+=`<tr><th class="row"><i style="background:${c}"></i>${esc(s.name)}</th>`+ms.map(m=>{const v=m.touch[s.short]||0;
+  if(!v)return '<td></td>';const a=Math.round(18+82*v/max);
+  return `<td style="background:color-mix(in srgb, ${c} ${a}%, var(--surface));color:${a>55?'var(--on-strong)':'var(--ink)'}" title="${v} tasks">${v}</td>`}).join('')+'</tr>'});
+ const r=P.retiring;
+ if(r)html+=`<tr><th class="row"><i style="background:var(--old)"></i>${esc(r.name)}</th>`+ms.map(m=>m.n<r.removedAt?'<td class="runs">runs</td>':m.n===r.removedAt?'<td class="removed">removed</td>':'<td class="gone">gone</td>').join('')+'</tr>';
+ $('matrix').innerHTML=html;
+ $('matrix-p').textContent='Each cell counts the tasks in that milestone that touch that system.'+(r?` ${r.name} keeps running until M-${r.removedAt} removes it.`:'')}
+
+function renderLevels(){const tot={c:0,j:0,r:0};P.milestones.forEach(m=>{tot.c+=m.levels.c;tot.j+=m.levels.j;tot.r+=m.levels.r});
+ $('lvlcards').innerHTML=LEVELS.map(([name,k,c,p])=>`<div class="lvl" style="--c:var(${c})"><div class="top"><h3>${name[0].toUpperCase()+name.slice(1)}</h3><span class="n">${tot[k]}</span></div><span class="mdl">${esc(P.levels[name])}</span><p>${esc((P.levelNotes||{})[name]||p)}</p></div>`).join('');
+ const mx=Math.max(...P.milestones.map(m=>m.tasks));
+ $('lvlbars').innerHTML=P.milestones.map(m=>`<span class="lbl">M-${m.n} <span style="color:var(--muted)">${esc(m.short)}</span></span><div class="bar" style="width:${(m.tasks/mx*100).toFixed(1)}%">${LEVELS.filter(([,k])=>m.levels[k]).map(([name,k,c])=>`<div style="width:${(m.levels[k]/m.tasks*100).toFixed(1)}%;background:var(${c})" title="${m.levels[k]} ${name}">${m.levels[k]}</div>`).join('')}</div><span class="val">${m.tasks}</span>`).join('')}
+
+function renderFates(){const t=P.fates,all=t.moved+t.adapted+t.retired;show('fates-sec',all>0);if(!all)return;
+ const K=[['moved','Moved as it is','--moved'],['adapted','Moved and adapted','--adapted'],['retired','Retired with a reason','--retired']];
+ $('fates-p').textContent=P.fatesNote||'Every check today’s code makes, and every behavior in the code being removed, sits on one task or is retired with a reason the spec or a recorded call gives.';
+ $('bigbar').innerHTML=K.map(([k,l,c])=>`<div style="width:${(t[k]/all*100).toFixed(2)}%;background:var(${c})" title="${l}: ${t[k].toLocaleString()}">${t[k]/all>.08?Math.round(t[k]/all*100)+'%':''}</div>`).join('');
+ $('keys').innerHTML=K.map(([k,l,c])=>`<span><i style="background:var(${c})"></i>${l} <b>${t[k].toLocaleString()}</b></span>`).join('')+`<span style="color:var(--muted)">of ${all.toLocaleString()}</span>`;
+ const rows=m=>m.fates.moved+m.fates.adapted+m.fates.retired,mx=Math.max(1,...P.milestones.map(rows));
+ $('minibars').innerHTML=P.milestones.map(m=>{const n=rows(m);return `<span class="lbl">M-${m.n} <span style="color:var(--muted)">${esc(m.short)}</span></span><div class="bar" style="width:${(n/mx*100).toFixed(1)}%">${K.filter(([k])=>m.fates[k]).map(([k,,c])=>`<div style="width:${(m.fates[k]/Math.max(n,1)*100).toFixed(1)}%;background:var(${c})"></div>`).join('')}</div><span class="val">${n}</span>`}).join('')}
+
+function renderLessons(){const L=P.lessons;show('lessons-sec',!!(L&&L.items.length));if(!L||!L.items.length)return;
+ $('lessons-h').textContent=L.title||'Each failure of the last attempt has a test that catches it';
+ $('lessons').innerHTML=L.items.map(x=>`<div class="lesson"><p class="then">${esc(x.then)}</p><div class="arrow" aria-hidden="true">→</div><p class="now"><span class="mtag">${esc(x.at)}</span>${esc(x.now)}</p></div>`).join('')}
+
+function renderCards(){$('cards').innerHTML=P.milestones.map(m=>`
+ <article class="card" id="m${m.n}" style="--c:${colorOf(m.lead)}">
+  <div class="card-top"><span class="badge">M${m.n}</span><h3>${esc(m.short)}</h3>${picked.has(m.n)?'<span class="pz-tag">Pause</span>':''}</div>
+  <p class="does">${esc(m.does)}</p>
+  <div class="proof"><div class="eyebrow">Proof</div><p>${esc(m.proof)}</p><span class="mono">${esc(m.test)}</span></div>
+  ${m.guard?`<div class="guard"><b>Guards</b><span>${esc(m.guard)}</span></div>`:''}
+  ${m.you?`<div class="you"><b>You</b><span>${esc(m.you)}</span></div>`:''}
+  <div class="chips">${P.systems.filter(s=>m.touch[s.short]).map(s=>`<span class="chip" style="--cs:${colorOf(s.short)}">${esc(s.short)}</span>`).join('')}</div>
+  <div class="lvmix">${LEVELS.map(([name,k,c])=>`<span><i style="background:var(${c})"></i>${m.levels[k]} ${name}</span>`).join('')}</div>
+  ${m.crit.length?`<details class="crit"><summary>Critical tasks</summary><ul>${m.crit.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details>`:''}
+  <div class="meta"><span>${m.tasks} tasks</span><span>${m.fates.moved+m.fates.adapted+m.fates.retired} behaviors placed</span></div>
+ </article>`).join('')}
+
+function renderDecisions(){const D=P.decisions,n=P.decisionsTotal;show('dec-sec',!!(D&&n));if(!D||!n)return;
+ $('dec-h').textContent=`${n} calls where the spec was silent`;$('dec-p').textContent=D.intro||'';
+ const T={kept:'kept today',spec:'spec change',plan:'plan call',check:'your call'};
+ $('dgroups').innerHTML=D.groups.map(g=>`<div class="dgroup"><h3>${esc(g.name)}</h3><ul>${g.items.map(x=>`<li${x.tag==='check'?' class="flag"':''}><span class="tag ${x.tag}">${T[x.tag]}</span><span>${esc(x.text)}</span></li>`).join('')}</ul></div>`).join('')}
+
+function renderPicks(){$('picks').innerHTML=P.milestones.map(m=>`<div class="pick"><input type="checkbox" id="pz${m.n}" ${picked.has(m.n)?'checked':''}><label for="pz${m.n}"><span class="d"></span>M-${m.n}${P.pauses.recommended.includes(m.n)?' <small>recommended</small>':''}</label></div>`).join('');
+ $('pause-why').textContent=P.pauses.why||'';
+ P.milestones.forEach(m=>$('pz'+m.n).addEventListener('change',e=>{e.target.checked?picked.add(m.n):picked.delete(m.n);try{localStorage.setItem(KEY,JSON.stringify([...picked]))}catch(err){}renderAll(false)}));
+ const T=P.todos||[];show('todo-col',T.length>0);$('todos').innerHTML=T.map(x=>`<li><span class="when">${esc(x.when)}</span><span>${esc(x.text)}</span></li>`).join('')}
+
+function renderCmd(){const ps=[...picked].sort((a,b)=>a-b).map(n=>'M-'+n);
+ $('cmd').textContent=`Pause after ${ps.length?list(ps):'no milestone'}.\n\n/effort ultracode\nbuild ${P.epic}`}
+
+$('copy').addEventListener('click',async e=>{const b=e.currentTarget;
+ try{await navigator.clipboard.writeText($('cmd').textContent);b.textContent='Copied'}catch(err){const r=document.createRange();r.selectNodeContents($('cmd'));const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected, press copy'}
+ setTimeout(()=>b.textContent='Copy reply',1800)});
+
+function renderAll(full=true){renderTrack();renderCards();renderCmd();if(full){renderHeader();renderArch();renderMatrix();renderLevels();renderFates();renderLessons();renderDecisions();renderPicks()}}
+renderAll();
+</script>
