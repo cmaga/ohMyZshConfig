@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-10",
+  "updated": "2026-10-12",
   "levers": {
     "session_model": {
       "value": "opus",
@@ -104,6 +104,39 @@
       "kind": "runtime",
       "native": "advisorModel in ~/.claude/settings.json (unset); /advisor or --advisor per session",
       "note": "kept off 2026-10-10 by user decision: too slow"
+    },
+    "build_routine_model": {
+      "value": "sonnet[1m]",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json routine.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+    },
+    "build_routine_effort": {
+      "value": "high",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json routine.effort",
+      "note": "stepped xhigh->high 2026-10-12, same pass; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
+    },
+    "build_judgment_model": {
+      "value": "opus",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json judgment.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+    },
+    "build_judgment_effort": {
+      "value": "high",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json judgment.effort",
+      "note": "stepped xhigh->high 2026-10-12, same pass; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
+    },
+    "build_critical_model": {
+      "value": "opus",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json critical.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+    },
+    "build_critical_effort": {
+      "value": "xhigh",
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json critical.effort",
+      "note": "stepped max->xhigh 2026-10-12: the EN-503 build projected at 1.5 weeks of limit; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
     }
   }
 }
