@@ -56,10 +56,13 @@ alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 # Claude Code - skip permission prompts. Routes through the local proxy
 # (automations/claude-proxy) when this machine has one, so DeepSeek model names
 # resolve; otherwise plain claude, where only Anthropic models are reachable.
+# Behind a proxy Claude Code turns MCP tool search off and sends every MCP tool
+# definition with every request (48k tokens here). The proxy relays Claude
+# requests untouched, so turn it back on unless the caller set it.
 oc() {
   local -a via_proxy=()
   if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
-    via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000)
+    via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000 ENABLE_TOOL_SEARCH=${ENABLE_TOOL_SEARCH:-true})
   else
     print -u2 "oc: claude-proxy is not up; starting without it (DeepSeek models will not resolve)"
   fi
@@ -74,7 +77,8 @@ od() {
     print -u2 "od: claude-proxy is not up; DeepSeek models need it"
     return 1
   fi
-  oc --model 'deepseek-flash[1m]' "$@"
+  # Whether DeepSeek accepts deferred tools is unverified; keep them upfront.
+  ENABLE_TOOL_SEARCH=false oc --model 'deepseek-flash[1m]' "$@"
 }
 
 # Task Planner - launch plan execution via Claude Code CLI
