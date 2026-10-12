@@ -89,7 +89,7 @@ def text(value):
 
 def start(o):
     args = {
-        'epic': o.epic, 'spec': o.spec, 'tree': o.tree,
+        'epic': o.epic, 'spec': o.spec, 'plan': str(Path(o.plan).resolve()), 'tree': o.tree,
         'base': subprocess.check_output(['git', '-C', o.tree, 'rev-parse', 'HEAD'], text=True).strip(),
         'projectBase': o.project_base, 'scripts': str(HERE),
         'levels': json.loads((HERE / 'levels.json').read_text()),
@@ -105,10 +105,15 @@ def show(o):
     r = stop_of(o.output)
     if not r.get('stopped'):
         print(f'finished; usage {json.dumps(r.get("usage"))}')
+        for d in r.get('decided', []):
+            print(f'  decided in the run, {d["key"]}: {d["decision"]}')
         return
     report = r.get('report') or {}
     print(f'stopped at {r["stopped"]} on {r["key"]}; usage {json.dumps(r.get("usage"))}')
-    print(f'question: {report.get("question") or r.get("reason") or report.get("gate") or "(none; read the report)"}')
+    print(f'redesign: {report["redesign"]}' if report.get('redesign') else
+          f'question: {report.get("question") or r.get("reason") or report.get("gate") or "(none; read the report)"}')
+    for d in r.get('decided', []):
+        print(f'  decided in the run, {d["key"]}: {d["decision"]}')
     for b in r.get('built', []):
         print(f'  {b["id"]}: {b.get("status", "no report")}, green={b.get("green")}, level={b.get("level")}'
               f'{", promoted" if "first" in b else ""}')

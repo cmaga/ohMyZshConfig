@@ -5,13 +5,14 @@ export const meta = {
     { title: 'Scaffold' },
     { title: 'Tests' },
     { title: 'Build' },
+    { title: 'Decide' },
     { title: 'Review' },
     { title: 'Fold' },
     { title: 'Verify' },
   ],
 }
 
-const { epic, spec, tree, base, projectBase, scripts, levels, milestone: m, decisions = {}, settled = {} } = args
+const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, decisions = {}, settled = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
@@ -43,6 +44,11 @@ const BUILT = {
   properties: { ...REPORT.properties, green: { type: 'boolean' } },
   required: [...REPORT.required, 'green'],
 }
+const DECISION = {
+  type: 'object',
+  properties: { redesign: { type: 'boolean' }, decision: STR },
+  required: ['redesign', 'decision'],
+}
 const VERIFY = {
   type: 'object',
   properties: {
@@ -56,16 +62,43 @@ const VERIFY = {
 const CONTEXT = `Spec: ${spec} — read the sections this work names. Milestone ${m.id}: ${m.title}. Its proof: \`${m.proof}\`.`
 const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "[${epic}] ${m.id} <what>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
 const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[key]}` : '')
-const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, usage: { used, promoted }, ...rest })
+const decidedHere = []
+const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, promoted }, ...rest })
 const asked = r => !r || r.status === 'question'
 // A milestone's tests run end to end, so only the last layer's workers can turn them green.
 const stuck = (r, last) => asked(r) || (last && r.green === false)
+
+// A question is answered inside the run with the coordinator's authority; only a redesign returns to it.
+const decide = (key, level, asking, report) => run(atLeast(level, 'judgment'),
+  `${CONTEXT}
+
+You answer for the build's coordinator. ${asking} stopped with a question:
+${JSON.stringify(report)}
+
+Decide it from the spec, the plan at ${plan}, and the code; read whatever you need. Every answer is yours to give: a file outside the task's list, a change to a signature, type, or schema the scaffold committed, an edit to a committed test that keeps what it proves, a choice the spec leaves open, or part of the work deferred to a later task whose card can absorb it.
+- Record the decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "[${epic}] ${m.id} decided <what>" -- ${spec}\`.
+- Set redesign only when the design itself cannot work and a component or the milestone order must be redrawn, so that carrying on would waste the build. Then say what is wrong in decision and change nothing.
+- Edit only the plan and the spec. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself and spawn nothing.`,
+  { label: `${key} decide`, phase: 'Decide', schema: DECISION })
+
+const answered = async (key, level, asking, prompt, opts) => {
+  let report = await run(level, prompt, opts)
+  let said = ''
+  for (let round = 1; report && report.status === 'question' && round <= 3; round++) {
+    const d = await decide(key, level, asking, report)
+    if (!d || d.redesign) return { ...report, redesign: d ? d.decision : 'the decider died' }
+    decidedHere.push({ key, question: report.question, decision: d.decision })
+    said += `\n\nYou asked: ${report.question}\nThe coordinator decided: ${d.decision}`
+    report = await run(level, `${prompt}${said}\n\nYour earlier runs' commits stay; build on them.`, { ...opts, label: `${opts.label} answered ${round}` })
+  }
+  return report
+}
 
 const unlevelled = m.tasks.filter(t => !levels[t.level]).map(t => t.id)
 if (unlevelled.length) return stopped('plan', 'plan', null, { reason: `no level on ${unlevelled.join(', ')}` })
 
 phase('Scaffold')
-const scaffold = await run('judgment',
+const scaffold = await answered('scaffold', 'judgment', 'The scaffold',
   `${CONTEXT}
 
 You are this milestone's scaffold. Make the moves first, one commit per move, with \`git mv\` so history follows. Then create every new file, signature, type, and schema the tasks below fill, with bodies that raise NotImplementedError or the language's equivalent. Write no behavior.
@@ -80,7 +113,7 @@ ${SHARED}${decided('scaffold')}`,
 if (asked(scaffold)) return stopped('scaffold', 'scaffold', scaffold)
 
 phase('Tests')
-const tests = await run('judgment',
+const tests = await answered('tests', 'judgment', 'The test writer',
   `${CONTEXT}
 
 Write the failing integration tests that prove this milestone, against the scaffold now committed. ${m.tests}
@@ -120,11 +153,11 @@ ${SHARED}${decided(t.id)}`
 const build = async (t, layer, last) => {
   // A resume re-runs every agent call after the first changed one, so finished tasks come back as settled reports.
   if (settled[t.id]) return settled[t.id]
-  const first = await run(t.level, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
-  if (!stuck(first, last) || t.level === 'critical') return first && { ...first, level: t.level }
+  const first = await answered(t.id, t.level, `The worker on ${t.id}`, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
+  if ((first && (first.status === 'question' || !stuck(first, last))) || t.level === 'critical') return first && { ...first, level: t.level }
   const up = ORDER[ORDER.indexOf(t.level) + 1]
   promoted.push(t.id)
-  const second = await run(up,
+  const second = await answered(t.id, up, `The worker on ${t.id}`,
     `${card(t, layer)}
 
 A ${t.level} worker took this task first and stopped short. Its report: ${JSON.stringify(first)}
@@ -159,11 +192,11 @@ if (review) ORDER.forEach(l => { used[l] += review.used[l] })
 if (!review || review.gate === 'escalate' || review.gate === 'incomplete') return stopped('review', 'review', review, { built })
 
 const fixable = review.findings.filter(f => f.class === 'bug' || f.class === 'quality')
-if (!fixable.length && !decisions.fold) return { scaffold, tests, built, review, usage: { used, promoted } }
+if (!fixable.length && !decisions.fold) return { scaffold, tests, built, review, decided: decidedHere, usage: { used, promoted } }
 const foldLevel = highest(fixable.map(f => f.level), 'judgment')
 
 phase('Fold')
-const fold = await run(foldLevel,
+const fold = await answered('fold', foldLevel, 'The fold',
   `${CONTEXT}
 
 Fold the review's findings into the milestone in one pass:
@@ -190,4 +223,4 @@ Answer only: is each round-1 finding fixed, and does any fix introduce a new pro
 Read only: edit nothing, spawn nothing.`,
   { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY })
 
-return { scaffold, tests, built, review, fold, verify, usage: { used, promoted } }
+return { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }

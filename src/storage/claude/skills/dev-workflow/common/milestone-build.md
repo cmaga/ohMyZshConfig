@@ -2,7 +2,7 @@
 
 An epic whose spec has merged. The spec says what each component owns and how it is proven; the build reaches that end state in milestones, each one a slice that runs. Nothing builds the finished product first.
 
-You are the only coordinator. You run workflows; their agents return to the script, spawn nothing, and message nobody. Two things reach the user: the milestone list to approve, and a change of strategy. `manual` changes nothing here.
+You are the only coordinator. You run workflows; their agents return to the script, spawn nothing, and message nobody. Two things reach the user: the milestone list to approve, and a redesign — something so unexpected that carrying on would waste the build's time and tokens. `manual` changes nothing here.
 
 The build never merges to the base branch and never deploys. It ends with the whole spec on one integration branch, pushed as one PR.
 
@@ -16,7 +16,7 @@ The build reads no lever but `ESCALATION_MODEL`, and its agent types are only th
 - **Judgment:** the gather's mapping, plan review, scaffold, failing tests, review finders, fold, verify, and the hand-back census. Also a task that writes new code a spec sentence forces, or turns a direct call into a message across a system boundary.
 - **Critical:** a task whose mistake loses money, data, or a safety check. In a trading system: code that places, sizes, cancels, or settles orders, moves positions, or runs a risk limit, kill switch, stop, or watchdog. Its review finder, and a fold or verify touching it, run critical too.
 
-A worker that stops short reruns once, one level up; a critical one returns its question. Before the last layer, a worker whose own part is done counts as finished though its milestone tests still fail, since they need later tasks; the last layer must turn them green. A finished worker's report reaches each later worker whose task id it names.
+Any agent's question goes to a decider inside the run, at the asker's level and at least judgment, holding your authority; it records its answer on the plan card and the asker reruns with it, up to three times. Only a redesign returns the run to you. A worker that dies, or ends the last layer red, reruns once, one level up; a critical one returns. Before the last layer, a worker whose own part is done counts as finished though its milestone tests still fail, since they need later tasks; the last layer must turn them green. A finished worker's report reaches each later worker whose task id it names.
 
 ## Driver
 
@@ -63,17 +63,17 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
 
 1. **Build its workflow:** `python3 ~/.claude/skills/dev-workflow/scripts/milestone-args.py start <plan> <N> --epic <EPIC> --spec <spec> --tree <tree> --project-base <base branch> --out <scratchpad>`. It records the tip as `base`, reads the plan's `M-N` section into the workflow's args, and prints a script with them inlined. `--project-base` is the behavior the review compares against.
 2. Run the Workflow tool with that `scriptPath` and no args; keep the run id. The script runs scaffold, failing tests, workers in `After` order, the review in `review.workflow.js`, one fold, one verify. It returns on finishing or on the first question.
-3. **A returned question:** `milestone-args.py show <output file>` prints it; decide it per [Escalation](#escalation). Then `milestone-args.py resume <args file> <output file> --decide <key> <answer>` — `--settle <id> <answer>` instead when you answered by doing the work — and relaunch the same `scriptPath` with `resumeFromRunId`. The resume settles every finished task, so only the stopped task and those after it run again. It never touches the milestone, whose files the scaffold's prompt lists: a new file for a task goes in its decision.
+3. **A returned stop** — a redesign, a question still open after three decisions, a dead agent, or the review's escalate: `milestone-args.py show <output file>` prints it; handle it per [Escalation](#escalation). Then `milestone-args.py resume <args file> <output file> --decide <key> <answer>` — `--settle <id> <answer>` instead when you answered by doing the work — and relaunch the same `scriptPath` with `resumeFromRunId`. The resume settles every finished task, so only the stopped task and those after it run again. It never touches the milestone, whose files the scaffold's prompt lists: a new file for a task goes in its decision.
 4. **Check the milestone yourself** — never on an agent's word, under [done-when](done-when.md)'s hygiene. Run its proof, the tests of every changed file, and every earlier milestone's proof. `git -C <tree> grep -n NotImplementedError -- <the milestone's files>` prints nothing.
 5. **Findings left after verify.** A bug that loses data, money, or a safety check, or a fix that broke something already passed: resume once with `--decide fold` naming it. Everything else is a [triage](exit.md#triage) candidate.
 6. **Mark it proven:** `git -C <tree> commit --allow-empty -m "[<EPIC>] M-N proven: <proof>"`.
-7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, anything step 5 left open, and one line from the result's `usage`: agents per level, and the tasks promoted a level. Open the next milestone on their go. Otherwise open it now.
+7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, anything step 5 left open, each decision made inside the run (the result's `decided`), and one line from the result's `usage`: agents per level, and the tasks promoted a level. Open the next milestone on their go. Otherwise open it now.
 
 A milestone the plan got wrong — its proof cannot pass without work another milestone owns — is a plan defect: amend the plan, say so in the report, carry on. A change to what the spec says is an escalation.
 
 ## Escalation
 
-You answer what the spec answers; you hold the whole document and every result. Decide it yourself first. Unattended, what you cannot decide goes to the escalation agent in [SKILL.md](../SKILL.md#what-stops-attended); only a change of strategy or direction reaches the user. A decision that amends the spec is written into the spec in `<tree>` in the same turn.
+Questions are answered inside the run; what returns has already beaten a decider. Check a redesign against the spec and the code before believing it: one that a narrower decision clears is yours to decide and resume. Only a redesign reaches the user. A decision that amends the spec is written into the spec in `<tree>` in the same turn.
 
 **A deferral is not a question.** A thing that must happen first is a plan; a thing that cannot happen is a blocker.
 
