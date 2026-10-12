@@ -1,6 +1,6 @@
 export const meta = {
   name: 'dev-workflow-milestone',
-  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, one fold, one verify, and a fix of the end-to-end run',
+  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, a fold in parallel groups, one verify, and a fix of the end-to-end run',
   phases: [
     { title: 'Scaffold' },
     { title: 'Tests' },
@@ -230,26 +230,87 @@ if (review) ORDER.forEach(l => { used[l] += review.used[l] })
 if (!review || review.gate === 'escalate' || review.gate === 'incomplete') return stopped('review', 'review', review, { built })
 
 const fixable = review.findings.filter(f => f.class === 'bug' || f.class === 'quality')
+
+// The fold runs one agent per group of related findings, all at once, each group on files no other group holds.
+// A finding holds its file and every file of its task; findings that share a file share a group, and groups are
+// packed into agents of up to FOLD_CAP findings. M-1's single fold took 3.5 h on 84 findings, about 2.5 min each:
+// 24 is about an hour per agent.
+const FOLD_CAP = 24
+const rel = f => (f && f.startsWith(`${tree}/`) ? f.slice(tree.length + 1) : f)
+const foldGroups = findings => {
+  const taskFiles = Object.fromEntries(m.tasks.map(t => [t.id, t.files.map(rel)]))
+  const held = findings.map(f => [...new Set([rel(f.file), ...(taskFiles[f.unit] || [])].filter(Boolean))])
+  const parent = findings.map((_, i) => i)
+  const root = i => (parent[i] === i ? i : (parent[i] = root(parent[i])))
+  const holder = new Map()
+  held.forEach((files, i) => files.forEach(file => (holder.has(file) ? (parent[root(i)] = root(holder.get(file))) : holder.set(file, i))))
+  const parts = new Map()
+  findings.forEach((f, i) => {
+    const part = parts.get(root(i)) || { findings: [], files: new Set() }
+    part.findings.push(f)
+    held[i].forEach(file => part.files.add(file))
+    parts.set(root(i), part)
+  })
+  const levelOf = p => highest(p.findings.map(f => f.level), 'judgment')
+  const agents = []
+  for (const part of [...parts.values()].sort((a, b) => ORDER.indexOf(levelOf(b)) - ORDER.indexOf(levelOf(a)) || b.findings.length - a.findings.length)) {
+    const into = agents.find(a => a.findings.length + part.findings.length <= FOLD_CAP)
+    if (into) {
+      into.findings.push(...part.findings)
+      part.files.forEach(file => into.files.add(file))
+    } else agents.push({ findings: [...part.findings], files: new Set(part.files) })
+  }
+  return agents.map((a, i) => ({ key: `fold-${i + 1}`, findings: a.findings, files: [...a.files], level: levelOf(a) }))
+}
+
 let fold = null
 let verify = null
 if (fixable.length || decisions.fold) {
   const foldLevel = highest(fixable.map(f => f.level), 'judgment')
-
-  phase('Fold')
-  fold = await answered('fold', foldLevel, 'The fold',
-    `${CONTEXT}
-
-Fold the review's findings into the milestone in one pass:
-${JSON.stringify(fixable, null, 2)}
-
-- Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
+  const groups = foldGroups(fixable)
+  const foldRules = `- Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
 - A finding is a shape, not a line. Search the whole diff (\`git -C ${tree} --no-pager diff ${base}...HEAD\`) for every sibling path with the same shape and fix them all now.
 - Read the whole path before editing; the line a finding names is often not the defect.
-- Run the unit tests of every file you touch; never the end-to-end tests.
+- Run the unit tests of every file you touch; never the end-to-end tests.`
 
-${SHARED}${decided('fold')}`,
-    { label: `${m.id} fold`, phase: 'Fold', schema: REPORT })
-  if (asked(fold)) return stopped('fold', 'fold', fold, { built, review })
+  phase('Fold')
+  const reports = await parallel(groups.map(g => async () => {
+    const beside = groups.filter(o => o !== g)
+    running.set(g.key, g.files)
+    try {
+      return await answered(g.key, g.level, `The fold of ${g.key}`,
+        `${CONTEXT}
+
+Fold these of the review's findings into the milestone in one pass:
+${JSON.stringify(g.findings, null, 2)}
+
+${foldRules}
+- Your files: ${g.files.join(', ')}. ${beside.length ? `Folding beside you, each holding its own files: ${beside.map(o => `${o.key} (${o.files.join(', ')})`).join('; ')}. A fix or a sibling path in a file another fold holds: leave it and name it in notes, with the file and the shape. A file no fold holds is shared: re-read it right before each edit.` : 'No other fold runs beside you.'}
+
+${SHARED}${decided(g.key)}`,
+        { label: `${m.id} ${g.key}`, phase: 'Fold', schema: REPORT })
+    } finally {
+      running.delete(g.key)
+    }
+  }))
+  fold = groups.map((g, i) => ({ key: g.key, findings: g.findings.length, ...reports[i] }))
+  const open = fold.find(asked)
+  if (open) return stopped('fold', open.key, open, { built, review, fold })
+
+  // A decision the parent gave on the fold, after reading what verify left, runs on its own once the groups are done.
+  if (decisions.fold) {
+    const extra = await answered('fold', foldLevel, 'The fold',
+      `${CONTEXT}
+
+The review's findings were folded by ${groups.length} agents: ${JSON.stringify(fold.map(f => ({ key: f.key, commits: f.commits, notes: f.notes })))}
+
+${foldRules}${decided('fold')}
+
+${SHARED}`,
+      { label: `${m.id} fold`, phase: 'Fold', schema: REPORT })
+    fold.push({ key: 'fold', ...extra })
+    if (asked(extra)) return stopped('fold', 'fold', extra, { built, review, fold })
+  }
 
   phase('Verify')
   verify = await run(foldLevel,
@@ -257,7 +318,8 @@ ${SHARED}${decided('fold')}`,
 Why the change was made: ${CONTEXT}
 The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}, not main.
 Round 1's findings: ${JSON.stringify(review.findings)}
-The fix commits: ${fold.commits.join(', ')}. ${fold.notes || ''}
+The fix commits: ${fold.flatMap(f => f.commits).join(', ')}.
+What each fold said, including any finding or sibling path it left in a file another fold held: ${JSON.stringify(fold.map(f => ({ key: f.key, notes: f.notes || '' })))}
 Answer only: is each round-1 finding fixed, and does any fix introduce a new problem. Read the fix commits as new code: they are the least-reviewed lines in the change. Return each finding still open, and each new problem, in findings; gate is fail when any is a bug, escalate when a fix broke something round 1 had passed.
 
 Read only: edit nothing, spawn nothing.`,
