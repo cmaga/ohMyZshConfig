@@ -1,8 +1,8 @@
 <!--
 The milestone build's plan (common/milestone-build.md, Driver step 4).
 Written to <tree>/.claude-artifacts/workflows/dev-workflow/milestones.md.
-Each M-N section is passed to scripts/milestone.workflow.js as data, so keep
-every field below; prose inside a card is free.
+scripts/milestone-args.py reads each M-N section by its markup, so keep every
+field below as written; prose inside a card is free.
 -->
 
 # <EPIC>: milestones
