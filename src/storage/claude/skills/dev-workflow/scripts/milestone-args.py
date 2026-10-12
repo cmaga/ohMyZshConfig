@@ -2,6 +2,7 @@
 
     python3 milestone-args.py start <plan> <n> --epic E --spec S --tree T --project-base B --out DIR
     python3 milestone-args.py show <workflow output file>
+    python3 milestone-args.py bed DIR/<E>-M<n>.json <workflow output file>
     python3 milestone-args.py resume DIR/<E>-M<n>.json <workflow output file> [--decide KEY TEXT]... [--settle ID TEXT]...
 
 start writes DIR/<E>-M<n>.json, the workflow's args, and DIR/<E>-M<n>.workflow.js, milestone.workflow.js with
@@ -9,8 +10,11 @@ those args inlined so no launch or resume carries them through a tool call. Laun
 
 show prints where a run stopped: the stage, the key to decide, its question, and each task's status.
 
+bed prints the milestone's one end-to-end run: the test writer's tests and the proofs of this and every earlier
+milestone, in one pytest command. Its failures go back by resume with --decide bed, which runs the fix stage.
+
 resume settles every finished task, adds each decision under its key (after any earlier one), and rewrites both
-files; the milestone itself is never touched. --settle closes a task whose question the parent answered by doing
+files; the milestone itself is never touched. A finished run resumes only with --decide bed. --settle closes a task whose question the parent answered by doing
 the work, appending TEXT to its notes. A TEXT starting with @ is read from that file. Relaunch with the same
 scriptPath and the first launch's run id as resumeFromRunId.
 """
@@ -74,6 +78,7 @@ def brief(plan, spec):
 
 def write(path, args):
     args['brief'] = brief(args['plan'], args['spec'])
+    args.setdefault('logs', str(path.parent.resolve()))
     path.write_text(json.dumps(args, indent=1))
     src = (HERE / 'milestone.workflow.js').read_text()
     if src.count('} = args\n') != 1:
@@ -90,19 +95,6 @@ def stop_of(output):
     return json.loads(result) if isinstance(result, str) else result
 
 
-def last_layer(tasks):
-    """Each task's id, mapped to whether the workflow ran it in its last layer, where a red report counts as stuck."""
-    done, pending, last = set(), list(tasks), {}
-    while pending:
-        layer = [t for t in pending if all(a in done for a in t['after'])]
-        if not layer:
-            break
-        last.update({t['id']: len(layer) == len(pending) for t in layer})
-        done |= {t['id'] for t in layer}
-        pending = [t for t in pending if t not in layer]
-    return last
-
-
 def text(value):
     return Path(value[1:]).read_text().strip() if value.startswith('@') else value
 
@@ -113,7 +105,7 @@ def start(o):
         'base': subprocess.check_output(['git', '-C', o.tree, 'rev-parse', 'HEAD'], text=True).strip(),
         'projectBase': o.project_base, 'scripts': str(HERE),
         'levels': json.loads((HERE / 'levels.json').read_text()),
-        'milestone': milestone(o.plan, o.n), 'decisions': {}, 'settled': {},
+        'milestone': milestone(o.plan, o.n), 'decisions': {}, 'settled': {}, 'logs': str(Path(o.out).resolve()),
     }
     unlevelled = [t['id'] for t in args['milestone']['tasks'] if t['level'] not in args['levels']]
     if unlevelled:
@@ -139,20 +131,36 @@ def show(o):
               f'{", promoted" if "first" in b else ""}')
 
 
+def bed(o):
+    args = json.loads(Path(o.args).read_text())
+    r = stop_of(o.output)
+    tree = Path(args['tree']).resolve()
+    rel = lambda f: str(Path(f).resolve().relative_to(tree)) if Path(f).is_absolute() else f
+    paths = [rel(f) for f in (r.get('tests') or {}).get('files', []) if re.match(r'test_.*\.py$|.*_test\.py$', Path(f).name)]
+    n = int(args['milestone']['id'].split('-')[1])
+    proofs = [re.search(r'^\*\*Proof:\*\* `([^`]*)`', sec.group(2), re.M)
+              for sec in re.finditer(r'^## M-(\d+): [^\n]*\n(.*?)(?=^## M-|\Z)', Path(args['plan']).read_text(), re.M | re.S)
+              if int(sec.group(1)) <= n]
+    for proof in filter(None, proofs):
+        paths += [w for w in proof.group(1).split('pytest', 1)[-1].split() if not w.startswith('-')]
+    runner = args['milestone']['proof'].split('pytest', 1)[0] + 'pytest'
+    print(f"cd {tree} && {runner} {' '.join(dict.fromkeys(paths))} --timeout=900 --timeout-method=thread -ra "
+          f"> {args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log 2>&1")
+
+
 def resume(o):
     path = Path(o.args)
     args = json.loads(path.read_text())
     r = stop_of(o.output)
-    if not r.get('stopped'):
-        sys.exit('the run finished; there is nothing to resume')
-    last = last_layer(args['milestone']['tasks'])
+    if not r.get('stopped') and 'bed' not in dict(o.decide):
+        sys.exit('the run finished; resume it only with --decide bed')
     answered = {i: text(t) for i, t in o.settle}
     for b in r.get('built', []):
         report = {k: v for k, v in b.items() if k not in ('id', 'first')}
         if b['id'] in answered:
             report['status'] = 'done'
             report['notes'] = f"{report.get('notes', '')}\n\nThe parent: {answered.pop(b['id'])}".strip()
-        elif report.get('status') != 'done' or (last.get(b['id']) and report.get('green') is False):
+        elif report.get('status') != 'done' or report.get('green') is False:
             continue
         args['settled'][b['id']] = report
     if answered:
@@ -173,13 +181,16 @@ def main():
     for flag in ('--epic', '--spec', '--tree', '--project-base', '--out'):
         s.add_argument(flag, required=True)
     sub.add_parser('show').add_argument('output')
+    b = sub.add_parser('bed')
+    b.add_argument('args')
+    b.add_argument('output')
     r = sub.add_parser('resume')
     r.add_argument('args')
     r.add_argument('output')
     r.add_argument('--decide', nargs=2, action='append', default=[], metavar=('KEY', 'TEXT'))
     r.add_argument('--settle', nargs=2, action='append', default=[], metavar=('ID', 'TEXT'))
     o = p.parse_args()
-    {'start': start, 'show': show, 'resume': resume}[o.command](o)
+    {'start': start, 'show': show, 'bed': bed, 'resume': resume}[o.command](o)
 
 
 if __name__ == '__main__':

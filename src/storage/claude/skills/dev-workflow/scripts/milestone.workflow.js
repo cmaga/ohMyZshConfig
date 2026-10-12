@@ -1,6 +1,6 @@
 export const meta = {
   name: 'dev-workflow-milestone',
-  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, one fold, one verify',
+  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, one fold, one verify, and a fix of the end-to-end run',
   phases: [
     { title: 'Scaffold' },
     { title: 'Tests' },
@@ -9,10 +9,11 @@ export const meta = {
     { title: 'Review' },
     { title: 'Fold' },
     { title: 'Verify' },
+    { title: 'Fix' },
   ],
 }
 
-const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, brief = '', decisions = {}, settled = {} } = args
+const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, logs, brief = '', decisions = {}, settled = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
@@ -70,8 +71,8 @@ const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[ke
 const decidedHere = []
 const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, promoted }, ...rest })
 const asked = r => !r || r.status === 'question'
-// A milestone's tests run end to end, so only the last layer's workers can turn them green.
-const stuck = (r, last) => asked(r) || (last && r.green === false)
+// No agent runs the end-to-end tests: workers and the fold run unit tests, and green means those pass.
+const stuck = r => asked(r) || r.green === false
 
 // A question is answered inside the run with the coordinator's authority; only a redesign returns to it.
 // One decider at a time takes every question then waiting, so its answers agree with each other and with every
@@ -167,9 +168,9 @@ ${t.card}
 - Your files are where the work starts, not a fence. A file outside them that no task running beside you owns: edit it, commit it with yours, list it in files, and say why in notes. A question is only a file a task running beside you owns, a change to a signature, type, or schema the scaffold committed, or an edit to a committed test.
 - Read each file you edit end to end before editing it, and one or two similar files in the codebase for the pattern to follow.
 - Comment only what the code cannot say for itself, and fix any comment your change makes wrong.
-- The milestone's failing tests: ${tests.files.join(', ')}. Make the ones your task covers pass. Run them, the unit tests of your files, and the linter and type checker on your files; never the full suite.
-- Prove each test you turn green: break the line it guards in your own file, run it and see it fail, restore the line by editing it back, and run it green again. Commit only the restored code; put each test and its break in notes.
-- Set green only when every milestone test your task covers passes.
+- The milestone's failing tests: ${tests.files.join(', ')}. Write the code that passes the ones your task covers, but run none of them: they run once, end to end, after every task is done. Run the unit tests of your files, and the linter and type checker on your files; never the end-to-end tests or the full suite.
+- Prove each unit test you add: break the line it guards, see it fail, and restore the line by editing it back. Commit only the restored code.
+- Set green when the unit tests of your files, the linter, and the type checker pass.
 
 Running beside you: ${layer.filter(s => s.id !== t.id && !settled[s.id]).map(s => `${s.id} (${s.files.join(', ')})`).join('; ') || 'nobody'}.${handed(t).length ? `
 
@@ -178,20 +179,20 @@ ${handed(t).join('\n\n')}` : ''}
 
 ${SHARED}${decided(t.id)}`
 
-const build = async (t, layer, last) => {
+const build = async (t, layer) => {
   // A resume re-runs every agent call after the first changed one, so finished tasks come back as settled reports.
   if (settled[t.id]) return settled[t.id]
   running.set(t.id, t.files)
   try {
-    return await attempt(t, layer, last)
+    return await attempt(t, layer)
   } finally {
     running.delete(t.id)
   }
 }
 
-const attempt = async (t, layer, last) => {
+const attempt = async (t, layer) => {
   const first = await answered(t.id, t.level, `The worker on ${t.id}`, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
-  if ((first && (first.status === 'question' || !stuck(first, last))) || t.level === 'critical') return first && { ...first, level: t.level }
+  if ((first && (first.status === 'question' || !stuck(first))) || t.level === 'critical') return first && { ...first, level: t.level }
   const up = ORDER[ORDER.indexOf(t.level) + 1]
   promoted.push(t.id)
   const second = await answered(t.id, up, `The worker on ${t.id}`,
@@ -210,10 +211,9 @@ let pending = [...m.tasks]
 while (pending.length) {
   const layer = pending.filter(t => (t.after || []).every(a => done.has(a)))
   if (!layer.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${pending.map(t => t.id).join(', ')}`, built })
-  const last = layer.length === pending.length
-  const reports = await parallel(layer.map(t => () => build(t, layer, last)))
+  const reports = await parallel(layer.map(t => () => build(t, layer)))
   layer.forEach((t, i) => built.push({ id: t.id, ...reports[i] }))
-  const open = layer.filter((_, i) => stuck(reports[i], last))
+  const open = layer.filter((_, i) => stuck(reports[i]))
   if (open.length) return stopped('build', open[0].id, reports[layer.indexOf(open[0])], { built })
   layer.forEach(t => done.add(t.id))
   pending = pending.filter(t => !layer.includes(t))
@@ -229,12 +229,14 @@ if (review) ORDER.forEach(l => { used[l] += review.used[l] })
 if (!review || review.gate === 'escalate' || review.gate === 'incomplete') return stopped('review', 'review', review, { built })
 
 const fixable = review.findings.filter(f => f.class === 'bug' || f.class === 'quality')
-if (!fixable.length && !decisions.fold) return { scaffold, tests, built, review, decided: decidedHere, usage: { used, promoted } }
-const foldLevel = highest(fixable.map(f => f.level), 'judgment')
+let fold = null
+let verify = null
+if (fixable.length || decisions.fold) {
+  const foldLevel = highest(fixable.map(f => f.level), 'judgment')
 
-phase('Fold')
-const fold = await answered('fold', foldLevel, 'The fold',
-  `${CONTEXT}
+  phase('Fold')
+  fold = await answered('fold', foldLevel, 'The fold',
+    `${CONTEXT}
 
 Fold the review's findings into the milestone in one pass:
 ${JSON.stringify(fixable, null, 2)}
@@ -242,15 +244,15 @@ ${JSON.stringify(fixable, null, 2)}
 - Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
 - A finding is a shape, not a line. Search the whole diff (\`git -C ${tree} --no-pager diff ${base}...HEAD\`) for every sibling path with the same shape and fix them all now.
 - Read the whole path before editing; the line a finding names is often not the defect.
-- Run the milestone's tests and the unit tests of every file you touch.
+- Run the unit tests of every file you touch; never the end-to-end tests.
 
 ${SHARED}${decided('fold')}`,
-  { label: `${m.id} fold`, phase: 'Fold', schema: REPORT })
-if (asked(fold)) return stopped('fold', 'fold', fold, { built, review })
+    { label: `${m.id} fold`, phase: 'Fold', schema: REPORT })
+  if (asked(fold)) return stopped('fold', 'fold', fold, { built, review })
 
-phase('Verify')
-const verify = await run(foldLevel,
-  `Round 2 of the review gate, for milestone ${m.id} of ${epic}, started cold.
+  phase('Verify')
+  verify = await run(foldLevel,
+    `Round 2 of the review gate, for milestone ${m.id} of ${epic}, started cold.
 Why the change was made: ${CONTEXT}
 The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}, not main.
 Round 1's findings: ${JSON.stringify(review.findings)}
@@ -258,6 +260,25 @@ The fix commits: ${fold.commits.join(', ')}. ${fold.notes || ''}
 Answer only: is each round-1 finding fixed, and does any fix introduce a new problem. Read the fix commits as new code: they are the least-reviewed lines in the change. Return each finding still open, and each new problem, in findings; gate is fail when any is a bug, escalate when a fix broke something round 1 had passed.
 
 Read only: edit nothing, spawn nothing.`,
-  { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY })
+    { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY })
+}
+const result = { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }
+if (!decisions.bed) return result
 
-return { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }
+// The parent runs the end-to-end tests once, after everything above; a resume carrying their failures fixes them here.
+phase('Fix')
+const fix = await answered('bed', 'judgment', 'The fix',
+  `${CONTEXT}
+
+The milestone's one end-to-end run, made after every task, the review, and the fold, failed: ${decisions.bed}
+
+- Read each failure's output in that log, and the whole path it runs through, before editing; the line a traceback names is often not the defect.
+- Fix the code. An edit to a committed test is a question.
+- Rerun only the failed tests, by node id, in one invocation, until they pass, and the unit tests of every file you touch. Never rerun the whole set. Write the last rerun's whole output to ${logs}/${epic}-${m.id}-rerun.log.
+- A failure that passes when rerun alone, and that no code explains, is load: say so in notes and leave it.
+- Set green when every failed test passes on that last rerun.
+
+${SHARED}`,
+  { label: `${m.id} fix`, phase: 'Fix', schema: BUILT })
+if (stuck(fix)) return stopped('fix', 'bed', fix, { built, review })
+return { ...result, fix }
