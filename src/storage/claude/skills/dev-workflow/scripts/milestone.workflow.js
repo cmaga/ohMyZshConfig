@@ -12,7 +12,7 @@ export const meta = {
   ],
 }
 
-const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, decisions = {}, settled = {} } = args
+const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, brief = '', decisions = {}, settled = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
@@ -44,10 +44,15 @@ const BUILT = {
   properties: { ...REPORT.properties, green: { type: 'boolean' } },
   required: [...REPORT.required, 'green'],
 }
-const DECISION = {
+const DECISIONS = {
   type: 'object',
-  properties: { redesign: { type: 'boolean' }, decision: STR },
-  required: ['redesign', 'decision'],
+  properties: {
+    answers: {
+      type: 'array',
+      items: { type: 'object', properties: { key: STR, redesign: { type: 'boolean' }, decision: STR }, required: ['key', 'redesign', 'decision'] },
+    },
+  },
+  required: ['answers'],
 }
 const VERIFY = {
   type: 'object',
@@ -69,17 +74,40 @@ const asked = r => !r || r.status === 'question'
 const stuck = (r, last) => asked(r) || (last && r.green === false)
 
 // A question is answered inside the run with the coordinator's authority; only a redesign returns to it.
-const decide = (key, level, asking, report) => run(atLeast(level, 'judgment'),
-  `${CONTEXT}
+// One decider at a time takes every question then waiting, so its answers agree with each other and with every
+// earlier one. The brief leads its prompt unchanged, so each decider after the first reads it from the prompt cache.
+const running = new Map()
+const waiting = []
+let deciding = false
+const decide = (key, level, asking, report) => new Promise(resolve => { waiting.push({ key, level, asking, report, resolve }); drain() })
+const drain = async () => {
+  if (deciding || !waiting.length) return
+  deciding = true
+  const batch = waiting.splice(0)
+  let out = null
+  try {
+    out = await run(highest(batch.map(q => q.level), 'judgment'),
+      `${brief ? `${brief}\n\n---\n\n` : ''}${CONTEXT}
 
-You answer for the build's coordinator. ${asking} stopped with a question:
-${JSON.stringify(report)}
+You answer for the build's coordinator. These agents stopped with questions; answer every one under its key.
+${batch.map(q => `${q.key} (${q.asking}): ${JSON.stringify(q.report)}`).join('\n\n')}
 
-Decide it from the spec, the plan at ${plan}, and the code; read whatever you need. Every answer is yours to give: a file outside the task's list, a change to a signature, type, or schema the scaffold committed, an edit to a committed test that keeps what it proves, a choice the spec leaves open, or part of the work deferred to a later task whose card can absorb it.
-- Record the decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "[${epic}] ${m.id} decided <what>" -- ${spec}\`.
+Decided earlier in this run: ${decidedHere.length ? JSON.stringify(decidedHere) : 'nothing'}
+Running now, each owning its files: ${[...running].map(([id, files]) => `${id} (${files.join(', ')})`).join('; ') || 'nothing'}
+
+Decide from the spec, the plan at ${plan}, and the code; read whatever you need. Every answer is yours to give: a file outside the task's list, a change to a signature, type, or schema the scaffold committed, an edit to a committed test that keeps what it proves, a choice the spec leaves open, or part of the work deferred to a later task whose card can absorb it.
+- Your answers agree with each other and with every earlier decision, and never give two tasks running now the same file.
+- Record each decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "[${epic}] ${m.id} decided <what>" -- ${spec}\`.
 - Set redesign only when the design itself cannot work and a component or the milestone order must be redrawn, so that carrying on would waste the build. Then say what is wrong in decision and change nothing.
 - Edit only the plan and the spec. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself and spawn nothing.`,
-  { label: `${key} decide`, phase: 'Decide', schema: DECISION })
+      { label: `decide ${batch.map(q => q.key).join(', ')}`, phase: 'Decide', schema: DECISIONS })
+  } catch (e) {
+    out = null
+  }
+  batch.forEach(q => q.resolve((out && out.answers.find(a => a.key === q.key)) || null))
+  deciding = false
+  drain()
+}
 
 const answered = async (key, level, asking, prompt, opts) => {
   let report = await run(level, prompt, opts)
@@ -153,6 +181,15 @@ ${SHARED}${decided(t.id)}`
 const build = async (t, layer, last) => {
   // A resume re-runs every agent call after the first changed one, so finished tasks come back as settled reports.
   if (settled[t.id]) return settled[t.id]
+  running.set(t.id, t.files)
+  try {
+    return await attempt(t, layer, last)
+  } finally {
+    running.delete(t.id)
+  }
+}
+
+const attempt = async (t, layer, last) => {
   const first = await answered(t.id, t.level, `The worker on ${t.id}`, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
   if ((first && (first.status === 'question' || !stuck(first, last))) || t.level === 'critical') return first && { ...first, level: t.level }
   const up = ORDER[ORDER.indexOf(t.level) + 1]

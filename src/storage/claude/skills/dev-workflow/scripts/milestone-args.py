@@ -53,7 +53,27 @@ def milestone(plan, n):
             'scaffold': pointer('Scaffold'), 'tests': pointer('Tests'), 'tasks': tasks}
 
 
+def brief(plan, spec):
+    """The decider's big picture: the spec whole, then the plan at one line per task with its recorded decisions."""
+    lines = []
+    for sec in re.finditer(r'^## M-(\d+): ([^\n]*)\n(.*?)(?=^## M-|\Z)', Path(plan).read_text(), re.M | re.S):
+        proof = re.search(r'^\*\*Proof:\*\* `([^`]*)`', sec.group(3), re.M)
+        lines.append(f'M-{sec.group(1)}: {sec.group(2).strip()} | proof: {proof.group(1) if proof else "none"}')
+        for t in re.finditer(r'^### (T-\d+\.\d+): ([^\n]*)\n(.*?)(?=^### T-|\Z)', sec.group(3), re.M | re.S):
+            card = t.group(3)
+            files = re.search(r'^- \*\*Files:\*\*(.*?)(?=^- \*\*|\n\n)', card, re.M | re.S)
+            after = re.search(r'^- \*\*After:\*\*([^\n]*)', card, re.M)
+            level = re.search(r'^- \*\*Level:\*\* *(\w+)', card, re.M)
+            ids = ', '.join(re.findall(r'T-\d+\.\d+', after.group(1))) if after else 'none'
+            paths = ', '.join(re.findall(r'`([^`]+)`', files.group(1))) if files else 'none'
+            lines.append(f'  {t.group(1)} [{level.group(1) if level else "none"}] {t.group(2).strip()} | after: {ids} | files: {paths}')
+            lines += ['    decided: ' + ' '.join(d.split()) for d in re.findall(r'^Decided during the build:(.*?)(?=\n\n|\Z)', card, re.M | re.S)]
+    return (f"The build's big picture as this run started. The spec, whole:\n\n{Path(spec).read_text()}\n\n"
+            f"The plan, one line per task; each task's card in the plan holds its detail:\n\n" + '\n'.join(lines))
+
+
 def write(path, args):
+    args['brief'] = brief(args['plan'], args['spec'])
     path.write_text(json.dumps(args, indent=1))
     src = (HERE / 'milestone.workflow.js').read_text()
     if src.count('} = args\n') != 1:
