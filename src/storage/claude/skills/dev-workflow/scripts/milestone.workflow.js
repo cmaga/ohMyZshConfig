@@ -94,7 +94,8 @@ ${SHARED}${decided('tests')}`,
 if (asked(tests)) return stopped('tests', 'tests', tests, { scaffold })
 
 const word = id => new RegExp(`\\b${id.replace(/\./g, '\\.')}\\b`)
-const handed = t => built.filter(b => b.notes && word(t.id).test(b.notes)).map(b => `${b.id}: ${b.notes}`)
+const touches = (b, t) => (b.files || []).some(f => t.files.some(g => (g.endsWith('/') ? `/${f}`.includes(`/${g}`) : `/${f}`.endsWith(`/${g}`))))
+const handed = t => built.filter(b => b.notes && (word(t.id).test(b.notes) || touches(b, t))).map(b => `${b.id}: ${b.notes}`)
 const card = (t, layer) => `${CONTEXT}
 
 Task ${t.id}: ${t.title}
@@ -102,7 +103,7 @@ Files you own: ${t.files.join(', ')}
 
 ${t.card}
 
-- Stay inside your files. Work that needs another file, a change to a signature, type, or schema the scaffold committed, or an edit to a committed test is a question.
+- Your files are where the work starts, not a fence. A file outside them that no task running beside you owns: edit it, commit it with yours, list it in files, and say why in notes. A question is only a file a task running beside you owns, a change to a signature, type, or schema the scaffold committed, or an edit to a committed test.
 - Read each file you edit end to end before editing it, and one or two similar files in the codebase for the pattern to follow.
 - Comment only what the code cannot say for itself, and fix any comment your change makes wrong.
 - The milestone's failing tests: ${tests.files.join(', ')}. Make the ones your task covers pass. Run them, the unit tests of your files, and the linter and type checker on your files; never the full suite.
