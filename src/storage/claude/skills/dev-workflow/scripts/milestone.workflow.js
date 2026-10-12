@@ -213,7 +213,8 @@ while (pending.length) {
   if (!layer.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${pending.map(t => t.id).join(', ')}`, built })
   const reports = await parallel(layer.map(t => () => build(t, layer)))
   layer.forEach((t, i) => built.push({ id: t.id, ...reports[i] }))
-  const open = layer.filter((_, i) => stuck(reports[i]))
+  // A settled report is finished: the parent closed it, whatever its green said under the rule it ran on.
+  const open = layer.filter((t, i) => !settled[t.id] && stuck(reports[i]))
   if (open.length) return stopped('build', open[0].id, reports[layer.indexOf(open[0])], { built })
   layer.forEach(t => done.add(t.id))
   pending = pending.filter(t => !layer.includes(t))
