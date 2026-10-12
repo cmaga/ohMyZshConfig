@@ -122,10 +122,10 @@
       "native": "dev-workflow scripts/levels.json judgment.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
     },
     "build_judgment_effort": {
-      "value": "high",
+      "value": "xhigh",
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json judgment.effort",
-      "note": "stepped xhigh->high 2026-10-12, same pass; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
+      "note": "kept at xhigh 2026-10-12 by user decision, reversing the same-day step to high; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
     },
     "build_critical_model": {
       "value": "opus",
