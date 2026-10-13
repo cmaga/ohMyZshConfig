@@ -146,7 +146,7 @@ const tests = await answered('tests', 'judgment', 'The test writer',
   `${CONTEXT}
 
 Write the failing integration tests that prove this milestone, against the scaffold now committed. ${m.tests}
-Drive the real entry point on the settings a fresh install ships with (code defaults and shipped config templates, no test-only overrides), over data shaped like real use: realistic ages, volumes, and refresh cadence. Doubles only at external boundaries; never a double that re-implements this system's own logic.
+The proof drives the real entry point on the settings a fresh install ships with (code defaults and shipped config templates, no test-only overrides), over data shaped like real use: realistic ages, volumes, and refresh cadence. Every other test drives the same entry points on the bed's fast profile: each duration a test waits through (a cadence, a recovery period, a resolve) is a setting whose default is the shipped value and which the bed sets short, and every wait derives from the profile, never from a hand-typed number. The milestone's tests together run in under 15 minutes serially. Doubles only at external boundaries; never a double that re-implements this system's own logic.
 Write integration tests only, matching the harness, fixtures, and naming of the project's existing suites. Implement nothing, and change no signature, type, or schema the scaffold committed: a test that needs one changed is a question.
 Every test must run and fail for a reason you can name. A test that errors at import, collection, or setup is not failing; report it rather than working around it.
 List each test path in files, and put its failing output in notes.
