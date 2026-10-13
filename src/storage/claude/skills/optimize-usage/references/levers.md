@@ -18,7 +18,8 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > Claude limit. Rows 3-11 reuse the row 1-2 ratios. Ratios are not additive points.
 > Aliases bound (Claude Code 2.1.283): opus=Opus 5.5 ($4/$20, cache read $0.20; default
 > effort medium, and top-level effortLevel does not reach it, so it needs a modelSettings
-> key), fable=Fable 5.1, sonnet=Sonnet 5.5 [1m] via the remap below, haiku=Haiku 4.5;
+> key), fable=Fable 5.1, sonnet=Sonnet 5.5 [1m] via the remap below, haiku=the latest Haiku (Haiku 5.5 on 2.1.296; the
+> cost and perf figures below are still Haiku 4.5's until the next refresh);
 > deepseek-flash=DeepSeek-V4.1-Flash, deepseek-v4-pro=DeepSeek-V4-Pro-0813.
 
 > Perf column: Terminal-Bench 4.0, agentic coding, independently run — Artificial Analysis
@@ -34,6 +35,15 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > (probed 2026-09-27, 2.1.283). The remap pins the alias to Sonnet 5.5 (re-pointed and
 > probed 2026-10-04, 2.1.289); re-point it in `06-deploy-claude.zsh` when a new Sonnet ships.
 > Sonnet 5 was 0.98x and (9.6).
+
+> **Behind the claude-proxy (`oc`), two defaults change.** Claude Code turns MCP tool search
+> off for a non-Anthropic base URL, which put 48k tokens of MCP tool schemas into every
+> request, and runs background requests (titles, summaries, web-page digests) on the
+> session model instead of Haiku. `oc` in `zsh/aliases.zsh` restores both with
+> `ENABLE_TOOL_SEARCH=true` and `ANTHROPIC_DEFAULT_HAIKU_MODEL` (probed 2026-10-12, 2.1.296);
+> re-point that Haiku ID when a new Haiku ships, since the `haiku` alias resolves to it.
+> DeepSeek rejects deferred tools (422), so `od` keeps tool search off, and a DeepSeek
+> worker or vault agent needs a session started with `ENABLE_TOOL_SEARCH=false`.
 
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Perf (TB 4.0) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- | --- |

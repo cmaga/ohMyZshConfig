@@ -57,12 +57,18 @@ alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 # (automations/claude-proxy) when this machine has one, so DeepSeek model names
 # resolve; otherwise plain claude, where only Anthropic models are reachable.
 # Behind a proxy Claude Code turns MCP tool search off and sends every MCP tool
-# definition with every request (48k tokens here). The proxy relays Claude
-# requests untouched, so turn it back on unless the caller set it.
+# definition with every request (48k tokens here), and runs background requests
+# (titles, summaries, web-page digests) on the session model instead of Haiku.
+# The proxy relays Claude requests untouched, so restore both unless the caller
+# set them. Keep the Haiku ID on the latest Haiku: the `haiku` alias resolves to it.
 oc() {
   local -a via_proxy=()
   if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
-    via_proxy=(ANTHROPIC_BASE_URL=http://localhost:4000 ENABLE_TOOL_SEARCH=${ENABLE_TOOL_SEARCH:-true})
+    via_proxy=(
+      ANTHROPIC_BASE_URL=http://localhost:4000
+      ENABLE_TOOL_SEARCH=${ENABLE_TOOL_SEARCH:-true}
+      ANTHROPIC_DEFAULT_HAIKU_MODEL=${ANTHROPIC_DEFAULT_HAIKU_MODEL:-claude-haiku-5-5}
+    )
   else
     print -u2 "oc: claude-proxy is not up; starting without it (DeepSeek models will not resolve)"
   fi
@@ -77,7 +83,7 @@ od() {
     print -u2 "od: claude-proxy is not up; DeepSeek models need it"
     return 1
   fi
-  # Whether DeepSeek accepts deferred tools is unverified; keep them upfront.
+  # DeepSeek rejects deferred tools (422 on the tool_reference blocks), so load them upfront.
   ENABLE_TOOL_SEARCH=false oc --model 'deepseek-flash[1m]' "$@"
 }
 

@@ -162,6 +162,10 @@ const server = http.createServer(async (req, res) => {
   const toDeepSeek = target.upstream === "deepseek";
   const origin = toDeepSeek ? DEEPSEEK_ORIGIN : ANTHROPIC_ORIGIN;
   const headers = forwardableHeaders(req.headers);
+  // fetch decodes only these, and the relay drops content-encoding, so a zstd
+  // reply (DeepSeek honors the client's zstd offer) would reach Claude Code as
+  // raw bytes it cannot parse.
+  headers.set("accept-encoding", "gzip, deflate, br");
 
   if (toDeepSeek) {
     const key = process.env.DEEPSEEK_API_KEY;
