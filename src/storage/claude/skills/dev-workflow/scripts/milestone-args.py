@@ -3,6 +3,7 @@
     python3 milestone-args.py start <plan> <n> --epic E --spec S --tree T --project-base B --out DIR
     python3 milestone-args.py show <workflow output file>
     python3 milestone-args.py bed DIR/<E>-M<n>.json <workflow output file>
+    python3 milestone-args.py fix DIR/<E>-M<n>.json <failures file>
     python3 milestone-args.py resume DIR/<E>-M<n>.json <workflow output file> [--decide KEY TEXT]... [--settle ID TEXT]...
 
 start writes DIR/<E>-M<n>.json, the workflow's args, and DIR/<E>-M<n>.workflow.js, milestone.workflow.js with
@@ -11,11 +12,14 @@ those args inlined so no launch or resume carries them through a tool call. Laun
 show prints where a run stopped: the stage, the key to decide, its question, and each task's status.
 
 bed prints the milestone's one end-to-end run: the test writer's tests and the proofs of this and every earlier
-milestone, in one pytest command. Its failures go back by resume with --decide bed, which runs the fix stage.
+milestone, in one pytest command.
 
-resume settles every finished task, adds each decision under its key (after any earlier one), and rewrites both
-files; the milestone itself is never touched. A finished run resumes only with --decide bed. --settle closes a task whose question the parent answered by doing
-the work, appending TEXT to its notes. A TEXT starting with @ is read from that file. Relaunch with the same
+fix prints the prompt of the one worker that fixes the end-to-end run's failures, which the failures file names.
+
+resume settles every finished task, a finished review and each finished fold group, adds each decision under its key (after any earlier
+one), and rewrites both files; the milestone itself is never touched. A finished run never resumes: a resume
+replays only the unbroken prefix of calls in their first order, which a finished fan-out breaks. --settle closes
+a task whose question the parent answered by doing the work, appending TEXT to its notes. A TEXT starting with @ is read from that file. Relaunch with the same
 scriptPath and the first launch's run id as resumeFromRunId.
 """
 
@@ -148,12 +152,29 @@ def bed(o):
           f"> {args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log 2>&1")
 
 
+def fix(o):
+    args = json.loads(Path(o.args).read_text())
+    m, tree, logs = args['milestone'], args['tree'], args.get('logs') or str(Path(o.args).resolve().parent)
+    print(f"""Spec: {args['spec']} — read the sections this work names. Milestone {m['id']}: {m['title']}. Its proof: `{m['proof']}`.
+
+The milestone's one end-to-end run, made after every task, the review, and the fold, failed: {text('@' + o.failures)}
+
+- Read each failure's output in that log, and the whole path it runs through, before editing; the line a traceback names is often not the defect.
+- Fix the code. An edit to a committed test is a question.
+- Rerun only the failed tests, by node id, in one invocation, until they pass, and the unit tests of every file you touch. Never rerun the whole set. {TIMEOUT} Write the last rerun's whole output to {logs}/{args['epic']}-{m['id']}-rerun.log.
+- A failure that passes when rerun alone, and that no code explains, is load: say so and leave it.
+
+Work only in {tree}, by absolute path and `git -C {tree}`. Commit only your own files, naming them: `git -C {tree} commit -m "[{args['epic']}] {m['id']} <what>" -- <your files>`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself; spawn nothing. A decision you cannot make from the code and the spec: stop and return it as a question, saying what you did.
+
+Return only what I act on: green (true when every failed test passes on the last rerun), each commit's sha and one line, each failure you left and why, and any question. Keep the reasoning; I can ask.""")
+
+
 def resume(o):
     path = Path(o.args)
     args = json.loads(path.read_text())
     r = stop_of(o.output)
-    if not r.get('stopped') and 'bed' not in dict(o.decide):
-        sys.exit('the run finished; resume it only with --decide bed')
+    if not r.get('stopped'):
+        sys.exit('the run finished and never resumes: send what is left to one worker')
     answered = {i: text(t) for i, t in o.settle}
     for b in r.get('built', []):
         report = {k: v for k, v in b.items() if k not in ('id', 'first')}
@@ -165,6 +186,11 @@ def resume(o):
         args['settled'][b['id']] = report
     if answered:
         sys.exit(f'no report in the run to settle for {", ".join(answered)}')
+    if r.get('review'):
+        args['reviewed'] = r['review']
+    for f in r.get('fold') or []:
+        if f.get('status') == 'done':
+            args.setdefault('folded', {})[f['key']] = {k: v for k, v in f.items() if k not in ('key', 'findings')}
     for key, t in o.decide:
         earlier = args['decisions'].get(key)
         args['decisions'][key] = f'{earlier}\n\n{text(t)}' if earlier else text(t)
@@ -184,13 +210,16 @@ def main():
     b = sub.add_parser('bed')
     b.add_argument('args')
     b.add_argument('output')
+    f = sub.add_parser('fix')
+    f.add_argument('args')
+    f.add_argument('failures')
     r = sub.add_parser('resume')
     r.add_argument('args')
     r.add_argument('output')
     r.add_argument('--decide', nargs=2, action='append', default=[], metavar=('KEY', 'TEXT'))
     r.add_argument('--settle', nargs=2, action='append', default=[], metavar=('ID', 'TEXT'))
     o = p.parse_args()
-    {'start': start, 'show': show, 'bed': bed, 'resume': resume}[o.command](o)
+    {'start': start, 'show': show, 'bed': bed, 'fix': fix, 'resume': resume}[o.command](o)
 
 
 if __name__ == '__main__':

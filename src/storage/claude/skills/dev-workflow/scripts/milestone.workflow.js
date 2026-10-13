@@ -1,6 +1,6 @@
 export const meta = {
   name: 'dev-workflow-milestone',
-  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, a fold in parallel groups, one verify, and a fix of the end-to-end run',
+  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, a fold in parallel groups, and one verify',
   phases: [
     { title: 'Scaffold' },
     { title: 'Tests' },
@@ -9,11 +9,10 @@ export const meta = {
     { title: 'Review' },
     { title: 'Fold' },
     { title: 'Verify' },
-    { title: 'Fix' },
   ],
 }
 
-const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, logs, brief = '', decisions = {}, settled = {} } = args
+const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, logs, brief = '', decisions = {}, settled = {}, reviewed = null, folded = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
@@ -221,12 +220,14 @@ while (pending.length) {
 }
 
 phase('Review')
-const review = await workflow({ scriptPath: `${scripts}/review.workflow.js` }, {
+// A resume replays only the unbroken prefix of calls in their first order, and a fan-out's calls return in a
+// new order, so a finished review reaches a resume through its args, never through the cache.
+const review = reviewed || await workflow({ scriptPath: `${scripts}/review.workflow.js` }, {
   epic, spec, tree, base, projectBase, levels,
   context: CONTEXT,
   units: m.tasks.map(t => ({ id: t.id, title: t.title, files: t.files, level: t.level })),
 })
-if (review) ORDER.forEach(l => { used[l] += review.used[l] })
+if (review && !reviewed) ORDER.forEach(l => { used[l] += review.used[l] })
 if (!review || review.gate === 'escalate' || review.gate === 'incomplete') return stopped('review', 'review', review, { built })
 
 const fixable = review.findings.filter(f => f.class === 'bug' || f.class === 'quality')
@@ -265,7 +266,7 @@ const foldGroups = findings => {
 
 let fold = null
 let verify = null
-if (fixable.length || decisions.fold) {
+if (fixable.length) {
   const foldLevel = highest(fixable.map(f => f.level), 'judgment')
   const groups = foldGroups(fixable)
   const foldRules = `- Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
@@ -275,6 +276,7 @@ if (fixable.length || decisions.fold) {
 
   phase('Fold')
   const reports = await parallel(groups.map(g => async () => {
+    if (folded[g.key]) return folded[g.key]
     const beside = groups.filter(o => o !== g)
     running.set(g.key, g.files)
     try {
@@ -297,21 +299,6 @@ ${SHARED}${decided(g.key)}`,
   const open = fold.find(asked)
   if (open) return stopped('fold', open.key, open, { built, review, fold })
 
-  // A decision the parent gave on the fold, after reading what verify left, runs on its own once the groups are done.
-  if (decisions.fold) {
-    const extra = await answered('fold', foldLevel, 'The fold',
-      `${CONTEXT}
-
-The review's findings were folded by ${groups.length} agents: ${JSON.stringify(fold.map(f => ({ key: f.key, commits: f.commits, notes: f.notes })))}
-
-${foldRules}${decided('fold')}
-
-${SHARED}`,
-      { label: `${m.id} fold`, phase: 'Fold', schema: REPORT })
-    fold.push({ key: 'fold', ...extra })
-    if (asked(extra)) return stopped('fold', 'fold', extra, { built, review, fold })
-  }
-
   phase('Verify')
   verify = await run(foldLevel,
     `Round 2 of the review gate, for milestone ${m.id} of ${epic}, started cold.
@@ -325,23 +312,4 @@ Answer only: is each round-1 finding fixed, and does any fix introduce a new pro
 Read only: edit nothing, spawn nothing.`,
     { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY })
 }
-const result = { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }
-if (!decisions.bed) return result
-
-// The parent runs the end-to-end tests once, after everything above; a resume carrying their failures fixes them here.
-phase('Fix')
-const fix = await answered('bed', 'judgment', 'The fix',
-  `${CONTEXT}
-
-The milestone's one end-to-end run, made after every task, the review, and the fold, failed: ${decisions.bed}
-
-- Read each failure's output in that log, and the whole path it runs through, before editing; the line a traceback names is often not the defect.
-- Fix the code. An edit to a committed test is a question.
-- Rerun only the failed tests, by node id, in one invocation, until they pass, and the unit tests of every file you touch. Never rerun the whole set. Write the last rerun's whole output to ${logs}/${epic}-${m.id}-rerun.log.
-- A failure that passes when rerun alone, and that no code explains, is load: say so in notes and leave it.
-- Set green when every failed test passes on that last rerun.
-
-${SHARED}`,
-  { label: `${m.id} fix`, phase: 'Fix', schema: BUILT })
-if (stuck(fix)) return stopped('fix', 'bed', fix, { built, review })
-return { ...result, fix }
+return { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }
