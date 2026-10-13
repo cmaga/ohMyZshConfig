@@ -17,8 +17,7 @@ source "${SCRIPT_DIR}/lib/common.zsh"
 # Development directory prefix
 DEV_PREFIX="$HOME/dev"
 
-# List of company acronyms
-COMPANIES=("gsi" "ms")
+# Company acronyms: COMPANIES in lib/common.zsh
 
 # Services to create SSH keys for (all companies get keys for all services)
 SERVICES=("github" "bitbucket")

@@ -136,6 +136,9 @@ CLAUDE_DIR="$HOME/.claude"
 CLAUDE_SKILLS_DEST="$CLAUDE_DIR/skills"
 CLAUDE_AGENTS_DEST="$CLAUDE_DIR/agents"
 
+# Companies under ~/dev/<company>/, each with its own SSH keys and Claude account
+COMPANIES=("gsi" "ms")
+
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================

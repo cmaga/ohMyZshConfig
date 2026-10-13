@@ -62,7 +62,10 @@ alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 # The proxy relays Claude requests untouched, so restore both unless the caller
 # set them. Keep the Haiku ID on the latest Haiku: the `haiku` alias resolves to it.
 oc() {
-  local -a via_proxy=()
+  local -a via_proxy=() account=()
+  # Under ~/dev/<company>/, sign in as that company's account (06-deploy-claude.zsh builds its config dir).
+  local company=${${PWD#$HOME/dev/}%%/*}
+  [[ $PWD == $HOME/dev/* && -d $HOME/.claude-$company ]] && account=(CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR:-$HOME/.claude-$company})
   if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
     via_proxy=(
       ANTHROPIC_BASE_URL=http://localhost:4000
@@ -72,7 +75,7 @@ oc() {
   else
     print -u2 "oc: claude-proxy is not up; starting without it (DeepSeek models will not resolve)"
   fi
-  env $via_proxy claude --dangerously-skip-permissions "$@"
+  env $account $via_proxy claude --dangerously-skip-permissions "$@"
 }
 
 # oc on DeepSeek Flash as the session model. Needs the proxy, so it refuses to

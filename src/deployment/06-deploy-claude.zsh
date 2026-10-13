@@ -337,6 +337,34 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         print_status "warning" "claude CLI not available, skipping jcodemunch MCP registration"
     fi
 
+    # Each company in COMPANIES signs in with its own Claude account: `oc` under
+    # ~/dev/<company>/ sets CLAUDE_CONFIG_DIR=~/.claude-<company>. Only the login
+    # and .claude.json are per account; the rest links back to ~/.claude, so one
+    # deploy, one settings file, and one memory and session store serve every
+    # account. A link Claude Code replaced with a real file is reported, not
+    # clobbered. nativestrict makes Git Bash fail rather than copy silently.
+    mkdir -p "$CLAUDE_DIR/projects" "$CLAUDE_DIR/plugins"
+    for company in "${COMPANIES[@]}"; do
+        account_dir="$HOME/.claude-$company"
+        mkdir -p "$account_dir" || error "Failed to create $account_dir"
+        for entry in CLAUDE.md rules skills agents hooks settings.json plugins projects; do
+            [ -e "$CLAUDE_DIR/$entry" ] || continue
+            link="$account_dir/$entry"
+            if [ -e "$link" ] && [ ! -L "$link" ]; then
+                print_status "warning" "$link is no longer a link to $CLAUDE_DIR/$entry; left as is"
+                continue
+            fi
+            MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_DIR/$entry" "$link" \
+                || print_status "warning" "Failed to link $link"
+        done
+        if command_exists claude; then
+            CLAUDE_CONFIG_DIR="$account_dir" claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
+            CLAUDE_CONFIG_DIR="$account_dir" claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1 \
+                || print_status "warning" "Failed to register jcodemunch MCP for $company"
+        fi
+        print_status "success" "Claude account '$company' -> $account_dir (config linked from $CLAUDE_DIR)"
+    done
+
     # claude-proxy backs the DeepSeek model names. deploy-automations registers
     # the launchd agent, systemd user service, or Windows logon task
     # (src/storage/automations/claude-proxy/); the proxy needs only node, which
@@ -391,5 +419,6 @@ echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
 echo "  - BashTool timeouts, task tools, sonnet 1M alias env -> $SETTINGS_DEST (env)"
 echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
+echo "  - Company accounts -> ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
 
 print_status "success" "Claude Code deployment complete!"
