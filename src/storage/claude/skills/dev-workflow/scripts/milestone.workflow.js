@@ -109,17 +109,20 @@ Decide from the spec, the plan at ${plan}, and the code; read whatever you need.
   drain()
 }
 
+// A rerun reports only what it touched, so the stage's files and commits are every round's.
 const answered = async (key, level, asking, prompt, opts) => {
-  let report = await run(level, prompt, opts)
+  const files = new Set(), commits = new Set()
+  const kept = r => { for (const f of r?.files || []) files.add(f); for (const c of r?.commits || []) commits.add(c); return r }
+  let report = kept(await run(level, prompt, opts))
   let said = ''
   for (let round = 1; report && report.status === 'question' && round <= 3; round++) {
     const d = await decide(key, level, asking, report)
     if (!d || d.redesign) return { ...report, redesign: d ? d.decision : 'the decider died' }
     decidedHere.push({ key, question: report.question, decision: d.decision })
     said += `\n\nYou asked: ${report.question}\nThe coordinator decided: ${d.decision}`
-    report = await run(level, `${prompt}${said}\n\nYour earlier runs' commits stay; build on them.`, { ...opts, label: `${opts.label} answered ${round}` })
+    report = kept(await run(level, `${prompt}${said}\n\nYour earlier runs' commits stay; build on them.`, { ...opts, label: `${opts.label} answered ${round}` }))
   }
-  return report
+  return report && { ...report, files: [...files], commits: [...commits] }
 }
 
 const unlevelled = m.tasks.filter(t => !levels[t.level]).map(t => t.id)
