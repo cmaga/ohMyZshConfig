@@ -148,7 +148,7 @@ def bed(o):
     for proof in filter(None, proofs):
         paths += [w for w in proof.group(1).split('pytest', 1)[-1].split() if not w.startswith('-')]
     runner = args['milestone']['proof'].split('pytest', 1)[0] + 'pytest'
-    print(f"cd {tree} && {runner} {' '.join(dict.fromkeys(paths))} --timeout=900 --timeout-method=thread -ra "
+    print(f"cd {tree} && {runner} {' '.join(dict.fromkeys(paths))} --timeout=900 --timeout-method=thread -ra --durations=0 "
           f"> {args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log 2>&1")
 
 
