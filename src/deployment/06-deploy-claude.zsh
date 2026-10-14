@@ -165,16 +165,19 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             mkdir -p "$skill_dest"
 
             # Mirror skill files, excluding repos and artifacts directories.
-            # --delete removes files dropped from source; excluded paths are
-            # protected on the receiving side, so cloned repos survive.
-            if ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" --exclude="evals/" "$skill_dir" "$skill_dest/" 2>&1; then
-                # Fallback if rsync is unavailable or failed: copy manually
-                print_status "warning" "rsync failed for skill '$skill_name', falling back to manual copy"
+            # --delete removes files dropped from source, inside this repo-managed
+            # skill only, so skills that exist only on this machine are never
+            # touched; excluded paths are protected, so cloned repos survive.
+            if ! command_exists rsync || ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" --exclude="evals/" "$skill_dir" "$skill_dest/" 2>&1; then
+                # The same mirror without rsync, which stock Git Bash lacks
                 find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -type f | while read -r src_file; do
                     rel_path="${src_file#$skill_dir}"
                     dest_file="$skill_dest/$rel_path"
                     mkdir -p "$(dirname "$dest_file")"
                     cp "$src_file" "$dest_file"
+                done
+                find "$skill_dest" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -type f | while read -r dest_file; do
+                    [ -e "$skill_dir${dest_file#$skill_dest/}" ] || rm -f "$dest_file"
                 done
             fi
 

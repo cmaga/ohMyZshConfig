@@ -14,5 +14,4 @@ echo
 
 # A child process cannot change the calling shell, so sourcing ~/.zshrc here
 # applies nothing (and aborts under set -e when Oh-My-Zsh helpers return nonzero).
-# glc reloads the shell itself once make returns, so the hint is for a bare make.
-[[ -n "$DEPLOY_RELOADS_SHELL" ]] || log "Run 'exec zsh' to apply the new configuration."
+log "Run 'exec zsh' to apply the new configuration."

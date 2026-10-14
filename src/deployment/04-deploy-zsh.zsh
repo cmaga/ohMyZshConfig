@@ -172,17 +172,11 @@ manage_plugin() {
         # Plugin exists, update it
         info "Updating $plugin_name..."
         
-        local update_success=false
-        if (cd "$plugin_path" && git pull origin main 2>&1); then
-            update_success=true
-        elif (cd "$plugin_path" && git pull origin master 2>&1); then
-            update_success=true
-        fi
-        
-        if [[ $update_success == true ]]; then
+        # Pull the branch the clone tracks; plugins differ on main vs master.
+        if git -C "$plugin_path" pull --ff-only 2>&1; then
             log "Updated $plugin_name successfully"
         else
-            warn "Could not update $plugin_name (might already be up to date)"
+            warn "Could not update $plugin_name"
         fi
     else
         # Plugin doesn't exist, clone it

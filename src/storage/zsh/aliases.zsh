@@ -52,7 +52,7 @@ alias gskipped='git ls-files -v | grep "^S"'
 
 # Pull ohMyZshConfig, deploy what changed, then reload the shell to pick up new
 # zsh config. 04-deploy-zsh.zsh fills in this clone's path.
-glc() { DEPLOY_RELOADS_SHELL=1 make -C "__OHMYZSHCONFIG_DIR__" update && print "Reloading zsh" && exec zsh; }
+glc() { make --no-print-directory -C "__OHMYZSHCONFIG_DIR__" update && print "Reloading zsh" && exec zsh; }
 
 # SSH Key Generation and Management
 alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
