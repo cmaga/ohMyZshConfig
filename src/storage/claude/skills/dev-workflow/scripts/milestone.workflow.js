@@ -207,20 +207,33 @@ Its commits stay; build on them.`,
 }
 
 phase('Build')
+// A task starts as soon as every task it comes after is done, never when a whole layer is. A stuck task
+// starts nothing new; those already running finish, so a resume finds them settled.
 const built = []
 const done = new Set()
-let pending = [...m.tasks]
-while (pending.length) {
-  const layer = pending.filter(t => (t.after || []).every(a => done.has(a)))
-  if (!layer.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${pending.map(t => t.id).join(', ')}`, built })
-  const reports = await parallel(layer.map(t => () => build(t, layer)))
-  layer.forEach((t, i) => built.push({ id: t.id, ...reports[i] }))
+const started = new Set()
+const inFlight = new Map()
+let halted = null
+while (true) {
+  if (!halted) {
+    const batch = m.tasks.filter(t => !started.has(t.id) && (t.after || []).every(a => done.has(a)))
+    const beside = [...m.tasks.filter(s => inFlight.has(s.id)), ...batch]
+    for (const t of batch) {
+      started.add(t.id)
+      inFlight.set(t.id, build(t, beside).then(report => ({ t, report }), () => ({ t, report: null })))
+    }
+  }
+  if (!inFlight.size) break
+  const { t, report } = await Promise.race(inFlight.values())
+  inFlight.delete(t.id)
+  built.push({ id: t.id, ...report })
   // A settled report is finished: the parent closed it, whatever its green said under the rule it ran on.
-  const open = layer.filter((t, i) => !settled[t.id] && stuck(reports[i]))
-  if (open.length) return stopped('build', open[0].id, reports[layer.indexOf(open[0])], { built })
-  layer.forEach(t => done.add(t.id))
-  pending = pending.filter(t => !layer.includes(t))
+  if (!settled[t.id] && stuck(report)) halted = halted || { t, report }
+  else done.add(t.id)
 }
+if (halted) return stopped('build', halted.t.id, halted.report, { built })
+const unready = m.tasks.filter(t => !started.has(t.id))
+if (unready.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${unready.map(t => t.id).join(', ')}`, built })
 
 phase('Review')
 // A resume replays only the unbroken prefix of calls in their first order, and a fan-out's calls return in a
