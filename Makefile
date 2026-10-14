@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint
+.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint update
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -26,6 +26,7 @@ help: ## Show this help message
 	@printf "\n"
 	@printf "Available commands:\n"
 	@printf "  $(GREEN)lint$(NC)          - Format files and run lint checks\n"
+	@printf "  $(GREEN)update$(NC)        - Pull this repo and deploy only what changed (alias: glc)\n"
 	@printf "  $(GREEN)deploy$(NC)        - Deploy all configs (zsh, git, claude)\n"
 	@printf "  $(GREEN)deploy-zsh$(NC)    - Deploy only zsh configs (.zshrc, aliases, scripts)\n"
 	@printf "  $(GREEN)deploy-git$(NC)    - Deploy only git configs (.gitconfig, company profiles)\n"
@@ -153,6 +154,9 @@ deploy-automations: ## Register launchd jobs (macOS), systemd user services (Lin
 
 finalize: ## Final cleanup and shell reload prompt
 	@"$(DEPLOYMENT_DIR)/07-finalize.zsh"
+
+update: ## Pull this repo and deploy only the targets whose files changed since the last update
+	@"$(DEPLOYMENT_DIR)/update.zsh"
 
 setup: ## Initial setup to prepare system for deployments and updates
 	@printf "$(BLUE)Full System Setup for Oh-My-Zsh Configuration$(NC)\n"

@@ -259,9 +259,9 @@ deploy_configs() {
     log "Deploying .zshrc from $ZSHRC_SOURCE to $ZSHRC_DEST"
     cp "$ZSHRC_SOURCE" "$ZSHRC_DEST" || error "Failed to deploy .zshrc"
 
-    # Deploy aliases.zsh
+    # Deploy aliases.zsh, pointing glc at this clone
     log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
-    cp "$ALIASES_SOURCE" "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
+    sed "s|__OHMYZSHCONFIG_DIR__|$PROJECT_ROOT|g" "$ALIASES_SOURCE" > "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
 
     # Deploy bin/ shims. ~/.local/bin leads PATH, so these are reached from
     # every shell -- which a zsh function is not. `jira` was a zsh function,

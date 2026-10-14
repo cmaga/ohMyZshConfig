@@ -11,6 +11,7 @@ This repo previously targeted Cline as the AI assistant — that migration to Cl
 ## Common commands
 
 - `make setup` — full fresh-system bootstrap (permissions → simple deps → company setup → zsh → git → claude → finalize). Idempotent.
+- `make update` (alias `glc`) — pull, then run only the deploy targets whose files changed since the commit recorded in `.git/deployed-head` (full deploy when there is no record).
 - `make deploy` — deploy all configs to an existing system (`deploy-zsh` + `deploy-git` + `deploy-claude` + `finalize`).
 - `make deploy-zsh` / `make deploy-git` / `make deploy-claude` — deploy one subsystem. Each is self-contained (install + configure).
 - `make lint` — runs `zsh -n` syntax check on all deployed `.zsh` files, fixes missing executable bits, and validates `plugins.txt` format. Pre-commit hook (`hooks/pre-commit`) invokes this; `make setup` wires `core.hooksPath` to `hooks/`.
