@@ -218,6 +218,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         fi
     fi
 
+    # Deploy the status line script; the settings merge below points statusLine at it.
+    STATUSLINE_DEST="$CLAUDE_DIR/statusline-command.sh"
+    cp "$CLAUDE_CONFIG_SOURCE/statusline-command.sh" "$STATUSLINE_DEST" \
+        || error "Failed to copy statusline-command.sh"
+    print_status "success" "Status line script deployed to $STATUSLINE_DEST"
+
     # Deploy hooks (merge into ~/.claude/settings.json)
     HOOKS_SOURCE="$CLAUDE_CONFIG_SOURCE/hooks.json"
     SETTINGS_DEST="$CLAUDE_DIR/settings.json"
@@ -298,7 +304,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             echo '{}' > "$SETTINGS_DEST"
         fi
         print_status "info" "Setting BashTool timeout and task-tool env vars..."
-        jq '.env = ((.env // {}) + {
+        jq --arg statusline "bash $STATUSLINE_DEST" '.env = ((.env // {}) + {
                 "BASH_DEFAULT_TIMEOUT_MS":"600000",
                 "BASH_MAX_TIMEOUT_MS":"3600000",
                 "CLAUDE_CODE_ENABLE_TODO_TOOLS":"1",
@@ -308,11 +314,12 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
                      .env.OTEL_EXPORTER_OTLP_PROTOCOL, .env.OTEL_EXPORTER_OTLP_ENDPOINT,
                      .env.OTEL_METRIC_EXPORT_INTERVAL)
             | .permissions.deny = ((.permissions.deny // [])
-                | reduce ("mcp__claude_ai_Notion", "mcp__claude_ai_Google_Drive") as $d (.; if any(. == $d) then . else . + [$d] end))' \
+                | reduce ("mcp__claude_ai_Notion", "mcp__claude_ai_Google_Drive") as $d (.; if any(. == $d) then . else . + [$d] end))
+            | .statusLine = {"type":"command","command":$statusline}' \
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion and Google Drive tools denied"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion and Google Drive tools denied; status line set"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi
@@ -416,6 +423,7 @@ echo "  - Rules -> $CLAUDE_DIR/rules/"
 echo "  - Skills -> $CLAUDE_SKILLS_DEST"
 echo "  - Agents -> $CLAUDE_AGENTS_DEST"
 echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
+echo "  - Status line -> $CLAUDE_DIR/statusline-command.sh (statusLine in $SETTINGS_DEST)"
 echo "  - Hooks -> $SETTINGS_DEST (merged)"
 echo "  - BashTool timeouts, task tools, sonnet 1M alias env -> $SETTINGS_DEST (env)"
 echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
