@@ -164,7 +164,7 @@ The milestone's one end-to-end run, made after every task, the review, and the f
 - Rerun only the failed tests, by node id, in one invocation, until they pass, and the unit tests of every file you touch. Never rerun the whole set. {TIMEOUT} Write the last rerun's whole output to {logs}/{args['epic']}-{m['id']}-rerun.log.
 - A failure that passes when rerun alone, and that no code explains, is load: say so and leave it.
 
-Work only in {tree}, by absolute path and `git -C {tree}`. Commit only your own files, naming them: `git -C {tree} commit -m "[{args['epic']}] {m['id']} <what>" -- <your files>`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself; spawn nothing. A decision you cannot make from the code and the spec: stop and return it as a question, saying what you did.
+Work only in {tree}, by absolute path and `git -C {tree}`. Commit only your own files, naming them: `git -C {tree} commit -m "[{args['epic']}] {m['id']} <what>" -- <your files>`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself; spawn nothing. Leave the session's task list alone: no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: stop and return it as a question, saying what you did.
 
 Return only what I act on: green (true when every failed test passes on the last rerun), each commit's sha and one line, each failure you left and why, and any question. Keep the reasoning; I can ask.""")
 

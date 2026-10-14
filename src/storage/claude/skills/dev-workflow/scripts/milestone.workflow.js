@@ -65,7 +65,7 @@ const VERIFY = {
 }
 
 const CONTEXT = `Spec: ${spec} — read the sections this work names. Milestone ${m.id}: ${m.title}. Its proof: \`${m.proof}\`.`
-const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "[${epic}] ${m.id} <what>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
+const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "[${epic}] ${m.id} <what>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. Leave the session's task list alone: it is the user's view of the run, so no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
 const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[key]}` : '')
 const decidedHere = []
 const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, promoted }, ...rest })
