@@ -46,10 +46,11 @@ else
     error "Git configuration files not found in $STORAGE_DIR/git/"
 fi
 
-# Show what was deployed
+# Show what was deployed. "name: path", never "name -> path": pasted into a
+# shell, the '>' truncates the path.
 info "Deployed Git files:"
-echo "  - .gitconfig -> $GITCONFIG_DEST"
-echo "  - gitconfig-gsi -> $GITCONFIG_GSI_DEST"
-echo "  - gitconfig-ms -> $GITCONFIG_MS_DEST"
+echo "  - .gitconfig: $GITCONFIG_DEST"
+echo "  - gitconfig-gsi: $GITCONFIG_GSI_DEST"
+echo "  - gitconfig-ms: $GITCONFIG_MS_DEST"
 
 log "Git deployment complete!"

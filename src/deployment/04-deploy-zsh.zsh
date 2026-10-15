@@ -161,50 +161,47 @@ setup_omz_directories() {
     print_status "success" "Oh-My-Zsh directories ready"
 }
 
-# Install or update a single custom plugin
+# Git for Windows checks a symlink out as a small file holding the target path
+# unless symlinks are enabled, and Oh-My-Zsh would run that path as a command
+# (zsh-you-should-use ships its .plugin.zsh as a symlink). Copy each target over
+# its stand-in. Real symlinks (macOS, Linux, Windows Developer Mode) are left alone.
+replace_symlink_standins() {
+    local plugin_path=$1 link file target
+    for link in ${(f)"$(git -C "$plugin_path" ls-files -s | awk '$1 == "120000" {print $4}')"}; do
+        file="$plugin_path/$link"
+        [[ -f "$file" && ! -L "$file" ]] || continue
+        target="${file:h}/$(<"$file")"
+        if [[ -f "$target" ]]; then
+            cp "$target" "$file"
+        fi
+    done
+}
+
+# Install or update a single custom plugin. Plugins are third-party and never
+# edited here, so an update resets onto the remote's default branch: a pull
+# refuses over the stand-in copies above, or over any stray local change.
+# autocrlf=false because Git for Windows defaults it to true, and a plugin
+# checked out with CRLF line endings breaks under zsh.
 manage_plugin() {
     local plugin_spec=$1
     local plugin_name=$(basename "$plugin_spec")
     local plugin_path="$PLUGINS_DIR/$plugin_name"
     local plugin_url="https://github.com/$plugin_spec.git"
-    
+
     if [[ -d "$plugin_path" ]]; then
-        # Plugin exists, update it
         info "Updating $plugin_name..."
-        
-        # Pull the branch the clone tracks; plugins differ on main vs master.
-        if git -C "$plugin_path" pull --ff-only 2>&1; then
-            log "Updated $plugin_name successfully"
-        else
-            warn "Could not update $plugin_name"
-        fi
+        git -C "$plugin_path" config core.autocrlf false \
+            && git -C "$plugin_path" fetch --quiet origin HEAD \
+            && git -C "$plugin_path" reset --quiet --hard FETCH_HEAD \
+            || { warn "Could not update $plugin_name"; return 1; }
     else
-        # Plugin doesn't exist, clone it
         info "Installing $plugin_name..."
-        
-        if git clone "$plugin_url" "$plugin_path"; then
-            # Fix broken symlinks on Windows
-            if [[ "$(detect_os)" == "windows" ]]; then
-                local expected_plugin_file="$plugin_path/$plugin_name.plugin.zsh"
-                if [[ ! -f "$expected_plugin_file" ]]; then
-                    for candidate in "$plugin_path"/*.plugin.zsh; do
-                        if [[ -f "$candidate" && $(wc -c < "$candidate") -lt 200 ]]; then
-                            local target=$(cat "$candidate" | tr -d '[:space:]')
-                            if [[ -f "$plugin_path/$target" ]]; then
-                                cp "$plugin_path/$target" "$expected_plugin_file"
-                                warn "Fixed broken symlink for $plugin_name"
-                                break
-                            fi
-                        fi
-                    done
-                fi
-            fi
-            log "Successfully installed $plugin_name"
-        else
-            print_status "error" "Failed to install $plugin_name"
-            return 1
-        fi
+        git clone --quiet --config core.autocrlf=false "$plugin_url" "$plugin_path" \
+            || { print_status "error" "Failed to install $plugin_name"; return 1; }
     fi
+
+    replace_symlink_standins "$plugin_path" || return 1
+    log "$plugin_name is up to date"
 }
 
 # install all plugins from plugins.txt
@@ -321,11 +318,12 @@ main() {
     print_status "success" "Zsh deployment complete!"
     echo
     
-    # Show what was deployed
+    # Show what was deployed. "name: path", never "name -> path": pasted into a
+    # shell, the '>' truncates the path.
     info "Deployed files:"
-    echo "  - .zshrc -> $ZSHRC_DEST"
-    echo "  - aliases.zsh -> $ALIASES_DEST"
-    echo "  - bin shims -> $BIN_DEST"
+    echo "  - .zshrc: $ZSHRC_DEST"
+    echo "  - aliases.zsh: $ALIASES_DEST"
+    echo "  - bin shims: $BIN_DEST"
     if [ -d "$SCRIPTS_SOURCE" ]; then
         info "Deployed scripts:"
         for script in "$SCRIPTS_SOURCE"/*; do

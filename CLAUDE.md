@@ -44,7 +44,7 @@ Shared library every deploy script sources. Use these instead of reinventing:
 
 ### Zsh deployment (`04-deploy-zsh.zsh`)
 
-Installs zsh → `chsh` to zsh → installs Oh-My-Zsh → installs/updates every plugin listed in `plugins.txt` (format: `username/repo`, one per line, `#` for comments) → copies `src/storage/zsh/.zshrc` → `~/.zshrc`, `aliases.zsh` → `$OMZ_DIR/custom/aliases.zsh`, `jira-wrapper.zsh` → `$OMZ_DIR/custom/jira-wrapper.zsh`, `src/storage/scripts/*` → `$OMZ_DIR/custom/scripts/`.
+Installs zsh → `chsh` to zsh → installs Oh-My-Zsh → installs/updates every plugin listed in `plugins.txt` (format: `username/repo`, one per line, `#` for comments; an update resets onto the remote's default branch, both clone and update use `core.autocrlf=false`, and symlinks Git for Windows checked out as text stand-ins are replaced with copies of their targets) → copies `src/storage/zsh/.zshrc` → `~/.zshrc`, `aliases.zsh` → `$OMZ_DIR/custom/aliases.zsh`, `jira-wrapper.zsh` → `$OMZ_DIR/custom/jira-wrapper.zsh`, `src/storage/scripts/*` → `$OMZ_DIR/custom/scripts/`.
 
 Adding plugins: append to `plugins.txt`, then `plugins=(…)` array in `src/storage/zsh/.zshrc`, then `make deploy-zsh`.
 
@@ -76,6 +76,7 @@ Machine-specific overrides (intentional): `~/.zshrc.local` and `~/.zshrc.$(hostn
 - **Always pass `--no-pager` as a top-level git option** (before the subcommand): `git --no-pager log …`. `git log --no-pager` errors. CLI commands that would invoke a pager will hang the session.
 - Pass single-line strings to CLI commands — multi-line quoted strings get mangled through terminal/shell parsing.
 - Deploy scripts must remain idempotent. When adding a step, check current state first and no-op if already applied.
+- **Deploy output must be inert if pasted into a shell.** Pasted output once ran line by line and truncated every deployed file through its `name -> path` summary. Print `name: path`, keep `>`, `|`, `;`, `&` and backticks out of printed text, and quiet git commands whose output carries them (diffstats, `-> FETCH_HEAD`).
 - Scripts that are meant to be executed need their exec bit set; `make lint` and `make setup` fix this, but new scripts should be created with `chmod +x`.
 - **The `find | cp` fallback in `06-deploy-claude.zsh` is the supported copy path.** Never propose installing `rsync`, and never treat its absence as a defect — the pipeline deploys with only what a stock Git Bash, macOS, or Linux shell provides, and depending on an extra binary is the thing being avoided. Fix copy defects inside the fallback.
 

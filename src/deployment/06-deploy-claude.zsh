@@ -322,7 +322,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             "$SETTINGS_DEST" > "${SETTINGS_DEST}.tmp" \
             && mv "${SETTINGS_DEST}.tmp" "$SETTINGS_DEST" \
             || error "Failed to merge env vars into settings.json"
-        print_status "success" "BashTool timeouts set (default=10m, max=60m); task tools enabled; sonnet alias bound to 1M; Notion and Google Drive tools denied; status line set"
+        print_status "success" "BashTool timeouts set (default=10m, max=60m), task tools enabled, sonnet alias bound to 1M, Notion and Google Drive tools denied, status line set"
     else
         print_status "warning" "jq not found — skipping env merge"
     fi
@@ -339,7 +339,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
         if claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1; then
             print_status "success" "jcodemunch MCP registered at user scope"
-            command_exists uvx || print_status "warning" "uvx not on PATH; install uv or the jcodemunch server will fail to start at launch"
+            command_exists uvx || print_status "warning" "uvx not on PATH, so the jcodemunch server will fail to start at launch until uv is installed"
         else
             print_status "warning" "Failed to register jcodemunch MCP. Add manually: claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp"
         fi
@@ -361,7 +361,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             [ -e "$CLAUDE_DIR/$entry" ] || continue
             link="$account_dir/$entry"
             if [ -e "$link" ] && [ ! -L "$link" ]; then
-                print_status "warning" "$link is no longer a link to $CLAUDE_DIR/$entry; left as is"
+                print_status "warning" "$link is no longer a link to $CLAUDE_DIR/$entry, left as is"
                 continue
             fi
             MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_DIR/$entry" "$link" \
@@ -372,7 +372,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             CLAUDE_CONFIG_DIR="$account_dir" claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1 \
                 || print_status "warning" "Failed to register jcodemunch MCP for $company"
         fi
-        print_status "success" "Claude account '$company' -> $account_dir (config linked from $CLAUDE_DIR)"
+        print_status "success" "Claude account '$company': $account_dir (config linked from $CLAUDE_DIR)"
     done
 
     # claude-proxy backs the DeepSeek model names. deploy-automations registers
@@ -419,17 +419,18 @@ else
     error "Claude Code configuration directory not found at $CLAUDE_CONFIG_SOURCE"
 fi
 
-# Show what was deployed
+# Show what was deployed. "name: path", never "name -> path": pasted into a
+# shell, the '>' truncates the path.
 print_status "info" "Deployed Claude Code files:"
-echo "  - CLAUDE.md -> $CLAUDE_DIR/CLAUDE.md"
-echo "  - Rules -> $CLAUDE_DIR/rules/"
-echo "  - Skills -> $CLAUDE_SKILLS_DEST"
-echo "  - Agents -> $CLAUDE_AGENTS_DEST"
-echo "  - Hook scripts -> $CLAUDE_DIR/hooks/"
-echo "  - Status line -> $CLAUDE_DIR/statusline-command.sh (statusLine in $SETTINGS_DEST)"
-echo "  - Hooks -> $SETTINGS_DEST (merged)"
-echo "  - BashTool timeouts, task tools, sonnet 1M alias env -> $SETTINGS_DEST (env)"
-echo "  - jcodemunch MCP -> registered at user scope (~/.claude.json)"
-echo "  - Company accounts -> ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
+echo "  - CLAUDE.md: $CLAUDE_DIR/CLAUDE.md"
+echo "  - Rules: $CLAUDE_DIR/rules/"
+echo "  - Skills: $CLAUDE_SKILLS_DEST"
+echo "  - Agents: $CLAUDE_AGENTS_DEST"
+echo "  - Hook scripts: $CLAUDE_DIR/hooks/"
+echo "  - Status line: $CLAUDE_DIR/statusline-command.sh (statusLine in $SETTINGS_DEST)"
+echo "  - Hooks: $SETTINGS_DEST (merged)"
+echo "  - BashTool timeouts, task tools, sonnet 1M alias env: $SETTINGS_DEST (env)"
+echo "  - jcodemunch MCP: registered at user scope (~/.claude.json)"
+echo "  - Company accounts: ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
 
 print_status "success" "Claude Code deployment complete!"
