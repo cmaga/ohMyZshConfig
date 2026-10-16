@@ -161,39 +161,48 @@ index_suffix() {
   done
 }
 
-# rewrite FROM TO [FILE...]: literal replacement of link prefixes outside
-# fenced blocks and inline code, in every note (or the files given). Preview
-# prints file:line with -/+ lines and counts sites; apply edits in place.
+# rewrite FROM TO [FROM TO...] [-- FILE...]: literal replacement of link
+# prefixes outside fenced blocks and inline code, in every note (or the files
+# given), one pair after another. Preview prints file:line with -/+ lines per
+# pair, each against the unedited note, and counts sites; apply edits in place.
+# One awk covers every pair and file: an awk per pair per file made a rename
+# start ~1300 processes, about 20s under Git Bash.
 SITES=0
 rewrite() {
-  local from="$1" to="$2"; shift 2
-  local files="$*" f rel out
+  local files="" n src out
+  : > "$TMP/rw.pairs"; : > "$TMP/rw.changed"; : > "$TMP/rw.sites"
+  while [ $# -gt 0 ] && [ "$1" != -- ]; do printf '%s\037%s\n' "$1" "$2" >> "$TMP/rw.pairs"; shift 2; done
+  [ "${1-}" = -- ] && { shift; files="$*"; }
   [ -n "$files" ] || files=$(note_files)
-  for f in $files; do
-    rel="${f#"$VAULT"/}"
-    [ -s "$TMP/relmap.tsv" ] && rel=$(awk -F'\t' -v f="$f" -v d="$rel" '$1 == f { d = $2 } END { print d }' "$TMP/relmap.tsv")
-    awk -v from="$from" -v to="$to" -v rel="$rel" -v mode="$APPLY" '
-      function rep(s,  o, i) { o = ""; while ((i = index(s, from)) > 0) { o = o substr(s, 1, i - 1) to; s = substr(s, i + length(from)) } return o s }
-      function rwline(s,  o, seg, i, code) { o = ""; code = 0
-        while ((i = index(s, "`")) > 0) { seg = substr(s, 1, i - 1); o = o (code ? seg : rep(seg)) "`"; s = substr(s, i + 1); code = !code }
-        return o (code ? s : rep(s)) }
-      /^[ \t]*(```|~~~)/ { fence = !fence; if (mode) print; next }
-      fence { if (mode) print; next }
-      { n = rwline($0)
-        if (n != $0) { sites++; if (!mode) { print rel ":" NR > "/dev/stderr"; print " - " $0 > "/dev/stderr"; print " + " n > "/dev/stderr" } }
-        if (mode) print n }
-      END { if (sites) print sites > "/dev/stderr" }' "$f" > "$TMP/rw.tmp" 2> "$TMP/rw.err"
-    out=$(tail -n 1 "$TMP/rw.err" 2>/dev/null)
-    case "$out" in ''|*[!0-9]*) out=0 ;; *) SITES=$((SITES + out)); sed '$d' "$TMP/rw.err" ;; esac
-    [ "$APPLY" = 1 ] && [ "$out" -gt 0 ] && cat "$TMP/rw.tmp" > "$f"
-  done
+  [ -n "$files" ] || return 0
+  awk -v vault="$VAULT" -v tmp="$TMP" -v mode="$APPLY" '
+    function rep(s, k,  o, i) { o = ""; while ((i = index(s, F[k])) > 0) { o = o substr(s, 1, i - 1) T[k]; s = substr(s, i + length(F[k])) } return o s }
+    function rwline(s, k,  o, seg, i, code) { o = ""; code = 0
+      while ((i = index(s, "`")) > 0) { seg = substr(s, 1, i - 1); o = o (code ? seg : rep(seg, k)) "`"; s = substr(s, i + 1); code = !code }
+      return o (code ? s : rep(s, k)) }
+    function flush() { if (changed) { out = tmp "/rw." (++nout); printf "%s", body > out; close(out); print src "\t" out > (tmp "/rw.changed") } }
+    BEGIN { while ((getline l < (tmp "/rw.pairs")) > 0) { split(l, p, "\037"); F[++np] = p[1]; T[np] = p[2] }
+            while ((getline l < (tmp "/relmap.tsv")) > 0) { split(l, p, "\t"); R[p[1]] = p[2] } }
+    FNR == 1 { flush(); src = FILENAME; fence = 0; body = ""; changed = 0
+               rel = (src in R) ? R[src] : (index(src, vault "/") == 1 ? substr(src, length(vault) + 2) : src) }
+    /^[ \t]*(```|~~~)/ { fence = !fence; body = body $0 "\n"; next }
+    fence { body = body $0 "\n"; next }
+    { cur = $0
+      for (k = 1; k <= np; k++) {
+        if (mode) { n = rwline(cur, k); if (n != cur) { sites++; changed = 1; cur = n } }
+        else { n = rwline($0, k); if (n != $0) { sites++; P[k] = P[k] rel ":" FNR "\n - " $0 "\n + " n "\n" } }
+      }
+      body = body cur "\n" }
+    END { flush(); for (k = 1; k <= np; k++) printf "%s", P[k]; print sites + 0 > (tmp "/rw.sites") }' $files
+  read -r n < "$TMP/rw.sites"; SITES=$((SITES + n))
+  while IFS=$'\t' read -r src out; do cat "$out" > "$src"; done < "$TMP/rw.changed"
   return 0
 }
 rewrite_links() {  # every link spelling of OLD (bucket-qualified or bare) -> NEW
   local old="$1" oldb="$2" new="$3" newb="$4"
-  rewrite "[[$old]]" "[[$new]]"; rewrite "[[$old|" "[[$new|"; rewrite "[[$old#" "[[$new#"
-  rewrite "[[$oldb/$old]]" "[[$newb/$new]]"; rewrite "[[$oldb/$old|" "[[$newb/$new|"; rewrite "[[$oldb/$old#" "[[$newb/$new#"
-  rewrite "]($oldb/$old.md" "]($newb/$new.md"; rewrite "](../$oldb/$old.md" "](../$newb/$new.md"
+  rewrite "[[$old]]" "[[$new]]" "[[$old|" "[[$new|" "[[$old#" "[[$new#" \
+    "[[$oldb/$old]]" "[[$newb/$new]]" "[[$oldb/$old|" "[[$newb/$new|" "[[$oldb/$old#" "[[$newb/$new#" \
+    "]($oldb/$old.md" "]($newb/$new.md" "](../$oldb/$old.md" "](../$newb/$new.md"
 }
 out_of_vault() {
   local old="$1" hits
@@ -511,15 +520,17 @@ EOF
   while IFS=$'\t' read -r name nbkt ranges; do
     afiles="$afiles $TMP/new.$name.md"; printf '%s\t%s\n' "$TMP/new.$name.md" "$nbkt/$name.md" >> "$TMP/relmap.tsv"
   done < "$TMP/plan.tsv"
+  local -a anchors=()
   while IFS=$'\t' read -r name nbkt ranges; do
     [ -n "$ranges" ] || continue
     for r in $(printf '%s' "$ranges" | tr ',' ' '); do
       awk -F'\t' -v a="${r%-*}" -v b="${r#*-}" '$1 >= a && $1 <= b { print $3 }' "$TMP/heads.tsv" > "$TMP/moved.heads"
       while IFS= read -r h; do
-        rewrite "[[$base#$h" "[[$name#$h" $afiles; rewrite "[[$bkt/$base#$h" "[[$nbkt/$name#$h" $afiles
+        anchors+=("[[$base#$h" "[[$name#$h" "[[$bkt/$base#$h" "[[$nbkt/$name#$h")
       done < "$TMP/moved.heads"
     done
   done < "$TMP/plan.tsv"
+  if [ ${#anchors[@]} -gt 0 ]; then rewrite "${anchors[@]}" -- $afiles; fi
   echo "anchor sites: $SITES"
   [ "$rc" = 3 ] && { [ "$APPLY" = 1 ] && echo "vault-refactor: --apply refused, a result is still over the size limit" >&2; exit 3; }
   refuse_if_bang
