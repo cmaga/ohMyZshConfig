@@ -91,10 +91,23 @@ is_placeholder() {
 }
 
 # A hit on a line carrying "vault:allow" is discarded for every class.
-# Spawns only per hit, and hits are rare; the scan itself is one grep per
-# rule across every file, so cost is per rule, not per file or per line.
+# Spawns only per hit, and hits are rare; the scan itself is one grep across
+# every file, then one grep per rule over the files that grep names.
 is_allowed() {
   sed -n "${2}p" "$1" 2>/dev/null | grep -qF -- 'vault:allow'
+}
+
+# HTML_COMMENT: any <!-- left after removing permitted recheck comments
+# (dated, single-line: <!-- recheck YYYY-MM-DD: reason -->). One awk pass;
+# the date is spelled out because BSD awk lacks {n}.
+html_comments() {
+  awk '
+    index($0, "<!--") && index($0, "vault:allow") == 0 {
+      s = $0
+      gsub(/<!-- recheck [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]:[^>]*-->/, "", s)
+      if (index(s, "<!--")) printf "HTML_COMMENT\t%s\t%d\thtml-comment\n", FILENAME, FNR
+    }
+  ' "$@" 2>/dev/null
 }
 
 # Emit hits for FILE...: CODE<TAB>file<TAB>line<TAB>rule, one line per
@@ -109,12 +122,28 @@ scan_files() {
     fi
   done
 
+  # One grep for every grep-based check below, case-insensitive and byte-wise
+  # so it matches a superset of each; only the files it names go through the
+  # per-rule greps. A clean scan then starts one grep and the HTML awk instead
+  # of ~20 grep pipelines, at ~20ms a process under Git Bash.
+  local -a pats=() hitfiles=()
+  local rule_name rule_pattern list
+  while IFS="$TAB" read -r rule_name rule_pattern; do
+    [ -n "$rule_name" ] && pats+=(-e "$rule_pattern")
+  done <<< "$RULES_LIST"
+  pats+=(-e "$GENERIC_RULE_PATTERN" -e "$INVISIBLE_PATTERN" -e "$REMOTE_IMAGE_PATTERN" -e "$FENCE_PATTERN")
+  list="$(LC_ALL=C grep -liE "${pats[@]}" -- "$@" 2>/dev/null)"
+  while IFS= read -r f; do
+    [ -n "$f" ] && hitfiles+=("$f")
+  done <<< "$list"
+  if [ "${#hitfiles[@]}" -eq 0 ]; then html_comments "$@"; return 0; fi
+
   # --- SECRET_DETECTED: named rules (case-sensitive) ----------------------
   # `--` guards private-key-block, whose pattern starts with "-----" and
   # would otherwise be parsed as grep options on BSD grep.
   printf '%s\n' "$RULES_LIST" | while IFS="$TAB" read -r rule_name rule_pattern; do
     [ -z "$rule_name" ] && continue
-    grep -HnoE -- "$rule_pattern" "$@" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_text; do
+    grep -HnoE -- "$rule_pattern" "${hitfiles[@]}" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_text; do
       [ -z "$hit_line" ] && continue
       is_allowed "$hit_file" "$hit_line" && continue
       is_placeholder "$hit_text" && continue
@@ -123,40 +152,31 @@ scan_files() {
   done
 
   # --- SECRET_DETECTED: generic-assignment (case-insensitive) -------------
-  grep -HinoE -- "$GENERIC_RULE_PATTERN" "$@" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_text; do
+  grep -HinoE -- "$GENERIC_RULE_PATTERN" "${hitfiles[@]}" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_text; do
     [ -z "$hit_line" ] && continue
     is_allowed "$hit_file" "$hit_line" && continue
     is_placeholder "$hit_text" && continue
     printf 'SECRET_DETECTED\t%s\t%s\t%s\n' "$hit_file" "$hit_line" "$GENERIC_RULE_NAME"
   done
 
-  # --- HTML_COMMENT: any <!-- left after removing permitted recheck --------
-  #     comments (dated, single-line: <!-- recheck YYYY-MM-DD: reason -->).
-  #     One awk pass; the date is spelled out because BSD awk lacks {n}.
-  awk '
-    index($0, "<!--") && index($0, "vault:allow") == 0 {
-      s = $0
-      gsub(/<!-- recheck [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]:[^>]*-->/, "", s)
-      if (index(s, "<!--")) printf "HTML_COMMENT\t%s\t%d\thtml-comment\n", FILENAME, FNR
-    }
-  ' "$@" 2>/dev/null
+  html_comments "$@"
 
   # --- INVISIBLE_UNICODE: byte-level, locale-independent -------------------
-  LC_ALL=C grep -HnE -- "$INVISIBLE_PATTERN" "$@" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
+  LC_ALL=C grep -HnE -- "$INVISIBLE_PATTERN" "${hitfiles[@]}" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
     [ -z "$hit_line" ] && continue
     is_allowed "$hit_file" "$hit_line" && continue
     printf 'INVISIBLE_UNICODE\t%s\t%s\tinvisible-unicode\n' "$hit_file" "$hit_line"
   done
 
   # --- REMOTE_IMAGE ---------------------------------------------------------
-  grep -HnE -- "$REMOTE_IMAGE_PATTERN" "$@" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
+  grep -HnE -- "$REMOTE_IMAGE_PATTERN" "${hitfiles[@]}" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
     [ -z "$hit_line" ] && continue
     is_allowed "$hit_file" "$hit_line" && continue
     printf 'REMOTE_IMAGE\t%s\t%s\tremote-image\n' "$hit_file" "$hit_line"
   done
 
   # --- UNTRUSTED_FENCE_NO_SOURCE --------------------------------------------
-  grep -HnE -- "$FENCE_PATTERN" "$@" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
+  grep -HnE -- "$FENCE_PATTERN" "${hitfiles[@]}" 2>/dev/null | while IFS=: read -r hit_file hit_line hit_rest; do
     [ -z "$hit_line" ] && continue
     case "$hit_rest" in *source=*|*vault:allow*) continue ;; esac
     printf 'UNTRUSTED_FENCE_NO_SOURCE\t%s\t%s\tuntrusted-fence-no-source\n' "$hit_file" "$hit_line"

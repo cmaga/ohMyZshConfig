@@ -287,29 +287,67 @@ AWKEOF
 # boundary, (3) Makefile-target form `^name:`. Only after all three miss is
 # the entry flagged as a bad symbol. scopef is always a real file holding a
 # JSON array (empty array = unrestricted).
+#
+# A grep per symbol cost ~20ms each under Git Bash (5s on an 88-note vault),
+# so the probes against a file run in one awk that reads each file once:
+# (1) is index(), (2) is an occurrence whose neighbours are not [A-Za-z0-9_]
+# (grep -w in the C locale), (3) is a line starting "name:". A directory, or
+# an identifier holding "$" (an anchor to grep -E), still goes to grep.
 # ---------------------------------------------------------------------------
 pass2() {
   local recs="$1" repo="$2" scopef="$3" out="$4"
+  local plan="$TMP/p2.plan" US=$'\037' p ln sp syms target kind sym s st
+  local re1='^[A-Za-z_$][A-Za-z0-9_$-]*$' re2='^[A-Za-z0-9_.-]+\.[a-z]{1,4}$'
+  # Rows in emit order. R: settled (p, ln, sym, spath, st). P: a symbol to
+  # probe (p, ln, sym, spath, file|dir, target, identifier).
   "$JQ" -r --slurpfile scope "$scopef" '
     ($scope[0] // []) as $sc |
     .path as $p | select(($sc|length) == 0 or ($sc|index($p))) |
     .surface.entries[]? | [$p, .line, .spath, (.syms | join(";;"))] | join("\u001f")
   ' "$recs" 2>/dev/null |
   while IFS=$'\x1f' read -r p ln sp syms; do
-    emit_surf() { printf '%s\037%s\037%s\037%s\037%s\n' "$p" "$ln" "$1" "$sp" "$2"; }
     if [ -z "$sp" ]; then
-      [ -n "$syms" ] && emit_surf "${syms%%;;*}" nopath
+      [ -n "$syms" ] && printf 'R\037%s\037%s\037%s\037%s\037nopath\n' "$p" "$ln" "${syms%%;;*}" "$sp"
       continue
     fi
     target="$repo/${sp%%:*}"
-    if [ ! -e "$target" ]; then emit_surf "${syms%%;;*}" path; continue; fi
+    if [ ! -e "$target" ]; then printf 'R\037%s\037%s\037%s\037%s\037path\n' "$p" "$ln" "${syms%%;;*}" "$sp"; continue; fi
+    kind=dir; [ -f "$target" ] && kind=file
     while IFS= read -r sym; do
       [ -n "$sym" ] || continue
       case "$sym" in */*) continue ;; esac
       s=${sym%%(*}; s=${s##*.}; s=${s##*:}; s=${s%% *}
-      re1='^[A-Za-z_$][A-Za-z0-9_$-]*$'; re2='^[A-Za-z0-9_.-]+\.[a-z]{1,4}$'
       [[ $s =~ $re1 ]] || continue
       [[ $sym =~ $re2 ]] && continue
+      printf 'P\037%s\037%s\037%s\037%s\037%s\037%s\037%s\n' "$p" "$ln" "$sym" "$sp" "$kind" "$target" "$s"
+    done <<< "${syms//;;/$'\n'}"
+  done > "$plan"
+
+  awk -F"$US" -v US="$US" '
+    function load(f,  l, c) {
+      if (f in C) return C[f]
+      c = ""; while ((getline l < f) > 0) c = c l "\n"; close(f)
+      return C[f] = c
+    }
+    function word(c, w,  start, i, at) {
+      for (start = 1; (i = index(substr(c, start), w)) > 0; start = at + 1) {
+        at = start + i - 1
+        if ((at == 1 || substr(c, at - 1, 1) !~ /[A-Za-z0-9_]/) && substr(c, at + length(w), 1) !~ /[A-Za-z0-9_]/) return 1
+      }
+      return 0
+    }
+    $1 == "P" && $6 == "file" {
+      c = load($7)
+      if (index(c, $4) || word(c, $8)) { print "R" US $2 US $3 US $4 US $5 US "ok"; next }
+      if (index($8, "$") == 0) {
+        st = (substr(c, 1, length($8) + 1) == $8 ":" || index(c, "\n" $8 ":")) ? "ok" : "symbol"
+        print "R" US $2 US $3 US $4 US $5 US st; next
+      }
+    }
+    { print }
+  ' "$plan" |
+  while IFS=$'\x1f' read -r kind p ln sym sp st target s; do
+    if [ "$kind" = P ]; then
       st=symbol
       if grep -rqF -- "$sym" "$target" 2>/dev/null; then
         st=ok
@@ -318,8 +356,8 @@ pass2() {
       elif grep -rqE -- "^$s:" "$target" 2>/dev/null; then
         st=ok
       fi
-      emit_surf "$sym" "$st"
-    done <<< "${syms//;;/$'\n'}"
+    fi
+    printf '%s\037%s\037%s\037%s\037%s\n' "$p" "$ln" "$sym" "$sp" "$st"
   done | "$JQ" -R -c 'split("\u001f") | {path: .[0], line: (.[1] | tonumber), sym: .[2], spath: .[3], st: .[4]}' > "$out"
 }
 
@@ -372,9 +410,11 @@ pass2b_region() {
 # Pass 2c (shell+git): provenance/governance probes. Runs unconditionally
 # (both trees, like pass2) -- SOURCE_DOC_MISSING is a plain file-existence
 # check with no git dependency; SOURCE_COMMIT_UNRESOLVED and the dead-glob
-# checks need a repo and are skipped (not failed) outside one. Bash 3.2 ships
-# on macOS, so the governs/applies_to dead-glob cache is a temp file, not an
-# associative array (kept portable to Git Bash as well).
+# checks need a repo and are skipped (not failed) outside one. Every probe
+# that needs a process is batched (one cat-file for the commits, one ls-files
+# for the globs) and the loop itself only uses builtins, since a process
+# start costs ~20ms under Git Bash. Bash 3.2 ships on macOS, so lookups are
+# newline-delimited strings, not associative arrays.
 # ---------------------------------------------------------------------------
 pass2c_probes() {
   local recs="$1" repo="$2" scopef="$3" out="$4"
@@ -383,9 +423,9 @@ pass2c_probes() {
   # awk's -F'\x1f' leaves FS as the literal 3 chars "x1f" on the BSD/macOS
   # "one true awk" (no \x hex-escape support in -F) -- pass the real byte
   # via a variable instead, same as the $'\x1f' bash already uses below.
-  local US; US=$(printf '\037')
+  local US=$'\037'
 
-  local extracted; extracted=$(mktemp "$TMP/p2c.XXXXXX")
+  local extracted="$TMP/p2c.extracted"
   "$JQ" -r --slurpfile scope "$scopef" '
     ($scope[0] // []) as $sc |
     def flow: if type=="string" and test("^\\[.*\\]$") then ([.[1:-1]|scan("\\s*(\"[^\"]*\"|\\x27[^\\x27]*\\x27|[^,]+)")|.[0]]|map(gsub("^ +| +$";"")|gsub("^[\"\\x27]|[\"\\x27]$";""))|map(select(.!=""))) else [] end;
@@ -397,31 +437,51 @@ pass2c_probes() {
     ) | map(tostring) | join("\u001f")
   ' "$recs" 2>/dev/null > "$extracted"
 
-  local missing_shas; missing_shas=$(mktemp "$TMP/p2c.XXXXXX")
-  : > "$missing_shas"
+  # Unresolvable commits and dead globs, each found with one git call and
+  # kept as newline-delimited strings for builtin `case` lookups.
+  local missing=$'\n' deadglobs=$'\n' list
   if [ "$ingit" = 1 ]; then
-    local shas; shas=$(mktemp "$TMP/p2c.XXXXXX")
-    awk -F"$US" '$3=="src" && $4 ~ /^commit:/ { s=$4; sub(/^commit:/, "", s); print s }' "$extracted" | sort -u > "$shas"
-    if [ -s "$shas" ]; then
-      awk '{print $0"^{commit}"}' "$shas" |
-      git -C "$repo" cat-file --batch-check 2>/dev/null |
-      awk '/ missing$/ { sub(/\^\{commit\} missing$/, "", $0); print $0 }' > "$missing_shas"
+    list=$(awk -F"$US" '$3=="src" && $4 ~ /^commit:/ { s=$4; sub(/^commit:/, "", s); print s "^{commit}" }' "$extracted" | sort -u)
+    if [ -n "$list" ]; then
+      missing+=$(printf '%s\n' "$list" | git -C "$repo" cat-file --batch-check 2>/dev/null |
+        awk '/ missing$/ { sub(/\^\{commit\} missing$/, "", $0); print $0 }')$'\n'
     fi
-    rm -f "$shas"
+    # --error-unmatch names every pathspec that matches nothing, one stderr
+    # line each. A malformed pathspec is fatal (128) for the whole call, so
+    # then each glob is tried alone, a failure counting as dead.
+    local -a specs=()
+    local g errs rc
+    list=$(awk -F"$US" '$3=="governs" || $3=="applies_to" { print $4 }' "$extracted" | sort -u)
+    while IFS= read -r g; do
+      [ -n "$g" ] && specs+=(":(glob)$g")
+    done <<< "$list"
+    if [ "${#specs[@]}" -gt 0 ]; then
+      errs=$(git -C "$repo" ls-files --error-unmatch -- "${specs[@]}" 2>&1 >/dev/null); rc=$?
+      if [ "$rc" -eq 128 ]; then
+        while IFS= read -r g; do
+          [ -n "$g" ] || continue
+          [ -n "$(git -C "$repo" ls-files -- ":(glob)$g" 2>/dev/null | head -n1)" ] || deadglobs+="$g"$'\n'
+        done <<< "$list"
+      else
+        while IFS= read -r g; do
+          case "$g" in "error: pathspec ':(glob)"*"' did not match any file(s) known to git")
+            g=${g#"error: pathspec ':(glob)"}; deadglobs+="${g%"' did not match any file(s) known to git"}"$'\n' ;;
+          esac
+        done <<< "$errs"
+      fi
+    fi
   fi
 
-  local gacache; gacache=$(mktemp "$TMP/p2c.XXXXXX")
-  : > "$gacache"
-
-  : > "$out"
+  # Rows are CODE, path, line, msg; the awk JSON-escapes path and msg. Only
+  # the values interpolated into a msg can hold a backslash or a quote.
   while IFS=$'\x1f' read -r p ln kind item sym; do
     [ -n "$p" ] || continue
     case "$kind" in
       comp)
         if [ ! -e "$repo/$item" ]; then
-          printf '{"code":"ADR_COMPLIANCE_PATH_MISSING","path":"%s","line":%s,"msg":"%s does not exist"}\n' "$(json_esc "$p")" "$ln" "$(json_esc "$item")"
+          printf 'ADR_COMPLIANCE_PATH_MISSING\037%s\037%s\037%s does not exist\n' "$p" "$ln" "$item"
         elif [ -n "$sym" ] && [ "$ingit" = 1 ] && ! git -C "$repo" grep -q -w -F -e "$sym" HEAD -- "$item" 2>/dev/null; then
-          printf '{"code":"ADR_COMPLIANCE_SYMBOL_MISSING","path":"%s","line":%s,"msg":"%s not in %s at HEAD"}\n' "$(json_esc "$p")" "$ln" "$(json_esc "$sym")" "$(json_esc "$item")"
+          printf 'ADR_COMPLIANCE_SYMBOL_MISSING\037%s\037%s\037%s not in %s at HEAD\n' "$p" "$ln" "$sym" "$item"
         fi
         ;;
       src)
@@ -429,40 +489,31 @@ pass2c_probes() {
           commit:*)
             [ "$ingit" = 1 ] || continue
             sha="${item#commit:}"
-            if awk -v s="$sha" '$0==s{f=1} END{exit !f}' "$missing_shas" 2>/dev/null; then
-              printf '{"code":"SOURCE_COMMIT_UNRESOLVED","path":"%s","line":%s,"msg":"commit %s not in this repo"}\n' \
-                "$(json_esc "$p")" "$ln" "$(json_esc "$sha")"
-            fi
+            case "$missing" in *$'\n'"$sha"$'\n'*)
+              printf 'SOURCE_COMMIT_UNRESOLVED\037%s\037%s\037commit %s not in this repo\n' "$p" "$ln" "$sha" ;;
+            esac
             ;;
           doc:*)
             docpath="${item#doc:}"
             if [ ! -e "$repo/$docpath" ]; then
-              printf '{"code":"SOURCE_DOC_MISSING","path":"%s","line":%s,"msg":"doc: %s does not exist"}\n' \
-                "$(json_esc "$p")" "$ln" "$(json_esc "$docpath")"
+              printf 'SOURCE_DOC_MISSING\037%s\037%s\037doc: %s does not exist\n' "$p" "$ln" "$docpath"
             fi
             ;;
         esac
         ;;
       governs|applies_to)
         [ "$ingit" = 1 ] || continue
-        local dead found
-        found=$(awk -F"$US" -v k="$kind" -v it="$item" '$1==k && $2==it {print $3; exit}' "$gacache" 2>/dev/null)
-        if [ -n "$found" ]; then
-          dead="$found"
-        else
-          if [ -z "$(git -C "$repo" ls-files -- ":(glob)$item" 2>/dev/null | head -n1)" ]; then dead=1; else dead=0; fi
-          printf '%s\x1f%s\x1f%s\n' "$kind" "$item" "$dead" >> "$gacache"
-        fi
-        if [ "$dead" = 1 ]; then
+        case "$deadglobs" in *$'\n'"$item"$'\n'*)
           local code="GOVERNS_DEAD_GLOB"; [ "$kind" = "applies_to" ] && code="APPLIES_TO_DEAD_GLOB"
-          printf '{"code":"%s","path":"%s","line":%s,"msg":"%s matches no file at HEAD"}\n' \
-            "$code" "$(json_esc "$p")" "$ln" "$(json_esc "$item")"
-        fi
+          printf '%s\037%s\037%s\037%s matches no file at HEAD\n' "$code" "$p" "$ln" "$item" ;;
+        esac
         ;;
     esac
-  done < "$extracted" > "$out"
+  done < "$extracted" | awk -F"$US" '
+    function esc(s,  o, i, c) { o = ""; for (i = 1; i <= length(s); i++) { c = substr(s, i, 1); if (c == "\\" || c == "\"") o = o "\\"; o = o c } return o }
+    { printf "{\"code\":\"%s\",\"path\":\"%s\",\"line\":%s,\"msg\":\"%s\"}\n", $1, esc($2), $3, esc($4) }' > "$out"
 
-  rm -f "$extracted" "$missing_shas" "$gacache"
+  rm -f "$extracted"
 }
 
 # ---------------------------------------------------------------------------
@@ -860,22 +911,39 @@ pass3() {
 # fragments_check TREE OUT : _fragments/<kind>/*.md are write-once records,
 # not notes. Each carries kind: and at: YYYY-MM-DD frontmatter; a ruling
 # names exactly two [[notes]]. Findings append to OUT as FRAGMENT_FORMAT.
+# One awk reads every fragment (getline, so an empty file still counts); kind:
+# and at: are the first such lines inside an opening --- block.
 fragments_check() {
-  local tree="$1" out="$2" f rel kind at dir links
+  local tree="$1" out="$2"
   [ -d "$tree/_fragments" ] || return 0
-  find "$tree/_fragments" -name '*.md' | LC_ALL=C sort | while IFS= read -r f; do
-    rel="${f#"$tree"/}"
-    dir="${rel#_fragments/}"; case "$dir" in */*) dir="${dir%%/*}" ;; *) dir="" ;; esac
-    kind=$(awk 'NR==1 && $0!="---" { exit } NR>1 && $0=="---" { exit } NR>1 && index($0,"kind:")==1 { v=substr($0,6); sub(/^[ \t]+/,"",v); print v; exit }' "$f")
-    at=$(awk 'NR==1 && $0!="---" { exit } NR>1 && $0=="---" { exit } NR>1 && index($0,"at:")==1 { v=substr($0,4); sub(/^[ \t]+/,"",v); print v; exit }' "$f")
-    links=$(grep -o '\[\[[^]]*\]\]' "$f" | wc -l | tr -d ' ')
-    if [ -z "$dir" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"fragments live under _fragments/<kind>/"}\n' "$rel"
-    elif [ -z "$kind" ] || [ -z "$at" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"missing kind: or at: frontmatter"}\n' "$rel"
-    elif [ "$kind" != "$dir" ] && [ "${kind}s" != "$dir" ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"kind %s does not match directory %s"}\n' "$rel" "$kind" "$dir"
-    elif ! printf '%s' "$at" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"at %s is not YYYY-MM-DD"}\n' "$rel" "$at"
-    elif [ "$kind" = ruling ] && [ "$links" != 2 ]; then printf '{"code":"FRAGMENT_FORMAT","path":"%s","line":1,"msg":"a ruling names exactly two [[notes]], found %s"}\n' "$rel" "$links"
-    fi
-  done >> "$out"
+  find "$tree/_fragments" -name '*.md' | LC_ALL=C sort > "$TMP/fragments.list"
+  awk -v tree="$tree" '
+    BEGIN {
+      while ((getline f < ARGV[1]) > 0) {
+        rel = f; if (index(rel, tree "/") == 1) rel = substr(rel, length(tree) + 2)
+        dir = rel; if (index(dir, "_fragments/") == 1) dir = substr(dir, 12)
+        dir = index(dir, "/") ? substr(dir, 1, index(dir, "/") - 1) : ""
+        kind = at = ""; hk = ha = 0; fm = 0; links = 0; n = 0
+        while ((getline l < f) > 0) {
+          n++
+          if (n == 1) fm = (l == "---")
+          else if (fm && l == "---") fm = 0
+          else if (fm) {
+            if (!hk && index(l, "kind:") == 1) { kind = substr(l, 6); sub(/^[ \t]+/, "", kind); hk = 1 }
+            if (!ha && index(l, "at:") == 1) { at = substr(l, 4); sub(/^[ \t]+/, "", at); ha = 1 }
+          }
+          while (match(l, /\[\[[^]]*\]\]/)) { links++; l = substr(l, RSTART + RLENGTH) }
+        }
+        close(f)
+        if (dir == "") msg = "fragments live under _fragments/<kind>/"
+        else if (kind == "" || at == "") msg = "missing kind: or at: frontmatter"
+        else if (kind != dir && kind "s" != dir) msg = "kind " kind " does not match directory " dir
+        else if (at !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) msg = "at " at " is not YYYY-MM-DD"
+        else if (kind == "ruling" && links != 2) msg = "a ruling names exactly two [[notes]], found " links
+        else continue
+        printf "{\"code\":\"FRAGMENT_FORMAT\",\"path\":\"%s\",\"line\":1,\"msg\":\"%s\"}\n", rel, msg
+      }
+    }' "$TMP/fragments.list" >> "$out"
   return 0
 }
 
