@@ -46,7 +46,7 @@ const SWEEP = {
   required: ['behaviors'],
 }
 
-const prompt = id => `Read section \`## ${id}:\` of the spec at ${spec}, and the sections its Needs line names. Then find where that responsibility lives in today's code, in the tree at ${tree}.
+const prompt = id => `The spec at ${spec} is an HTML page. Read its opening sections (what is being built and why), its container diagram, and the part \`<article data-part="${id}">\`: what it owns, its requirements, and its tests. Then read the parts whose ids its \`data-talks-to\` attribute lists. Then find where that part's responsibility lives in today's code, in the tree at ${tree}.
 
 Report, citing file:line for every claim:
 - today: every file that holds this responsibility now, and its role.

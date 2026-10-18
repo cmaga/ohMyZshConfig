@@ -11,7 +11,7 @@ Spec: `<path>` · Integration branch: `spec/<EPIC>`
 
 ## Coverage
 
-<!-- One row per Owns line and per Tests scenario in the spec. A row with no
+<!-- One row per part's Owns and per test scenario in the spec. A row with no
 milestone is a plan defect. -->
 
 | Spec item | Milestone |
@@ -37,6 +37,8 @@ file with no row is a plan defect. Omit the section when the sweep is empty. -->
 **Proof:** `<one command that fails now and passes when this milestone is done.
 It runs the real entry point on the settings a fresh install ships with, over
 data shaped like real use; doubles only at external boundaries>`
+
+**Touches:** <the spec's part ids this milestone changes, such as C-2, C-4, X-1>
 
 **Pause:** <yes | no — the user's pick at approval>
 

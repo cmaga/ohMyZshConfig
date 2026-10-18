@@ -1,0 +1,268 @@
+<!--
+Output format for the ultra tier. The process that fills this in is common/ultra.md.
+
+This page is the spec: the only copy. It is written to the project's drafts
+directory (`docs/drafts/` unless the project uses another) as `<name>-spec.html`,
+reviewed in a PR, recorded on the epic, and read by the milestone build. The same
+file is published with the Artifact tool for the user to read; nothing is
+generated from it and nothing generates it, so it cannot drift.
+
+Write it as an Artifact page: no doctype, html, head or body tags (the Artifact
+tool wraps them at publish). Keep the token block and the diagram classes below;
+the content is the project's own.
+
+Reading order, top to bottom: what we are building and why, the system at a
+glance, how it behaves over time, each part in turn, what it records, the
+decisions taken, and what is left for later. A reader with no context must be
+able to stop after the first screen and say what is being built.
+
+MACHINE SURFACE (the milestone build reads these; keep them exactly as shaped):
+- Every part is one `<article class="part" id="c-N" data-part="C-N">` for a
+  container we run, or `id="x-N" data-part="X-N"` for an outside service.
+  Ids are permanent: a part added later takes the next free number.
+- Inside it: `<dd data-owns>` (what this part alone is responsible for),
+  `<dd data-talks-to="C-2, X-1">` whose attribute lists the part ids it
+  connects to and whose text names them for readers (each connection appears on
+  both parts and as an arrow in the container diagram), and one
+  `<ul class="tests" data-tests>` whose items are the scenarios that prove the part.
+- The container diagram is the one `<svg data-diagram="containers">`, and each
+  node in it is `<g data-part="C-N">` or `<g data-part="X-N">`, so the plan view
+  can reuse it and highlight the parts a milestone touches. Its colors come from
+  the token block, which the plan view copies along with it.
+
+WHAT A PART IS: something that runs or stores data in production and would
+appear on an architecture diagram: a web app, a server, a worker or scheduled
+job, a database, a model service, an outside vendor. Never a piece of work, a
+responsibility, or a module. A large container lists its modules inside its own
+section. If a part cannot be pointed at in production, it is not a part.
+
+WHAT STAYS OUT: the route (milestones are planned by the build), and
+code-level detail (files, classes, functions, libraries) unless it is a decision
+the spec deliberately takes, in which case it also appears under Key decisions.
+Naming the containers, stores, and outside services is required: they are the
+architecture.
+
+DIAGRAMS: hand-authored inline SVG, per the artifact-diagramming skill.
+- The dotted boundary is the product. Containers we run are circles; outside
+  services are dashed rounded boxes outside the boundary.
+- Every arrow is labeled with what crosses it. No arrow passes through a box.
+- One color per container, used identically in every diagram on the page,
+  with a legend.
+- Flows over time are sequence diagrams: one column per part, time running
+  down, solid arrows for requests, dashed open-headed arrows for replies,
+  labeled phases, and a fragment box for conditional steps.
+-->
+<title><Name> spec</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column; diagrams sit on their own sheets; parts are cards. */
+:root {
+  --bg: #f4f5f2; --sheet: #ffffff; --fg: #1b2320; --muted: #5f6a65; --rule: #dfe3df; --edge: #6d7873;
+  --accent: #1f6b57;
+  /* One fill/line pair per container role; rename freely, keep both themes. */
+  --r1-fill: #e9effb; --r1-line: #3d5ca8;
+  --r2-fill: #e3f0ea; --r2-line: #1f6b57;
+  --r3-fill: #f0e9f7; --r3-line: #6b4d95;
+  --r4-fill: #f8e8f0; --r4-line: #a03a70;
+  --r5-fill: #fbf1dc; --r5-line: #9a6400;
+  --ex-line: #8a948f;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111513; --sheet: #171c1a; --fg: #e4e9e6; --muted: #9ba6a1; --rule: #29302d; --edge: #8c9792; --accent: #6cc4a6;
+  --r1-fill: #1b2333; --r1-line: #93abea; --r2-fill: #1b2c26; --r2-line: #6cc4a6; --r3-fill: #241e2e; --r3-line: #bb9ee2;
+  --r4-fill: #2c1924; --r4-line: #e68db9; --r5-fill: #2c2416; --r5-line: #e3b25e; --ex-line: #75807b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111513; --sheet: #171c1a; --fg: #e4e9e6; --muted: #9ba6a1; --rule: #29302d; --edge: #8c9792; --accent: #6cc4a6;
+  --r1-fill: #1b2333; --r1-line: #93abea; --r2-fill: #1b2c26; --r2-line: #6cc4a6; --r3-fill: #241e2e; --r3-line: #bb9ee2;
+  --r4-fill: #2c1924; --r4-line: #e68db9; --r5-fill: #2c2416; --r5-line: #e3b25e; --ex-line: #75807b; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 88px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 600 clamp(28px, 4.2vw, 40px)/1.08 var(--display); margin: 10px 0 12px; text-wrap: balance; }
+h2 { font: 600 22px/1.2 var(--display); margin: 0 0 6px; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--muted); font-size: 16px; }
+section { display: grid; gap: 14px; }
+.section-lede { color: var(--muted); }
+figure { margin: 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; display: grid; gap: 14px; }
+.scroll { overflow-x: auto; }
+svg.diagram { display: block; width: 100%; min-width: 760px; height: auto; color: var(--edge); font-family: var(--body); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 80ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 7px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; flex: none; }
+.sw.r1 { background: var(--r1-fill); border-color: var(--r1-line); } .sw.r2 { background: var(--r2-fill); border-color: var(--r2-line); }
+.sw.r3 { background: var(--r3-fill); border-color: var(--r3-line); } .sw.r4 { background: var(--r4-fill); border-color: var(--r4-line); }
+.sw.r5 { background: var(--r5-fill); border-color: var(--r5-line); } .sw.ex { background: transparent; border-color: var(--ex-line); border-style: dashed; }
+/* SVG paint, all from tokens. */
+.r1 { fill: var(--r1-fill); stroke: var(--r1-line); } .r2 { fill: var(--r2-fill); stroke: var(--r2-line); }
+.r3 { fill: var(--r3-fill); stroke: var(--r3-line); } .r4 { fill: var(--r4-fill); stroke: var(--r4-line); }
+.r5 { fill: var(--r5-fill); stroke: var(--r5-line); }
+.ex { fill: var(--sheet); stroke: var(--ex-line); stroke-dasharray: 5 4; }
+.card { stroke-width: 1.5; }
+.title { fill: var(--fg); font: 600 16px var(--display); }
+.title-sm { fill: var(--fg); font: 600 14px var(--display); }
+.sub { fill: var(--muted); font-size: 12px; }
+.mono { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.5; }
+.el { fill: var(--muted); font-size: 11.5px; paint-order: stroke; stroke: var(--sheet); stroke-width: 5px; stroke-linejoin: round; }
+.boundary { fill: none; stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 2 5; }
+.boundary-label { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .14em; }
+.lifeline { stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 3 5; }
+/* Intro, terms, parts, tables. */
+.intro { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.intro-main { display: grid; gap: 10px; }
+.intro-main h2 { font-size: 18px; margin: 6px 0 0; }
+.facts { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; }
+.fact { display: grid; gap: 2px; padding: 12px 16px; font-size: 14px; }
+.fact + .fact { border-top: 1px solid var(--rule); }
+.fact-label { font: 600 11.5px/1.4 var(--display); letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+.terms dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; }
+.terms dt { font: 600 14px/1.3 var(--display); } .terms dd { margin: 0; font-size: 14px; color: var(--muted); }
+.part { background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; padding: 18px 20px; display: grid; gap: 12px; }
+.part > header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.part > header h3 { margin: 0; font: 600 19px/1.2 var(--display); }
+.state { font: 500 10.5px/1 var(--mono); color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; }
+h4 { margin: 0 0 6px; font: 600 12px/1.4 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.part ul, section > .cols ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 14px; }
+.contract { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+.contract > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; }
+.contract dt { font: 600 11.5px/1.7 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.contract dd { margin: 0; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px 28px; }
+.modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.module { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+ul.tests { list-style: none; padding: 0; }
+ul.tests li { border-left: 2px solid var(--rule); padding-left: 10px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { font: 600 12px/1.4 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.decisions td:first-child { font-weight: 600; }
+@media (max-width: 760px) { .intro { grid-template-columns: minmax(0, 1fr); } }
+</style>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow"><TICKET> · <Draft | Approved> · updated <YYYY-MM-DD></div>
+    <h1><Name></h1>
+    <p class="lede"><One sentence: what the system does for its users.></p>
+  </header>
+
+  <section class="intro">
+    <div class="intro-main">
+      <h2>Why we are building it</h2>
+      <p><The problem today, in plain terms; what it costs; why now.></p>
+      <h2>How it works, in one paragraph</h2>
+      <p><The whole loop in plain words, before any diagram.></p>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="fact-label">Goal</span><span><The one measure of success.></span></div>
+      <div class="fact"><span class="fact-label">Constraints</span><span><Privacy, cost, scale, or legal limits every part must respect.></span></div>
+      <div class="fact"><span class="fact-label">Not in scope</span><span><What this spec deliberately leaves out, and where it lives instead.></span></div>
+    </div>
+  </section>
+
+  <section class="terms">
+    <h2>Terms used on this page</h2>
+    <dl>
+      <div><dt><Term></dt><dd><What it means here, in one sentence.></dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>The system at a glance</h2>
+    <ul class="legend" aria-label="Color key">
+      <li><span class="sw r1"></span><Container></li>
+      <li><span class="sw ex"></span>Outside service</li>
+      <li><span class="sw" style="border-radius:50%;border-color:var(--edge)"></span>Circle: a container we run</li>
+    </ul>
+    <figure>
+      <div class="scroll">
+      <svg class="diagram" data-diagram="containers" viewBox="0 0 960 460" role="img" aria-label="<The same claim as the caption.>">
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+        <rect class="boundary" x="196" y="20" width="588" height="424" rx="22"/>
+        <text class="boundary-label" x="220" y="46"><PRODUCT></text>
+        <g data-part="C-1"><circle class="r1 card" cx="360" cy="230" r="70"/><text class="title" x="360" y="226" text-anchor="middle"><Container></text><text class="mono" x="360" y="246" text-anchor="middle"><service name></text></g>
+        <g data-part="X-1"><rect class="ex card" x="16" y="185" width="128" height="90" rx="14"/><text class="title" x="32" y="226"><Outside service></text></g>
+        <line class="edge" x1="144" y1="230" x2="288" y2="230" marker-end="url(#arrow)"/>
+        <text class="el" x="216" y="222" text-anchor="middle"><what crosses></text>
+      </svg>
+      </div>
+      <figcaption><What the picture shows, in one or two sentences.></figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><Flow name>, start to finish</h2>
+    <figure>
+      <div class="scroll">
+      <svg class="diagram" viewBox="0 0 960 400" role="img" aria-label="<The same claim as the caption.>">
+        <!-- One column per part in the flow: a header pill in the part's color, a .lifeline below it.
+             Requests: solid .edge with a filled head. Replies: dashed .edge with an open head.
+             Phases: a full-width rule with a centered label pill. Conditional steps: a fragment box with a small tab label. -->
+      </svg>
+      </div>
+      <figcaption><How to read it.></figcaption>
+    </figure>
+  </section>
+
+  <section class="parts">
+    <h2>The parts</h2>
+    <p class="section-lede">One section per container, then the outside services.</p>
+
+    <article class="part" id="c-1" data-part="C-1">
+      <header><span class="sw r1"></span><h3><Container></h3><span class="state"><service name> · <new | extended | replaced></span></header>
+      <dl class="contract">
+        <div><dt>Owns</dt><dd data-owns><What this part alone is responsible for.></dd></div>
+        <div><dt>Talks to</dt><dd data-talks-to="C-2, X-1"><Part names></dd></div>
+      </dl>
+      <div class="cols">
+        <div><h4>Requirements</h4><ul>
+          <li><What it must do. A large container groups these under its modules instead.></li>
+        </ul></div>
+        <div><h4>How we know it works</h4><ul class="tests" data-tests>
+          <li><One observable scenario, with its reason.></li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="part" id="x-1" data-part="X-1">
+      <header><span class="sw ex"></span><h3><Outside service></h3></header>
+      <dl class="contract">
+        <div><dt>Owns</dt><dd data-owns><What we rely on it for.></dd></div>
+        <div><dt>Talks to</dt><dd data-talks-to="C-1"><Part names></dd></div>
+      </dl>
+      <h4>Terms we require</h4><ul><li><Contract or usage limits that bind us.></li></ul>
+      <ul class="tests" data-tests><li><How we prove we use it within those terms.></li></ul>
+    </article>
+  </section>
+
+  <section>
+    <h2>What we record</h2>
+    <p class="section-lede"><The data the system keeps, why, how long, and how it is deleted. Omit only if the system stores nothing new.></p>
+  </section>
+
+  <section class="decisions">
+    <h2>Key decisions</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Decision</th><th>Why</th><th>Rejected</th></tr></thead>
+      <tbody><tr><td><Decision></td><td><Reason></td><td><Alternatives considered></td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Decide during implementation planning</h2>
+    <div class="cols">
+      <div><h4>Choices</h4><ul><li><A build choice that does not change what the system does.></li></ul></div>
+      <div><h4>Starting values, tuned with real data</h4><ul><li><A setting with the concrete value it starts at; real data moves it, nothing waits for it.></li></ul>
+      <h4>Risks we are watching</h4><ul><li><Risk, and what covers it.></li></ul></div>
+    </div>
+  </section>
+
+</div>
