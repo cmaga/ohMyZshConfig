@@ -27,3 +27,6 @@ src/storage/claude/skills/*/artifacts/*
 # bench-results.log IS tracked (historical benchmark record - see docs/terminal-hangs.md).
 /scripts/bench-samples/
 /scripts/bench-sys.log
+
+# Python bytecode cache, written whenever a skill script runs
+__pycache__/
