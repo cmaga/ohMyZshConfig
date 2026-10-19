@@ -46,6 +46,9 @@ if [ "$HOOK" -eq 1 ]; then
   [ -n "$CWD" ] || exit 0
   REPO=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null) || exit 0
   REPO=$(cd "$REPO" && pwd -P) || exit 0
+  # A local vault's git work (pairing this worktree, merging landed
+  # branches) runs first, so a new worktree is audited with its vault.
+  bash "$HERE/vault-git.sh" sync "$REPO"
   [ -d "$REPO/docs/project-knowledge" ] || exit 0
 else
   if [ -n "$REPO_ARG" ]; then
@@ -65,6 +68,14 @@ CACHE="$CACHE_DIR/vault-audit.json"
 LOCK="$CACHE.lock"
 
 dirty_sig() {
+  if vault_is_local "$VAULT"; then
+    # Vault commits move no code HEAD, so the vault's own HEAD is in the key.
+    { git -C "$VAULT" rev-parse HEAD
+      git -C "$VAULT" diff HEAD
+      git -C "$VAULT" ls-files --others --exclude-standard
+    } | git hash-object --stdin
+    return
+  fi
   { git -C "$REPO" diff HEAD -- docs/project-knowledge
     git -C "$REPO" ls-files --others --exclude-standard -- docs/project-knowledge ":!docs/project-knowledge/.cache"
   } | git hash-object --stdin
@@ -95,7 +106,7 @@ adr_report() {
   local p kind v extra lc n spans span path sym rest prefix subj
   while IFS=$'\t' read -r p kind v extra; do
     [ -n "$p" ] || continue
-    lc=$(git -C "$repo" log -1 --format=%H -- "docs/project-knowledge/$p" 2>/dev/null)
+    lc=$(vault_note_commit "$repo" "$vault" "$p")
     case "$kind" in
       item)
         prefix="${v%%:*}"; rest="${v#*:}"

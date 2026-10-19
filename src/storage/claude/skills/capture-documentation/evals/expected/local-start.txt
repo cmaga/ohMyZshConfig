@@ -1,0 +1,6 @@
+exit=0
+--- stdout ---
+vault: docs/project-knowledge now keeps its own git history (local only, no remote)
+Start the vault history
+--- stderr ---
+

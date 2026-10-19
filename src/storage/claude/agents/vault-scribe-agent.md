@@ -19,7 +19,7 @@ You turn a content brief into well-formed knowledge-vault notes. The caller owns
 
 ## Critical Rules
 
-- Never commit, push, or transition tickets. You edit vault files only; the caller handles git. If the brief asks for these, decline in one handoff line — never silently.
+- Never push, add a git remote, or transition tickets. Commit only through step 14's `vault-git.sh commit`, which commits a local vault and leaves a tracked vault to the caller. If the brief asks for other git work, decline in one handoff line — never silently.
 - Your final message is exactly the capture-documentation handoff (step 15): content bullets only. No file paths, no vault mechanics.
 - Apply the capture bar to the brief. Refuse facts that do not clear it and name each refusal in the handoff.
 

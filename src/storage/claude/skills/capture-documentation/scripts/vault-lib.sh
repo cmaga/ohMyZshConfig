@@ -44,6 +44,47 @@ git_dir_abs() {
   esac
 }
 
+# A local vault is one the code repo ignores and that keeps its own git repo
+# (vault-git.sh starts it), so a note's history lives in the vault, not in
+# the code repo. A tracked vault is committed with the code.
+VAULT_REL=docs/project-knowledge
+vault_is_local() { [ -e "$1/.git" ]; }
+
+# vault_code_repo DIR -- physical top level of the code repo for a path in a
+# vault, stepping out of a local vault's own repo to the repo it sits in.
+vault_code_repo() {
+  local top outer
+  top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 1
+  top=$(cd "$top" && pwd -P) || return 1
+  if outer=$(git -C "$top/.." rev-parse --show-toplevel 2>/dev/null) &&
+     outer=$(cd "$outer" && pwd -P) && [ "$top" = "$outer/$VAULT_REL" ]; then
+    top=$outer
+  fi
+  printf '%s\n' "$top"
+}
+
+# vault_history VAULT REPO -- sets HREPO, the repo holding the notes' history,
+# and HPRE, the vault's path prefix inside it ("" for a local vault).
+vault_history() {
+  if vault_is_local "$1"; then HREPO=$1; HPRE=""
+  else HREPO=$2; HPRE="${1#"$2"/}/"; fi
+}
+
+# vault_note_commit REPO VAULT NOTE -- the code commit NOTE was last written
+# against. A tracked note's last commit is one; a local note maps its last
+# vault commit on the first-parent line (a landed branch counts from its
+# merge) to the code commit current at that time.
+vault_note_commit() {
+  local repo="$1" vault="$2" note="$3" t
+  if vault_is_local "$vault"; then
+    t=$(git -C "$vault" log -1 --first-parent --format=%ct -- "$note" 2>/dev/null)
+    [ -n "$t" ] && git -C "$repo" rev-list -1 --before="@$t" HEAD 2>/dev/null
+  else
+    git -C "$repo" log -1 --format=%H -- "${vault#"$repo"/}/$note" 2>/dev/null
+  fi
+  return 0
+}
+
 # sym_ident(sym) -- lint-vault.sh pass2()'s identifier extraction+validation
 # (strip from the first "(", after the last "." and ":", from the first
 # space; identifier-shaped, not file-name-shaped), as an awk function so

@@ -36,3 +36,11 @@ Start at `docs/project-knowledge/.cache/_digest.md` if it exists (the SessionSta
 
 - All changes to the knowledge vault **MUST** go through the `vault-scribe-agent` subagent. Dispatch it with a content brief — the facts, numbers, and why — then review the content summary it returns and approve or reply with tweaks. The agent owns all vault mechanics.
 - For a quick manual capture, invoking the capture-documentation skill inline is acceptable — same rules, same handoff.
+
+### Local vaults
+
+A vault the code repo ignores is its own git repo with no remote. Each worktree gets the vault on a branch named after its code branch, and that branch merges into the vault's main once the code lands.
+
+- Dispatch the scribe from the worktree while the branch is open; its notes merge with the code, so nothing waits for the merge.
+- Never add a remote to a local vault or push it.
+- When session start prints a `vault:` line that asks for a decision (a conflict, or a vault branch whose code branch is gone), relay it to the user and act only on their answer.

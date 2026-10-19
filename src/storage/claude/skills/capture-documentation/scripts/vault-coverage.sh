@@ -49,7 +49,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 [ -n "$OUT" ] || OUT="$VAULT/.cache/coverage"
-REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
+REPO=$(vault_code_repo "$VAULT") || REPO="$VAULT"
 TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
 TAB=$(printf '\t')

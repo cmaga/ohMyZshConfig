@@ -779,6 +779,127 @@ refactor_case split split scheduler --plan "$WORK/split-plan.tsv"
 printf 'scheduler-backoff\tcomponents\tBackoff policy\tsurface:src/reporting\nscheduler-surface-worker\tcomponents\tsurface:src/worker\n' > "$WORK/split-plan2.tsv"
 refactor_case split-surface split scheduler --plan "$WORK/split-plan2.tsv"
 
+# ---------------------------------------------------------------------------
+# Local vault: the code repo ignores docs/, so vault-git.sh gives the vault
+# its own repo, pairs each worktree with a vault branch named after its code
+# branch, and merges that branch once the code lands on main. Commit hashes
+# are masked; paths print as <tmp>.
+# ---------------------------------------------------------------------------
+
+GITVAULT="$SCRIPTS/vault-git.sh"
+export GIT_AUTHOR_NAME=eval GIT_AUTHOR_EMAIL=eval@example.test GIT_COMMITTER_NAME=eval GIT_COMMITTER_EMAIL=eval@example.test
+LREPO="$WORK/local"
+LVAULT="$LREPO/docs/project-knowledge"
+mkdir -p "$LREPO"
+must cp -R "$FIXTURE/." "$LREPO/"
+printf 'docs/\n' > "$LREPO/.gitignore"
+must git -C "$LREPO" init -q -b main
+must git -C "$LREPO" add -A
+must git -C "$LREPO" commit -q -m "code baseline"
+
+# local_case NAME CMD... : run CMD and finish NAME with commit hashes masked.
+local_case() {
+  local name="$1"; shift
+  "$@" >"$WORK/c_out" 2>"$WORK/c_err"
+  C_RC=$?
+  C_OUT="$(sed -E 's/committed [0-9a-f]{7,}/committed <sha>/' "$WORK/c_out")"; C_ERR="$(cat "$WORK/c_err")"
+  finish_case "$name"
+}
+# new_worktree NAME : a code worktree on branch NAME, synced so it has its vault.
+new_worktree() {
+  must git -C "$LREPO" worktree add -q "$WORK/$1" -b "$1"
+  "$GITVAULT" sync "$WORK/$1" >/dev/null
+}
+# code_commit DIR FILE : one code commit in DIR.
+code_commit() {
+  printf '%s\n' "$2" >> "$1/src/$2"
+  must git -C "$1" add -A
+  must git -C "$1" commit -q -m "code $2"
+}
+# note_commit DIR LINE MSG : replace line 3 of billing.md in DIR's vault, commit it.
+note_commit() {
+  awk -v l="$2" 'NR == 3 { print l; next } { print }' "$1/docs/project-knowledge/components/billing.md" > "$WORK/billing.new"
+  mv "$WORK/billing.new" "$1/docs/project-knowledge/components/billing.md"
+  "$GITVAULT" commit "$1/docs/project-knowledge" "$3" >/dev/null
+}
+
+# local-tracked-noop: a vault committed with the code gets no vault repo.
+local_case local-tracked-noop "$GITVAULT" sync "$REPO"
+
+# local-start: the main checkout's first sync starts the vault's history; the
+# code repo still sees nothing of it.
+local_start() { "$GITVAULT" sync "$LREPO"; git -C "$LVAULT" log --format=%s; git -C "$LREPO" status --short; }
+local_case local-start local_start
+
+# local-pair: a new worktree gets the vault on its own branch, digest built.
+must git -C "$LREPO" worktree add -q "$WORK/feat-a" -b feat-a
+local_pair() { "$GITVAULT" sync "$WORK/feat-a"; git -C "$WORK/feat-a/docs/project-knowledge" branch --show-current; ls "$WORK/feat-a/docs/project-knowledge/.cache"; }
+local_case local-pair local_pair
+
+# local-changed: --changed and status read the touched note from the vault's
+# own repo, not from the code repo that ignores it.
+printf 'A sentence the branch adds.\n' >> "$WORK/feat-a/docs/project-knowledge/components/billing.md"
+local_changed() { "$GITVAULT" status "$WORK/feat-a/docs/project-knowledge"; "$LINT" --changed "$WORK/feat-a/docs/project-knowledge" | tail -n 1; }
+local_case local-changed local_changed
+
+local_case local-commit "$GITVAULT" commit "$WORK/feat-a/docs/project-knowledge" "Record what feat-a adds"
+
+# local-wait: nothing merges while the code branch has no commits of its own,
+# nor while its commits are not on main.
+local_wait() { "$GITVAULT" sync "$LREPO"; code_commit "$WORK/feat-a" a.txt; "$GITVAULT" sync "$LREPO"; }
+local_case local-wait local_wait
+
+# local-land: a fast-forward landing merges the vault branch; the branch stays
+# while its worktree is open and goes once the worktree is removed.
+local_land() {
+  git -C "$LREPO" merge -q --ff-only feat-a
+  "$GITVAULT" sync "$LREPO"
+  git -C "$LVAULT" log --first-parent --format=%s
+  git -C "$LREPO" worktree remove "$WORK/feat-a"
+  "$GITVAULT" sync "$LREPO"
+  git -C "$LVAULT" branch --format='%(refname:short)'
+}
+local_case local-land local_land
+
+# local-rebase: a landing that rewrote the commits (rebase, cherry-pick)
+# still counts, matched by patch.
+new_worktree feat-b
+note_commit "$WORK/feat-b" "Line three from feat-b." "Record feat-b"
+code_commit "$WORK/feat-b" b.txt
+code_commit "$LREPO" main-moves.txt
+local_rebase() { git -C "$LREPO" cherry-pick feat-b >/dev/null; "$GITVAULT" sync "$LREPO"; }
+local_case local-rebase local_rebase
+must git -C "$LREPO" worktree remove "$WORK/feat-b"
+
+# local-conflict: a vault branch that conflicts with the vault's main is
+# reported and the merge is backed out.
+new_worktree feat-c
+note_commit "$WORK/feat-c" "Line three from feat-c." "Record feat-c"
+note_commit "$LREPO" "Line three from main." "Record main"
+code_commit "$WORK/feat-c" c.txt
+must git -C "$LREPO" merge -q --ff-only feat-c
+local_conflict() { "$GITVAULT" sync "$LREPO"; git -C "$LVAULT" status --short; }
+local_case local-conflict local_conflict
+must git -C "$LREPO" worktree remove "$WORK/feat-c"
+must git -C "$LVAULT" worktree prune
+must git -C "$LVAULT" branch -q -D feat-c
+
+# local-orphan: a vault branch with notes whose code branch was deleted is
+# reported, never merged.
+new_worktree feat-d
+note_commit "$WORK/feat-d" "Line three from feat-d." "Record feat-d"
+must git -C "$LREPO" worktree remove "$WORK/feat-d"
+must git -C "$LREPO" branch -q -D feat-d
+local_case local-orphan "$GITVAULT" sync "$LREPO"
+
+# local-next-adr: an ADR number taken on a vault branch with no worktree open
+# is still skipped.
+new_worktree feat-e
+cp "$WORK/feat-e/docs/project-knowledge/decisions/ADR-001-use-postgres.md" "$WORK/feat-e/docs/project-knowledge/decisions/ADR-050-taken-on-a-branch.md"
+"$GITVAULT" commit "$WORK/feat-e/docs/project-knowledge" "Take ADR-050" >/dev/null
+must git -C "$LREPO" worktree remove --force "$WORK/feat-e"
+local_case local-next-adr "$LINT" --next-adr "$LVAULT"
+
 echo "evals: $OK_COUNT ok, $FAIL_COUNT failed"
 [ "$FAIL_COUNT" -eq 0 ] || exit 1
 exit 0

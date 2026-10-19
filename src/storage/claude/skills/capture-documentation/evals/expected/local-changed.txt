@@ -1,0 +1,6 @@
+exit=0
+--- stdout ---
+ M components/billing.md
+lint-vault: 0 FAIL, 1 WARN, 3 DRIFT across 52 notes
+--- stderr ---
+

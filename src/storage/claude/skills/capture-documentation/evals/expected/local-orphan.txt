@@ -1,0 +1,5 @@
+exit=0
+--- stdout ---
+vault: vault branch feat-d has notes but its code branch is gone; ask the user whether to merge it (git -C <tmp>/local/docs/project-knowledge merge --no-ff feat-d) or drop it (git -C <tmp>/local/docs/project-knowledge branch -D feat-d)
+--- stderr ---
+

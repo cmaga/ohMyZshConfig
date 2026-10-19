@@ -1,0 +1,8 @@
+exit=0
+--- stdout ---
+vault: merged vault branch feat-a; its code has landed
+Merge vault branch feat-a; its code has landed
+Start the vault history
+main
+--- stderr ---
+

@@ -37,6 +37,8 @@ export LC_ALL=C
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GUARD="$HERE/../../../hooks/guard-vault-write.sh"
+# Only for the local-vault helpers; this script keeps its own copies of the rest.
+source "$HERE/vault-lib.sh"
 
 json_esc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 
@@ -381,7 +383,7 @@ pass2b_region() {
     spath="${sp%%:*}"
     nc="${note_commit_cache[$p]:-}"
     if [ -z "$nc" ]; then
-      nc=$(git -C "$repo" log -1 --format=%H -- "$relvault/$p" 2>/dev/null)
+      nc=$(vault_note_commit "$repo" "$repo/$relvault" "$p")
       [ -z "$nc" ] && nc="__none__"
       note_commit_cache[$p]="$nc"
     fi
@@ -1064,9 +1066,10 @@ do_whole() {
 # note restored (or removed, if new) to its HEAD content via `git show`.
 # ---------------------------------------------------------------------------
 build_baseline() {
-  local vault="$1" repo="$2" relvault="$3" touched="$4" basedir="$5"
+  local vault="$1" repo="$2" touched="$3" basedir="$4"
+  vault_history "$vault" "$repo"
   rm -rf "$basedir"; mkdir -p "$basedir"
-  ( cd "$vault" && find . -type f -not -path '*/.git/*' -print0 ) |
+  ( cd "$vault" && find . -type f -not -path '*/.git/*' -not -name .git -print0 ) |
   while IFS= read -r -d '' rel; do
     rel="${rel#./}"
     mkdir -p "$basedir/$(dirname "$rel")"
@@ -1074,10 +1077,10 @@ build_baseline() {
   done
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
-    local repoRel="$relvault/$rel"
+    local repoRel="$HPRE$rel"
     mkdir -p "$basedir/$(dirname "$rel")"
-    if git -C "$repo" cat-file -e "HEAD:$repoRel" 2>/dev/null; then
-      git -C "$repo" show "HEAD:$repoRel" > "$basedir/$rel" 2>/dev/null
+    if git -C "$HREPO" cat-file -e "HEAD:$repoRel" 2>/dev/null; then
+      git -C "$HREPO" show "HEAD:$repoRel" > "$basedir/$rel" 2>/dev/null
     else
       rm -f "$basedir/$rel"
     fi
@@ -1121,17 +1124,17 @@ do_changed() {
   local vault="$1" repo="$2" out="$3"
   merge_schema "$vault" "$TMP/schema.json" || return 2
   load_exceptions "$vault" "$TMP/exc.json"
-  local relvault="${vault#"$repo"/}"
+  vault_history "$vault" "$repo"
   {
-    git -C "$repo" diff --name-only HEAD -- "$relvault" 2>/dev/null
-    git -C "$repo" ls-files --others --exclude-standard -- "$relvault" 2>/dev/null
+    git -C "$HREPO" diff --name-only HEAD -- "${HPRE:-.}" 2>/dev/null
+    git -C "$HREPO" ls-files --others --exclude-standard -- "${HPRE:-.}" 2>/dev/null
   } | sort -u > "$TMP/touched_repo_rel.txt"
   : > "$TMP/touched.txt"
   while IFS= read -r rp; do
     [ -n "$rp" ] || continue
     case "$rp" in
-      "$relvault"/.cache/*) : ;;
-      "$relvault"/*.md) printf '%s\n' "${rp#"$relvault"/}" >> "$TMP/touched.txt" ;;
+      "$HPRE".cache/*) : ;;
+      "$HPRE"*.md) printf '%s\n' "${rp#"$HPRE"}" >> "$TMP/touched.txt" ;;
     esac
   done < "$TMP/touched_repo_rel.txt"
   if [ ! -s "$TMP/touched.txt" ]; then
@@ -1142,23 +1145,25 @@ do_changed() {
   : > "$TMP/newfiles.txt"
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
-    git -C "$repo" cat-file -e "HEAD:$relvault/$rel" 2>/dev/null || printf '%s\n' "$rel" >> "$TMP/newfiles.txt"
+    git -C "$HREPO" cat-file -e "HEAD:$HPRE$rel" 2>/dev/null || printf '%s\n' "$rel" >> "$TMP/newfiles.txt"
   done < "$TMP/touched.txt"
   "$JQ" -R . "$TMP/newfiles.txt" | "$JQ" -s . > "$TMP/newfiles.json"
   lint_tree "$vault" "$repo" "$TMP/schema.json" "$TMP/touched.json" 1 "$TMP/cur.raw.ndjson" || return 2
-  build_baseline "$vault" "$repo" "$relvault" "$TMP/touched.txt" "$TMP/base" || return 2
+  build_baseline "$vault" "$repo" "$TMP/touched.txt" "$TMP/base" || return 2
   lint_tree "$TMP/base" "$repo" "$TMP/schema.json" "$TMP/touched.json" 0 "$TMP/base.raw.ndjson" || return 2
   assemble_changed "$TMP/cur.raw.ndjson" "$TMP/base.raw.ndjson" "$TMP/exc.json" "$(note_count "$vault")" "$TMP/touched.json" "$TMP/newfiles.json" "$TMP/schema.json" "$out"
 }
 
 # ---------------------------------------------------------------------------
 # --next-adr: scans every worktree's working tree, plus the committed tree of
-# every local branch and origin/HEAD, for decisions/ADR-NNN-*.md.
+# every local branch and origin/HEAD, for decisions/ADR-NNN-*.md. A local
+# vault's branches live in its own repo, so those are the ones scanned.
 # ---------------------------------------------------------------------------
 next_adr() {
   local vault="$1" repo="$2"
   local relvault="${vault#"$repo"/}"
   local max=0 n
+  vault_history "$vault" "$repo"
   while IFS= read -r wt; do
     [ -n "$wt" ] || continue
     [ -d "$wt/$relvault/decisions" ] || continue
@@ -1180,8 +1185,8 @@ next_adr() {
           [ "$n" -gt "$max" ] && max=$n
           ;;
       esac
-    done < <(git -C "$repo" ls-tree -r --name-only "$ref" -- "$relvault/decisions" 2>/dev/null | xargs -n1 basename 2>/dev/null)
-  done < <(git -C "$repo" for-each-ref --format='%(refname)' refs/heads refs/remotes/origin/HEAD 2>/dev/null)
+    done < <(git -C "$HREPO" ls-tree -r --name-only "$ref" -- "${HPRE}decisions" 2>/dev/null | xargs -n1 basename 2>/dev/null)
+  done < <(git -C "$HREPO" for-each-ref --format='%(refname)' refs/heads refs/remotes/origin/HEAD 2>/dev/null)
   printf 'ADR-%03d\n' "$((max + 1))"
 }
 
@@ -1193,7 +1198,7 @@ if [ "${1:-}" = "--next-adr" ]; then
   VAULT="${2:-}"
   [ -n "$VAULT" ] && [ -d "$VAULT" ] || { usage; exit 2; }
   VAULT=$(cd "$VAULT" && pwd -P)
-  REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || { usage; exit 2; }
+  REPO=$(vault_code_repo "$VAULT") || { usage; exit 2; }
   next_adr "$VAULT" "$REPO"
   exit 0
 fi
@@ -1263,7 +1268,7 @@ VAULT="${1:-}"
 [ -n "$VAULT" ] && [ -d "$VAULT" ] || { usage; exit 2; }
 shift
 VAULT=$(cd "$VAULT" && pwd -P)
-REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
+REPO=$(vault_code_repo "$VAULT") || REPO="$VAULT"
 VNAME=$(basename "$VAULT")
 
 TMP=$(mktemp -d) || { echo "lint-vault: cannot create temp dir" >&2; exit 2; }

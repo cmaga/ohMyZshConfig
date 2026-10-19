@@ -1,0 +1,5 @@
+exit=0
+--- stdout ---
+vault: vault branch feat-c conflicts with the vault's main; tell the user, who merges it by hand (git -C <tmp>/local/docs/project-knowledge merge --no-ff feat-c)
+--- stderr ---
+

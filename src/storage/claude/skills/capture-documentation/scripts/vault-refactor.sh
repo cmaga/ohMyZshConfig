@@ -61,8 +61,10 @@ done
 set -- $POS
 
 VAULT=$(cd "$VAULT_ARG" && pwd -P)
-REPO=$(r=$(git -C "$VAULT" rev-parse --show-toplevel 2>/dev/null) && cd "$r" && pwd -P) || REPO="$VAULT"
+REPO=$(vault_code_repo "$VAULT") || REPO="$VAULT"
 RELV="${VAULT#"$REPO"/}"
+# How a retired note's history is shown: a local vault keeps it in its own repo.
+if vault_is_local "$VAULT"; then HIST="git -C $RELV log --follow -- "; else HIST="git log --follow -- $RELV/"; fi
 TMP=$(mktemp -d) || { echo "vault-refactor: cannot create temp dir" >&2; exit 2; }
 trap 'rm -rf "$TMP"' EXIT
 vault_merge_schema "$VAULT" "$TMP/schema.json"
@@ -250,7 +252,7 @@ do_retire() {
   echo "retire: $path ($REASON)"
   echo " + $banner"
   if [ "$bkt" = decisions ]; then echo " body kept (decision record)"; echo " index: suffix '$EM deprecated'"
-  else echo " body -> tombstone (History: git log --follow -- $RELV/$path)"; echo " index: line removed"; fi
+  else echo " body -> tombstone (History: $HIST$path)"; echo " index: line removed"; fi
   refuse_if_bang
   if [ "$APPLY" = 1 ]; then
     fm_set "$VAULT/$path" status deprecated
@@ -263,7 +265,7 @@ do_retire() {
       if [ -n "$REPLACED_BY" ]; then fm_set "$VAULT/$path" replaced_by "\"[[$(base_of "$REPLACED_BY")]]\""; fm_del "$VAULT/$path" consider
       elif [ -n "$CONSIDER" ]; then fm_set "$VAULT/$path" consider "$(fmlist "$CONSIDER")"; fm_del "$VAULT/$path" replaced_by
       else fm_del "$VAULT/$path" replaced_by; fm_del "$VAULT/$path" consider; fi
-      hist="History: git log --follow -- $RELV/$path"
+      hist="History: $HIST$path"
       set_banner "$VAULT/$path" "$banner" "$hist"
       index_remove "$base" "$bkt"
     fi
@@ -318,7 +320,7 @@ do_merge() {
     fm_set "$VAULT/$lp" obsoletion_reason merged
     fm_set "$VAULT/$lp" retired "$TODAY"
     fm_set "$VAULT/$lp" replaced_by "\"[[$sb]]\""
-    set_banner "$VAULT/$lp" "> Status: DEPRECATED $TODAY $EM merged into [[$sb]]" "History: git log --follow -- $RELV/$lp"
+    set_banner "$VAULT/$lp" "> Status: DEPRECATED $TODAY $EM merged into [[$sb]]" "History: $HIST$lp"
     index_remove "$lb" "$lbk"
   fi
   finish

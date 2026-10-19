@@ -1,0 +1,7 @@
+exit=0
+--- stdout ---
+vault: this worktree's vault is on vault branch feat-a; it merges into the vault's main when the code lands
+feat-a
+_digest.md
+--- stderr ---
+

@@ -431,7 +431,7 @@ cmd_suggest_governs() {
   local note="${1:-}" notedir reporoot
   [ -n "$note" ] && [ -f "$note" ] || usage
   notedir=$(cd "$(dirname "$note")" && pwd -P)
-  reporoot=$(r=$(git -C "$notedir" rev-parse --show-toplevel) && cd "$r" && pwd -P) || usage
+  reporoot=$(vault_code_repo "$notedir") || usage
 
   grep -oE '`[^`]+`' "$note" | sed -e 's/^`//' -e 's/`$//' > "$TMP/spans.raw"
 

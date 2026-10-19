@@ -28,6 +28,11 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/clear-symdocs-claude-md.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/skills/capture-documentation/scripts/vault-git.sh\" --hook",
+            "timeout": 30
           }
         ]
       }
