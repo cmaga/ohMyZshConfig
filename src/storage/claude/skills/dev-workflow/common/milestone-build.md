@@ -20,7 +20,7 @@ Any agent's question goes to the run's decider, which holds your authority. One 
 
 ## Driver
 
-Hold almost nothing: the spec path, the plan path, the current milestone, its workflow run id. The integration branch is the record — a milestone is done when its proof commit is on it. A build that lost its session is resumed by running this Driver again on the same epic.
+Hold almost nothing: the spec path, the plan path, the current milestone, its workflow run id. The integration branch is the record — a milestone is done when its proof tag exists. A build that lost its session is resumed by running this Driver again on the same epic.
 
 Seed the task tracker with Gather, Plan, Approve, then one item per milestone once the plan exists, then Hand back.
 
@@ -30,7 +30,7 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
        git branch spec/<EPIC>
        git worktree add "$(git rev-parse --show-toplevel)/.claude/worktrees/spec-<EPIC>" spec/<EPIC>
 
-   This is `<tree>`. Drive it by absolute path and `git -C`; never enter it. Every agent in the build works in this one tree. Proven milestones: `git -C <tree> log --oneline --grep '^\[<EPIC>\] M-'` — resume at the first one missing.
+   This is `<tree>`. Drive it by absolute path and `git -C`; never enter it. Every agent in the build works in this one tree. Proven milestones: `git -C <tree> tag -l '<EPIC>-M-*-proven'` — resume at the first one missing.
 3. **Gather.** Run the Workflow tool with `scriptPath` `~/.claude/skills/dev-workflow/scripts/gather.workflow.js` and args `{spec, tree, components: ["C-1", ...], levels}`. One read-only agent per `## C-N:` section maps it onto today's code: what moves, what adapts, what is new and the spec sentence forcing it, every check today's code performs there, and what it deletes or rewrites. Then a sweep reads every file leaving and lists each behavior in it, claimed by a component or `unclaimed` — the behavior no component's section reaches, which a spec-first reading never finds. A build that deletes nothing has no sweep. Its questions go to [Escalation](#escalation) before planning; one the code or the spec answers you decide, and record it as `[ASSUMED: ...]` at the top of the plan.
 4. **Plan the milestones** into `<tree>/.claude-artifacts/workflows/dev-workflow/milestones.md` from the [milestone plan template](../templates/milestone-plan-template.md), after `F="$(git rev-parse --git-common-dir)/info/exclude"; grep -qxF '.claude-artifacts/' "$F" || echo '.claude-artifacts/' >> "$F"`.
    - **M-1 is the thinnest path through the new system that runs end to end.** For a restructure: the new shape starts and serves one real path while the old system still works.
@@ -68,7 +68,7 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
    Work outside the milestone's workflow that one agent can do (a fix verify left, a bed change) goes to one Agent-tool worker in the background: a plain general-purpose agent on its level's model and effort. Never a one-agent workflow; it hides the agent's progress.
 5. **Run the end-to-end tests once, yourself** — never on an agent's word, under [done-when](done-when.md)'s hygiene, and only after step 4. `milestone-args.py bed <args file> <output file>` prints one command over the test writer's tests and the proofs of this and every earlier milestone, writing the whole log to the scratchpad; add the environment the project's tests need and run it in the background. `git -C <tree> grep -n NotImplementedError -- <the milestone's files>` prints nothing.
    - **Failures:** write a failures file naming the command, the log, each failing node id, and what you traced; `milestone-args.py fix <args file> <failures file>` prints the prompt of one worker at judgment that fixes them and reruns only those, writing that rerun to `<scratchpad>/<EPIC>-M-N-rerun.log`. Read it: it is pytest's own output, so rerun nothing it shows passing. Never rerun the whole set.
-6. **Mark it proven:** `git -C <tree> commit --allow-empty -m "[<EPIC>] M-N proven: <proof>"`.
+6. **Mark it proven:** `git -C <tree> tag <EPIC>-M-N-proven`. A local lightweight tag, so the branch carries only real commits and `git push` never sends it.
 7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, anything step 4 left open, each decision made inside the run (the result's `decided`), and one line from the result's `usage`: agents per level, and the tasks promoted a level. Open the next milestone on their go. Otherwise open it now.
 
 A milestone the plan got wrong — its proof cannot pass without work another milestone owns — is a plan defect: amend the plan, say so in the report, carry on. A change to what the spec says is an escalation.
@@ -101,4 +101,4 @@ When the last milestone is proven:
 7. Move the epic to In Review via the `jira` skill.
 8. **Report.** One [exit report](../templates/exit-report.md) for the whole spec: what the user can do, what to test — each milestone's proof is the list — every deviation with its verdict, every red CI check. Give `<tree>`'s absolute path and the command that starts the app. Loose ends collapse into one [loose-end tracker](exit.md#the-loose-end-tracker).
 
-`cleanup <EPIC>` after the PR merges removes `<tree>` and the branch.
+`cleanup <EPIC>` after the PR merges removes `<tree>`, the branch, and its proof tags.

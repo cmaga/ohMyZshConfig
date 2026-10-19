@@ -56,16 +56,19 @@ done
 In order:
 
 1. If `<path>/.claude-artifacts/teardown.sh` exists, run it: `bash <path>/.claude-artifacts/teardown.sh`. Projects that provision per-worktree resources record their undo commands there. Report failures but do not stop. Never substitute your own cleanup commands or widen the scope — no `docker system prune`, nothing that could reach another worktree.
-2. `ExitWorktree` with `action: "keep"` to unpin the session. Skip it when no worktree session is active.
-3. Remove with git, worktree first — `git branch -D` refuses a branch a worktree still claims:
+2. Update the local base branch: main-checkout gate, then check out the base branch and `git pull --ff-only`; skip the pull with no upstream.
+3. Land the vault, if `~/.claude/skills/capture-documentation/scripts/vault-git.sh` exists: `bash <that script> sync <main checkout>`. It merges the worktree's vault branch into the vault's main now that the code is on the base, and prints nothing for a project without a local vault. Run it while the code branch still exists — once it is deleted, the vault branch can no longer tell that it landed. Relay any `vault:` line it prints.
+4. Confirm the branch landed: `git merge-base --is-ancestor <branch> <base>`. Non-zero means the base lacks some of the branch's commits — a squash or rebase merge, or local commits the PR never had. Stop, show `git --no-pager log --oneline <base>..<branch>`, and delete nothing until the user answers.
+5. `ExitWorktree` with `action: "keep"` to unpin the session. Skip it when no worktree session is active.
+6. Remove with git, worktree first — `git branch -D` refuses a branch a worktree still claims:
 
        git worktree remove --force <path>
        git branch -D <branch>
        git ls-remote --heads origin <branch>   # prints anything → git push origin --delete <branch>
+       git for-each-ref --format='delete %(refname)' 'refs/tags/<TICKET>-M-*-proven' | git update-ref --stdin   # an epic's milestone proof tags
 
-   `-D`, not `-d`: squash and rebase merges leave the branch "unmerged" by git's heuristic; step 2 confirmed `MERGED`. Done when `git worktree list` no longer shows `<path>`.
-4. Update the local base branch: main-checkout gate, then check out the base branch and `git pull --ff-only`; skip the pull with no upstream.
-5. Kill any shells still running.
+   `-D`, not `-d`: step 4 already proved the branch is in the base, and `-d` checks the branch's own upstream instead. Done when `git worktree list` no longer shows `<path>`.
+7. Kill any shells still running.
 
 ### 5. Report
 

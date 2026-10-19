@@ -159,7 +159,7 @@ The target behavior is settled as a spec of components and what each owns, befor
 - A user correction about how the run works — not what it builds — is a skill lesson. File it in auto memory per [lesson format](../memory-review/lesson-format.md) in the same message as the tool call that obeys it, never at the end. A slip you caught yourself is not one.
 - A message with no tool call ends the turn. Every step that says post, report, or present means: ship that prose in the same message as the next step's first tool call. Only a gate that waits for the user ends a turn.
 - Shared-contract blast radius: a change to something other code calls (endpoint, signature, schema, shared validator) is not done until every caller is listed and confirmed to survive. Derive the contract from all consumers, not the ticket's framing.
-- **Commit in coherent pieces throughout.** Sessions die and uncommitted work does not survive one. For a relocation, one commit per move.
+- **Commit in coherent pieces throughout**, each in the project's commit format. PRs land as merge commits, so every commit reaches the base as written. Sessions die and uncommitted work does not survive one. For a relocation, one commit per move. A fix to a commit already on the branch is `git commit --fixup=<sha>`; [wrap-up step 6](common/exit.md) folds it in.
 - **Before adding a validator that refuses a configuration, grep the tests for the field it would refuse.** A defect-guard test is the record of *we tried that*.
 - Discovered-issue routing: a problem found mid-flow is routed when found, never parked as prose.
   - **Fix it.** The one question is whether the fix can ride this branch — not whether it is in scope. This is the cheapest moment the fix will ever have.

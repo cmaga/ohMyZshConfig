@@ -65,7 +65,7 @@ const VERIFY = {
 }
 
 const CONTEXT = `Spec: ${spec} — read the sections this work names. Milestone ${m.id}: ${m.title}. Its proof: \`${m.proof}\`.`
-const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "[${epic}] ${m.id} <what>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. Leave the session's task list alone: it is the user's view of the run, so no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
+const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "<subject in the project's commit format; the ticket is ${epic}>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. Leave the session's task list alone: it is the user's view of the run, so no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
 const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[key]}` : '')
 const decidedHere = []
 const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, promoted }, ...rest })
@@ -97,7 +97,7 @@ Running now, each owning its files: ${[...running].map(([id, files]) => `${id} (
 
 Decide from the spec, the plan at ${plan}, and the code; read whatever you need. Every answer is yours to give: a file outside the task's list, a change to a signature, type, or schema the scaffold committed, an edit to a committed test that keeps what it proves, a choice the spec leaves open, or part of the work deferred to a later task whose card can absorb it.
 - Your answers agree with each other and with every earlier decision, and never give two tasks running now the same file.
-- Record each decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "[${epic}] ${m.id} decided <what>" -- ${spec}\`.
+- Record each decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "<subject in the project's commit format; the ticket is ${epic}>" -- ${spec}\`.
 - Set redesign only when the design itself cannot work and a component or the milestone order must be redrawn, so that carrying on would waste the build. Then say what is wrong in decision and change nothing.
 - Edit only the plan and the spec. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself and spawn nothing.`,
       { label: `decide ${batch.map(q => q.key).join(', ')}`, phase: 'Decide', schema: DECISIONS })
