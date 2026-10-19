@@ -9,7 +9,3 @@
 ## Changes
 
 {COMMIT_LOG}
-
----
-
-_This PR was automatically created by the Automater skill._
