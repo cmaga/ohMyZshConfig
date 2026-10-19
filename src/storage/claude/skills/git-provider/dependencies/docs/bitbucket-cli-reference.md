@@ -160,7 +160,7 @@ bb pr merge {pr-id} --merge-strategy fast_forward
 
 # With custom message and close source branch
 bb pr merge {pr-id} \
-  --merge-strategy squash \
+  --merge-strategy merge_commit \
   --message "Merged PR #{pr-id}: Feature description" \
   --close-source-branch
 ```
@@ -399,7 +399,7 @@ PR_ID="123"
 STATE=$(bb pr get "$PR_ID" -o json | jq -r '.state')
 
 if [ "$STATE" = "OPEN" ]; then
-  bb pr merge "$PR_ID" --merge-strategy squash --close-source-branch
+  bb pr merge "$PR_ID" --merge-strategy merge_commit --close-source-branch
   echo "PR merged"
 elif [ "$STATE" = "MERGED" ]; then
   echo "PR already merged"

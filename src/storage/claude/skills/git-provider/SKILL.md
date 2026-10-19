@@ -88,10 +88,12 @@ Run **exactly one** branch below based on `PROVIDER`. Do not run the other provi
 
 ### Merge PR
 
-| Provider  | Command                                                          |
-| --------- | ---------------------------------------------------------------- |
-| GitHub    | `gh pr merge {id} --squash`                                      |
-| Bitbucket | `bb pr merge {id} --merge-strategy squash --close-source-branch` |
+| Provider  | Command                                                                |
+| --------- | ---------------------------------------------------------------------- |
+| GitHub    | `gh pr merge {id} --merge`                                             |
+| Bitbucket | `bb pr merge {id} --merge-strategy merge_commit --close-source-branch` |
+
+Merge commits only: squash and rebase give the branch's commits new SHAs, so ancestry checks never see the branch as landed.
 
 ### Approve PR
 

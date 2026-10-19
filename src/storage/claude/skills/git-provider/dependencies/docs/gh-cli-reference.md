@@ -155,10 +155,10 @@ gh pr merge 123 --squash
 gh pr merge 123 --rebase
 
 # Auto-merge when checks pass
-gh pr merge 123 --auto --squash
+gh pr merge 123 --auto --merge
 
 # Delete branch after merge
-gh pr merge 123 --squash --delete-branch
+gh pr merge 123 --merge --delete-branch
 ```
 
 ### Close/Reopen PR
