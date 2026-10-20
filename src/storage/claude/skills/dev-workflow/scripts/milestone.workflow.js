@@ -44,6 +44,14 @@ const BUILT = {
   properties: { ...REPORT.properties, green: { type: 'boolean' } },
   required: [...REPORT.required, 'green'],
 }
+// A fold leaves a fix in a file another fold holds; once every group is done, one agent does what they left.
+const FOLDED = {
+  ...REPORT,
+  properties: {
+    ...REPORT.properties,
+    left: { type: 'array', items: { type: 'object', properties: { file: STR, change: STR }, required: ['file', 'change'] } },
+  },
+}
 const DECISIONS = {
   type: 'object',
   properties: {
@@ -304,10 +312,10 @@ Fold these of the review's findings into the milestone in one pass:
 ${JSON.stringify(g.findings, null, 2)}
 
 ${foldRules}
-- Your files: ${g.files.join(', ')}. ${beside.length ? `Folding beside you, each holding its own files: ${beside.map(o => `${o.key} (${o.files.join(', ')})`).join('; ')}. A fix or a sibling path in a file another fold holds: leave it and name it in notes, with the file and the shape. A file no fold holds is shared: re-read it right before each edit.` : 'No other fold runs beside you.'}
+- Your files: ${g.files.join(', ')}. ${beside.length ? `Folding beside you, each holding its own files: ${beside.map(o => `${o.key} (${o.files.join(', ')})`).join('; ')}. A fix or a sibling path in a file another fold holds: leave it and list it in left, with the file and the change it needs; it is done once every fold has finished. A file no fold holds is shared: re-read it right before each edit.` : 'No other fold runs beside you.'}
 
 ${SHARED}${decided(g.key)}`,
-        { label: `${m.id} ${g.key}`, phase: 'Fold', schema: REPORT })
+        { label: `${m.id} ${g.key}`, phase: 'Fold', schema: FOLDED })
     } finally {
       running.delete(g.key)
     }
@@ -315,6 +323,21 @@ ${SHARED}${decided(g.key)}`,
   fold = groups.map((g, i) => ({ key: g.key, findings: g.findings.length, ...reports[i] }))
   const open = fold.find(asked)
   if (open) return stopped('fold', open.key, open, { built, review, fold })
+  const left = fold.flatMap(f => (f.left || []).map(l => ({ ...l, from: f.key })))
+  if (left.length) {
+    const handoff = folded['fold-left'] || await answered('fold-left', foldLevel, 'The fold of what the groups left',
+      `${CONTEXT}
+
+The fold groups have all finished. Each left these changes in a file another group held; every file is free now. Make each one:
+${JSON.stringify(left, null, 2)}
+
+${foldRules}
+
+${SHARED}${decided('fold-left')}`,
+      { label: `${m.id} fold-left`, phase: 'Fold', schema: REPORT })
+    fold.push({ key: 'fold-left', findings: left.length, ...handoff })
+    if (asked(handoff)) return stopped('fold', 'fold-left', handoff, { built, review, fold })
+  }
 
   phase('Verify')
   verify = await run(foldLevel,
