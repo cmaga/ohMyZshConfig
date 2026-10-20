@@ -160,7 +160,7 @@ def fix(o):
 The milestone's one end-to-end run, made after every task, the review, and the fold, failed: {text('@' + o.failures)}
 
 - Read each failure's output in that log, and the whole path it runs through, before editing; the line a traceback names is often not the defect.
-- Fix the code. An edit to a committed test is a question.
+- Fix the code. The bed's harness (its topology, launchers, fixtures and env) is code too; an edit to a test function's assertions is a question.
 - Rerun only the failed tests, by node id, in one invocation, until they pass, and the unit tests of every file you touch. Never rerun the whole set. {TIMEOUT} Write the last rerun's whole output to {logs}/{args['epic']}-{m['id']}-rerun.log.
 - A failure that passes when rerun alone, and that no code explains, is load: say so and leave it.
 
