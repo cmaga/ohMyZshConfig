@@ -167,6 +167,7 @@ Files you own: ${t.files.join(', ')}
 
 ${t.card}
 
+- Read the lines starting "Decided during the build:" in ${t.id}'s section of ${plan} first: they record decisions made after this card was written, and they override it.
 - Your files are where the work starts, not a fence. A file outside them that no task running beside you owns: edit it, commit it with yours, list it in files, and say why in notes. A question is only a file a task running beside you owns, a change to a signature, type, or schema the scaffold committed, or an edit to a committed test.
 - Read each file you edit end to end before editing it, and one or two similar files in the codebase for the pattern to follow.
 - Comment only what the code cannot say for itself, and fix any comment your change makes wrong.
