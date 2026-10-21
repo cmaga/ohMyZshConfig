@@ -31,7 +31,7 @@ Run them in one context — they feed each other.
 
 ## Subagent settings
 
-Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state.json` and pass `scoping_fanout_model` as the `model` option. If the file or key is missing, or the value is `inherit`, leave it out. Prefix each subagent's `description` with `scoping-fanout(<model>): <what it does>`.
+Before launching any subagent, run `python3 ~/.claude/skills/optimize-usage/scripts/levers.py` and pass its `levers.scoping_fanout_model` as the `model` option. If the run fails, the key is missing, or the value is `inherit`, leave it out. Prefix each subagent's `description` with `scoping-fanout(<model>): <what it does>`.
 
 ## Output
 

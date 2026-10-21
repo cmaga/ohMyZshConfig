@@ -5,7 +5,7 @@ export const meta = {
 }
 
 const { spec, tree, components, levels } = args
-if (!levels) throw new Error('pass levels: the contents of scripts/levels.json')
+if (!levels) throw new Error('pass levels: one account set from scripts/levels.json')
 
 const run = (level, prompt, opts) => {
   const l = levels[level]

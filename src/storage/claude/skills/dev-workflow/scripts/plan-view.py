@@ -39,6 +39,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[1] / 'optimize-usage' / 'scripts'))
+from levers import resolve
 MODEL = {'opus': 'Opus', 'sonnet': 'Sonnet 1M', 'fable': 'Fable', 'haiku': 'Haiku'}
 FATE_TABLES = ("## Checks today's code performs", '## Behavior in code the build deletes or rewrites')
 
@@ -101,7 +103,7 @@ def parse_decisions(text):
 def main(plan_path, narrative_path, out_path):
     text = Path(plan_path).read_text()
     nar = json.loads(Path(narrative_path).read_text())
-    levels = json.loads((HERE / 'levels.json').read_text())
+    levels = json.loads((HERE / 'levels.json').read_text())[resolve()['account']]
     plan = parse_plan(text)
     fates = parse_fates(text)
     recorded = parse_decisions(text)

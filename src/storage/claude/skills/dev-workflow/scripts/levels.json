@@ -1,5 +1,12 @@
 {
-  "routine": { "model": "sonnet", "effort": "high" },
-  "judgment": { "model": "opus", "effort": "xhigh" },
-  "critical": { "model": "opus", "effort": "xhigh" }
+  "personal": {
+    "routine": { "model": "sonnet", "effort": "high" },
+    "judgment": { "model": "opus", "effort": "xhigh" },
+    "critical": { "model": "opus", "effort": "xhigh" }
+  },
+  "work": {
+    "routine": { "model": "sonnet", "effort": "high" },
+    "judgment": { "model": "opus", "effort": "xhigh" },
+    "critical": { "model": "opus", "effort": "xhigh" }
+  }
 }

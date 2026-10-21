@@ -1,5 +1,19 @@
 {
-  "updated": "2026-10-12",
+  "updated": "2026-10-20",
+  "accounts": {
+    "personal": {
+      "config_dirs": [
+        ".claude",
+        ".claude-ms"
+      ],
+      "note": "ms signs in with the personal Claude account, so it shares that limit"
+    },
+    "work": {
+      "config_dirs": [
+        ".claude-gsi"
+      ]
+    }
+  },
   "levers": {
     "session_model": {
       "value": "opus",
@@ -13,28 +27,61 @@
       "native": "~/.claude/settings.json modelSettings[\"claude-opus-5-5\"].effortLevel (top-level effortLevel no longer applies to Opus 5.5; it still covers Fable 5.1 and Opus 5)"
     },
     "review_model": {
-      "value": "opus",
-      "kind": "runtime",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
+      "kind": "skill",
+      "agents": [
+        "code-review-agent",
+        "plan-review-agent",
+        "qa-planner-agent"
+      ],
+      "opt": "model",
       "native": "agents/{code-review,plan-review,qa-planner}-agent.md model:"
     },
     "review_effort": {
-      "value": "max",
-      "kind": "runtime",
+      "value": {
+        "personal": "max",
+        "work": "max"
+      },
+      "kind": "skill",
+      "agents": [
+        "code-review-agent"
+      ],
+      "opt": "effort",
       "native": "agents/code-review-agent.md effort:; the other three inherit",
       "note": "max on code-review-agent only, by user decision 2026-10-10; plan-review and qa-planner inherit session effort"
     },
     "worker_model": {
-      "value": "opus",
-      "kind": "runtime",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
+      "kind": "skill",
+      "agents": [
+        "worker-agent"
+      ],
+      "opt": "model",
       "native": "agents/worker-agent.md model:"
     },
     "tester_model": {
-      "value": "opus",
-      "kind": "runtime",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
+      "kind": "skill",
+      "agents": [
+        "tester-agent"
+      ],
+      "opt": "model",
       "native": "agents/tester-agent.md model:"
     },
     "escalation_model": {
-      "value": "fable",
+      "value": {
+        "personal": "fable",
+        "work": "fable"
+      },
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent",
@@ -42,8 +89,15 @@
       ]
     },
     "worker_effort": {
-      "value": "inherit",
-      "kind": "runtime",
+      "value": {
+        "personal": "inherit",
+        "work": "inherit"
+      },
+      "kind": "skill",
+      "agents": [
+        "worker-agent"
+      ],
+      "opt": "effort",
       "native": "agents/worker-agent.md effort: (unset)"
     },
     "vault_scribe_model": {
@@ -52,7 +106,10 @@
       "native": "agents/vault-scribe-agent.md and agents/adr-auditor-agent.md model:"
     },
     "research_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.1",
@@ -60,40 +117,62 @@
       ]
     },
     "code_fanout_model": {
-      "value": "opus",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.2"
       ]
     },
     "review_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "review_fanout_effort": {
-      "value": "xhigh",
+      "value": {
+        "personal": "xhigh",
+        "work": "xhigh"
+      },
       "kind": "skill",
       "readers": [
         "agents/code-review-agent.md Subagent settings"
       ]
     },
     "parent_fanout_model": {
-      "value": "opus",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Prerequisite 2"
       ]
     },
     "scoping_model": {
-      "value": "opus",
-      "kind": "runtime",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
+      "kind": "skill",
+      "agents": [
+        "scoping-agent"
+      ],
+      "opt": "model",
       "native": "agents/scoping-agent.md model:"
     },
     "scoping_fanout_model": {
-      "value": "sonnet[1m]",
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
       "kind": "skill",
       "readers": [
         "agents/scoping-agent.md Subagent settings"
@@ -106,36 +185,54 @@
       "note": "kept off 2026-10-10 by user decision: too slow"
     },
     "build_routine_model": {
-      "value": "sonnet[1m]",
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json routine.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+      "native": "dev-workflow scripts/levels.json <account>.routine.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
     },
     "build_routine_effort": {
-      "value": "high",
+      "value": {
+        "personal": "high",
+        "work": "high"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json routine.effort",
+      "native": "dev-workflow scripts/levels.json <account>.routine.effort",
       "note": "stepped xhigh->high 2026-10-12, same pass; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
     },
     "build_judgment_model": {
-      "value": "opus",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json judgment.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+      "native": "dev-workflow scripts/levels.json <account>.judgment.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
     },
     "build_judgment_effort": {
-      "value": "xhigh",
+      "value": {
+        "personal": "xhigh",
+        "work": "xhigh"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json judgment.effort",
+      "native": "dev-workflow scripts/levels.json <account>.judgment.effort",
       "note": "kept at xhigh 2026-10-12 by user decision, reversing the same-day step to high; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
     },
     "build_critical_model": {
-      "value": "opus",
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json critical.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+      "native": "dev-workflow scripts/levels.json <account>.critical.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
     },
     "build_critical_effort": {
-      "value": "xhigh",
+      "value": {
+        "personal": "xhigh",
+        "work": "xhigh"
+      },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json critical.effort",
+      "native": "dev-workflow scripts/levels.json <account>.critical.effort",
       "note": "stepped max->xhigh 2026-10-12: the EN-503 build projected at 1.5 weeks of limit; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
     }
   }

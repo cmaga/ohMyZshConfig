@@ -13,7 +13,7 @@ export const meta = {
 }
 
 const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, logs, brief = '', decisions = {}, settled = {}, reviewed = null, folded = {} } = args
-if (!levels || !scripts) throw new Error('pass levels (the contents of scripts/levels.json) and scripts (that directory, absolute)')
+if (!levels || !scripts) throw new Error('pass levels (one account set from scripts/levels.json) and scripts (that directory, absolute)')
 
 const ORDER = ['routine', 'judgment', 'critical']
 const atLeast = (level, floor) => (ORDER.indexOf(level) >= ORDER.indexOf(floor) ? level : floor)

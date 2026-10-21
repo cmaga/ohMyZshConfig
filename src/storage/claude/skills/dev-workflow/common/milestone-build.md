@@ -8,7 +8,7 @@ The build never merges to the base branch and never deploys. It ends with the wh
 
 ## Levels
 
-Every agent the build starts runs at one of three levels, whose model and effort live in [`scripts/levels.json`](../scripts/levels.json). Pass that file's contents as `levels` to every workflow below; an Agent tool dispatch takes its level's `model` and `effort`. `sonnet` runs Sonnet 1M through the settings remap.
+Every agent the build starts runs at one of three levels, whose model and effort live in [`scripts/levels.json`](../scripts/levels.json), one set per Claude account. Pass the set for the account Prerequisite 2 in [SKILL.md](../SKILL.md) printed as `levels` to every workflow below; an Agent tool dispatch takes its level's `model` and `effort`. `sonnet` runs Sonnet 1M through the settings remap.
 
 The build reads no lever but `ESCALATION_MODEL`, and its agent types are only the escalation agent and `vault-scribe-agent`. Every other agent is plain, its rules in its prompt.
 

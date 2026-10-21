@@ -47,7 +47,7 @@ Every finding points at a file and line in code you actually opened. Never guess
 
 ## Subagent settings
 
-Before launching any subagent, read `~/.claude/skills/optimize-usage/lever-state.json` and use `review_fanout_model` and `review_fanout_effort` as the `model` and `effort` options on every subagent. If the file or key is missing, or the value is `inherit`, leave that option out. Prefix each subagent's `description` with the lever values it carries, as `review-fanout(<model>/<effort>): <what it does>` — neither the model nor the effort you pass is recorded anywhere, so the prefix is the only trace of which lever that agent was dispatched under.
+Before launching any subagent, run `python3 ~/.claude/skills/optimize-usage/scripts/levers.py` and use its `levers.review_fanout_model` and `levers.review_fanout_effort` as the `model` and `effort` options on every subagent. If the run fails, the key is missing, or the value is `inherit`, leave that option out. Prefix each subagent's `description` with the lever values it carries, as `review-fanout(<model>/<effort>): <what it does>` — neither the model nor the effort you pass is recorded anywhere, so the prefix is the only trace of which lever that agent was dispatched under.
 
 Every subagent returns its findings verbatim, never summarized: a reviewer that lets a helper condense what it found reports a verdict over ground it never saw. Disproof subagents are the exception that proves the rule — each gets the failing scenario alone and never your reasoning, because an agent handed the argument for a bug is anchored on it, and a CONFIRMED verdict is what authorizes a fix no human checks.
 

@@ -31,6 +31,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[1] / 'optimize-usage' / 'scripts'))
+from levers import resolve
 TIMEOUT = 'Run pytest with `--timeout=900 --timeout-method=thread` every time, so a hung test cannot stall the build.'
 
 
@@ -108,7 +110,7 @@ def start(o):
         'epic': o.epic, 'spec': o.spec, 'plan': str(Path(o.plan).resolve()), 'tree': o.tree,
         'base': subprocess.check_output(['git', '-C', o.tree, 'rev-parse', 'HEAD'], text=True).strip(),
         'projectBase': o.project_base, 'scripts': str(HERE),
-        'levels': json.loads((HERE / 'levels.json').read_text()),
+        'levels': json.loads((HERE / 'levels.json').read_text())[resolve()['account']],
         'milestone': milestone(o.plan, o.n), 'decisions': {}, 'settled': {}, 'logs': str(Path(o.out).resolve()),
     }
     unlevelled = [t['id'] for t in args['milestone']['tasks'] if t['level'] not in args['levels']]
