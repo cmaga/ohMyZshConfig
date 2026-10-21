@@ -56,7 +56,7 @@
     "worker_model": {
       "value": {
         "personal": "deepseek-flash[1m]",
-        "work": "opus"
+        "work": "sonnet[1m]"
       },
       "kind": "skill",
       "agents": [
@@ -64,7 +64,7 @@
       ],
       "opt": "model",
       "native": "agents/worker-agent.md model:",
-      "note": "personal on deepseek-flash 2026-10-21 by user decision, for high volume; work stays opus"
+      "note": "2026-10-21 by user decision: personal on deepseek-flash for high volume; work on sonnet, level with opus on coding at 0.62x"
     },
     "tester_model": {
       "value": {
@@ -81,9 +81,9 @@
     "escalation_model": {
       "value": {
         "personal": "opus",
-        "work": "fable"
+        "work": "opus"
       },
-      "note": "personal stepped fable->opus 2026-10-21: fable trails opus on both independent coding boards at 2.15x the cost",
+      "note": "both accounts stepped fable->opus 2026-10-21: fable trails opus on both independent coding boards at 2.15x the cost",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent",
@@ -121,8 +121,9 @@
     "code_fanout_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "sonnet[1m]"
       },
+      "note": "work stepped opus->sonnet 2026-10-21: level coding scores at 0.62x, and adversarial verification gates its claims",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 4.2"
@@ -151,8 +152,9 @@
     "parent_fanout_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "sonnet[1m]"
       },
+      "note": "work stepped opus->sonnet 2026-10-21: the largest dispatch surface, level coding scores at 0.62x",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Prerequisite 2"
