@@ -357,7 +357,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     for company in "${COMPANIES[@]}"; do
         account_dir="$HOME/.claude-$company"
         mkdir -p "$account_dir" || error "Failed to create $account_dir"
-        for entry in CLAUDE.md rules skills agents hooks settings.json plugins projects; do
+        for entry in CLAUDE.md rules skills hooks settings.json plugins projects; do
             [ -e "$CLAUDE_DIR/$entry" ] || continue
             link="$account_dir/$entry"
             if [ -e "$link" ] && [ ! -L "$link" ]; then
@@ -367,6 +367,11 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_DIR/$entry" "$link" \
                 || print_status "warning" "Failed to link $link"
         done
+        # Agent frontmatter carries lever values, which optimize-usage sets per account.
+        if ! { command_exists python3 && python3 "$CLAUDE_SKILLS_DEST/optimize-usage/scripts/account-agents.py" "$account_dir" "$CLAUDE_AGENTS_DEST"; }; then
+            print_status "warning" "Could not build $account_dir/agents for its account; it runs the agents in $CLAUDE_AGENTS_DEST"
+            [ -e "$account_dir/agents" ] || MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_AGENTS_DEST" "$account_dir/agents"
+        fi
         if command_exists claude; then
             CLAUDE_CONFIG_DIR="$account_dir" claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
             CLAUDE_CONFIG_DIR="$account_dir" claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1 \

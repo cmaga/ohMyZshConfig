@@ -133,10 +133,34 @@ function stripSchemaPatterns(node) {
   Object.values(node).forEach(stripSchemaPatterns);
 }
 
+// Claude Code announces tools that arrive mid-session (an MCP server connecting
+// after startup) as `tool_addition` blocks in a system-role message, and
+// DeepSeek rejects the block type with a 422. Move each definition into `tools`
+// and drop the block, and any message it leaves empty.
+function hoistToolAdditions(payload) {
+  if (!Array.isArray(payload.messages)) return;
+  const names = new Set((payload.tools ?? []).map((tool) => tool.name));
+  for (const message of payload.messages) {
+    if (!Array.isArray(message.content)) continue;
+    message.content = message.content.filter((block) => {
+      if (block?.type !== "tool_addition") return true;
+      const definition = block.tool?.definition;
+      if (definition && !names.has(definition.name)) {
+        (payload.tools ??= []).push(definition);
+        names.add(definition.name);
+      }
+      return false;
+    });
+  }
+  payload.messages = payload.messages.filter(
+    (message) => !Array.isArray(message.content) || message.content.length > 0,
+  );
+}
+
 function sanitizeForDeepSeek(body) {
   const payload = JSON.parse(body.toString("utf8"));
-  if (!Array.isArray(payload.tools)) return body;
-  payload.tools.forEach((tool) => stripSchemaPatterns(tool.input_schema));
+  hoistToolAdditions(payload);
+  payload.tools?.forEach((tool) => stripSchemaPatterns(tool.input_schema));
   return Buffer.from(JSON.stringify(payload));
 }
 

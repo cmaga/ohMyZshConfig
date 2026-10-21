@@ -42,12 +42,16 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > session model instead of Haiku. `oc` in `zsh/aliases.zsh` restores both with
 > `ENABLE_TOOL_SEARCH=true` and `ANTHROPIC_DEFAULT_HAIKU_MODEL` (probed 2026-10-12, 2.1.296);
 > re-point that Haiku ID when a new Haiku ships, since the `haiku` alias resolves to it.
-> DeepSeek rejects deferred tools (422), so `od` keeps tool search off, and a DeepSeek
-> worker or vault agent needs a session started with `ENABLE_TOOL_SEARCH=false`.
+> A DeepSeek worker or vault agent runs from any `oc` session: Claude Code loads every tool
+> upfront for a DeepSeek model even with tool search on, and DeepSeek accepts deferred tools
+> and tool-reference blocks. It rejects the `tool_addition` blocks that announce a
+> late-connecting MCP server's tools (422), which the proxy moves into `tools` (probed
+> 2026-10-21, 2.1.306).
 
 > **Two accounts.** `work` and `personal` each have their own limit and their own value on every
 > row but 1, 2, 8 and 12, whose native homes they share. Rows 3-6, 9 and 11 bind through
-> dev-workflow's dispatch opts; their frontmatter carries personal's value for any other dispatch.
+> dev-workflow's dispatch opts and through each account's own agent frontmatter, which deploy
+> builds per config dir.
 
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Perf (TB 4.0) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -55,7 +59,7 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 | 2 | Session effort | `/effort` or the `/model` picker (live, hand-set; saves per model under `modelSettings` in user settings — a top-level `effortLevel` there does not reach Opus 5.5, and `max` is never saved), `--effort`, `CLAUDE_CODE_EFFORT_LEVEL` | max<br>xhigh<br>high<br>medium<br>low | max 3.29x<br>xhigh 1.90x<br>high 1.00x<br>medium 0.74x<br>low 0.30x<br>(Opus 5.5) | max 59.6<br>xhigh 59.6<br>others unpublished<br>(Opus 5.5) | 50 |
 | 3 | Review model | `model:` frontmatter in `agents/code-review-agent.md`, `plan-review-agent.md`, `qa-planner-agent.md` | fable<br>opus<br>sonnet[1m]<br>haiku | as row 1 (fable 2.15x, opus 1x, sonnet 0.98x, haiku 0.15x) | as row 1 | 60 |
 | 4 | Review effort | `effort:` frontmatter in the same review agent files | max<br>xhigh<br>high<br>medium<br>low | as row 2 (max 3.29x / xhigh 1.90x / high 1.00x / medium 0.74x / low 0.30x) | as row 2 | 35 |
-| 5 | Worker model | `lever-state.json` `worker_model`, which dev-workflow passes as the `model` opt; `agents/worker-agent.md` `model:` carries a DeepSeek value when either account uses one, else personal's | fable<br>opus<br>deepseek-flash[1m] (proxy)<br>deepseek-v4-pro[1m] (proxy; dominated by flash)<br>sonnet[1m]<br>haiku | Claude models as row 3. deepseek-flash[1m]: 0.15x in DeepSeek dollars, 0 on the Claude limit; `deepseek-v4-pro[1m]` 0.37x and scores below flash on the same index (36 vs 39), so flash dominates it until pro is updated. Fails in a session not launched through `oc`. Always set with `[1m]`: a bare DeepSeek name gets a 200K window (probed 2026-09-27) | Claude as row 1<br>deepseek-flash 26.8 (19.7)<br>deepseek-v4-pro — (14.1) | 30 |
+| 5 | Worker model | `lever-state.json` `worker_model`, which dev-workflow passes as the `model` opt; `agents/worker-agent.md` `model:`, per account | fable<br>opus<br>deepseek-flash[1m] (proxy)<br>deepseek-v4-pro[1m] (proxy; dominated by flash)<br>sonnet[1m]<br>haiku | Claude models as row 3. deepseek-flash[1m]: 0.15x in DeepSeek dollars, 0 on the Claude limit; `deepseek-v4-pro[1m]` 0.37x and scores below flash on the same index (36 vs 39), so flash dominates it until pro is updated. Fails in a session not launched through `oc`. Always set with `[1m]`: a bare DeepSeek name gets a 200K window (probed 2026-09-27) | Claude as row 1<br>deepseek-flash 26.8 (19.7)<br>deepseek-v4-pro — (14.1) | 30 |
 | 6 | Worker effort | `agents/worker-agent.md` `effort:` | max<br>xhigh<br>high<br>medium<br>low | as row 4; bounded by review gates | as row 2 | 10 |
 | 7a | Research fan-out model | `lever-state.json` `research_fanout_model` — read by dev-workflow Step 4.1 and ultra's Precedent research for their `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; read/summarize | as row 1 | 8 |
 | 7b | Code fan-out model | `lever-state.json` `code_fanout_model` — read by dev-workflow Step 4.2 for its `agent()` `model` opt | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; task-dependent | as row 1 | 20 |

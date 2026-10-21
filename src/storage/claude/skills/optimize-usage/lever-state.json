@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20",
+  "updated": "2026-10-21",
   "accounts": {
     "personal": {
       "config_dirs": [
@@ -55,7 +55,7 @@
     },
     "worker_model": {
       "value": {
-        "personal": "opus",
+        "personal": "deepseek-flash[1m]",
         "work": "opus"
       },
       "kind": "skill",
@@ -63,7 +63,8 @@
         "worker-agent"
       ],
       "opt": "model",
-      "native": "agents/worker-agent.md model:"
+      "native": "agents/worker-agent.md model:",
+      "note": "personal on deepseek-flash 2026-10-21 by user decision, for high volume; work stays opus"
     },
     "tester_model": {
       "value": {
@@ -79,9 +80,10 @@
     },
     "escalation_model": {
       "value": {
-        "personal": "fable",
+        "personal": "opus",
         "work": "fable"
       },
+      "note": "personal stepped fable->opus 2026-10-21: fable trails opus on both independent coding boards at 2.15x the cost",
       "kind": "skill",
       "readers": [
         "dev-workflow SKILL.md Step 6 escalation agent",
