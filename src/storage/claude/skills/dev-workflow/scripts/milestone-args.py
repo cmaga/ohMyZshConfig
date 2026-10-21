@@ -33,6 +33,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / 'optimize-usage' / 'scripts'))
 from levers import resolve
+LEVELS = ('pinned', 'open', 'critical')
 TIMEOUT = 'Run pytest with `--timeout=900 --timeout-method=thread` every time, so a hung test cannot stall the build.'
 
 
@@ -113,7 +114,7 @@ def start(o):
         'levels': json.loads((HERE / 'levels.json').read_text())[resolve()['account']],
         'milestone': milestone(o.plan, o.n), 'decisions': {}, 'settled': {}, 'logs': str(Path(o.out).resolve()),
     }
-    unlevelled = [t['id'] for t in args['milestone']['tasks'] if t['level'] not in args['levels']]
+    unlevelled = [t['id'] for t in args['milestone']['tasks'] if t['level'] not in LEVELS]
     if unlevelled:
         sys.exit(f'no level on {", ".join(unlevelled)}')
     write(Path(o.out) / f'{o.epic}-M{o.n}.json', args)
@@ -134,7 +135,7 @@ def show(o):
         print(f'  decided in the run, {d["key"]}: {d["decision"]}')
     for b in r.get('built', []):
         print(f'  {b["id"]}: {b.get("status", "no report")}, green={b.get("green")}, level={b.get("level")}'
-              f'{", promoted" if "first" in b else ""}')
+              f'{", rerun" if "first" in b else ""}')
 
 
 def bed(o):

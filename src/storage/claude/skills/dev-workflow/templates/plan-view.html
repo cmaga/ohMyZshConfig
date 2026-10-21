@@ -13,7 +13,7 @@ the narrative file, and its header lists the narrative's fields.
   --bg:#f3f5f7; --surface:#ffffff; --sunk:#e8ecf0; --line:#cfd6de; --ink:#16202b; --muted:#5a6876;
   --s1:#0e7c86; --s2:#b26a00; --s3:#3f5bd0; --s4:#c0396b; --s5:#5b6b7c; --s6:#2f7d32; --old:#8a96a3;
   --moved:#2f8f5b; --on-strong:#ffffff; --adapted:#3f6fb5; --retired:#9aa5b1; --pause:#d9480f; --accent:#0e7c86;
-  --lv-r:#5f9fc2; --lv-j:#5b4fc4; --lv-c:#c62f3f; --pause-soft:#fde3d6;
+  --lv-p:#5f9fc2; --lv-o:#5b4fc4; --lv-c:#c62f3f; --pause-soft:#fde3d6;
   --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
@@ -22,13 +22,13 @@ the narrative file, and its header lists the narrative's fields.
   --bg:#0f151b; --surface:#161e26; --sunk:#1d2730; --line:#2c3844; --ink:#e6ebf0; --muted:#9aa8b6;
   --s1:#3cb8c2; --s2:#e3a23b; --s3:#8a9ef5; --s4:#ec7aa2; --s5:#9aabbd; --s6:#6cc070; --old:#6c7886;
   --moved:#4cbb7f; --on-strong:#0f151b; --adapted:#6f9be0; --retired:#5f6b77; --pause:#ff7a3d; --accent:#3cb8c2;
-  --lv-r:#7fc0e0; --lv-j:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
+  --lv-p:#7fc0e0; --lv-o:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f151b; --surface:#161e26; --sunk:#1d2730; --line:#2c3844; --ink:#e6ebf0; --muted:#9aa8b6;
   --s1:#3cb8c2; --s2:#e3a23b; --s3:#8a9ef5; --s4:#ec7aa2; --s5:#9aabbd; --s6:#6cc070; --old:#6c7886;
   --moved:#4cbb7f; --on-strong:#0f151b; --adapted:#6f9be0; --retired:#5f6b77; --pause:#ff7a3d; --accent:#3cb8c2;
-  --lv-r:#7fc0e0; --lv-j:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
+  --lv-p:#7fc0e0; --lv-o:#9a90f0; --lv-c:#ff6b78; --pause-soft:#45200e;
   color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
@@ -186,10 +186,10 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
 
 <section>
   <div class="sec-head"><div class="eyebrow">Who builds what</div><h2>Every task has a level, and the level picks the model</h2>
-  <p>The levels are fixed in the build itself. No agent falls back to the session's model. A worker that gets stuck reruns once, one level up.</p></div>
+  <p>The levels are fixed in the build itself. No agent falls back to the session's model. A worker that gets stuck reruns once on open; a critical one comes back to the coordinator.</p></div>
   <div class="lvl-cards" id="lvlcards"></div>
   <div class="bars" id="lvlbars"></div>
-  <p class="note">Every milestone also runs its scaffold, failing tests, one reviewer per task (at that task's level, never below judgment), the fix pass and the re-check at judgment or above. Checks that try to disprove each review finding run at routine.</p>
+  <p class="note">Every milestone also runs its scaffold, failing tests, one reviewer per task, a check that tries to disprove each bug a reviewer finds, and the re-check, all on the build's plan and review models; the fix pass runs on open. Anything touching a critical task runs at the critical effort or above.</p>
 </section>
 
 <section id="fates-sec">
@@ -238,7 +238,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const COLOR={};P.systems.forEach((s,i)=>COLOR[s.short]=`var(--s${i%6+1})`);
 const colorOf=k=>COLOR[k]||'var(--s5)';
-const LEVELS=[['critical','c','--lv-c','Code whose mistake loses money, data or a safety check.'],['judgment','j','--lv-j','New code a spec sentence requires, or a direct call becoming a message between systems.'],['routine','r','--lv-r','Moving and adapting code, renames, import changes, test and config housekeeping.']];
+const LEVELS=[['critical','c','--lv-c','Code whose mistake loses money, data or a safety check.'],['open','o','--lv-o','New code the tests leave open: UI, wiring across a system boundary, a choice the spec leaves to the code.'],['pinned','p','--lv-p','Code the scaffold and failing tests already pin down, and moving or adapting code.']];
 const KEY='plan-view-pauses-'+P.epic;
 let picked=new Set(P.pauses.recommended);
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(s))picked=new Set(s)}catch(e){}
@@ -293,7 +293,7 @@ function renderMatrix(){const ms=P.milestones;let max=1;P.systems.forEach(s=>ms.
  $('matrix').innerHTML=html;
  $('matrix-p').textContent='Each cell counts the tasks in that milestone that touch that system.'+(r?` ${r.name} keeps running until M-${r.removedAt} removes it.`:'')}
 
-function renderLevels(){const tot={c:0,j:0,r:0};P.milestones.forEach(m=>{tot.c+=m.levels.c;tot.j+=m.levels.j;tot.r+=m.levels.r});
+function renderLevels(){const tot={c:0,o:0,p:0};P.milestones.forEach(m=>{tot.c+=m.levels.c;tot.o+=m.levels.o;tot.p+=m.levels.p});
  $('lvlcards').innerHTML=LEVELS.map(([name,k,c,p])=>`<div class="lvl" style="--c:var(${c})"><div class="top"><h3>${name[0].toUpperCase()+name.slice(1)}</h3><span class="n">${tot[k]}</span></div><span class="mdl">${esc(P.levels[name])}</span><p>${esc((P.levelNotes||{})[name]||p)}</p></div>`).join('');
  const mx=Math.max(...P.milestones.map(m=>m.tasks));
  $('lvlbars').innerHTML=P.milestones.map(m=>`<span class="lbl">M-${m.n} <span style="color:var(--muted)">${esc(m.short)}</span></span><div class="bar" style="width:${(m.tasks/mx*100).toFixed(1)}%">${LEVELS.filter(([,k])=>m.levels[k]).map(([name,k,c])=>`<div style="width:${(m.levels[k]/m.tasks*100).toFixed(1)}%;background:var(${c})" title="${m.levels[k]} ${name}">${m.levels[k]}</div>`).join('')}</div><span class="val">${m.tasks}</span>`).join('')}

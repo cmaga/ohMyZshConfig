@@ -1,6 +1,6 @@
 export const meta = {
   name: 'dev-workflow-milestone',
-  description: 'Build one milestone of an ultra spec on fixed model levels: scaffold, failing tests, workers, review, a fold in parallel groups, and one verify',
+  description: 'Build one milestone of an ultra spec on fixed model roles: scaffold, failing tests, workers, review, a fold in parallel groups, and one verify',
   phases: [
     { title: 'Scaffold' },
     { title: 'Tests' },
@@ -15,16 +15,22 @@ export const meta = {
 const { epic, spec, plan, tree, base, projectBase, scripts, levels, milestone: m, logs, brief = '', decisions = {}, settled = {}, reviewed = null, folded = {} } = args
 if (!levels || !scripts) throw new Error('pass levels (one account set from scripts/levels.json) and scripts (that directory, absolute)')
 
-const ORDER = ['routine', 'judgment', 'critical']
-const atLeast = (level, floor) => (ORDER.indexOf(level) >= ORDER.indexOf(floor) ? level : floor)
-const highest = (list, floor) => list.reduce(atLeast, floor)
-const used = { routine: 0, judgment: 0, critical: 0 }
-const promoted = []
-const run = (level, prompt, opts) => {
-  const l = levels[level]
-  if (!l) throw new Error(`no level named ${level}`)
-  used[level]++
-  return agent(prompt, { ...opts, model: l.model, effort: l.effort, label: `${level}(${l.model}/${l.effort}): ${opts.label}` })
+// A task's level: pinned and open name the role that fills it, and a critical task fills on open.
+const LEVELS = ['pinned', 'open', 'critical']
+const roleOf = level => (level === 'critical' ? 'open' : level)
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
+const used = {}
+const rerun = []
+// Critical work runs at least at the critical effort. A DeepSeek model binds only through an agent file's
+// frontmatter, so it runs as the agent named for it.
+const run = (role, prompt, opts, critical = false) => {
+  const l = levels[role]
+  if (!l) throw new Error(`no role named ${role}`)
+  const floor = critical && levels.critical.effort
+  const effort = l.effort && floor && EFFORTS.indexOf(floor) > EFFORTS.indexOf(l.effort) ? floor : l.effort
+  const bind = l.model.startsWith('deepseek') ? { agentType: `${l.model.replace('[1m]', '')}-agent` } : { model: l.model }
+  used[role] = (used[role] || 0) + 1
+  return agent(prompt, { ...opts, ...bind, ...(effort && { effort }), label: `${role}${critical ? ' critical' : ''}(${l.model}${effort ? `/${effort}` : ''}): ${opts.label}` })
 }
 
 const STR = { type: 'string' }
@@ -76,7 +82,7 @@ const CONTEXT = `Spec: ${spec} — read the sections this work names. Milestone 
 const SHARED = `Work only in ${tree}, by absolute path and \`git -C ${tree}\`. Other agents share this tree and its git index: commit only your own files, naming them — \`git -C ${tree} commit -m "<subject in the project's commit format; the ticket is ${epic}>" -- <your files>\`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Edits you did not make belong to a sibling; leave them. Do the work yourself and spawn nothing. Leave the session's task list alone: it is the user's view of the run, so no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: stop, set status to question, and say what you did.`
 const decided = key => (decisions[key] ? `\n\nThe parent decided: ${decisions[key]}` : '')
 const decidedHere = []
-const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, promoted }, ...rest })
+const stopped = (stage, key, report, rest) => ({ stopped: stage, key, report, decided: decidedHere, usage: { used, rerun }, ...rest })
 const asked = r => !r || r.status === 'question'
 // No agent runs the end-to-end tests: workers and the fold run unit tests, and green means those pass.
 const stuck = r => asked(r) || r.green === false
@@ -87,14 +93,14 @@ const stuck = r => asked(r) || r.green === false
 const running = new Map()
 const waiting = []
 let deciding = false
-const decide = (key, level, asking, report) => new Promise(resolve => { waiting.push({ key, level, asking, report, resolve }); drain() })
+const decide = (key, critical, asking, report) => new Promise(resolve => { waiting.push({ key, critical, asking, report, resolve }); drain() })
 const drain = async () => {
   if (deciding || !waiting.length) return
   deciding = true
   const batch = waiting.splice(0)
   let out = null
   try {
-    out = await run(highest(batch.map(q => q.level), 'judgment'),
+    out = await run('decide',
       `${brief ? `${brief}\n\n---\n\n` : ''}${CONTEXT}
 
 You answer for the build's coordinator. These agents stopped with questions; answer every one under its key.
@@ -108,7 +114,7 @@ Decide from the spec, the plan at ${plan}, and the code; read whatever you need.
 - Record each decision: append a line starting "Decided during the build:" to that task's section of the plan, and to each later task's section it changes. A decision that changes what the spec says goes into the spec too, committed alone: \`git -C ${tree} commit -m "<subject in the project's commit format; the ticket is ${epic}>" -- ${spec}\`.
 - Set redesign only when the design itself cannot work and a component or the milestone order must be redrawn, so that carrying on would waste the build. Then say what is wrong in decision and change nothing.
 - Edit only the plan and the spec. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself and spawn nothing.`,
-      { label: `decide ${batch.map(q => q.key).join(', ')}`, phase: 'Decide', schema: DECISIONS })
+      { label: `decide ${batch.map(q => q.key).join(', ')}`, phase: 'Decide', schema: DECISIONS }, batch.some(q => q.critical))
   } catch (e) {
     out = null
   }
@@ -118,26 +124,26 @@ Decide from the spec, the plan at ${plan}, and the code; read whatever you need.
 }
 
 // A rerun reports only what it touched, so the stage's files and commits are every round's.
-const answered = async (key, level, asking, prompt, opts) => {
+const answered = async (key, role, asking, prompt, opts, critical = false) => {
   const files = new Set(), commits = new Set()
   const kept = r => { for (const f of r?.files || []) files.add(f); for (const c of r?.commits || []) commits.add(c); return r }
-  let report = kept(await run(level, prompt, opts))
+  let report = kept(await run(role, prompt, opts, critical))
   let said = ''
   for (let round = 1; report && report.status === 'question' && round <= 3; round++) {
-    const d = await decide(key, level, asking, report)
+    const d = await decide(key, critical, asking, report)
     if (!d || d.redesign) return { ...report, redesign: d ? d.decision : 'the decider died' }
     decidedHere.push({ key, question: report.question, decision: d.decision })
     said += `\n\nYou asked: ${report.question}\nThe coordinator decided: ${d.decision}`
-    report = kept(await run(level, `${prompt}${said}\n\nYour earlier runs' commits stay; build on them.`, { ...opts, label: `${opts.label} answered ${round}` }))
+    report = kept(await run(role, `${prompt}${said}\n\nYour earlier runs' commits stay; build on them.`, { ...opts, label: `${opts.label} answered ${round}` }, critical))
   }
   return report && { ...report, files: [...files], commits: [...commits] }
 }
 
-const unlevelled = m.tasks.filter(t => !levels[t.level]).map(t => t.id)
+const unlevelled = m.tasks.filter(t => !LEVELS.includes(t.level)).map(t => t.id)
 if (unlevelled.length) return stopped('plan', 'plan', null, { reason: `no level on ${unlevelled.join(', ')}` })
 
 phase('Scaffold')
-const scaffold = await answered('scaffold', 'judgment', 'The scaffold',
+const scaffold = await answered('scaffold', 'plan', 'The scaffold',
   `${CONTEXT}
 
 You are this milestone's scaffold. Make the moves first, one commit per move, with \`git mv\` so history follows. Then create every new file, signature, type, and schema the tasks below fill, with bodies that raise NotImplementedError or the language's equivalent. Write no behavior.
@@ -152,7 +158,7 @@ ${SHARED}${decided('scaffold')}`,
 if (asked(scaffold)) return stopped('scaffold', 'scaffold', scaffold)
 
 phase('Tests')
-const tests = await answered('tests', 'judgment', 'The test writer',
+const tests = await answered('tests', 'plan', 'The test writer',
   `${CONTEXT}
 
 Write the failing integration tests that prove this milestone, against the scaffold now committed. ${m.tests}
@@ -202,17 +208,18 @@ const build = async (t, layer) => {
 }
 
 const attempt = async (t, layer) => {
-  const first = await answered(t.id, t.level, `The worker on ${t.id}`, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT })
-  if ((first && (first.status === 'question' || !stuck(first))) || t.level === 'critical') return first && { ...first, level: t.level }
-  const up = ORDER[ORDER.indexOf(t.level) + 1]
-  promoted.push(t.id)
-  const second = await answered(t.id, up, `The worker on ${t.id}`,
+  const critical = t.level === 'critical'
+  const first = await answered(t.id, roleOf(t.level), `The worker on ${t.id}`, card(t, layer), { label: t.id, phase: 'Build', schema: BUILT }, critical)
+  if ((first && (first.status === 'question' || !stuck(first))) || critical) return first && { ...first, level: t.level }
+  // A stuck worker reruns once on open: a pinned task moves up a model, an open one gets a fresh start.
+  rerun.push(t.id)
+  const second = await answered(t.id, 'open', `The worker on ${t.id}`,
     `${card(t, layer)}
 
 A ${t.level} worker took this task first and stopped short. Its report: ${JSON.stringify(first)}
 Its commits stay; build on them.`,
     { label: `${t.id} rerun`, phase: 'Build', schema: BUILT })
-  return second && { ...second, level: up, first }
+  return second && { ...second, level: 'open', first }
 }
 
 phase('Build')
@@ -252,7 +259,7 @@ const review = reviewed || await workflow({ scriptPath: `${scripts}/review.workf
   context: CONTEXT,
   units: m.tasks.map(t => ({ id: t.id, title: t.title, files: t.files, level: t.level })),
 })
-if (review && !reviewed) ORDER.forEach(l => { used[l] += review.used[l] })
+if (review && !reviewed) Object.entries(review.used).forEach(([role, n]) => { used[role] = (used[role] || 0) + n })
 if (!review || review.gate === 'escalate' || review.gate === 'incomplete') return stopped('review', 'review', review, { built })
 
 const fixable = review.findings.filter(f => f.class === 'bug' || f.class === 'quality')
@@ -277,22 +284,22 @@ const foldGroups = findings => {
     held[i].forEach(file => part.files.add(file))
     parts.set(root(i), part)
   })
-  const levelOf = p => highest(p.findings.map(f => f.level), 'judgment')
+  const criticalOf = p => p.findings.some(f => f.critical)
   const agents = []
-  for (const part of [...parts.values()].sort((a, b) => ORDER.indexOf(levelOf(b)) - ORDER.indexOf(levelOf(a)) || b.findings.length - a.findings.length)) {
+  for (const part of [...parts.values()].sort((a, b) => criticalOf(b) - criticalOf(a) || b.findings.length - a.findings.length)) {
     const into = agents.find(a => a.findings.length + part.findings.length <= FOLD_CAP)
     if (into) {
       into.findings.push(...part.findings)
       part.files.forEach(file => into.files.add(file))
     } else agents.push({ findings: [...part.findings], files: new Set(part.files) })
   }
-  return agents.map((a, i) => ({ key: `fold-${i + 1}`, findings: a.findings, files: [...a.files], level: levelOf(a) }))
+  return agents.map((a, i) => ({ key: `fold-${i + 1}`, findings: a.findings, files: [...a.files], critical: criticalOf(a) }))
 }
 
 let fold = null
 let verify = null
 if (fixable.length) {
-  const foldLevel = highest(fixable.map(f => f.level), 'judgment')
+  const foldCritical = fixable.some(f => f.critical)
   const groups = foldGroups(fixable)
   const foldRules = `- Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
 - A finding is a shape, not a line. Search the whole diff (\`git -C ${tree} --no-pager diff ${base}...HEAD\`) for every sibling path with the same shape and fix them all now.
@@ -305,7 +312,7 @@ if (fixable.length) {
     const beside = groups.filter(o => o !== g)
     running.set(g.key, g.files)
     try {
-      return await answered(g.key, g.level, `The fold of ${g.key}`,
+      return await answered(g.key, 'open', `The fold of ${g.key}`,
         `${CONTEXT}
 
 Fold these of the review's findings into the milestone in one pass:
@@ -315,7 +322,7 @@ ${foldRules}
 - Your files: ${g.files.join(', ')}. ${beside.length ? `Folding beside you, each holding its own files: ${beside.map(o => `${o.key} (${o.files.join(', ')})`).join('; ')}. A fix or a sibling path in a file another fold holds: leave it and list it in left, with the file and the change it needs; it is done once every fold has finished. A file no fold holds is shared: re-read it right before each edit.` : 'No other fold runs beside you.'}
 
 ${SHARED}${decided(g.key)}`,
-        { label: `${m.id} ${g.key}`, phase: 'Fold', schema: FOLDED })
+        { label: `${m.id} ${g.key}`, phase: 'Fold', schema: FOLDED }, g.critical)
     } finally {
       running.delete(g.key)
     }
@@ -325,7 +332,7 @@ ${SHARED}${decided(g.key)}`,
   if (open) return stopped('fold', open.key, open, { built, review, fold })
   const left = fold.flatMap(f => (f.left || []).map(l => ({ ...l, from: f.key })))
   if (left.length) {
-    const handoff = folded['fold-left'] || await answered('fold-left', foldLevel, 'The fold of what the groups left',
+    const handoff = folded['fold-left'] || await answered('fold-left', 'open', 'The fold of what the groups left',
       `${CONTEXT}
 
 The fold groups have all finished. Each left these changes in a file another group held; every file is free now. Make each one:
@@ -334,13 +341,13 @@ ${JSON.stringify(left, null, 2)}
 ${foldRules}
 
 ${SHARED}${decided('fold-left')}`,
-      { label: `${m.id} fold-left`, phase: 'Fold', schema: REPORT })
+      { label: `${m.id} fold-left`, phase: 'Fold', schema: REPORT }, foldCritical)
     fold.push({ key: 'fold-left', findings: left.length, ...handoff })
     if (asked(handoff)) return stopped('fold', 'fold-left', handoff, { built, review, fold })
   }
 
   phase('Verify')
-  verify = await run(foldLevel,
+  verify = await run('review',
     `Round 2 of the review gate, for milestone ${m.id} of ${epic}, started cold.
 Why the change was made: ${CONTEXT}
 The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}, not main.
@@ -350,6 +357,6 @@ What each fold said, including any finding or sibling path it left in a file ano
 Answer only: is each round-1 finding fixed, and does any fix introduce a new problem. Read the fix commits as new code: they are the least-reviewed lines in the change. Return each finding still open, and each new problem, in findings; gate is fail when any is a bug, escalate when a fix broke something round 1 had passed.
 
 Read only: edit nothing, spawn nothing.`,
-    { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY })
+    { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY }, foldCritical)
 }
-return { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, promoted } }
+return { scaffold, tests, built, review, fold, verify, decided: decidedHere, usage: { used, rerun } }

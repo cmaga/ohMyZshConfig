@@ -16,7 +16,7 @@ the words a reader needs, in plain English, no ticket or decision codes:
                                     arrows run straight, and bend (about -3 to 3) curves
                                     one around a box in its way; labelAt (0-1, default 0.5)
                                     slides a label along its arrow off a crossing
-    archTitle?, archNote?, fatesNote?, levelNotes?: {critical, judgment, routine}
+    archTitle?, archNote?, fatesNote?, levelNotes?: {critical, open, pinned}
     retiring?: {name, removedAt}    the old system and the milestone that removes it
     milestones: {"<n>": {short, lead, does, proof, guard?, you?}}
                                     lead: a system short; proof: the proof in plain words
@@ -41,7 +41,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / 'optimize-usage' / 'scripts'))
 from levers import resolve
-MODEL = {'opus': 'Opus', 'sonnet': 'Sonnet 1M', 'fable': 'Fable', 'haiku': 'Haiku'}
+MODEL = {'opus': 'Opus', 'sonnet': 'Sonnet 1M', 'fable': 'Fable', 'haiku': 'Haiku', 'deepseek-flash[1m]': 'DeepSeek Flash 1M'}
+LEVELS = ('pinned', 'open', 'critical')
+EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 FATE_TABLES = ("## Checks today's code performs", '## Behavior in code the build deletes or rewrites')
 
 
@@ -100,6 +102,15 @@ def parse_decisions(text):
     return [line for line in block.splitlines() if line.startswith('- [ASSUMED')]
 
 
+def model(levels, level):
+    """What a task at this level runs on: a critical task fills on open, at least at the critical effort."""
+    v = levels['open' if level == 'critical' else level]
+    effort, floor = v.get('effort'), levels['critical']['effort']
+    if level == 'critical' and effort and EFFORTS.index(floor) > EFFORTS.index(effort):
+        effort = floor
+    return MODEL.get(v['model'], v['model']) + (f' · {effort} effort' if effort else '')
+
+
 def main(plan_path, narrative_path, out_path):
     text = Path(plan_path).read_text()
     nar = json.loads(Path(narrative_path).read_text())
@@ -116,7 +127,7 @@ def main(plan_path, narrative_path, out_path):
             errors.append(f"narrative milestone {m['n']} needs short, lead, does and proof")
         elif w['lead'] not in shorts:
             errors.append(f"milestone {m['n']} lead {w['lead']!r} is not a system short")
-        errors += [f"{t['id']} has no level" for t in m['tasks'] if t['level'] not in levels]
+        errors += [f"{t['id']} has no level" for t in m['tasks'] if t['level'] not in LEVELS]
     errors += [f"{fate or 'unreadable'} fate row" for fate, _ in fates if fate is None]
     numbers = {m['n'] for m in plan}
     errors += [f'recommended pause M-{n} is not a milestone' for n in nar['pauses']['recommended'] if n not in numbers]
@@ -135,7 +146,7 @@ def main(plan_path, narrative_path, out_path):
         milestones.append({
             **{k: w.get(k) for k in ('short', 'lead', 'does', 'proof', 'guard', 'you')},
             'n': m['n'], 'test': m['test'], 'tasks': len(m['tasks']),
-            'levels': {k[0]: sum(1 for t in m['tasks'] if t['level'] == k) for k in levels},
+            'levels': {k[0]: sum(1 for t in m['tasks'] if t['level'] == k) for k in LEVELS},
             'crit': [f"{t['id']} {t['title']}" for t in m['tasks'] if t['level'] == 'critical'],
             'fates': count,
             'touch': {s['short']: sum(1 for t in m['tasks'] if any(f.startswith(tuple(s['homes'])) for f in t['files']))
@@ -154,7 +165,7 @@ def main(plan_path, narrative_path, out_path):
         'milestones': milestones,
         'fates': total,
         'decisionsTotal': len(recorded),
-        'levels': {k: f"{MODEL.get(v['model'], v['model'])} · {v['effort']} effort" for k, v in levels.items()},
+        'levels': {k: model(levels, k) for k in LEVELS},
     }
     data = json.dumps(page, ensure_ascii=False).replace('</', '<\\/')
     out = (HERE.parent / 'templates' / 'plan-view.html').read_text()

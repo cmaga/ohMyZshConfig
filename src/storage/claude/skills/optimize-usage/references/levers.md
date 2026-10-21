@@ -53,6 +53,12 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > dev-workflow's dispatch opts and through each account's own agent frontmatter, which deploy
 > builds per config dir.
 
+> **Build roles (rows 13a-13h)** are set per account in `dev-workflow/scripts/levels.json`, which
+> `milestone-args.py start` reads into each milestone workflow; a running milestone keeps the roles
+> it started with. The Levels table in `dev-workflow/common/milestone-build.md` names each role's
+> model, so a step edits both. A DeepSeek value dispatches as the agent named for it
+> (`agents/deepseek-flash-agent.md`); another DeepSeek model needs its own agent file first.
+
 | # | Lever | Where | Options | Cost (x opus/high, per unit work) | Perf (TB 4.0) | Impact (0-100) |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Session model | `/model`, `--model`, `ANTHROPIC_MODEL` (live) | fable<br>opus<br>sonnet[1m]<br>haiku | fable 2.15x<br>opus 1.00x<br>sonnet 0.62x<br>haiku 0.15x | fable 52.0 (58.1)<br>opus 59.6 (65.2)<br>sonnet 63.6 (64.1)<br>haiku — | 100 |
@@ -72,9 +78,14 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 | 10 | Escalation model | `lever-state.json` `escalation_model` — read by dev-workflow Step 6 for the `general-purpose` agent that decides an escalation before it reaches the user, and by exit triage, where the same agent folds or escalates each loose end | inherit (session)<br>fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; dispatched on escalation and once per run at exit triage when there are loose ends | as row 1 | 55 |
 | 11 | Scoping model | `agents/scoping-agent.md` `model:` | fable<br>opus<br>sonnet[1m]<br>haiku | as row 3; one dispatch per ticket at Step 2 | as row 1 | 45 |
 | 12 | Advisor model | `advisorModel` in `~/.claude/settings.json` (unset), `/advisor`, `--advisor` (live). Off entirely under `CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1` | off<br>fable<br>opus<br>sonnet | Per call, the advisor's rate on the full transcript, uncached; nothing between calls. Must rank at or above the model it advises, or it is not attached: an Opus 5.5 session takes only opus or fable. Subagents inherit it and pass the same check, so DeepSeek agents never get it. Anthropic API only, so it passes the proxy only on Claude routes | as row 1 | 35 (est.) |
-| 13a | Build critical level | `dev-workflow/scripts/levels.json` `critical` — the milestone build's tasks that place, size, cancel or settle orders, move positions or run a safety reflex, their review finders, and a fold or verify touching them | model: opus, fable<br>effort: max, xhigh, high | as rows 1-2 | as rows 1-2 | model 60, effort 40 (est.) |
-| 13b | Build judgment level | `levels.json` `judgment` — scaffold, failing tests, review finders, fold, verify, decider, and tasks writing new code | model: opus, fable, sonnet[1m]<br>effort: xhigh, high, medium | as rows 1-2 | as rows 1-2 | model 50, effort 30 (est.) |
-| 13c | Build routine level | `levels.json` `routine` — moving and adapting code, disproving review findings, the sweep | model: sonnet[1m], opus<br>effort: xhigh, high, medium | as rows 1-2 | as rows 1-2 | model 25, effort 10 (est.) |
+| 13a | Build plan role | `dev-workflow/scripts/levels.json` `plan` — the milestone build's scaffold and failing tests | model: opus, fable, sonnet[1m]<br>effort: max, xhigh, high | as rows 1-2 | as rows 1-2 | model 50, effort 30 (est.) |
+| 13b | Build decide role | `levels.json` `decide` — the decider, which answers every agent's question with the coordinator's authority | model: opus, fable, sonnet[1m]<br>effort: max, xhigh, high | as rows 1-2 | as rows 1-2 | model 50, effort 30 (est.) |
+| 13c | Build review role | `levels.json` `review` — plan approve, review finders and seams, disproof, verify, the hand-back census and the review of its fixes | model: opus, fable, sonnet[1m]<br>effort: max, xhigh, high | as rows 1-2 | as rows 1-2 | model 60, effort 30 (est.) |
+| 13d | Build research role | `levels.json` `research` — gather mapping and the sweep | model: opus, sonnet[1m]<br>effort: xhigh, high, medium | as rows 1-2 | as rows 1-2 | model 35, effort 15 (est.) |
+| 13e | Build open role | `levels.json` `open` — open and critical tasks, reruns, folds, the bed fix, post-verify and one-off fixes | model: opus, sonnet[1m]<br>effort: xhigh, high, medium | as rows 1-2 | as rows 1-2 | model 40, effort 20 (est.) |
+| 13f | Build pinned role | `levels.json` `pinned` — tasks the scaffold and failing tests pin down, and fixes that need no bed run | model: sonnet[1m], deepseek-flash[1m] (proxy), haiku<br>effort: high, medium; none on DeepSeek | Claude as rows 1-2; deepseek-flash as row 5 | as row 5 | model 25, effort 10 (est.) |
+| 13g | Build read role | `levels.json` `read` — the sweep's file listing | model: haiku, sonnet[1m] | as row 1 | as row 1 | 5 (est.) |
+| 13h | Build critical effort | `levels.json` `critical.effort` — the floor for a critical task's fill, its review finder and disproofs, a fold or verify touching it, and a decider it asks | effort: max, xhigh, high | as row 2 | as row 2 | 40 (est.) |
 
 Impact rationale per lever: [lever-impact.md](lever-impact.md)
 

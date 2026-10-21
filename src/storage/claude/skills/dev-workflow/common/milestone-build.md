@@ -8,15 +8,51 @@ The build never merges to the base branch and never deploys. It ends with the wh
 
 ## Levels
 
-Every agent the build starts runs at one of three levels, whose model and effort live in [`scripts/levels.json`](../scripts/levels.json), one set per Claude account. Pass the set for the account Prerequisite 2 in [SKILL.md](../SKILL.md) printed as `levels` to every workflow below; an Agent tool dispatch takes its level's `model` and `effort`. `sonnet` runs Sonnet 1M through the settings remap.
+Every agent the build starts runs in one role, whose model and effort live in [`scripts/levels.json`](../scripts/levels.json), one set per Claude account. Pass the set for the account Prerequisite 2 in [SKILL.md](../SKILL.md) printed as `levels` to every workflow below; an Agent tool dispatch takes its role's `model` and `effort`. A DeepSeek model binds only through an agent file, so its role dispatches as the agent named for it (`deepseek-flash[1m]` as `deepseek-flash-agent`) with no model or effort; it runs only in a session launched through `oc`. `sonnet` runs Sonnet 1M through the settings remap.
 
-The build reads no lever but `ESCALATION_MODEL`, and its agent types are only the escalation agent and `vault-scribe-agent`. Every other agent is plain, its rules in its prompt.
+The build reads no lever but `ESCALATION_MODEL`, and its agent types are only the escalation agent, `vault-scribe-agent`, and that DeepSeek agent. Every other agent is plain, its rules in its prompt.
 
-- **Routine:** moving and adapting code, disproving review findings, the sweep.
-- **Judgment:** the gather's mapping, plan review, scaffold, failing tests, review finders, fold, verify, and the hand-back census. Also a task that writes new code a spec sentence forces, or turns a direct call into a message across a system boundary.
-- **Critical:** a task whose mistake loses money, data, or a safety check. In a trading system: code that places, sizes, cancels, or settles orders, moves positions, or runs a risk limit, kill switch, stop, or watchdog. Its review finder, and a fold or verify touching it, run critical too.
+What an agent does sets its role; what catches its mistake sets the role's model:
 
-Any agent's question goes to the run's decider, which holds your authority. One decider runs at a time and takes every question then waiting, at the highest asker's level and at least judgment. Its prompt opens with the same brief every time — the whole spec and the plan at one line per task — so the brief comes from the prompt cache after the first, and it sees every earlier decision and which tasks are running. It records each answer on the plan card, and the asker reruns with it, up to three times. Only a redesign returns the run to you. A worker that dies, or ends red on its unit tests, linter or type checker, reruns once, one level up; a critical one returns. A finished worker's report reaches each later worker whose task id it names.
+- **Plan:** shapes the code before it is written: the scaffold, and the failing tests that pin what it must do.
+- **Decide:** chooses with your authority, and every later agent builds on the choice.
+- **Review:** checks work another agent did, a plan, a diff, a finding or a fix; a miss ships.
+- **Research:** reads the spec and today's code and reports what maps onto what.
+- **Open:** writes code the tests leave open; review catches a miss.
+- **Pinned:** writes code the scaffold and failing tests pin down; both catch a miss.
+- **Read:** fetches and reports, and writes nothing.
+
+| Agent | Dispatched at | Role | Model |
+| --- | --- | --- | --- |
+| Scaffold | `milestone.workflow.js`, Scaffold | Plan | Opus |
+| Failing tests | `milestone.workflow.js`, Tests | Plan | Opus |
+| Decider | `milestone.workflow.js`, Decide | Decide | Opus |
+| Plan approve | Driver step 5, Agent tool | Review | Opus |
+| Review finder, one per task, and the seams finder | `review.workflow.js`, Find | Review | Opus |
+| Disproof, one per bug found | `review.workflow.js`, Disprove | Review | Opus |
+| Verify | `milestone.workflow.js`, Verify | Review | Opus |
+| Whole-spec read and census | Hand-back step 1, Agent tool | Review | Opus |
+| Review of your fixes | Hand-back step 4, `review.workflow.js` | Review | Opus |
+| Gather mapping, one per component | `gather.workflow.js`, Gather | Research | Sonnet 1M |
+| Sweep, one per 15 leaving files | `gather.workflow.js`, Sweep | Research | Sonnet 1M |
+| Task worker, open or critical level | `milestone.workflow.js`, Build | Open | Sonnet 1M |
+| Rerun of a stuck task | `milestone.workflow.js`, Build | Open | Sonnet 1M |
+| Fold groups and fold-left | `milestone.workflow.js`, Fold | Open | Sonnet 1M |
+| Post-verify fix, timing-bound loop worker, one-off worker | Building step 4, Agent tool | Open | Sonnet 1M |
+| Bed-fix worker | Building step 5, Agent tool, prompt from `milestone-args.py fix` | Open | Sonnet 1M |
+| Task worker, pinned level | `milestone.workflow.js`, Build | Pinned | DeepSeek Flash 1M (work: Sonnet 1M) |
+| Fix that needs no bed run | Building step 5, Agent tool | Pinned | DeepSeek Flash 1M (work: Sonnet 1M) |
+| Sweep file listing | `gather.workflow.js`, Sweep | Read | Haiku |
+
+A dispatch this table does not list takes the role its work matches.
+
+Every task carries one level:
+
+- **Pinned:** the scaffold's signatures and the failing tests decide what the code does, or it moves and adapts code.
+- **Open:** the tests leave the behavior open: UI, wiring across a system boundary, a choice the spec leaves to the code.
+- **Critical:** a task whose mistake loses money, data, or a safety check. In a trading system: code that places, sizes, cancels, or settles orders, moves positions, or runs a risk limit, kill switch, stop, or watchdog. It fills on open at least at `critical.effort`, and its review finder and disproofs, a fold or verify touching it, and a decider it asks run at least at that effort too.
+
+Any agent's question goes to the run's decider, which holds your authority. One decider runs at a time and takes every question then waiting. Its prompt opens with the same brief every time — the whole spec and the plan at one line per task — so the brief comes from the prompt cache after the first, and it sees every earlier decision and which tasks are running. It records each answer on the plan card, and the asker reruns with it, up to three times. Only a redesign returns the run to you. A worker that dies, or ends red on its unit tests, linter or type checker, reruns once on open; a critical one returns. A finished worker's report reaches each later worker whose task id it names.
 
 ## Driver
 
@@ -44,7 +80,7 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
    - A task is what one worker holds. Batch small changes; never one task per file. Tasks with no `After` edge between them own disjoint files.
    - Every `Owns` line and every Tests scenario lands in exactly one milestone.
    - Every task carries its `Level`, by [Levels](#levels).
-5. **Approve.** Dispatch a `general-purpose` agent at judgment with the spec, the gather results, and the plan. Ask for: an `Owns` line or Tests scenario no milestone reaches, an M-1 that does not run end to end, two parallel tasks sharing a file, new code where a move exists, a check or swept behavior with no fate, a leaving file with no row, a proof that runs on test-only settings or doubles the system's own logic, a proof harness that waits behind the tasks it runs, a task whose level misses [Levels](#levels). Fix what it finds.
+5. **Approve.** Dispatch a `general-purpose` agent on review with the spec, the gather results, and the plan. Ask for: an `Owns` line or Tests scenario no milestone reaches, an M-1 that does not run end to end, two parallel tasks sharing a file, new code where a move exists, a check or swept behavior with no fate, a leaving file with no row, a proof that runs on test-only settings or doubles the system's own logic, a proof harness that waits behind the tasks it runs, a task whose level misses [Levels](#levels). Fix what it finds.
 
    Then publish the plan view, the user's way into the plan. Write its narrative, in plain English, to `<tree>/.claude-artifacts/workflows/dev-workflow/plan-view.json`; the fields are listed at the top of [`scripts/plan-view.py`](../scripts/plan-view.py). Run `python3 ~/.claude/skills/dev-workflow/scripts/plan-view.py <plan> <narrative> <scratchpad>/<EPIC>-plan.html` and publish the output with the Artifact tool. The script computes every count from the plan and refuses a narrative that leaves a milestone or a recorded decision out. After any change to the plan, render and publish again to the same path.
 
@@ -66,11 +102,11 @@ Seed the task tracker with Gather, Plan, Approve, then one item per milestone on
 3. **A returned stop** — a redesign, a question still open after three decisions, a dead agent, or the review's escalate: `milestone-args.py show <output file>` prints it; handle it per [Escalation](#escalation). Then `milestone-args.py resume <args file> <output file> --decide <key> <answer>` — `--settle <id> <answer>` instead when you answered by doing the work — and relaunch the same `scriptPath` with `resumeFromRunId`. The resume settles every finished task and a finished review, so only the stopped task and those after it run again: a resume replays only the unbroken prefix of agent calls in their first order, and a fan-out's calls come back in a new order, so anything finished reaches it through its args, never the cache. It never touches the milestone, whose files the scaffold's prompt lists: a new file for a task goes in its decision.
 4. **Findings left after verify.** A bug that loses data, money, or a safety check, or a fix that broke something already passed: one worker fixes it, as below; a finished run never resumes. Everything else is a [triage](exit.md#triage) candidate.
    A fix to a timing bound goes to one worker that owns the whole loop it runs in: every step sharing that loop's turn and every figure counting the bound, fixing each gap it finds there. Briefed on the one finding, four workers in a row each found the next gap (M-4 of EN-503, about 2 h).
-   Work outside the milestone's workflow that one agent can do (a fix verify left, a bed change) goes to one Agent-tool worker in the background: a plain general-purpose agent on its level's model and effort. Never a one-agent workflow; it hides the agent's progress.
+   Work outside the milestone's workflow that one agent can do (a fix verify left, a bed change) goes to one Agent-tool worker in the background: a plain general-purpose agent on its role's model and effort. Never a one-agent workflow; it hides the agent's progress.
 5. **Run the end-to-end tests once, yourself** — never on an agent's word, under [done-when](done-when.md)'s hygiene, and only after step 4. `milestone-args.py bed <args file> <output file>` prints one command over the test writer's tests and the proofs of this and every earlier milestone, writing the whole log to the scratchpad; add the environment the project's tests need and run it in the background. `git -C <tree> grep -n NotImplementedError -- <the milestone's files>` prints nothing.
-   - **Failures:** write a failures file naming the command, the log, each failing node id, and what you traced. A fix that needs no bed run — the simulator matching a recording, a test correction you decided from the log — goes first to its own worker, in parallel with the others. Then `milestone-args.py fix <args file> <failures file>` prints the prompt of the one worker at judgment that owns every bed rerun: it reruns only what its latest fix could change, then every failure once at the end, writing that run to `<scratchpad>/<EPIC>-M-N-rerun.log`. One worker rerunning all 25 failures after each fix took 4.4 h, at 1 h 26 min a rerun (M-4 of EN-503). Read it: it is pytest's own output, so rerun nothing it shows passing. Never rerun the whole set.
+   - **Failures:** write a failures file naming the command, the log, each failing node id, and what you traced. A fix that needs no bed run — the simulator matching a recording, a test correction you decided from the log — goes first to its own worker, in parallel with the others. Then `milestone-args.py fix <args file> <failures file>` prints the prompt of the one worker on open that owns every bed rerun: it reruns only what its latest fix could change, then every failure once at the end, writing that run to `<scratchpad>/<EPIC>-M-N-rerun.log`. One worker rerunning all 25 failures after each fix took 4.4 h, at 1 h 26 min a rerun (M-4 of EN-503). Read it: it is pytest's own output, so rerun nothing it shows passing. Never rerun the whole set.
 6. **Mark it proven:** `git -C <tree> tag <EPIC>-M-N-proven`. A local lightweight tag, so the branch carries only real commits and `git push` never sends it.
-7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, anything step 4 left open, each decision made inside the run (the result's `decided`), and one line from the result's `usage`: agents per level, and the tasks promoted a level. Open the next milestone on their go. Otherwise open it now.
+7. **`Pause: yes`** — stop and show the user what now runs: the proof's output, how to try it by hand, anything step 4 left open, each decision made inside the run (the result's `decided`), and one line from the result's `usage`: agents per role, and the tasks rerun on open. Open the next milestone on their go. Otherwise open it now.
 
 A milestone the plan got wrong — its proof cannot pass without work another milestone owns — is a plan defect: amend the plan, say so in the report, carry on. A change to what the spec says is an escalation.
 
@@ -90,7 +126,7 @@ A milestone whose workflow stops twice on the same stage, or whose end-to-end te
 
 When the last milestone is proven:
 
-1. **Read the whole spec against the finished branch. Dispatch this reading** to a `general-purpose` agent at judgment — it is the largest read in the run. Three checks only this scale can make:
+1. **Read the whole spec against the finished branch. Dispatch this reading** to a `general-purpose` agent on review — it is the largest read in the run. Three checks only this scale can make:
    - **Census the spec**, not the plan: each `Owns` line and Tests scenario, asked of the branch. Then the plan's table of behavior in code the build deleted or rewrote: each row's fate, asked of the branch.
    - **Re-run any acceptance evidence that was stored rather than executed.** A stamp older than the tip is not a pass.
    - **Test the premise the spec opens with.** The problem the spec was written to kill belongs to no milestone's proof.

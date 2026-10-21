@@ -188,47 +188,111 @@
       "native": "advisorModel in ~/.claude/settings.json (unset); /advisor or --advisor per session",
       "note": "kept off 2026-10-10 by user decision: too slow"
     },
-    "build_routine_model": {
-      "value": {
-        "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
-      },
-      "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.routine.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
-    },
-    "build_routine_effort": {
-      "value": {
-        "personal": "high",
-        "work": "high"
-      },
-      "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.routine.effort",
-      "note": "stepped xhigh->high 2026-10-12, same pass; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
-    },
-    "build_judgment_model": {
+    "build_plan_model": {
       "value": {
         "personal": "opus",
         "work": "opus"
       },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.judgment.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+      "native": "dev-workflow scripts/levels.json <account>.plan.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md",
+      "note": "roles replaced the routine, judgment and critical levels 2026-10-21; plan, decide and review carry judgment's values, research and open carry routine's"
     },
-    "build_judgment_effort": {
+    "build_plan_effort": {
       "value": {
         "personal": "xhigh",
         "work": "xhigh"
       },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.judgment.effort",
-      "note": "kept at xhigh 2026-10-12 by user decision, reversing the same-day step to high; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
+      "native": "dev-workflow scripts/levels.json <account>.plan.effort"
     },
-    "build_critical_model": {
+    "build_decide_model": {
       "value": {
         "personal": "opus",
         "work": "opus"
       },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.critical.model (\"sonnet\" binds sonnet[1m] through the settings remap)"
+      "native": "dev-workflow scripts/levels.json <account>.decide.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
+    },
+    "build_decide_effort": {
+      "value": {
+        "personal": "xhigh",
+        "work": "xhigh"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.decide.effort"
+    },
+    "build_review_model": {
+      "value": {
+        "personal": "opus",
+        "work": "opus"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.review.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
+    },
+    "build_review_effort": {
+      "value": {
+        "personal": "xhigh",
+        "work": "xhigh"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.review.effort"
+    },
+    "build_research_model": {
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.research.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
+    },
+    "build_research_effort": {
+      "value": {
+        "personal": "high",
+        "work": "high"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.research.effort"
+    },
+    "build_open_model": {
+      "value": {
+        "personal": "sonnet[1m]",
+        "work": "sonnet[1m]"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.open.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
+    },
+    "build_open_effort": {
+      "value": {
+        "personal": "high",
+        "work": "high"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.open.effort"
+    },
+    "build_pinned_model": {
+      "value": {
+        "personal": "deepseek-flash[1m]",
+        "work": "sonnet[1m]"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.pinned.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md",
+      "note": "set 2026-10-21 with the worker lever: personal on deepseek-flash, which dispatches as agents/deepseek-flash-agent.md and takes no effort; work on sonnet"
+    },
+    "build_pinned_effort": {
+      "value": {
+        "personal": "inherit",
+        "work": "high"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.pinned.effort"
+    },
+    "build_read_model": {
+      "value": {
+        "personal": "haiku",
+        "work": "haiku"
+      },
+      "kind": "runtime",
+      "native": "dev-workflow scripts/levels.json <account>.read.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
     },
     "build_critical_effort": {
       "value": {
@@ -236,8 +300,8 @@
         "work": "xhigh"
       },
       "kind": "runtime",
-      "native": "dev-workflow scripts/levels.json <account>.critical.effort",
-      "note": "stepped max->xhigh 2026-10-12: the EN-503 build projected at 1.5 weeks of limit; native is dev-workflow scripts/levels.json, read by milestone-args.py start into each milestone workflow; a running milestone keeps the levels it started with"
+      "native": "dev-workflow scripts/levels.json <account>.critical.effort, the effort floor for every agent working on a critical task",
+      "note": "stepped max->xhigh 2026-10-12: the EN-503 build projected at 1.5 weeks of limit; a floor since 2026-10-21, when critical tasks moved to the open role"
     }
   }
 }

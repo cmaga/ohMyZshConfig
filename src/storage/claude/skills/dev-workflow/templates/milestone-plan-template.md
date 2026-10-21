@@ -50,7 +50,7 @@ and the edge cases this milestone owns>
 
 - **Files:** `<path>`, `<path>`
 - **After:** none
-- **Level:** <routine | judgment | critical — by Levels in common/milestone-build.md>
+- **Level:** <pinned | open | critical — by Levels in common/milestone-build.md>
 - **Moves / adapts / new:** <from the gather; new code quotes the spec sentence
   that forces it>
 

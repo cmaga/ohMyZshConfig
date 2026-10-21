@@ -1,20 +1,24 @@
 export const meta = {
   name: 'dev-workflow-review',
-  description: 'Review a diff one unit at a time at its level, check the seams between units, and try to disprove every bug before it counts',
+  description: 'Review a diff one unit at a time, check the seams between units, and try to disprove every bug before it counts',
   phases: [{ title: 'Find' }, { title: 'Disprove' }],
 }
 
 const { epic, spec, tree, base, projectBase, context, units, levels } = args
 if (!levels) throw new Error('pass levels: one account set from scripts/levels.json')
 
-const ORDER = ['routine', 'judgment', 'critical']
-const atLeast = (level, floor) => (ORDER.indexOf(level) >= ORDER.indexOf(floor) ? level : floor)
-const used = { routine: 0, judgment: 0, critical: 0 }
-const run = (level, prompt, opts) => {
-  const l = levels[level]
-  if (!l) throw new Error(`no level named ${level}`)
-  used[level]++
-  return agent(prompt, { ...opts, model: l.model, effort: l.effort, label: `${level}(${l.model}/${l.effort}): ${opts.label}` })
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
+const used = {}
+// Critical work runs at least at the critical effort. A DeepSeek model binds only through an agent file's
+// frontmatter, so it runs as the agent named for it.
+const run = (role, prompt, opts, critical = false) => {
+  const l = levels[role]
+  if (!l) throw new Error(`no role named ${role}`)
+  const floor = critical && levels.critical.effort
+  const effort = l.effort && floor && EFFORTS.indexOf(floor) > EFFORTS.indexOf(l.effort) ? floor : l.effort
+  const bind = l.model.startsWith('deepseek') ? { agentType: `${l.model.replace('[1m]', '')}-agent` } : { model: l.model }
+  used[role] = (used[role] || 0) + 1
+  return agent(prompt, { ...opts, ...bind, ...(effort && { effort }), label: `${role}${critical ? ' critical' : ''}(${l.model}${effort ? `/${effort}` : ''}): ${opts.label}` })
 }
 
 const STR = { type: 'string' }
@@ -82,21 +86,21 @@ Return disproved when you prove it cannot happen, holds when you followed the fa
 
 Read only: edit nothing, spawn nothing.`
 
-const jobs = units.map(u => ({ id: u.id, level: atLeast(u.level || 'judgment', 'judgment'), prompt: unitPrompt(u) }))
-if (units.length > 1) jobs.push({ id: 'seams', level: 'judgment', prompt: seamPrompt })
+const jobs = units.map(u => ({ id: u.id, critical: u.level === 'critical', prompt: unitPrompt(u) }))
+if (units.length > 1) jobs.push({ id: 'seams', critical: false, prompt: seamPrompt })
 
 const reviewed = await pipeline(
   jobs,
-  job => run(job.level, job.prompt, { label: `${job.id} review`, phase: 'Find', schema: FINDINGS }),
+  job => run('review', job.prompt, { label: `${job.id} review`, phase: 'Find', schema: FINDINGS }, job.critical),
   async (found, job) => {
     if (!found) return null
     const checked = await parallel(found.findings.map(f => async () => {
       if (f.class !== 'bug') return f
-      const v = await run('routine', disprovePrompt(f), { label: `${job.id} disprove ${f.file}:${f.line}`, phase: 'Disprove', schema: VERDICT })
+      const v = await run('review', disprovePrompt(f), { label: `${job.id} disprove ${f.file}:${f.line}`, phase: 'Disprove', schema: VERDICT }, job.critical)
       if (v && v.verdict === 'disproved') return null
       return { ...f, verdict: v && v.verdict === 'holds' ? 'CONFIRMED' : 'PLAUSIBLE' }
     }))
-    return { ...found, findings: checked.filter(Boolean).map(f => ({ ...f, unit: job.id, level: job.level })) }
+    return { ...found, findings: checked.filter(Boolean).map(f => ({ ...f, unit: job.id, critical: job.critical })) }
   },
 )
 
