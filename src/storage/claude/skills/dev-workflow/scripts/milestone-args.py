@@ -12,7 +12,8 @@ those args inlined so no launch or resume carries them through a tool call. Laun
 show prints where a run stopped: the stage, the key to decide, its question, and each task's status.
 
 bed prints the milestone's one end-to-end run: the test writer's tests and the proofs of this and every earlier
-milestone, in one pytest command.
+milestone, in one pytest command, after a collection pass that stops it on an import error; a test file that moved
+since the test writer named it is repointed by its file name.
 
 fix prints the prompt of the one worker that fixes the end-to-end run's failures, which the failures file names.
 
@@ -150,9 +151,17 @@ def bed(o):
               if int(sec.group(1)) <= n]
     for proof in filter(None, proofs):
         paths += [w for w in proof.group(1).split('pytest', 1)[-1].split() if not w.startswith('-')]
+    tracked = subprocess.run(['git', '-C', str(tree), 'ls-files', '*.py'], capture_output=True, text=True).stdout.split()
+    for i, f in enumerate(paths):
+        if not (tree / f).exists():
+            moved = [t for t in tracked if Path(t).name == Path(f).name]
+            print(f"{f}: gone; {'now ' + moved[0] if len(moved) == 1 else 'no single file of that name, left out'}", file=sys.stderr)
+            paths[i] = moved[0] if len(moved) == 1 else ''
+    files = ' '.join(dict.fromkeys(p for p in paths if p))
     runner = args['milestone']['proof'].split('pytest', 1)[0] + 'pytest'
-    print(f"cd {tree} && {runner} {' '.join(dict.fromkeys(paths))} --timeout=900 --timeout-method=thread -ra --durations=0 "
-          f"> {args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log 2>&1")
+    log = f"{args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log"
+    print(f"cd {tree} && {runner} --collect-only -q {files} > {log} 2>&1 && "
+          f"{runner} {files} --timeout=900 --timeout-method=thread -ra --durations=0 > {log} 2>&1")
 
 
 def fix(o):

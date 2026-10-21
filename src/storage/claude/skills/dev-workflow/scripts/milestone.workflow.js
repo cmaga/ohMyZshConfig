@@ -354,7 +354,7 @@ The diff: \`git -C ${tree} --no-pager diff ${base}...HEAD\`. The base is ${base}
 Round 1's findings: ${JSON.stringify(review.findings)}
 The fix commits: ${fold.flatMap(f => f.commits).join(', ')}.
 What each fold said, including any finding or sibling path it left in a file another fold held: ${JSON.stringify(fold.map(f => ({ key: f.key, notes: f.notes || '' })))}
-Answer only: is each round-1 finding fixed, and does any fix introduce a new problem. Read the fix commits as new code: they are the least-reviewed lines in the change. Return each finding still open, and each new problem, in findings; gate is fail when any is a bug, escalate when a fix broke something round 1 had passed.
+Answer only: is each round-1 finding fixed, and does any fix introduce a new problem. Read the fix commits as new code: they are the least-reviewed lines in the change. Run \`git -C ${tree} status --porcelain\`: every file it prints is a bug finding, naming the task that should have committed it, since a run's edit left uncommitted never reaches the bed. Return each finding still open, and each new problem, in findings; gate is fail when any is a bug, escalate when a fix broke something round 1 had passed.
 
 Read only: edit nothing, spawn nothing.`,
     { label: `${m.id} verify`, phase: 'Verify', schema: VERIFY }, foldCritical)
