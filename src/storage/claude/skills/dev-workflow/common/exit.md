@@ -5,7 +5,7 @@ Every tier ends here before returning control.
 1. **Verify behavior** by driving the change in the real app via the `run` skill. If the change alters a shared interface, exercise each consumer flow. Skip only when the change has no runtime surface; state the reason. Attended, when the drive needs a browser, give the user a two-line manual check instead. If verification needs a browser and the project has no Playwright MCP config — or a drive hits Chromium's profile lock — run `playwright-mcp-setup` first.
 2. **Create the PR** via the `git-provider` skill.
 3. **Transition the ticket** to "in review" via the `jira` skill.
-4. **Run the review gate** — below. Skip on `small`, except unattended: there the gate is the only thing that reads the code.
+4. **Run the review gate** — below. Every tier runs it, `small` included.
 5. **[Triage](#triage) the loose ends.** Folds go back through the review gate and the tests they affect before the next step.
 6. **Run the full suite once**, now that the last change is in. First fold the fixups in and catch up with the base in one rebase: `git fetch origin <base>`, then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<base>` — the no-op editor keeps it non-interactive, and git before 2.44 ignores `--autosquash` without `-i`. Then run the project's gate command. This is the run's only full run. Red: fix (as fixups again), re-run the failures, then the full suite again. Green: repeat the rebase if fixups are left, then `git push --force-with-lease`. A base branch that moves afterwards and still merges cleanly needs no re-run.
 7. **Wait on the PR's required checks** — unattended only. Red halts; the merge is the user's.
@@ -62,6 +62,7 @@ Spawn `code-review-agent` once, fix what it finds, send the fixes back to **the 
 ### What to pass it
 
 - **Tell it to diff every stated claim against the mechanism that backs it.** Bounds, coverage figures, and every-X-is-handled sentences are where changes go wrong, always in the safe-looking direction.
+- **Label what is yours.** Separate what the user approved from your own calls. Fixes folded into the branch are always your calls; never present them as approved.
 - **First round** — what explains the change (the scaffold commit and plan, else the ticket), the ticket, and the base branch if not `main`.
 - **Later rounds** — `SendMessage` to the same agent: what you did about each finding and which commits hold the fixes. Never re-send the diff, the plan, or its own findings.
 - **If that agent is gone** — spawn fresh with the first-round inputs, the round-count file, and what was done about last round's findings. Note the cold restart in the exit report.
