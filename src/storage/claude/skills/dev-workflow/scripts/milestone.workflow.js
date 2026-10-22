@@ -305,7 +305,8 @@ if (fixable.length) {
   const foldRules = `- Fix every bug. Fix a quality finding only when it is small and provably behavior-preserving.
 - A finding is a shape, not a line. Search the whole diff (\`git -C ${tree} --no-pager diff ${base}...HEAD\`) for every sibling path with the same shape and fix them all now.
 - Read the whole path before editing; the line a finding names is often not the defect.
-- Run the unit tests of every file you touch; never the end-to-end tests.`
+- Run the unit tests of every file you touch; never the end-to-end tests.
+- Before you return, \`git -C ${tree} status --porcelain\` lists none of your files: commit every edit, a linter fix included. An uncommitted fix never reaches the bed (M-5 and M-6 of EN-503).`
 
   phase('Fold')
   const reports = await parallel(groups.map(g => async () => {
