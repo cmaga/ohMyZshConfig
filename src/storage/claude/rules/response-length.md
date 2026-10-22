@@ -5,3 +5,4 @@
 - One question per turn, with only the fact that forces it.
 - Reasoning, method and self-corrections go in commits and PRs, not chat.
 - Deep work still reports as a few bullets; detail waits until asked.
+- An opinion or evaluation: the verdict and at most two points; evidence only if asked.
