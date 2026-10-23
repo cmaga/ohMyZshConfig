@@ -18,5 +18,15 @@
     "pinned": { "model": "sonnet", "effort": "high" },
     "read": { "model": "haiku" },
     "critical": { "effort": "xhigh" }
+  },
+  "ms": {
+    "plan": { "model": "opus", "effort": "xhigh" },
+    "decide": { "model": "opus", "effort": "xhigh" },
+    "review": { "model": "opus", "effort": "xhigh" },
+    "research": { "model": "sonnet", "effort": "high" },
+    "open": { "model": "sonnet", "effort": "high" },
+    "pinned": { "model": "deepseek-flash[1m]" },
+    "read": { "model": "haiku" },
+    "critical": { "effort": "xhigh" }
   }
 }

@@ -51,7 +51,7 @@ Last updated: 2026-10-04 · Method updated: 2026-10-04
 > late-connecting MCP server's tools (422), which the proxy moves into `tools` (probed
 > 2026-10-21, 2.1.306).
 
-> **Two accounts.** `work` and `personal` each have their own limit and their own value on every
+> **Three accounts.** `personal`, `work` (gsi) and `ms` each have their own limit and their own value on every
 > row but 1, 2, 8 and 12, whose native homes they share. Rows 3-6, 9 and 11 bind through
 > dev-workflow's dispatch opts and through each account's own agent frontmatter, which deploy
 > builds per config dir.

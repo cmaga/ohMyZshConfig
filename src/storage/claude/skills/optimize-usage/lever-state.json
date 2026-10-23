@@ -3,14 +3,17 @@
   "accounts": {
     "personal": {
       "config_dirs": [
-        ".claude",
-        ".claude-ms"
-      ],
-      "note": "ms signs in with the personal Claude account, so it shares that limit"
+        ".claude"
+      ]
     },
     "work": {
       "config_dirs": [
         ".claude-gsi"
+      ]
+    },
+    "ms": {
+      "config_dirs": [
+        ".claude-ms"
       ]
     }
   },
@@ -29,7 +32,8 @@
     "review_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "skill",
       "agents": [
@@ -43,7 +47,8 @@
     "review_effort": {
       "value": {
         "personal": "max",
-        "work": "max"
+        "work": "max",
+        "ms": "max"
       },
       "kind": "skill",
       "agents": [
@@ -56,7 +61,8 @@
     "worker_model": {
       "value": {
         "personal": "deepseek-flash[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "deepseek-flash[1m]"
       },
       "kind": "skill",
       "agents": [
@@ -69,7 +75,8 @@
     "tester_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "skill",
       "agents": [
@@ -81,7 +88,8 @@
     "escalation_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "note": "both accounts stepped fable->opus 2026-10-21: fable trails opus on both independent coding boards at 2.15x the cost",
       "kind": "skill",
@@ -93,7 +101,8 @@
     "worker_effort": {
       "value": {
         "personal": "inherit",
-        "work": "inherit"
+        "work": "inherit",
+        "ms": "inherit"
       },
       "kind": "skill",
       "agents": [
@@ -110,7 +119,8 @@
     "research_fanout_model": {
       "value": {
         "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "sonnet[1m]"
       },
       "kind": "skill",
       "readers": [
@@ -121,7 +131,8 @@
     "code_fanout_model": {
       "value": {
         "personal": "opus",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "opus"
       },
       "note": "work stepped opus->sonnet 2026-10-21: level coding scores at 0.62x, and adversarial verification gates its claims",
       "kind": "skill",
@@ -132,7 +143,8 @@
     "review_fanout_model": {
       "value": {
         "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "sonnet[1m]"
       },
       "kind": "skill",
       "readers": [
@@ -142,7 +154,8 @@
     "review_fanout_effort": {
       "value": {
         "personal": "xhigh",
-        "work": "xhigh"
+        "work": "xhigh",
+        "ms": "xhigh"
       },
       "kind": "skill",
       "readers": [
@@ -152,7 +165,8 @@
     "parent_fanout_model": {
       "value": {
         "personal": "opus",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "opus"
       },
       "note": "work stepped opus->sonnet 2026-10-21: the largest dispatch surface, level coding scores at 0.62x",
       "kind": "skill",
@@ -163,7 +177,8 @@
     "scoping_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "skill",
       "agents": [
@@ -175,7 +190,8 @@
     "scoping_fanout_model": {
       "value": {
         "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "sonnet[1m]"
       },
       "kind": "skill",
       "readers": [
@@ -191,7 +207,8 @@
     "build_plan_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.plan.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md",
@@ -200,7 +217,8 @@
     "build_plan_effort": {
       "value": {
         "personal": "xhigh",
-        "work": "xhigh"
+        "work": "xhigh",
+        "ms": "xhigh"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.plan.effort"
@@ -208,7 +226,8 @@
     "build_decide_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.decide.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
@@ -216,7 +235,8 @@
     "build_decide_effort": {
       "value": {
         "personal": "xhigh",
-        "work": "xhigh"
+        "work": "xhigh",
+        "ms": "xhigh"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.decide.effort"
@@ -224,7 +244,8 @@
     "build_review_model": {
       "value": {
         "personal": "opus",
-        "work": "opus"
+        "work": "opus",
+        "ms": "opus"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.review.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
@@ -232,7 +253,8 @@
     "build_review_effort": {
       "value": {
         "personal": "xhigh",
-        "work": "xhigh"
+        "work": "xhigh",
+        "ms": "xhigh"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.review.effort"
@@ -240,7 +262,8 @@
     "build_research_model": {
       "value": {
         "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "sonnet[1m]"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.research.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
@@ -248,7 +271,8 @@
     "build_research_effort": {
       "value": {
         "personal": "high",
-        "work": "high"
+        "work": "high",
+        "ms": "high"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.research.effort"
@@ -256,7 +280,8 @@
     "build_open_model": {
       "value": {
         "personal": "sonnet[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "sonnet[1m]"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.open.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
@@ -264,7 +289,8 @@
     "build_open_effort": {
       "value": {
         "personal": "high",
-        "work": "high"
+        "work": "high",
+        "ms": "high"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.open.effort"
@@ -272,7 +298,8 @@
     "build_pinned_model": {
       "value": {
         "personal": "deepseek-flash[1m]",
-        "work": "sonnet[1m]"
+        "work": "sonnet[1m]",
+        "ms": "deepseek-flash[1m]"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.pinned.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md",
@@ -281,7 +308,8 @@
     "build_pinned_effort": {
       "value": {
         "personal": "inherit",
-        "work": "high"
+        "work": "high",
+        "ms": "inherit"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.pinned.effort"
@@ -289,7 +317,8 @@
     "build_read_model": {
       "value": {
         "personal": "haiku",
-        "work": "haiku"
+        "work": "haiku",
+        "ms": "haiku"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.read.model, and the Model column of the Levels table in dev-workflow common/milestone-build.md"
@@ -297,7 +326,8 @@
     "build_critical_effort": {
       "value": {
         "personal": "xhigh",
-        "work": "xhigh"
+        "work": "xhigh",
+        "ms": "xhigh"
       },
       "kind": "runtime",
       "native": "dev-workflow scripts/levels.json <account>.critical.effort, the effort floor for every agent working on a critical task",
