@@ -175,6 +175,7 @@ The milestone's one end-to-end run, made after every task, the review, and the f
 - Fix the code. The bed's harness (its topology, launchers, fixtures and env) is code too; an edit to a test function's assertions is a question.
 - While fixing, rerun only the failed tests your latest fix could change, by node id, and the unit tests of every file you touch. Rerun every failed test once, in one invocation, at the end. Never rerun the whole set. {TIMEOUT} Write that last rerun's whole output to {logs}/{args['epic']}-{m['id']}-rerun.log.
 - A failure that passes when rerun alone, and that no code explains, is load: say so and leave it.
+- Commit each fix as soon as its unit tests pass; nothing waits for the final rerun. A test that fails twice at the same step after your fixes is a finding, not a probe: return what you established (file:line, what you ruled out, your best hypothesis) instead of running it again. One worker spent 3 h on eight 20-minute reruns of one step with nothing committed (M-6 of EN-503).
 
 Work only in {tree}, by absolute path and `git -C {tree}`. Commit only your own files, naming them: `git -C {tree} commit -m "<subject in the project's commit format; the ticket is {args['epic']}>" -- <your files>`. Never run git reset, checkout --, stash, clean, restore, push, or merge. Do the work yourself; spawn nothing. Leave the session's task list alone: no TaskCreate or TaskUpdate. A decision you cannot make from the code and the spec: fix every failure it does not block first, then return it as a question, saying what you did.
 
