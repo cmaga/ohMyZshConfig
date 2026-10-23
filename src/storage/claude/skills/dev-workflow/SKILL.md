@@ -29,7 +29,7 @@ Still stops the run: the prerequisite gates, a review gate at its five-round bac
 
 Read the ticket first (Step 1.1), then run Prerequisites 1-4. A **build** skips Steps 1-4 and runs [the milestone build](common/milestone-build.md) instead; its Driver seeds tracking and runs the main-checkout gate itself.
 
-A build is the epic carrying an approved spec's path: the path resolves in the main checkout on the base branch. An ultra ticket whose spec has merged but has no epic yet runs [ultra wrap-up step 4](common/ultra.md#wrap-up) and stops. If the path does not resolve, the ticket's status says why. **In review**: say so and stop; the user merging it is what files the epic. **Done**: say so and stop.
+A build is the epic carrying an approved spec's path: the path resolves in the main checkout on the base branch. An ultra ticket whose spec has merged but has no epic yet runs [ultra wrap-up step 4](common/ultra.md#wrap-up) and stops. If the path does not resolve, the ticket's status says why. **Moved with `transitions.review`**: say so and stop; the user merging it is what files the epic. **Moved with `transitions.merged`, or in the Done category**: say so and stop.
 
 Everything else runs the steps below.
 
@@ -53,10 +53,10 @@ Every step below is labelled **internal** or **user-facing**. An internal step p
 
 ## Step 1: Understanding The Goal — internal
 
-1. Read the ticket via the jira skill (a `new take` has none; use the user's context). Blocked or parked: stop and tell the user. **Run the ticket you were handed** — never substitute a child or sibling; if it cannot be run, stop and say why. Otherwise assign it to me and transition it to "In Progress" now.
+1. Read the ticket via the jira skill (a `new take` has none; use the user's context). Blocked or parked: stop and tell the user. **Run the ticket you were handed** — never substitute a child or sibling; if it cannot be run, stop and say why. Otherwise assign it to me and move it with `transitions.start` now.
 2. Restate intent with zero implementation nouns from the ticket. Every implementation noun it carries is a hypothesis to be beaten by code analysis before it is adopted. Working notes, not a post.
 
-One line surfaces from this step: the ticket read, assigned, and moved to In Progress.
+One line surfaces from this step: the ticket read, assigned, and moved with `transitions.start`.
 
 ## Step 2: Verify context/ticket claims — internal
 
@@ -94,7 +94,7 @@ Gather multiple solutions and pick the best one. Fan out only over sets you enum
 ## Step 5: Workspace Setup — internal
 
 1. **Create/update the ticket**: If `new take`, create a new ticket. If we chose a solution very different from the original ticket, update the original. Use the `jira` skill.
-2. **Transition the ticket** to "In Progress" via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
+2. **Transition the ticket** with `transitions.start` via the `jira` skill (first transition for a `new take`; an existing ticket was already moved in Step 1, so no-op if already there).
 3. **Enter the worktree:** `EnterWorktree` with name `<TICKET>-<tier>` (e.g., `STAX-123-medium`).
    - Verify with `git rev-parse --show-toplevel`.
    - Until `ExitWorktree`, git reaches nothing outside the worktree: `cd` out, `git -C`, `--git-dir`, `GIT_DIR`, and any Bash whose shape hides where it lands are refused. When one is, write the commands to a scratchpad script and run it by absolute path.
@@ -164,7 +164,7 @@ The target behavior is settled as a spec of components and what each owns, befor
 - Discovered-issue routing: a problem found mid-flow is routed when found, never parked as prose.
   - **Fix it.** The one question is whether the fix can ride this branch — not whether it is in scope. This is the cheapest moment the fix will ever have.
   - Leave it only when it genuinely cannot ride — a different subsystem, a design decision the user owns, a scope that would double the diff. If your own answer is that it rides, that answer is final: fold it. Then open it as a task, with your recommendation and why it could not ride; [triage](common/exit.md#triage) at exit folds it or escalates it. A third candidate means re-ask whether any could have been fixed.
-  - **Search before proposing.** `jira issue list -p {projectKey} -q "status != Done AND status != Closed" --plain --no-headers --columns key,status,summary`, then read every close candidate; search component and file names too. An existing ticket ends the matter: cite its key.
+  - **Search before proposing.** `jira issue list -p {projectKey} -q "statusCategory != Done" --plain --no-headers --columns key,status,summary`, then read every close candidate; search component and file names too. An existing ticket ends the matter: cite its key.
   - **File only after the user says to.** An unfiled item is an open task on the [loose-end tracker](common/exit.md#the-loose-end-tracker) until they answer. Prose in a plan, PR description, vault note, or exit report is not an owner.
 - Never merge a PR into the base branch; an armed goal is not that ask. The milestone build commits straight to its spec's local integration branch and merges nothing.
 - A refused tool call is not a blocker until every route to the same information is refused. Take the other route and carry on; never stop to ask whether to use it.

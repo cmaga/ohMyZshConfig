@@ -28,19 +28,21 @@ If the user said `cleanup` with no ticket and session context is empty, ask for 
 
 `MERGED` — proceed. Otherwise report the state and abort.
 
-### 3. Transition ticket to done
+### 3. Transition ticket to merged
 
-Invoke the `jira` skill to transition the ticket to `transitions.done`.
+Invoke the `jira` skill to move the ticket with `transitions.merged`. That is the last move this workflow makes: any later status, such as a release or Done, is the user's to set.
 
-**Then check what this ticket was blocking.** `jira-cli` has no command for this; use the REST API. `$host` is the `jira` skill's `config.json` `server` with the scheme stripped; `-n` reads `~/.netrc`.
+**Then check what this ticket was blocking.** `jira-cli` has no command for this; use the REST API. `$host` is the `jira` skill's `config.json` `server` with the scheme stripped; `-n` reads `~/.netrc`. A blocker counts as cleared in the Done category or in the status this ticket just landed in, since its code is on the base either way.
 
 ```bash
+merged=$(curl -s -n "https://$host/rest/api/3/issue/<TICKET>?fields=status" | jq -r .fields.status.name)
 for d in $(curl -s -n "https://$host/rest/api/3/issue/<TICKET>?fields=issuelinks" \
       | jq -r '.fields.issuelinks[] | select(.type.outward=="blocks" and .outwardIssue) | .outwardIssue.key'); do
-  curl -s -n "https://$host/rest/api/3/issue/$d?fields=summary,status,issuelinks" | jq -r '
-    select(.fields.status.statusCategory.key != "done")
+  curl -s -n "https://$host/rest/api/3/issue/$d?fields=summary,status,issuelinks" | jq -r --arg merged "$merged" '
+    def cleared: .statusCategory.key == "done" or .name == $merged;
+    select(.fields.status | cleared | not)
     | [.fields.issuelinks[] | select(.type.inward=="is blocked by" and .inwardIssue)] as $b
-    | [$b[] | select(.inwardIssue.fields.status.statusCategory.key != "done")] as $open
+    | [$b[] | select(.inwardIssue.fields.status | cleared | not)] as $open
     | if ($open|length)==0
       then "CLEAR    \(.key) [\(.fields.status.name)] \(.fields.summary)"
       else "WAITING  \(.key) still blocked by \([$open[].inwardIssue.key]|join(", "))" end'
@@ -72,5 +74,5 @@ In order:
 
 ### 5. Report
 
-    Cleaned up <TICKET>: ticket done, worktree removed, branch <name> deleted.
+    Cleaned up <TICKET>: ticket moved to <status>, worktree removed, branch <name> deleted.
     Unblocked by this: <keys, or "nothing — it blocked no open ticket">.

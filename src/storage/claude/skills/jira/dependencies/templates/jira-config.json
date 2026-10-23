@@ -9,11 +9,9 @@
     "baseBranch": "main",
     "labels": [],
     "transitions": {
-        "backlog": "BACKLOG",
-        "selectedForDevelopment": "SELECTED FOR DEVELOPMENT",
-        "inProgress": "IN PROGRESS",
-        "inReview": "IN REVIEW",
-        "done": "DONE"
+        "start": "IN PROGRESS",
+        "review": "IN REVIEW",
+        "merged": "DONE"
     },
     "prTemplate": "Resolves {ticketId}\n\n## Changes\n- \n\n## Testing\n- "
 }

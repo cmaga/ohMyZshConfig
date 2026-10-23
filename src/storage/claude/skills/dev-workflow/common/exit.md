@@ -4,7 +4,7 @@ Every tier ends here before returning control.
 
 1. **Verify behavior** by driving the change in the real app via the `run` skill. If the change alters a shared interface, exercise each consumer flow. Skip only when the change has no runtime surface; state the reason. Attended, when the drive needs a browser, give the user a two-line manual check instead. If verification needs a browser and the project has no Playwright MCP config — or a drive hits Chromium's profile lock — run `playwright-mcp-setup` first.
 2. **Create the PR** via the `git-provider` skill.
-3. **Transition the ticket** to "in review" via the `jira` skill.
+3. **Transition the ticket** with `transitions.review` via the `jira` skill.
 4. **Run the review gate** — below. Every tier runs it, `small` included.
 5. **[Triage](#triage) the loose ends.** Folds go back through the review gate and the tests they affect before the next step.
 6. **Run the full suite once**, now that the last change is in. First fold the fixups in and catch up with the base in one rebase: `git fetch origin <base>`, then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<base>` — the no-op editor keeps it non-interactive, and git before 2.44 ignores `--autosquash` without `-i`. Then run the project's gate command. This is the run's only full run. Red: fix (as fixups again), re-run the failures, then the full suite again. Green: repeat the rebase if fixups are left, then `git push --force-with-lease`. A base branch that moves afterwards and still merges cleanly needs no re-run.

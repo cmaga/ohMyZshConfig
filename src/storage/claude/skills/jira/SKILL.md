@@ -43,7 +43,7 @@ before any command (see "Load Config"). That read **is** the gate:
 
 ### On command failure
 
-Branch on the error — the two classes have different fixes:
+Branch on the error — each class has its own fix:
 
 - **Missing prerequisite** — `jira: command not found`, "config not found", HTTP
   401, or a hang despite `--no-input`. Run the **Full detection battery**, then
@@ -53,6 +53,10 @@ Branch on the error — the two classes have different fixes:
   unknown.` Every prerequisite is present and the config *values* are wrong. Run
   battery check 5 and correct `.jira-config.yml`. Never route this to setup —
   setup rewrites the same values. Never work around it with raw REST calls.
+- **Transition rejected** — `invalid transition state "<name>"`. The mapped
+  `transitions` value is not a transition out of the ticket's current status.
+  Show the user the available states the error lists, ask which one the moment
+  means, write its name into `config.json`, and re-run the move.
 
 If all five checks pass and the command still fails, report the API's own error
 verbatim and stop.
@@ -108,7 +112,7 @@ Trigger phrases: "set up jira", "jira setup", "configure jira", "initialize the 
 1. Do not run `jira init`. The deployed `jira()` zsh wrapper hard-fails on any `jira` invocation until `.jira-config.yml` exists, so init cannot bootstrap through it. Claude writes `.jira-config.yml` directly.
 2. Do not ask the user to paste commands via `!`. Once Claude has the values, Claude writes the files itself.
 
-Goal: one round of questions, then done. Everything else is derived from the environment.
+Goal: two rounds of questions — identity in Step 3, transitions in Step 4 — then done. Everything else is derived from the environment.
 
 ### Step 1: Install jira-cli and jq
 
@@ -158,10 +162,6 @@ If a sibling `.jira-config.yml` matches the discovered host, read it — it supp
 Show a short summary of what was discovered (host, email, username, sibling template, token status), then issue a **single `AskUserQuestion` call** for only what could not be derived. Standard minimum:
 
 - **Project key** — user types via "Other" (e.g., `EN`, `STAX`)
-- **Transitions preset** — offer:
-  - `To Do / In Progress / In Review / Done`
-  - `Backlog / Selected for Development / In Progress / In Review / Done`
-  - Other (user types a custom mapping)
 
 Add a server-confirmation question **only if** discovery found multiple Atlassian hosts or none. Do not ask for server/email/username/labels when discovery answered them — default `labels` to `[]` and `username` to `$(whoami)`; the user can edit `config.json` later.
 
@@ -197,6 +197,27 @@ Then the `epic:` block, which depends on the style just derived:
   ```
 
   `Epic Name` → `epic.name`, `Epic Link` → `epic.link`.
+
+Then `transitions` — one entry per moment dev-workflow moves a ticket: `start`
+(work begins), `review` (PR opened), `merged` (PR merged). List the project's
+statuses, then ask one `AskUserQuestion` call with a question per moment, each
+offering the statuses outside the `new` category:
+
+```bash
+curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/api/3/project/${PROJECT_KEY}/statuses" \
+  | jq -r '[.[].statuses[] | "\(.name) [\(.statusCategory.key)]"] | unique[]'
+```
+
+Store the transition **name** that reaches each chosen status, never the status
+name: `jira issue move` matches transition names only, and the two can differ (an
+"In Progress" transition can land on "Implementation"). A workflow lists only the
+transitions out of an issue's current status, so read them from an issue sitting
+in the status the moment leaves:
+
+```bash
+curl -s -u "${EMAIL}:${TOKEN}" "https://${HOST}/rest/api/3/issue/${ISSUE_KEY}/transitions" \
+  | jq -r '.transitions[] | "\(.name) -> \(.to.name)"'
+```
 
 Then write both files:
 
@@ -262,7 +283,7 @@ Before running any command, read `<project-root>/.claude/skills/jira/config.json
 
 - `-p {projectKey}` -- every `jira issue` command
 - `-l{label}` for each entry in `config.labels` -- on `issue create` and `issue list`. Omit if the array is empty
-- `config.transitions.<status>` -- use the mapped string as the target on `issue move`
+- `config.transitions.<moment>` -- the transition name to pass to `issue move`. `start`, `review` and `merged` are the moments every project maps; other keys are project-specific and used only when the user asks for that move
 
 **Git workflow** (substitute when creating branches, commits, or PRs):
 
@@ -289,7 +310,7 @@ Location: `<project-root>/.claude/skills/jira/config.json`
 | `commitFormat`     | Commit message template  |
 | `baseBranch`       | Default base branch      |
 | `labels`           | Default label filters    |
-| `transitions`      | Board transition names   |
+| `transitions`      | Transition name per moment: `start`, `review`, `merged` |
 | `prTemplate`       | PR description template  |
 
 ### Non-interactive Output
@@ -371,7 +392,7 @@ jira issue view {ticketId} --plain
 **Transition issue:**
 
 ```bash
-jira issue move {ticketId} "{transitions.inProgress}"
+jira issue move {ticketId} "{transitions.start}"
 ```
 
 **Create issue:**
