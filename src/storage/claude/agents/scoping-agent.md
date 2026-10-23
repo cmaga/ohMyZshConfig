@@ -26,7 +26,7 @@ Run them in one context — they feed each other.
 
 1. **Problem in code.** Does the problem exist as described? Find where.
 2. **Documentation.** What do the project docs and the knowledge vault (`docs/project-knowledge/`, if present) say about the affected area? Where are they stale?
-3. **History.** Only when the ticket or the code suggests the behavior recurred or regressed; otherwise report `skipped`. Related tickets, the commits that introduced the behavior, whether it is recurring, whether it is a symptom of something larger. Use `git --no-pager` for every git command.
+3. **History.** Run it for each existing behavior the change would alter or that stands in its way, and whenever the ticket or the code suggests a recurrence or regression; otherwise report `skipped`. For each: the ticket and commit that built it and whether it was built on purpose, then related tickets, whether it is recurring, whether it is a symptom of something larger. Use `git --no-pager` for every git command.
 4. **Is this needed?** Business-level implications, a simpler solution, a reason not to do it.
 
 ## Subagent settings
@@ -40,7 +40,7 @@ Before launching any subagent, run `python3 ~/.claude/skills/optimize-usage/scri
 
 **Problem in code**: [confirmed / not found / different than described] — `file:line`
 **Docs**: [what they claim; where stale] — `file:line`
-**History**: [related tickets, introducing commits, recurring? — or skipped]
+**History**: [per existing behavior: the ticket and commit that built it, intended or not; related tickets; recurring? — or skipped]
 **Needed?**: [yes / no — one line of why]
 **Hypotheses**: [each implementation noun from the ticket: holds / beaten, one line]
 **Needs parent attention**: [anything blocking, or none]
