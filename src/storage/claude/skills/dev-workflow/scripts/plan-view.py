@@ -60,7 +60,7 @@ def parse_plan(text):
         body = re.split(r'^## ', body, maxsplit=1, flags=re.M)[0]
         proof = re.search(r'^\*\*Proof:\*\* `([^`]*)`', body, re.M)
         tasks = []
-        for th, tbody in sections(body, r'^### (T-\d+\.\d+): (.*)$'):
+        for th, tbody in sections(body, r'^### (T-\d+\.\d+[a-z]?): (.*)$'):
             files = re.search(r'^- \*\*Files:\*\*(.*?)(?=^- \*\*|\n\n)', tbody, re.M | re.S)
             level = re.search(r'^- \*\*Level:\*\* *(\w+)', tbody, re.M)
             tasks.append({

@@ -45,7 +45,7 @@ def milestone(plan, n):
         sys.exit(f'no "## M-{n}:" section in {plan}')
     body = sec.group(2)
     tasks = []
-    for t in re.finditer(r'^### (T-\d+\.\d+): ([^\n]*)\n(.*?)(?=^### T-|\Z)', body, re.M | re.S):
+    for t in re.finditer(r'^### (T-\d+\.\d+[a-z]?): ([^\n]*)\n(.*?)(?=^### T-|\Z)', body, re.M | re.S):
         card = t.group(3)
         files = re.search(r'^- \*\*Files:\*\*(.*?)(?=^- \*\*|\n\n)', card, re.M | re.S)
         after = re.search(r'^- \*\*After:\*\*([^\n]*)', card, re.M)
@@ -53,11 +53,15 @@ def milestone(plan, n):
         tasks.append({
             'id': t.group(1), 'title': t.group(2).strip(),
             'files': re.findall(r'`([^`]+)`', files.group(1)) if files else [],
-            'after': re.findall(r'T-\d+\.\d+', after.group(1)) if after else [],
+            'after': re.findall(r'T-\d+\.\d+[a-z]?\b', after.group(1)) if after else [],
             'level': level.group(1) if level else None,
             'card': f'Your card is the section "### {t.group(1)}:" of the plan at {plan}: read it whole, '
                     f"and the milestone's Scaffold and Tests paragraphs above it. {TIMEOUT}",
         })
+    # A split card's id carries a letter (T-8.3a); a heading this cannot read would drop its card from the build silently.
+    unread = [h for h in re.findall(r'^### (T-[^:\n]*):', body, re.M) if h not in {t['id'] for t in tasks}]
+    if unread:
+        sys.exit(f'M-{n} has task headings the parser cannot read: {", ".join(unread)}')
     pointer = lambda k: (f'Read the "**{k}:**" paragraph of section "## M-{n}:" in the plan at {plan}, whole, '
                          f"and the milestone's Proof paragraph. {TIMEOUT}")
     return {'id': f'M-{n}', 'title': sec.group(1).strip(),
@@ -71,12 +75,12 @@ def brief(plan, spec):
     for sec in re.finditer(r'^## M-(\d+): ([^\n]*)\n(.*?)(?=^## M-|\Z)', Path(plan).read_text(), re.M | re.S):
         proof = re.search(r'^\*\*Proof:\*\* `([^`]*)`', sec.group(3), re.M)
         lines.append(f'M-{sec.group(1)}: {sec.group(2).strip()} | proof: {proof.group(1) if proof else "none"}')
-        for t in re.finditer(r'^### (T-\d+\.\d+): ([^\n]*)\n(.*?)(?=^### T-|\Z)', sec.group(3), re.M | re.S):
+        for t in re.finditer(r'^### (T-\d+\.\d+[a-z]?): ([^\n]*)\n(.*?)(?=^### T-|\Z)', sec.group(3), re.M | re.S):
             card = t.group(3)
             files = re.search(r'^- \*\*Files:\*\*(.*?)(?=^- \*\*|\n\n)', card, re.M | re.S)
             after = re.search(r'^- \*\*After:\*\*([^\n]*)', card, re.M)
             level = re.search(r'^- \*\*Level:\*\* *(\w+)', card, re.M)
-            ids = ', '.join(re.findall(r'T-\d+\.\d+', after.group(1))) if after else 'none'
+            ids = ', '.join(re.findall(r'T-\d+\.\d+[a-z]?\b', after.group(1))) if after else 'none'
             paths = ', '.join(re.findall(r'`([^`]+)`', files.group(1))) if files else 'none'
             lines.append(f'  {t.group(1)} [{level.group(1) if level else "none"}] {t.group(2).strip()} | after: {ids} | files: {paths}')
             lines += ['    decided: ' + ' '.join(d.split()) for d in re.findall(r'^Decided during the build:(.*?)(?=\n\n|\Z)', card, re.M | re.S)]
