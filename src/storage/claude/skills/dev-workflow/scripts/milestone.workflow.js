@@ -6,7 +6,7 @@ export const meta = {
     { title: 'Tests' },
     { title: 'Build' },
     { title: 'Decide' },
-    { title: 'Review' },
+    { title: '▸ review' },
     { title: 'Fold' },
     { title: 'Verify' },
   ],
@@ -252,7 +252,7 @@ if (halted) return stopped('build', halted.t.id, halted.report, { built })
 const unready = m.tasks.filter(t => !started.has(t.id))
 if (unready.length) return stopped('build', 'plan', null, { reason: `no task is ready: ${unready.map(t => t.id).join(', ')}`, built })
 
-phase('Review')
+// The review runs as a child workflow, whose agents group under '▸ review', so meta.phases declares that title.
 // A resume replays only the unbroken prefix of calls in their first order, and a fan-out's calls return in a
 // new order, so a finished review reaches a resume through its args, never through the cache.
 const review = reviewed || await workflow({ scriptPath: `${scripts}/review.workflow.js` }, {

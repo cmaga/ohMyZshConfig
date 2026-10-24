@@ -1,5 +1,5 @@
 export const meta = {
-  name: 'dev-workflow-review',
+  name: 'review',
   description: 'Review a diff one unit at a time, check the seams between units, and try to disprove every bug before it counts',
   phases: [{ title: 'Find' }, { title: 'Disprove' }],
 }
