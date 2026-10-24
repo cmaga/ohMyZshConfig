@@ -161,8 +161,10 @@ def bed(o):
     files = ' '.join(dict.fromkeys(p for p in paths if p))
     runner = args['milestone']['proof'].split('pytest', 1)[0] + 'pytest'
     log = f"{args.get('logs') or Path(o.args).resolve().parent}/{args['epic']}-{args['milestone']['id']}-bed.log"
+    # The signal method fails only the test that overran; the thread method ends the whole session, and M-7 of EN-503
+    # lost its bed 25 minutes in to its first test. A test that needs longer carries its own timeout mark, which wins.
     print(f"cd {tree} && {runner} --collect-only -q {files} > {log} 2>&1 && "
-          f"{runner} {files} --timeout=900 --timeout-method=thread -ra --durations=0 > {log} 2>&1")
+          f"{runner} {files} --timeout=900 --timeout-method=signal -ra --durations=0 > {log} 2>&1")
 
 
 def fix(o):
