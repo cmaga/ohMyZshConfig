@@ -66,7 +66,7 @@ def milestone(plan, n):
 
 
 def brief(plan, spec):
-    """The decider's big picture: the spec whole, then the plan at one line per task with its recorded decisions."""
+    """The decider's big picture: the spec by path, then the plan at one line per task with its recorded decisions."""
     lines = []
     for sec in re.finditer(r'^## M-(\d+): ([^\n]*)\n(.*?)(?=^## M-|\Z)', Path(plan).read_text(), re.M | re.S):
         proof = re.search(r'^\*\*Proof:\*\* `([^`]*)`', sec.group(3), re.M)
@@ -80,7 +80,8 @@ def brief(plan, spec):
             paths = ', '.join(re.findall(r'`([^`]+)`', files.group(1))) if files else 'none'
             lines.append(f'  {t.group(1)} [{level.group(1) if level else "none"}] {t.group(2).strip()} | after: {ids} | files: {paths}')
             lines += ['    decided: ' + ' '.join(d.split()) for d in re.findall(r'^Decided during the build:(.*?)(?=\n\n|\Z)', card, re.M | re.S)]
-    return (f"The build's big picture as this run started. The spec, whole:\n\n{Path(spec).read_text()}\n\n"
+    # The spec goes by path: inlined, it pushed a resume's script past the Workflow tool's 512 KB limit (M-7 of EN-503).
+    return (f"The build's big picture as this run started. Read the spec whole first: {spec}\n\n"
             f"The plan, one line per task; each task's card in the plan holds its detail:\n\n" + '\n'.join(lines))
 
 
