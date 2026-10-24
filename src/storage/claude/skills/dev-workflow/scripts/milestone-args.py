@@ -90,7 +90,10 @@ def brief(plan, spec):
 
 
 def write(path, args):
-    args['brief'] = brief(args['plan'], args['spec'])
+    # The brief goes by path too: its decided lines alone were 296 KB by M-8 of EN-503, most of the 512 KB limit.
+    held = path.parent / f'{path.stem}.brief.md'
+    held.write_text(brief(args['plan'], args['spec']))
+    args['brief'] = f"Read the build's big picture whole first: {held.resolve()}"
     args.setdefault('logs', str(path.parent.resolve()))
     path.write_text(json.dumps(args, indent=1))
     src = (HERE / 'milestone.workflow.js').read_text()

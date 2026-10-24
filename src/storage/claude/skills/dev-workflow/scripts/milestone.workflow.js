@@ -89,7 +89,7 @@ const stuck = r => asked(r) || r.green === false
 
 // A question is answered inside the run with the coordinator's authority; only a redesign returns to it.
 // One decider at a time takes every question then waiting, so its answers agree with each other and with every
-// earlier one. The brief leads its prompt unchanged, so each decider after the first reads it from the prompt cache.
+// earlier one. The brief names the file holding the build's big picture, which each decider reads first.
 const running = new Map()
 const waiting = []
 let deciding = false
