@@ -68,8 +68,9 @@ alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
 oc() {
   local -a via_proxy=() account=()
   # Under ~/dev/<company>/, sign in as that company's account (06-deploy-claude.zsh builds its config dir).
+  # ~/dev/ms/engine is the exception: it stays on the personal account in ~/.claude.
   local company=${${PWD#$HOME/dev/}%%/*}
-  [[ $PWD == $HOME/dev/* && -d $HOME/.claude-$company ]] && account=(CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR:-$HOME/.claude-$company})
+  [[ $PWD == $HOME/dev/* && $PWD != $HOME/dev/ms/engine(|/*) && -d $HOME/.claude-$company ]] && account=(CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR:-$HOME/.claude-$company})
   if curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
     via_proxy=(
       ANTHROPIC_BASE_URL=http://localhost:4000
