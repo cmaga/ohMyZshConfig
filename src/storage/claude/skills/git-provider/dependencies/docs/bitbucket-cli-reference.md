@@ -205,17 +205,17 @@ bb pr update {pr-id} \
 
 ```bash
 # List comments
-bb pr comment list {pr-id}
+bb pr comment list --pullrequest {pr-id}
 
 # Add comment
-bb pr comment create {pr-id} --content "This is a comment"
+bb pr comment create --pullrequest {pr-id} --comment "This is a comment"
 ```
 
 ### PR Activity
 
 ```bash
 # View PR activity/history
-bb pr activity list {pr-id}
+bb pr activity list --pullrequest {pr-id}
 ```
 
 ## Repositories
