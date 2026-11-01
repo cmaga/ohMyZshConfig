@@ -4,7 +4,7 @@ A measured slowness to trace and improve against a baseline.
 
 **You own the measurement story. Plan, review, verify the numbers.** Tie every fix to a measurement, don't read source instead of measuring.
 
-1. Capture a baseline trace on the matching surface, through the project's verify skill (`.claude/skills/verify-*`), else the `run` skill. Commit the script that captures it, so the PR's numbers can be rerun. That script and its baseline are the contract: lock them per the [contract](../stations/contract.md) station, and no delegate edits them. Vet the baseline, and each later number, with the [benchmark checklist](../stations/benchmark-checklist.md) station.
+1. Capture a baseline trace on the matching surface, through the project's verify skill (`.claude/skills/verify*`), else the `run` skill. Commit the script that captures it, so the PR's numbers can be rerun. That script and its baseline are the contract: lock them per the [contract](../stations/contract.md) station, and no delegate edits them. Vet the baseline, and each later number, with the [benchmark checklist](../stations/benchmark-checklist.md) station.
 2. Run the [how](../stations/how.md) station to ground hypotheses. Don't claim a perf ceiling without running it first.
    Try the performance mantras in order, cheapest first:
    1. Don't do it. Stop work whose result nothing uses rather than cheapening it.

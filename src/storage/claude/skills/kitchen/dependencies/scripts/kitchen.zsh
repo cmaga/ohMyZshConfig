@@ -55,7 +55,7 @@ DEFAULT_MINUTES='{"serve":45,"cook":360,"follow":120,"verify":90}'
 # A session with no side effect this long is stuck: no order update, no commit or reset in its worktree.
 DEFAULT_STALL='{"cook":60,"follow":45,"verify":45}'
 # A change to these paths loosens or moves a check, so the user reviews it.
-CHECK_PATHS='(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/|\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.|\.claude/kitchen/house\.md$|\.claude/skills/verify-)'
+CHECK_PATHS='(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/|\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.|\.claude/kitchen/house\.md$|\.claude/skills/verify[-/])'
 # A mistake under these paths is costly: a lower-case word at a word start, or Capitalized inside camelCase, never inside a longer word (author).
 RISK_WORDS='auth|authn|authz|authentication|authorization|oauth|billing|payments?|migrations?|migrate|secrets?|security|crypto|permissions?'
 RISK_PATHS="(^|[^A-Za-z])($RISK_WORDS)([^a-z]|\$)|(${(C)RISK_WORDS}|OAuth)([^a-z]|\$)|(^|/)alembic/versions/"

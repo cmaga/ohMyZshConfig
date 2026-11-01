@@ -53,7 +53,7 @@ The Principles below ground every trigger. In your reply and the PR, name each p
 - **Any prose, your reply included**: the [unslop](commands/cook/stations/unslop.md) station, and the reply per [Writing the reply](#writing-the-reply). Prose an agent reads (skills, agents, rules) also follows the `claude-feature-authoring` skill.
 - **Docs, PR descriptions, commit messages**: the [technical-writing](commands/cook/stations/technical-writing.md) station.
 - **Before review**: the [taste](commands/taste/taste.md) command's tasters and the [no-comments](commands/cook/stations/no-comments.md) station.
-- **Shipping UI, CLI, or service behavior**: drive it through the project's verify skill (`.claude/skills/verify-*`), else the `run` skill; browsers through Playwright MCP. For a bug fix, reproduce it first on that surface yourself.
+- **Shipping UI, CLI, or service behavior**: drive it through the project's verify skill (`.claude/skills/verify*`), else the `run` skill; browsers through Playwright MCP. For a bug fix, reproduce it first on that surface yourself.
 - **A benchmark, or a speedup or regression you measured**: the [benchmark checklist](commands/cook/stations/benchmark-checklist.md) station before you report or act on the number.
 - **A PR-status request** ("check on PR X", "get it green", "anything outstanding on X"): the [follow a PR](commands/cook/recipes/follow-a-pr.md) recipe. Opening a PR never starts one.
 - **Landing a PR**: the [merge](commands/cook/recipes/merge.md) recipe. Green is not safe: nothing merges before a verdict from a session that did not write the change covers its current patch.

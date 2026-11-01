@@ -1,6 +1,6 @@
 # Calibrate: keep the verify skill accurate
 
-`/kitchen taste calibrate` brings the project's verify skill (`.claude/skills/verify-*/`) back in line with the app, per the [maintain a verification skill](../cook/stations/maintain-verification-skill.md) station. When the project has none, offer `/kitchen open` and stop.
+`/kitchen taste calibrate` brings the project's verify skill (`.claude/skills/verify*/`) back in line with the app, per the [maintain a verification skill](../cook/stations/maintain-verification-skill.md) station. When the project has none, offer `/kitchen open` and stop.
 
 Run it as written there, with two kitchen rules on top:
 

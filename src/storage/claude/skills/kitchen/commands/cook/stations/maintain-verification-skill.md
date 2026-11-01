@@ -18,7 +18,7 @@ Only edit the verification skill's own directory (its SKILL.md, features/, and a
 
 ## Pass
 
-0. **Locate the target.** Find the verification skill to maintain: the project-local skill whose body has launch and drive sections and a feature map (usually `.claude/skills/verify-*/`). Several candidates: ask which one. None: stop and point at `/kitchen open`, which generates one, instead of inventing a target.
+0. **Locate the target.** Find the verification skill to maintain: the project-local skill whose body has launch and drive sections and a feature map (usually `.claude/skills/verify*/`). Several candidates: ask which one. None: stop and point at `/kitchen open`, which generates one, instead of inventing a target.
 
 1. **Index hygiene.** Read the feature map README and glob its sibling files. Fix missing, extra, duplicate, or dead entries. Lightweight, with no generated inventory.
 
