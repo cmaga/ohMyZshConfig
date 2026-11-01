@@ -1,0 +1,9 @@
+# The kitchen skill's scheduler (always-on while enabled).
+# Every few minutes it runs intake on new tickets, starts ready orders, follows open PRs,
+# and restarts sessions that died, for every project added with `kitchen line add`
+# (or /kitchen open). Polling spends no tokens.
+# Off until you turn it on: set enabled = true and run `make deploy-automations`.
+# Not a scheduled job: a KeepAlive daemon, so it declares `keepalive`.
+
+enabled = false
+keepalive = true

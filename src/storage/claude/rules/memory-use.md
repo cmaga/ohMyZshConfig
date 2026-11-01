@@ -18,6 +18,8 @@ Write these to their home instead of memory:
 
 - File a lesson about a skill under a `## Skill: <name>` section of `MEMORY.md`. Create the section with the skill's first lesson, above the other sections so it stays inside the read limit.
 - As a subagent, write no memory: send each skill lesson to the main session with `SendMessage` to `main`.
+- Write a project nuance (something in this project that caused confusion, delay, or difficulty) as a `project` memory saying what happened and what would have prevented it. The next memory review decides what it becomes; never copy it into the project yourself.
+- A defect in the kitchen skill is not a memory: it gets a PR right away, per the kitchen's Defects and lessons.
 - File a skill lesson that arrives by message exactly like your own.
 
 ### Format

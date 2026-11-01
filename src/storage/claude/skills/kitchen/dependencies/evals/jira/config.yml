@@ -1,0 +1,39 @@
+auth_type: basic
+board:
+  id: 3
+  name: PLAT board
+  type: kanban
+epic:
+  name: ""
+  link: ""
+installation: Cloud
+issue:
+  fields:
+    custom: []
+  types:
+  - id: "10001"
+    name: Task
+    handle: Task
+    subtask: false
+  - id: "10002"
+    name: Bug
+    handle: Bug
+    subtask: false
+  - id: "10003"
+    name: Story
+    handle: Story
+    subtask: false
+  - id: "10004"
+    name: Epic
+    handle: Epic
+    subtask: false
+  - id: "10005"
+    name: Subtask
+    handle: Subtask
+    subtask: true
+login: jordan.lee@northwind.dev
+project:
+  key: PLAT
+  type: next-gen
+server: http://northwind.atlassian.test
+timezone: America/Los_Angeles

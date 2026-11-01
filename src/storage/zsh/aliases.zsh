@@ -83,6 +83,9 @@ oc() {
   env $account $via_proxy claude --dangerously-skip-permissions "$@"
 }
 
+# The kitchen's order book (kitchen skill): `kitchen` shows status and what waits on you.
+alias kitchen='zsh ~/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh'
+
 # oc on DeepSeek Flash as the session model. Needs the proxy, so it refuses to
 # start without it rather than open a session whose model cannot resolve.
 # Shadows /usr/bin/od (octal dump); reach that with `command od`.

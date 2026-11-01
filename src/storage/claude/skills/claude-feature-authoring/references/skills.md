@@ -54,7 +54,7 @@ So a skill that starts something must make it recoverable with no context:
 2. **Record the undo at bring-up, never at the end.** Append one command per resource to `<worktree>/.claude-artifacts/teardown.sh`, with names already expanded so the file stands alone.
 3. **Keep it tolerant.** No `set -e` — an already-released resource is the expected case, not an error. Nothing unscoped: `docker system prune` and friends reach into live concurrent worktrees.
 
-dev-workflow's `cleanup` runs that file before removing the worktree. That is the whole contract — it needs no knowledge of what your project provisions, and stays a silent no-op where nothing is provisioned.
+Whatever removes the worktree runs that file first. That is the whole contract — it needs no knowledge of what your project provisions, and stays a silent no-op where nothing is provisioned.
 
 `teardown.sh` sits at the root of `.claude-artifacts/`, not under `<type>/<feature>/` like the table above. Deliberate: the consumer is generic and must find it without knowing which skill wrote it. Several skills in one worktree just append to the same file.
 

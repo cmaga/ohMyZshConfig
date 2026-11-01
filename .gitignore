@@ -30,3 +30,7 @@ src/storage/claude/skills/*/artifacts/*
 
 # Python bytecode cache, written whenever a skill script runs
 __pycache__/
+
+# Eval run results, written by `claude plugin eval` next to a skill's cases
+src/storage/claude/skills/*/evals/results/
+src/storage/claude/skills/*/dependencies/evals/results/

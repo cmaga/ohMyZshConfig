@@ -26,16 +26,18 @@ Run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memo
    - **Not the skill** — the run misread text that was clear, or the friction was really the code. Propose deleting it, unless its **How to apply** still prevents something.
 6. **Present the groups before drafting anything**, defects first, then not-the-skill groups and shipped resolutions, one line each: what recurs, how many times, and the change you would make. The user picks.
 7. **Read the surrounding text before writing a word of the fix.** A rule that already exists is a fix that did not take — the most important thing a review can find. A second copy of it elsewhere makes the skill worse; the defect is where the rule sits. Verify the lesson's claim against the file as it stands now — lessons age, and the sentence may already have changed.
-8. **Agree each change in plain words first,** one picked group at a time: the problem, then what changes. Show no drafted text until the user agrees.
+8. **Agree each change in plain words first,** one picked group at a time: the problem, then what changes. Show no drafted text until the user agrees. When a script, check, hook, or flag can enforce the lesson, that mechanism is the change; text is for what needs judgment.
 9. **Draft the agreed change** through the `claude-feature-authoring` skill, which owns the authoring rules. Edits land in the source from step 2.
 10. **Show the rendered instruction, not the diff** — the text a future run will read, before and after.
-11. **Resolve on approval.** Mark each acted-on lesson `Resolved: <commit subject or worktree path>` instead of deleting it, so it keeps working until the change ships; the sweep deletes it once deployed (Part 3 step 1). Delete the picked not-the-skill lessons and shipped resolutions: the topic file, its `MEMORY.md` line, and the section heading once the section is empty. A group the user declined stays where it is, with `Declined: <date>` and one line of why appended to each lesson, so the next review does not re-litigate it.
+11. **Trial it blind.** Give a fresh `general-purpose` agent on `sonnet` the edited text and the situation one of the group's lessons describes, without the lesson, and ask what it would do. When it still goes wrong, the edit did not take: revise it before going on.
+12. **Resolve on approval.** Mark each acted-on lesson `Resolved: <commit subject or worktree path>` instead of deleting it, so it keeps working until the change ships; the sweep deletes it once deployed (Part 3 step 1). Delete the picked not-the-skill lessons and shipped resolutions: the topic file, its `MEMORY.md` line, and the section heading once the section is empty. A group the user declined stays where it is, with `Declined: <date>` and one line of why appended to each lesson, so the next review does not re-litigate it.
 
 ## Part 2: Everything else
 
 1. **Classify every other entry in the current project's memory** — each `MEMORY.md` line, each line of any index file it links to, and each topic file no index links to — reading the topic file whenever its line does not settle it. Skip entries marked `Declined:` unless a recurrence is dated after the decline.
    - **Belongs elsewhere** — it holds something the `memory-use` rule's What Belongs Where table gives a home: ticket state, what merged, a decision or constraint. A lesson about how Claude works is not this class even when it names a constraint; only a bare fact moves.
    - **Promote** — a lesson with three or more dates on its `Recurrences:` line.
+   - **Nuance** — a project nuance: something in this project that caused confusion, delay, or difficulty, written down for this review. Its fate is the user's call, whatever its recurrence count: a project change, a global change, a kitchen change, or nothing.
    - **Stale** — contradicted by the code, the tracker, or a newer memory.
    - **Duplicate** — says what another entry already says.
    - **Keep** — everything else, including every lesson still working.
@@ -43,6 +45,7 @@ Run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memo
 3. **Apply each picked change.**
    - **Belongs elsewhere:** confirm its home holds it, and put it there first when it does not — the vault per the `knowledge-vault-use` rule, Jira through the `jira` skill. Then delete the entry.
    - **Promote:** agree the change in plain words, then draft the rule, skill, hook, or CLAUDE.md text through `claude-feature-authoring` and show the rendered text. Once approved, mark the entry `Resolved: <commit subject or worktree path>`; a later review deletes it once the change ships.
+   - **Nuance:** agree its fate in plain words. A project change (a hook, rule, skill, or `CLAUDE.md` line) is drafted fresh from what the note teaches, never by copying the note into the project, and made per the Rules below. A global change goes to ohMyZshConfig through `claude-feature-authoring`. A kitchen change is a PR to the kitchen skill. Then mark the entry `Resolved:` as for Promote; with no change, delete it or keep it as the user says.
    - **Stale:** name what contradicts it, then correct or delete it.
    - **Duplicate:** fold it into the entry that stays.
 

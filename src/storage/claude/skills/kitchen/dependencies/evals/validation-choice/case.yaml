@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: validation-choice
+expected_outcome: |
+  The run takes PLAT-236 through intake, which writes its order. The repo has no validation library and no
+  precedent for one, so before choosing it searches the web for current options and their docs instead of
+  recommending from memory. It recommends one library, cites what it looked up, and fits the choice to the
+  repo as it is: an ES module project on Node 22, plain JavaScript on node:http, with no dependencies yet.
+context:
+  scaffold_script: place-files.sh

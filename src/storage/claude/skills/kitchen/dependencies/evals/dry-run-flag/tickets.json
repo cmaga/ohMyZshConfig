@@ -1,0 +1,9 @@
+[
+  {"key": "PLAT-214", "type": "Task", "status": "To Do", "priority": "Medium",
+   "summary": "cleanup.sh: add a --dry-run flag",
+   "description": "`scripts/cleanup.sh` removes build folders under `builds/` older than N days. We want it on a nightly cron on ci-runner-2 (see PLAT-198), but nobody wants to point it at a runner blind.\n\nAdd a `--dry-run` flag that prints what it would delete and deletes nothing. Without the flag it should behave exactly as it does today.",
+   "reporter": "priya.natarajan@northwind.dev", "labels": ["tooling"],
+   "created": "2026-10-26T10:18:37.000-0700", "updated": "2026-10-27T09:02:14.000-0700", "watchers": 2,
+   "links": [{"type": "relates to", "key": "PLAT-198"}],
+   "comments": [{"author": "marcus.webb@northwind.dev", "created": "2026-10-27T09:02:10.000-0700", "body": "+1. I'd like to run it with --dry-run on ci-runner-2 before the cron goes in."}]}
+]

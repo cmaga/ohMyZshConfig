@@ -265,10 +265,6 @@ deploy_configs() {
         install -m 755 "$shim" "$BIN_DEST/$(basename "$shim")" \
             || error "Failed to deploy $(basename "$shim")"
     done
-    # Remove the superseded zsh function so there is one implementation. A
-    # stale copy would shadow the shim in interactive zsh only, which is the
-    # hardest kind of divergence to notice.
-    rm -f "$OMZ_DIR/custom/jira-wrapper.zsh"
 
     # Deploy utility scripts directory
     if [ -d "$SCRIPTS_SOURCE" ]; then

@@ -156,7 +156,7 @@ The storage-state seed is port-independent for cookie-based auth: cookies are ke
 
 Two browser tools are available; use the right one.
 
-- **Playwright MCP** — verifying the feature you are building: driving the local dev app, asserting a route renders, walking a form flow, reading console/network on your change. Isolated + concurrent, so many worktrees verify in parallel. This is the dev-workflow verify browser.
+- **Playwright MCP** — verifying the feature you are building: driving the local dev app, asserting a route renders, walking a form flow, reading console/network on your change. Isolated + concurrent, so many worktrees verify in parallel.
 - **Claude's built-in Chrome (`claude-in-chrome`)** — every other browsing task: looking something up, reading a dashboard or ticket, checking external docs. It rides your real Chrome session, so your logins are already there and it does not consume a Playwright instance.
 
 Rule of thumb: exercising the code under test → Playwright MCP; anything else → built-in Chrome.

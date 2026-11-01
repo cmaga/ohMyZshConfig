@@ -1,0 +1,26 @@
+#!/bin/sh
+# jira inside an eval run. The run's shell cannot open a socket, so each call is handed to
+# jira/server.py outside the sandbox, which runs the real jira-cli against a stand-in Jira and
+# hands back its output and exit code.
+spool=$HOME/.jira-mock/spool
+[ -d "$spool" ] || { echo "jira: the stand-in Jira is not running" >&2; exit 1; }
+req=$spool/$$.$(date +%s)
+mkdir "$req.tmp" || exit 1
+printf '%s\0' "$@" > "$req.tmp/args"
+pwd > "$req.tmp/cwd"
+printf '%s' "${TERM:-dumb}" > "$req.tmp/term"
+# only the commands that take a body read stdin, as jira-cli does
+case " $* " in
+  *" create "*|*" edit "*|*" comment "*|*" worklog "*) [ -t 0 ] || cat > "$req.tmp/stdin" ;;
+esac
+mv "$req.tmp" "$req.req"
+give_up=$(($(date +%s) + 120))
+while [ ! -f "$req.req/code" ]; do
+  [ "$(date +%s)" -lt $give_up ] || { echo "jira: no reply from the stand-in Jira" >&2; exit 1; }
+  sleep 0.05
+done
+cat "$req.req/out"
+cat "$req.req/err" >&2
+code=$(cat "$req.req/code")
+rm -rf "$req.req"
+exit "$code"

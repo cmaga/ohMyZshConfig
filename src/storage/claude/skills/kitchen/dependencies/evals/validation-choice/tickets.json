@@ -1,0 +1,8 @@
+[
+  {"key": "PLAT-236", "type": "Task", "status": "To Do", "priority": "High",
+   "summary": "orders-api: pick how we validate request bodies",
+   "description": "`POST /orders` in src/server.js stores whatever JSON arrives. Last week a client sent `quantity` as a string and the nightly invoice job crashed on it.\n\nWe want every write endpoint validated before we add the next three (refunds, returns, addresses). Nobody has picked a validation library for this service yet. Recommend one, and why, before anyone builds it.",
+   "reporter": "priya.natarajan@northwind.dev", "labels": ["orders-api"],
+   "created": "2026-10-30T09:12:44.000-0700", "updated": "2026-10-30T09:12:44.000-0700", "watchers": 3,
+   "comments": [{"author": "marcus.webb@northwind.dev", "created": "2026-10-30T10:03:18.000-0700", "body": "Whatever we pick should give clients an error that says which field is wrong."}]}
+]

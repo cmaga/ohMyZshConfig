@@ -31,7 +31,7 @@ Before authoring, search for something to reuse or fork — skills take many ite
 
 1. **Local** — run `/skills`; check project files (CLAUDE.md, `.claude/rules/`, `.claude/hooks/`) for overlapping guidance.
 2. **Online** — search published skills for a close match to fork or lift patterns from. Start with `anthropics/skills`, then curated community lists. Confirm a candidate still exists before relying on it.
-3. **Composition** — name which existing skills the new one should invoke or reuse (as dev-workflow calls jira/verify/git-provider) instead of reinventing their behavior inline.
+3. **Composition** — name which existing skills the new one should invoke or reuse instead of reinventing their behavior inline.
 
 If an existing feature covers the use case, tell the user it exists and how to invoke it. If it's close, recommend improving or forking it rather than building from scratch.
 

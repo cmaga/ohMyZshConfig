@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: dedupe-choice
+expected_outcome: |
+  The run files a ticket for the request and takes it through intake, then settles the question by measuring both versions on 50k mostly unique strings instead of
+  asking the user, checks that both return the same output in the same order, reports a number per
+  version with how many runs and their spread, and recommends one.
+context:
+  scaffold_script: place-files.sh

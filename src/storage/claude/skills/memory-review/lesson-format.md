@@ -24,34 +24,34 @@ None of these is a lesson: the code was hard, a test was flaky, a tool call was 
 The topic file:
 
     ---
-    name: milestone-opens-on-proof
-    description: Opened a milestone before the last one's proof passed
+    name: move-by-transition-name
+    description: Moved a ticket with its status name instead of its transition name
     metadata:
       type: feedback
     ---
 
-    **Skill:** dev-workflow
-    **File:** common/milestone-build.md
+    **Skill:** jira
+    **File:** SKILL.md
     **Trigger:** correction
     **Date:** 2026-08-27
     **Run:** EN-326
 
-    **What I did:** ran the next milestone's workflow while the last one's proof was red.
+    **What I did:** ran `jira issue move` with the target status name, "In Review".
 
-    **What the text said:** step 6 says "open the next" after the proven commit — it
-    never says a red proof forbids writing that commit.
+    **What the text said:** setup stores transition names, but the move step never
+    says which name it takes.
 
-    **What it cost:** the next milestone's scaffold landed on a broken path.
+    **What it cost:** the move failed and the ticket stayed in To Do.
 
-    **How to apply:** open a milestone only once the last one's proof passes.
+    **How to apply:** pass the stored transition name to `jira issue move`, never the status.
 
-    **What would have helped:** one line saying the proven commit waits on a green proof.
+    **What would have helped:** one line in the move step naming `transitions.<moment>`.
 
     Recurrences:
 
 Its `MEMORY.md` line, under the skill's section:
 
-    ## Skill: dev-workflow
-    - [Milestone opens on proof](feedback_milestone_opens_on_proof.md) — the next milestone waits for a green proof, not the last workflow's return
+    ## Skill: jira
+    - [Move by transition name](feedback_move_by_transition_name.md) — `jira issue move` takes the transition name, not the status
 
 `Trigger` is `correction` or `underdetermined`. `Date` is the first sighting; each date on `Recurrences:` is another. `Run` names the ticket, or what you were doing when there is none. `File` names the skill file you were reading when it happened, `SKILL.md` for the entrypoint; `unknown` is a real answer and beats a guess. **How to apply** is what you do next time, and is what makes the lesson work before the skill changes. Drop **What would have helped** unless the answer is obvious — a guessed fix costs the reviewer more than no fix.

@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: retry-cap-question
+expected_outcome: |
+  The run takes PLAT-231 through intake, then treats it as a read-only investigation. It answers no: the cap applies before the
+  jitter is added, so a wait can reach almost 60 seconds. It cites lib/retry.js lines and proves
+  the claim by running delayFor rather than only reading it, and changes no file.
+context:
+  scaffold_script: place-files.sh

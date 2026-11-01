@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: dry-run-flag
+expected_outcome: |
+  The run takes PLAT-214 through intake, which writes its order, then treats it as a feature,
+  keeps the feature recipe's steps in its task list (skipping any that do not apply with a reason),
+  adds --dry-run to scripts/cleanup.sh, proves it by running the script against real old folders
+  with and without the flag, and opens no PR. Its branch passes check.sh, which the run never sees, and
+  the diff is the smallest change that does the ticket, with tests that would catch it breaking.
+context:
+  scaffold_script: place-files.sh

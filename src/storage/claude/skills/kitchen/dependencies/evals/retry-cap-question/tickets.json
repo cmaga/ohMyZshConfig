@@ -1,0 +1,8 @@
+[
+  {"key": "PLAT-231", "type": "Task", "status": "To Do", "priority": "High",
+   "summary": "Confirm the retry backoff never waits more than 30s between attempts",
+   "description": "The sync worker moves to the partner API next sprint, and the partner drops any client that goes more than 30 seconds between attempts.\n\nMarcus says `retry()` in lib/retry.js already caps the wait between attempts at 30 seconds, so the worker needs no change. Please confirm before we switch it over.",
+   "reporter": "elena.sousa@northwind.dev", "labels": ["sync-worker"],
+   "created": "2026-10-29T14:06:51.000-0700", "updated": "2026-10-29T15:40:22.000-0700", "watchers": 2,
+   "comments": [{"author": "marcus.webb@northwind.dev", "created": "2026-10-29T15:40:20.000-0700", "body": "It's capped: `MAX_DELAY_MS` is 30000."}]}
+]

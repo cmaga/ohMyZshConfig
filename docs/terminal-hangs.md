@@ -150,7 +150,6 @@ Exact `_dyld_start` pattern from Round 1, but `syspolicyd` had gone from 0.0–1
 
 - **`runaway-shell-watchdog` LaunchAgent** (`src/storage/claude/hooks/runaway-shell-watchdog.sh` + the plist generation in `06-deploy-claude.zsh`). Designed to catch orphaned `zsh -c … snapshot-zsh-*` descendants of `claude` older than 5 min — a threat shape tied to the now-discredited "runaway bash loops are the driver" framing. It added macOS surface area (a user LaunchAgent polling every 30 s, walking descendant trees of every `claude` PID) for a threat that wasn't the real one. `BASH_MAX_TIMEOUT_MS=3600000` already bounds any individual BashTool call; relying on Claude Code to honor its own timeout is a reasonable floor.
 - **`scripts/test-hang-defense.zsh`**. The verification harness was built around the three-layer framing (including a ~6-min Layer-3 live-kill test). Without Layer 3 and without the "runaway loops are the driver" narrative, it no longer describes a meaningful defense posture.
-- The deploy script (`06-deploy-claude.zsh`) now **unloads and removes any pre-existing** `com.cmagana.runaway-shell-watchdog.plist` and deployed `runaway-shell-watchdog.sh` on macOS, so `make deploy-claude` is the clean-up path on machines that had the old defense installed.
 
 ### Verification
 
@@ -225,7 +224,7 @@ If the snapshot shows any third-party Claude Code harness registering hooks that
 src/storage/zsh/.zshrc                         # lazy nvm shims
 src/storage/claude/hooks/deny-busy-loops.sh    # narrow PreToolUse guard
 src/storage/claude/hooks.json                  # PreToolUse registration
-src/deployment/06-deploy-claude.zsh            # deploys hooks/, merges env + timeouts, cleans up legacy watchdog, jq concat-dedupe merge
+src/deployment/06-deploy-claude.zsh            # deploys hooks/, merges env + timeouts, jq concat-dedupe merge
 scripts/bench-startup.zsh                      # sequential/profile/trace/purge/compare bench modes
 scripts/bench-results.log                      # historical bench runs
 ```

@@ -100,7 +100,7 @@ lint: ## Format files and run lint checks
 	done
 	@printf "\n"
 	@printf "$(BLUE)Validating JSON...$(NC)\n"
-	@for file in $(STORAGE_DIR)/claude/hooks.json $(STORAGE_DIR)/claude/skills/*/scripts/*.json; do \
+	@for file in $(STORAGE_DIR)/claude/hooks.json $(STORAGE_DIR)/claude/skills/*/scripts/*.json $(STORAGE_DIR)/claude/skills/*/*/scripts/*.json $(STORAGE_DIR)/claude/skills/*/commands/*/scripts/*.json; do \
 		if [ -f "$$file" ]; then \
 			if jq -e . "$$file" >/dev/null; then \
 				printf "  $(GREEN)OK: $$file$(NC)\n"; \

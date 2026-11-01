@@ -367,8 +367,8 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_DIR/$entry" "$link" \
                 || print_status "warning" "Failed to link $link"
         done
-        # Agent frontmatter carries lever values, which optimize-usage sets per account.
-        if ! { command_exists python3 && python3 "$CLAUDE_SKILLS_DEST/optimize-usage/scripts/account-agents.py" "$account_dir" "$CLAUDE_AGENTS_DEST"; }; then
+        # Agent frontmatter carries lever values, which the kitchen's roster sets per account.
+        if ! { command_exists python3 && python3 "$CLAUDE_SKILLS_DEST/kitchen/commands/roster/scripts/account-agents.py" "$account_dir" "$CLAUDE_AGENTS_DEST"; }; then
             print_status "warning" "Could not build $account_dir/agents for its account; it runs the agents in $CLAUDE_AGENTS_DEST"
             [ -e "$account_dir/agents" ] || MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_AGENTS_DEST" "$account_dir/agents"
         fi
@@ -389,34 +389,6 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         if ! grep -q '^export DEEPSEEK_API_KEY=' "$ZSHRC_LOCAL" 2>/dev/null; then
             print_status "warning" "DEEPSEEK_API_KEY not set — add 'export DEEPSEEK_API_KEY=<key>' to $ZSHRC_LOCAL"
         fi
-    fi
-
-    # Clean up legacy runaway-shell-watchdog LaunchAgent + hook script.
-    # Removed 2026-04-15 after the Round 2 investigation reattributed the
-    # mid-session `syspolicyd` saturation to Cline Kanban's hook fan-out
-    # rather than LLM-generated busy loops. See docs/terminal-hangs.md.
-    if [[ "$(detect_os)" == "macos" ]]; then
-        legacy_plist_label="com.cmagana.runaway-shell-watchdog"
-        legacy_plist_path="$HOME/Library/LaunchAgents/${legacy_plist_label}.plist"
-        if launchctl list 2>/dev/null | grep -q "$legacy_plist_label"; then
-            print_status "info" "Unloading legacy $legacy_plist_label LaunchAgent..."
-            launchctl unload "$legacy_plist_path" 2>/dev/null || true
-        fi
-        if [ -f "$legacy_plist_path" ]; then
-            rm -f "$legacy_plist_path" \
-              && print_status "success" "Removed $legacy_plist_path"
-        fi
-    fi
-    if [ -f "$HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh" ]; then
-        rm -f "$HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh" \
-          && print_status "success" "Removed legacy $HOOKS_SCRIPTS_DEST/runaway-shell-watchdog.sh"
-    fi
-
-    # Clean up the friction-review skill, renamed to memory-review. Skill
-    # deploys only add, so a renamed skill's old directory stays otherwise.
-    if [ -d "$CLAUDE_SKILLS_DEST/friction-review" ]; then
-        rm -rf "$CLAUDE_SKILLS_DEST/friction-review" \
-          && print_status "success" "Removed legacy $CLAUDE_SKILLS_DEST/friction-review"
     fi
 
     print_status "success" "Claude Code configurations deployed successfully!"

@@ -198,7 +198,7 @@ Then the `epic:` block, which depends on the style just derived:
 
   `Epic Name` → `epic.name`, `Epic Link` → `epic.link`.
 
-Then `transitions` — one entry per moment dev-workflow moves a ticket: `start`
+Then `transitions` — one entry per point where work moves a ticket: `start`
 (work begins), `review` (PR opened), `merged` (PR merged). List the project's
 statuses, then ask one `AskUserQuestion` call with a question per moment, each
 offering the statuses outside the `new` category:
