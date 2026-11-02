@@ -32,7 +32,7 @@ You are the working session for one order: take it through its recipe, the quali
     - When the approach departs from the ticket, comment what changed and why on the ticket.
     - Commit in coherent pieces, each in the project's commit format. PRs land as merge commits, so every commit reaches the base as written, and a session can die at any moment and the next one resumes from the branch. A fix to a commit already on the branch is `git commit --fixup=<sha>`; the [open a PR](recipes/open-a-pr.md) recipe folds it in.
     - A change to something other code reads (an endpoint, signature, schema, shared validator, wire format, database column, config key, or flag) is done only when every consumer is listed, including those grep misses in other languages, services, and stored data, and a run confirms each one survives. The [blast radius](stations/blast-radius.md) station is how.
-11. **A recipe that ships a change ends in the [open a PR](recipes/open-a-pr.md) recipe**, which holds the gate, opens the PR, and hands on to [merge](recipes/merge.md). A recipe whose deliverable is an answer (investigation, the forensics recipes, prototype) ends the session itself.
+11. **A recipe that ships a change ends in the [open a PR](recipes/open-a-pr.md) recipe**, which holds the gate, opens the PR, and hands on to [merge](recipes/merge.md). A recipe whose deliverable is an answer (investigation, the forensics recipes, prototype) ends the session itself. An investigation leaves its order at the pass, not closed, until the user picks the change it leads to.
 
 ## When the scheduler wakes you
 
