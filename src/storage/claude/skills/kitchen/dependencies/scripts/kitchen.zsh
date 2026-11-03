@@ -111,7 +111,11 @@ slug_here() { # the line whose project holds the current directory
   for f in $BOOK/*/line.json(N); do
     [[ $(jq -r .project $f) == $root ]] && { print -- ${f:h:t}; return; }
   done
-  die "no line for $root; run /kitchen open there"
+  # project rules in git mean /kitchen open ran on another machine; the scheduler stays there
+  git -C $root ls-files --error-unmatch .claude/kitchen/house.md >/dev/null 2>&1 || die "no line for $root; run /kitchen open there"
+  local slug; slug=$(line_write $root '' true) || exit 1
+  print -u2 -- "kitchen: registered $root as $slug on this machine, paused, from its committed project rules"
+  print -- $slug
 }
 
 base_of() { # PROJECT: its base branch
@@ -241,6 +245,7 @@ transcript() { # KEY: path of the order's last session transcript
 # --- the user's queue ---------------------------------------------------------
 
 status() { # what happened since the user last looked, then what waits on them
+  ( slug_here ) >/dev/null 2>&1
   local since=$(cat $BOOK/.last-look 2>/dev/null || print '0000') line slug dir book
   for line in $BOOK/*/line.json(N); do
     slug=${line:h:t} dir=${line:h}
@@ -285,12 +290,15 @@ signoff() { # KEY [answer...]
 # --- lines --------------------------------------------------------------------
 
 line_add() { # PATH JQL
-  local project jql
-  text_of "${2:?JQL}"; jql=$REPLY
+  local common
+  text_of "${2:?JQL}"
   # a worktree registers its main checkout, the one slug_here matches
-  project=$(git -C $1 rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "$1 is not a git checkout"
-  project=${project:h}
-  local slug=${project:t}
+  common=$(git -C $1 rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "$1 is not a git checkout"
+  line_write ${common:h} "$REPLY" false
+}
+
+line_write() { # PROJECT JQL PAUSED: create the project's line, or set the JQL of the one it has; prints its slug
+  local project=$1 jql=$2 slug=${1:t}
   if [[ -f $BOOK/$slug/line.json && $(jq -r .project $BOOK/$slug/line.json) != $project ]]; then
     slug=${project:h:t}-${project:t}
   fi
@@ -299,8 +307,8 @@ line_add() { # PATH JQL
   if [[ -f $f ]]; then
     jq_write $f '.jql = $q' --arg q "$jql"
   else
-    jq -n --arg p $project --arg q "$jql" \
-      '{project:$p, jql:$q, max_cooking:2, rail_depth:3, models:{serve:"sonnet", cook:""}, followup_hours:6, paused:false}' > $f
+    jq -n --arg p $project --arg q "$jql" --argjson paused $3 \
+      '{project:$p, jql:$q, max_cooking:2, rail_depth:3, models:{serve:"sonnet", cook:""}, followup_hours:6, paused:$paused}' > $f
   fi
   print -- $slug
 }
