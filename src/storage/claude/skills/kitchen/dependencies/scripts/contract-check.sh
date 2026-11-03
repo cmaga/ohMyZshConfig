@@ -95,8 +95,8 @@ if [ "$run" = 1 ]; then
         found[b] = 1
         rest = substr($0, 1, bp - 1) substr($0, bp + length(n[b]))
         if (rest ~ /SKIP|[Ss]kipped|TODO|[Tt]odo|XFAIL|[Xx]fail|[Pp]ending|IGNORED|[Ii]gnored/ || index(rest, "↓")) seen[b] = seen[b] "s"
-        else if (rest ~ /FAIL|[Ff]ailed|ERROR|[Ee]rror|(^|[^A-Za-z])not ok([^A-Za-z]|$)/ || index(rest, "✗") || index(rest, "✕") || index(rest, "×")) seen[b] = seen[b] "f"
-        else if (rest ~ /PASS|[Pp]assed|(^|[^A-Za-z])ok([^A-Za-z]|$)/ || index(rest, "✓") || index(rest, "✔") || index(rest, "√")) seen[b] = seen[b] "p"
+        else if (rest ~ /FAIL|[Ff]ailed|ERROR|[Ee]rror|(^|[^A-Za-z])not ok([^A-Za-z]|$)/ || index(rest, "✗") || index(rest, "✕") || index(rest, "×") || index(rest, "❌")) seen[b] = seen[b] "f"
+        else if (rest ~ /PASS|[Pp]assed|(^|[^A-Za-z])ok([^A-Za-z]|$)/ || index(rest, "✓") || index(rest, "✔") || index(rest, "√") || index(rest, "✅")) seen[b] = seen[b] "p"
       }
       END {
         for (i = 1; i <= k; i++) {
