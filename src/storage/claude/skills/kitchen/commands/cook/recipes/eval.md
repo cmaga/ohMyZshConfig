@@ -27,6 +27,6 @@ Testing how a skill, structure, or prompt change affects agent behavior before p
 
 ## Saved cases
 
-A change to this skill is proven by running its saved cases in [dependencies/evals/](../../../dependencies/evals/) with the [skill-eval](../../../../skill-eval/SKILL.md) skill before the change is committed, never in pre-commit. These are real, billed runs, so the user starts them. A behavior a change adds or fixes gets a saved case of its own, written blind per the rules above, so a later change cannot quietly undo it.
+A change to this skill is proven by running its saved cases in [dependencies/evals/](../../../dependencies/evals/) with the [skill-eval](../../../../skill-eval/SKILL.md) skill before the change is committed, never in pre-commit; a fix for something broken, per [SKILL.md](../../../SKILL.md#defects-and-lessons), skips them. These are real, billed runs, so the user starts them. A behavior a change adds or fixes gets a saved case of its own, written blind per the rules above, so a later change cannot quietly undo it.
 
 **Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.

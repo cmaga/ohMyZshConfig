@@ -51,7 +51,7 @@ lint: ## Format files and run lint checks
 	@printf "$(BLUE)Running lint checks...$(NC)\n"
 	@printf "\n"
 	@printf "$(BLUE)Checking zsh syntax...$(NC)\n"
-	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/*.zsh $(STORAGE_DIR)/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
+	@for file in $(STORAGE_DIR)/zsh/.zshrc $(STORAGE_DIR)/zsh/*.zsh $(STORAGE_DIR)/scripts/*.zsh $(STORAGE_DIR)/claude/skills/*/dependencies/scripts/*.zsh $(DEPLOYMENT_DIR)/*.zsh $(DEPLOYMENT_DIR)/lib/*.zsh; do \
 		if [ -f "$$file" ]; then \
 			printf "  Checking $$file...\n"; \
 			if zsh -n "$$file"; then \
@@ -88,7 +88,7 @@ lint: ## Format files and run lint checks
 	fi
 	@printf "\n"
 	@printf "$(BLUE)Checking bash syntax...$(NC)\n"
-	@for file in $(STORAGE_DIR)/claude/hooks/*.sh $(STORAGE_DIR)/claude/skills/*/scripts/*.sh $(STORAGE_DIR)/claude/skills/*/evals/*.sh; do \
+	@for file in $(STORAGE_DIR)/claude/hooks/*.sh $(STORAGE_DIR)/claude/skills/*/scripts/*.sh $(STORAGE_DIR)/claude/skills/*/dependencies/scripts/*.sh $(STORAGE_DIR)/claude/skills/*/evals/*.sh; do \
 		if [ -f "$$file" ]; then \
 			if bash -n "$$file"; then \
 				printf "  $(GREEN)OK: $$file$(NC)\n"; \

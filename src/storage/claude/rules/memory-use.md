@@ -19,7 +19,6 @@ Write these to their home instead of memory:
 - File a lesson about a skill under a `## Skill: <name>` section of `MEMORY.md`. Create the section with the skill's first lesson, above the other sections so it stays inside the read limit.
 - As a subagent, write no memory: send each skill lesson to the main session with `SendMessage` to `main`.
 - Write a project nuance (something in this project that caused confusion, delay, or difficulty) as a `project` memory saying what happened and what would have prevented it. The next memory review decides what it becomes; never copy it into the project yourself.
-- A defect in the kitchen skill is not a memory: it gets a PR right away, per the kitchen's Defects and lessons.
 - File a skill lesson that arrives by message exactly like your own.
 
 ### Format
@@ -31,8 +30,9 @@ Write these to their home instead of memory:
 
 - When the user corrects something an existing memory already covers, append the date to that memory's `Recurrences:` line, adding the line if it is missing (e.g. `Recurrences: 2026-09-20, 2026-10-02`).
 - On the third recurrence, tell the user without ending the turn — in an unattended run, carry it to the hand-back — and propose moving the lesson out of memory: name the memory, list the dates, propose its home (rule, skill, hook, or CLAUDE.md), and include draft text. For a skill lesson, recommend `/memory-review <name>` instead of drafting the edit yourself.
+- When you change a skill, mark each lesson the change addresses, in every project's `## Skill: <name>` section, `Resolved: <commit subject or worktree path>`. The memory review sets it aside, and treats a recurrence after the fix as a fix that did not take.
 
 ## Maintenance
 
 - When Claude Code reports that `MEMORY.md` is near or over its read limit, tell the user so, and tell them that `/memory-review` is how to review memory and cut it down. Trim nothing yourself.
-- Only `/memory-review` removes or rewrites a skill lesson; every other session only appends recurrences.
+- Only `/memory-review` removes or rewrites a skill lesson; every other session only appends recurrences and `Resolved:` marks.

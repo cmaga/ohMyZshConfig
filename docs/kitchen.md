@@ -155,10 +155,10 @@ Calls that reach the pass climb a two-rung ladder of their own: a sentence in in
 
 How the kitchen's own process improves. Same shape as today's memory loop.
 
-- A defect in the kitchen itself (a recipe, a station, the scheduler) gets a PR fixing it right away, after a check for an open PR on the same problem. The cook carries on with its order; the PR is where you approve the change.
+- A defect in the kitchen itself (a recipe, a station, the scheduler) is fixed right away only when it is broken: a script errors, or a path, command, flag, or link names nothing. The fix is committed on `main` in ohMyZshConfig and deployed, and the cook carries on with its order. Anything else is a skill lesson for your memory review, where you agree the change in plain words and see the rendered text, unless you pick it in a `/kitchen reflect`, which edits it and leaves it uncommitted for you (2026-11-03: this replaced a PR per defect, since a markdown diff did not get a real review).
 - A project nuance that caused confusion, delay, or difficulty goes to auto memory. Your memory review decides what each becomes: a project change (hook, rule, skill), a global change, a kitchen change, or nothing. Memory is never committed into a project.
 - Catches about a project's code go in that project's order book, never memory: memory loads into every session on this machine and has a read limit.
-- A change to the kitchen is proven by its saved eval cases (`dependencies/evals/`, run with the `skill-eval` skill) before it is committed, never in pre-commit.
+- A change to the kitchen is proven by its saved eval cases (`dependencies/evals/`, run with the `skill-eval` skill) before it is committed, never in pre-commit. A fix for something broken skips them.
 
 ---
 
@@ -175,7 +175,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/open/open.md`, `open/templates/house.md` | Opening a restaurant, which writes its house rules and verify skill |
 | `commands/cook/cook.md` | The sous chef: claim, read, worktree, pickup, the recipe, and the scheduler's wakes; `cook new <task>` files a ticket for work that has none |
 | `commands/cook/recipes/` | pstack's playbooks as recipes: feature, bug-fix, refactor, perf, hillclimb, investigation, runtime-forensics, trace-forensics, prototype, change-a-skill, eval, multi-phase-plan, autonomous-run, session-pickup, pause-safely, and the PR lifecycle open-a-pr, follow-a-pr (babysit), merge (shipping); plus enforce and catering (`catering/spec.md` was ultra; `catering/plan.md` and `catering/close.md` replace the milestone build) |
-| `commands/cook/stations/` | pstack's skills as stations: how, why, blast-radius, architect, contract (from pstack's tdd), arena, swarm, figure-it-out, interrogate, no-comments, benchmark-checklist, unslop, technical-writing, show-me-your-work, ketchup, correct, reflect, create- and maintain-verification-skill; and `left-for-you.md` |
+| `commands/cook/stations/` | pstack's skills as stations: how, why, blast-radius, architect, contract (from pstack's tdd), arena, swarm, figure-it-out, interrogate, no-comments, benchmark-checklist, unslop, technical-writing, show-me-your-work, ketchup, correct, create- and maintain-verification-skill; and `left-for-you.md` |
 | `dependencies/principles/` | pstack's 24 principles plus look-it-up, read when applied |
 | `dependencies/evals/` | Saved eval cases in `claude plugin eval` layout |
 | `commands/cook/templates/`, `commands/cook/scripts/` | Spec, milestone plan, plan view, exit report; `plan-view.py` and `check-plan.mjs` |
@@ -185,6 +185,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/taste/taste.md`, `taste/done-when.md` | The pass, also `/kitchen taste` on any branch: done-when, thermometers, tasters, no-comments, and the bug review (the interrogate station) |
 | `commands/taste/verify.md` | The verdict, `/kitchen taste verify <KEY>`: a session that did not write the change runs it and records PASS, PASS+NOTES, or FAIL |
 | `commands/roster/roster.md`, `commands/roster/` | Model and effort levers, was `optimize-usage`; the vault agents left it, pinned to opus |
+| `commands/reflect/reflect.md`, `commands/reflect/` | `/kitchen reflect`: three reviewers mine the session for lessons; the kitchen rows you pick are edited and left uncommitted for your review, and the rest route per Defects and lessons. pstack's manual `/reflect`; a station until 2026-11-03 |
 | `agents/taster-agent.md` | One narrow judgment checker |
 | `agents/worker-agent.md`, `agents/comment-sicko-agent.md` | The line cook, pstack's poteto-agent: reads `SKILL.md` before work; and the comment hater the no-comments station spawns |
 
@@ -247,7 +248,6 @@ Unverified:
 - **Only while this Mac is awake.**
 - **Lessons filed under `## Skill: dev-workflow`** in auto memory now belong to the kitchen. Only `/memory-review` moves them.
 - `kitchen/commands/roster/temp/lever-state.json`, a saved lever preset, still names dev-workflow steps. It was left as saved.
-- The old `dev-workflow` skill stays deployed at `~/.claude/skills/dev-workflow` (deploy never deletes) and still writes the old plan path. Remove it by hand once: `rm -rf ~/.claude/skills/dev-workflow`.
 - Under Git Bash, `ps` cannot list processes, so `order claim` records no process and a claimed order is not released when its session ends; the scheduler runs only on macOS, where this does not arise.
 
 ## Open

@@ -74,7 +74,7 @@ Everything under `src/storage/claude/` is organized as a kitchen (design: `docs/
 | Standards | Rules every cook follows everywhere | `CLAUDE.md`, rules `cli-rules`, `code-quality`, `response-length`, `research-before-recommending`; `deny-busy-loops` hook |
 | The line | Orders in, PRs out | `kitchen` (server, expo, status, sous chef, the pass, the roster: who cooks on which model) |
 | Recipes | One per kind of work, with shared stations and principles (forked from pstack) | `kitchen/commands/cook/recipes/`, `kitchen/commands/cook/stations/`, `kitchen/dependencies/principles/` |
-| Techniques | Skills a recipe uses that also stand alone | `frontend-design`, `walkthrough` |
+| Techniques | Skills a recipe uses that also stand alone | `frontend-design` |
 | Equipment | Connections to outside systems | `jira`, `git-provider`, `playwright-mcp-setup`; `claude-proxy` automation |
 | Brigade | Agents | line cook `worker-agent`, `deepseek-flash-agent`; tasters `taster-agent`, `comment-sicko-agent` |
 | The house | Per project: house rules, verify skill, and the vault as the restaurant's binder | `capture-documentation`, `vault-scribe-agent`, `adr-auditor-agent`, `knowledge-vault-use` rule, `guard-vault-write` hook |

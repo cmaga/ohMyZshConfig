@@ -1,6 +1,6 @@
 # Skill lessons
 
-How a session records friction with a skill while it still holds the evidence. Lessons live in auto memory under a `## Skill: <name>` section of `MEMORY.md`. They change nothing in the skill: `memory-review` reads them later and is the only thing that edits it.
+How a session records friction with a skill while it still holds the evidence. Lessons live in auto memory under a `## Skill: <name>` section of `MEMORY.md`. They change nothing in the skill: `memory-review` reads them later and decides what changes.
 
 ## What counts
 
@@ -9,7 +9,7 @@ Two events, and nothing else:
 - **You were corrected on process.** The user changed how the run works rather than what it builds — a step run in the wrong order, an instruction followed to a bad outcome, a rule they had to point at because you did not find it. Their correction is the event. Whether the skill is really at fault is the review's ruling, not yours.
   - A rule the skill already states and you did not apply counts too, once they correct you on it. A rule nobody applies at the moment it matters is a placement defect until review rules otherwise.
   - A slip you caught yourself, uncorrected by anyone, does not count.
-- **The text underdetermined what you did.** Nobody is in the room to correct you: you halted, escalated something the skill should have answered, found two rules pointing different ways and picked one, or worked around an instruction that did not fit. It counts only when it changed what you did.
+- **The text underdetermined or misdirected what you did.** Nobody is in the room to correct you: you halted, escalated something the skill should have answered, found two rules pointing different ways and picked one, worked around an instruction that did not fit, or followed a rule as written to a bad outcome. It counts only when it changed what you did or how the run turned out.
 
 None of these is a lesson: the code was hard, a test was flaky, a tool call was denied, the ticket was wrong, a subagent underperformed, or anything else the skill told you to expect. That is the work, not the skill.
 

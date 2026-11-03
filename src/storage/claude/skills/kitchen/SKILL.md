@@ -23,6 +23,7 @@ Before any other work, read the file for your command and follow it, however sma
 | `taste calibrate`                  | Bring the project's verify skill back in line with the app                                                                                                | [calibrate.md](commands/taste/calibrate.md) |
 | `open`                             | Set the current repo up for the pipeline                                                                                                                  | [open.md](commands/open/open.md)            |
 | `roster [context]`                 | Tune which model and effort each role runs on                                                                                                             | [roster.md](commands/roster/roster.md)      |
+| `reflect`                          | Mine this session for lessons and route each one                                                                                                          | [reflect.md](commands/reflect/reflect.md)   |
 
 ## The order book
 
@@ -34,7 +35,7 @@ The scheduler judges a session by its side effects: an order update or a commit 
 
 ## Who is in the session
 
-The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `cook new <task>`, and a `taste` the user asked for always have the user here.
+The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `reflect`, `cook new <task>`, and a `taste` the user asked for always have the user here.
 
 With the user here, a message without a tool call ends your turn. Put a progress report in the same message as the next step's first tool call, unless you are stopping for their answer.
 
@@ -58,8 +59,7 @@ The Principles below ground every trigger. In your reply and the PR, name each p
 - **A PR-status request** ("check on PR X", "get it green", "anything outstanding on X"): the [follow a PR](commands/cook/recipes/follow-a-pr.md) recipe. Opening a PR never starts one.
 - **Landing a PR**: the [merge](commands/cook/recipes/merge.md) recipe. Green is not safe: nothing merges before a verdict from a session that did not write the change covers its current patch.
 - **A review bot commented**: assess each claim on its merits against the code; fix what is real, dismiss noise with a concrete reason, and never churn code to quiet a bot.
-- **This skill is wrong mid-task**: fix it in its own PR per [Defects and lessons](#defects-and-lessons). Don't block, and don't silently work around it.
-- **The user says "reflect"**: the [reflect](commands/cook/stations/reflect.md) station.
+- **This skill is wrong mid-task**: address it right away per [Defects and lessons](#defects-and-lessons). Don't block, and don't silently work around it.
 - **Long, autonomous, multi-phase, or headless work**: a decision trail per the [show me your work](commands/cook/stations/show-me-your-work.md) station. A call made without the user also goes to `kitchen.zsh decide`, which the user's catch-up shows, and the PR too when the PR waits for the user's review.
 
 ## Principles
@@ -215,6 +215,8 @@ What every order passes through, run by [cook](commands/cook/cook.md):
 
 ## Defects and lessons
 
-- **A defect in this skill**, its text or its scripts, that made the work go wrong: fix it in its own PR right away and carry on with the order. First look for an open PR on the same problem through the `git-provider` skill, and add to it if one exists. Work in a worktree of `~/dev/personal/ohMyZshConfig`, edit only `src/storage/claude/`, never `~/.claude/`, and never run a deploy target; the user reviews and merges.
+- **A defect in this skill**, its text or its scripts: decide which kind it is, then carry on with the order.
+  - **Broken**: a script or a command the text gives fails as written for a cause in that text or script, not auth, network, or input; or a path, flag, or link names something that does not exist. Hand the fix to a `worker-agent` in the code role, briefed to restore what the text already means by the `claude-feature-authoring` skill's Phase 4 authoring rules. It works in `~/dev/personal/ohMyZshConfig` on `main`, edits only `src/storage/claude/`, never `~/.claude/`, proves the fix by rerunning what failed, and commits with `make lint` passing. It runs `make deploy-claude` only when `git status --porcelain` prints nothing after its commit, and never pushes. On any failure it restores the files it touched and reports back. When that checkout is not on `main` or has uncommitted changes, it changes nothing and reports back, and you file a lesson instead. When it reports a commit, mark the lessons it addresses per the memory-use rule. As a subagent yourself, report the defect to your coordinator instead.
+  - **Anything else**, a missing, unclear, or conflicting rule, or one followed to a bad outcome: file a skill lesson under `## Skill: kitchen` per the memory-use rule, and change nothing in the skill. The user's memory review decides the change.
 - **A project-specific nuance** that caused confusion, delay, or difficulty: write it to auto memory per the memory-use rule. The user's memory review decides what it becomes. Never copy a memory into a project.
 - **A finding about the project's code** goes to `kitchen.zsh catch`, never to memory.
