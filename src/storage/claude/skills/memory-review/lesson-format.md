@@ -10,8 +10,9 @@ Two events, and nothing else:
   - A rule the skill already states and you did not apply counts too, once they correct you on it. A rule nobody applies at the moment it matters is a placement defect until review rules otherwise.
   - A slip you caught yourself, uncorrected by anyone, does not count.
 - **The text underdetermined or misdirected what you did.** Nobody is in the room to correct you: you halted, escalated something the skill should have answered, found two rules pointing different ways and picked one, worked around an instruction that did not fit, or followed a rule as written to a bad outcome. It counts only when it changed what you did or how the run turned out.
+  - A command the skill gave you failed and you recovered by doing something the skill does not say. It counts even when the error reads like an auth, network, or tool glitch and one retry fixed it.
 
-None of these is a lesson: the code was hard, a test was flaky, a tool call was denied, the ticket was wrong, a subagent underperformed, or anything else the skill told you to expect. That is the work, not the skill.
+None of these is a lesson: the code was hard, a test was flaky, a permission prompt refused a tool call, the ticket was wrong, a subagent underperformed, or anything else the skill told you to expect. That is the work, not the skill.
 
 ## Writing one
 

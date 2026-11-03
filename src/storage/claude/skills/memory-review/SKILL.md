@@ -14,7 +14,9 @@ With a skill name as the argument, run Part 1 for that skill only, skip Part 2, 
 
 ## Part 1: Skill lessons
 
-Run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memory/MEMORY.md`, or once for the skill named in the argument. None anywhere means nothing to do in this part: say so.
+First, catch the friction no session filed: a session that recovers from a failing command on its own rarely files a lesson. Run `python3 scripts/friction-scan.py --days 30` (or since the last review). For each command whose errors trace to a command a skill tells sessions to run, open one of those sessions to confirm, then file it per [lesson format](lesson-format.md) in the current project's memory, one sighting per session, so the steps below group and rule it like any other lesson.
+
+Then run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*/memory/MEMORY.md`, or once for the skill named in the argument. None anywhere means nothing to do in this part: say so.
 
 1. **Collect the skill's lessons from every project.** Auto memory is one directory per repository, so read the `## Skill: <name>` section of every `~/.claude/projects/*/memory/MEMORY.md` and each topic file it lists.
 2. **Find the skill's source.** A global skill's source is `~/dev/personal/ohMyZshConfig/src/storage/claude/skills/<name>/`; a project skill's is `.claude/skills/<name>/` in that project's repository — the memory directory's name flattens the repository path, so confirm the path exists. When both exist, the copy the lesson's project defines is the one that run read. A skill whose source a commit deleted is retired: review its lessons against its replacement, named by that commit or found by searching the repository for the old name, rule each one about a mechanism the replacement dropped as not the skill, and propose moving the ones that stay to the replacement's `## Skill:` section; with no replacement, propose deleting them all. Any other skill with no source (a plugin or built-in skill) is not actionable here: say so and keep its lessons.
