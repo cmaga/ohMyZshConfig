@@ -2,7 +2,7 @@
 
 A raw ticket is often a placeholder: stale, a duplicate, low value, or written wrong. You decide whether it gets worked and, if so, write the order the working session follows. You write no code. Prefer no order over a guessed one: when anything you need is missing or uncertain, ask rather than guess.
 
-The scheduler runs intake headless, and `cook` runs it with the user when they take a ticket intake has not seen. Headless, a ticket you cannot work is dropped (`status=86`), held, or left at the pass for the user's call; it becomes an order only once nothing is left for them to decide. With the user here, tell them the verdict in one line and do what they say. A ticket that goes on to be worked is reported as "Intake done" and nothing more. A duplicate, a hold, or a drop is named with the one fact behind it. A check that found nothing goes unmentioned.
+The scheduler runs intake headless, and `cook` runs it with the user when they take a ticket intake has not seen. Headless, a ticket you cannot work is dropped (`status=86`), held, or left at the pass for the user's call; it becomes an order only once nothing is left for them to decide. With the user here, tell them the verdict in one line and do what they say. A ticket that goes on to be worked ends in the order summary of step 11. A duplicate, a hold, or a drop is named with the one fact behind it. A check that found nothing goes unmentioned.
 
 1. **Load the order**: `kitchen.zsh order get <KEY>`. An `answer` from the user binds you: never drop it or send it back to the pass for the reason they answered. When the order has a `last_session`, an earlier intake stopped short: read the last few entries of its transcript (`kitchen.zsh order transcript <KEY>` prints the path) for why, and when this skill's text caused it, fix it per [SKILL.md](../../SKILL.md#defects-and-lessons).
 2. **Read the whole ticket** with the `jira` skill: summary, description, every comment, links, status, assignee, and attachments. Capture the reporter's words, the expected and observed behavior, version and environment, frequency and trigger, error text, links to existing PRs or commits, and any statement that someone is already on it. Read screenshots and logs; when one cannot be read, say so rather than guess what it shows.
@@ -33,4 +33,10 @@ The scheduler runs intake headless, and `cook` runs it with the user when they t
           summary=@<file> intent=@<file> done_when=@<file> station=@<file> \
           steps=@<file> question=@<file>
 
-    `steps` only for `bespoke`. The summary carries the cause trace in a few lines, hypotheses labeled as such. Headless, `status` is `at-the-pass` with a `question` when `signoff=true`, else `ready`. With the user here, ask them the sign-off question now. They come to it fresh, without your trace: open with what the ticket is for in one or two plain sentences, then the one call, your recommendation, and the fact that forces it. Write their answer to a file, and pass `answer=@<file>` in place of `status` and `question`: `cook` holds the order and carries on.
+    `steps` only for `bespoke`. The summary carries the cause trace in a few lines, hypotheses labeled as such. Headless, `status` is `at-the-pass` with a `question` when `signoff=true`, else `ready`. With the user here, ask them the sign-off question now. They come to it fresh, without your trace: open with what the ticket is for in one or two plain sentences, then the one call, your recommendation, and the fact that forces it. Then, sign-off or not, give them the order summary and wait for their go before you write the order:
+
+    - what the order is and why, in two or three plain sentences;
+    - the calls they made at the pass, and the calls you will make yourself while cooking;
+    - whether the PR merges on its verdict or waits for their review, and the reason.
+
+    Fold any change they ask for into the files. Write their answers to a file, and pass `answer=@<file>` in place of `status` and `question`: `cook` holds the order and carries on.
