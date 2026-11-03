@@ -2,6 +2,8 @@
 
 Complete reference for the `bb` CLI (gildas/bitbucket-cli) used by the git-provider skill.
 
+The examples below omit the profile. Add `-p {workspace}` to every one you run, as the skill's pre-flight says.
+
 ## Installation
 
 ```bash
@@ -14,21 +16,7 @@ The `bb` CLI uses profiles to manage authentication. Credentials are stored secu
 
 ### Create a Profile
 
-First, create an App Password at: https://bitbucket.org/account/settings/app-passwords/
-
-Required permissions:
-
-- Repositories: Read, Write
-- Pull requests: Read, Write
-
-```bash
-bb profile create \
-  --name "default" \
-  --user "your-username" \
-  --password "your-app-password" \
-  --default-workspace "your-workspace" \
-  --default
-```
+Follow [bb-setup](../../modes/bb-setup.md): an Atlassian API token with Bitbucket scopes, in a profile named after the workspace.
 
 ### Profile Management
 
@@ -38,9 +26,6 @@ bb profile list
 
 # Show current profile
 bb profile which
-
-# Switch default profile
-bb profile use {profile-name}
 
 # Get profile details
 bb profile get {profile-name}

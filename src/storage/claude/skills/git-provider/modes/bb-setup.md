@@ -28,18 +28,18 @@ bb profile which
 
 ## Add Profile
 
-> **Naming convention:** name the profile after its workspace slug (workspace `gsi` → profile `gsi`). The parent skill's Bitbucket pre-flight auto-selects a profile by running `bb profile use <workspace>`, so the names must match for multi-workspace setups to route correctly.
+> **Naming convention:** name the profile after its workspace slug (workspace `gsi` → profile `gsi`). The parent skill passes `-p <workspace>` on every call, so the names must match for multi-workspace setups to route correctly.
 
-Pick a credential type by what admin rights the user has:
+Pick a credential type by **who should appear as the actor**:
 
-| Option                       | When to use                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Atlassian API token (scoped) | **Default.** User-scoped, needs no workspace/repo admin. This is the replacement for app passwords.                  |
-| Workspace/Repo Access Token  | When the user is an admin of the workspace (or the specific repo). Not tied to a user; finer-grained.               |
+| Option                       | When to use                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Atlassian API token (scoped) | **Default, for a person's machine.** Acts as the user: PR descriptions, comments, approvals and merges show under their name. Needs no admin. Replaces app passwords. |
+| Workspace/Repo Access Token  | **Shared automation only**, such as a CI job. Acts as a bot user named after the token: every comment, description edit and merge shows under that name, not the person's. Needs workspace or repo admin. |
 
 > **App passwords are deprecated** — no new ones can be created (since 2025-09-09) and existing ones stop working 2026-06-09. Do not use them.
 
-Both examples omit `--default`: the parent skill's pre-flight runs `bb profile use <workspace>` on every call, so the active profile is chosen per-repo. Setting `--default` here would only fight that.
+Both examples omit `--default`: the parent skill passes `-p <workspace>` on every call, so the machine-wide default never decides which profile acts.
 
 ### Option A — Atlassian API token with scopes (recommended, no admin needed)
 
@@ -47,7 +47,7 @@ Both examples omit `--default`: the parent skill's pre-flight runs `bb profile u
    - Click **"Create API token with scopes"** — **not** the plain "Create API token" button (that makes a Jira/Confluence token that 401s on Bitbucket).
    - Name + expiry → **Next**.
    - Select **Bitbucket** as the app → **Next**.
-   - Scopes: `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket` → **Next** → **Create**.
+   - Scopes: `read:repository:bitbucket`, `write:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`, `read:pipeline:bitbucket` (build status and logs) → **Next** → **Create**.
    - Copy the token (`ATATT…`, shown once).
 
 2. **Create the profile.** The API basic-auth username is the **Atlassian account email**, not the Bitbucket username:
@@ -69,7 +69,9 @@ Both examples omit `--default`: the parent skill's pre-flight runs `bb profile u
 
    > API tokens expire. When one lapses `bb` returns 401 — regenerate via the same "with scopes" flow and `bb profile update {workspace} --password "{new-token}"`.
 
-### Option B — Workspace/Repo Access Token (requires admin)
+### Option B — Workspace/Repo Access Token (shared automation only; requires admin)
+
+Bitbucket creates a bot user for each access token and attributes everything the token does to it, shown under the token's name with a robot icon. On a person's machine use Option A instead.
 
 1. **Create an access token** at:
    - Workspace token *(needs workspace admin)*: `https://bitbucket.org/{workspace}/workspace/settings/access-tokens`
@@ -100,12 +102,12 @@ bb profile delete {profile-name}
 ## Verify
 
 ```bash
-# Profile-level: workspace token has access to its workspace
-bb workspace get {workspace} -o json | jq -r '.slug'
+# Profile-level: the profile has access to its workspace
+bb workspace get {workspace} -p {workspace} -o json | jq -r '.slug'
 
 # Repo-level: from inside the target git repo, bb auto-detects via `git remote`.
 # `bb branch list` is the cheapest call that requires repo-scope auth.
-bb branch list -o json --page-length 1 | jq -r '.[0].name // "(no branches)"'
+bb branch list -p {workspace} -o json --page-length 1 | jq -r '.[0].name // "(no branches)"'
 ```
 
 Notes:
@@ -119,6 +121,8 @@ If both verify steps succeed, return to the parent skill flow.
 | Symptom                                                                | Fix                                                                                              |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `may not have access to this repository`                               | Token lacks repo scope, or wrong `--default-workspace`. Recreate via Update Profile.             |
+| Same error on a profile that worked minutes ago                        | The call ran without `-p {workspace}` and another session changed the default profile. Pass `-p`. |
+| PR comments, description edits or merges show a robot user, not you    | The profile uses an access token (Option B). Recreate it with Option A.                         |
 | `401` with an `ATATT…` token that works against Jira                   | The token has no Bitbucket scopes — it's a plain/Jira token. Recreate via **"Create API token with scopes"** → select **Bitbucket** (Option A). |
 | `401` on a profile that used to work                                   | The API token expired. Regenerate and `bb profile update {workspace} --password "{new-token}"`. |
 | App-password page warns it's being removed                             | Expected — app passwords are deprecated (gone 2026-06-09). Use Option A (API token with scopes). |

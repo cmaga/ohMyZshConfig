@@ -46,19 +46,21 @@ Run **exactly one** branch below based on `PROVIDER`. Do not run the other provi
 
 ### Branch: `PROVIDER="bitbucket"`
 
-1. **Auto-switch profile by workspace.** `bb` has no per-repo profile mapping — it uses the global default unless `--profile` is passed. Convention: **profile name == workspace slug** (e.g. workspace `gsi` → profile `gsi`). Derive the workspace from the remote and make its profile the active default:
+1. **Pick the profile by workspace.** Convention: **profile name == workspace slug** (workspace `gsi` → profile `gsi`). Derive the workspace from the remote:
 
    ```bash
    WS=$(git remote get-url origin | sed -E 's#\.git$##; s#^.*bitbucket\.org[^:/]*[:/]##' | cut -d/ -f1)
-   bb profile use "$WS" >/dev/null 2>&1 || echo "no profile named '$WS'"
+   bb profile get "$WS" >/dev/null 2>&1 || echo "no profile named '$WS'"
    ```
+
+   Pass `-p "$WS"` on **every** `bb` command, the Operations below included. Never run `bb profile use`: it sets one default for every session on the machine, so a session in another workspace switches it back mid-run and your next call fails with `may not have access to this repository`.
 
    If no profile named `$WS` exists → route to [bb-setup mode](modes/bb-setup.md) (Add Profile flow; name the profile `$WS`).
 
-2. **Verify the profile can reach this repo** (catches scope/workspace mismatches, which `profile which` won't). Run from inside the repo — `bb` auto-detects from `git remote`:
+2. **Verify the profile can reach this repo** (catches scope/workspace mismatches, which `profile get` won't). Run from inside the repo — `bb` auto-detects from `git remote`:
 
    ```bash
-   bb branch list -o json --page-length 1 >/dev/null 2>&1
+   bb branch list -p "$WS" -o json --page-length 1 >/dev/null 2>&1
    ```
 
    If this fails → route to [bb-setup mode](modes/bb-setup.md) (Update Profile flow).
@@ -70,28 +72,28 @@ Run **exactly one** branch below based on `PROVIDER`. Do not run the other provi
 | Provider  | Command                                                                                                            |
 | --------- | ------------------------------------------------------------------------------------------------------------------ |
 | GitHub    | `gh pr create --base {base} --head {head} --title "{title}" --body "{body}"`                                       |
-| Bitbucket | `bb pr create --destination {base} --source {head} --title "{title}" --description "{body}" --close-source-branch` |
+| Bitbucket | `bb pr create -p "$WS" --destination {base} --source {head} --title "{title}" --description "{body}" --close-source-branch` |
 
 ### Get PR
 
 | Provider  | Command                                     |
 | --------- | ------------------------------------------- |
 | GitHub    | `gh pr view {id} --json state,mergedAt,url` |
-| Bitbucket | `bb pr get {id} -o json`                    |
+| Bitbucket | `bb pr get {id} -p "$WS" -o json`           |
 
 ### List PRs
 
 | Provider  | Command                                    |
 | --------- | ------------------------------------------ |
 | GitHub    | `gh pr list --json number,title,state,url` |
-| Bitbucket | `bb pr list --state open -o json`          |
+| Bitbucket | `bb pr list -p "$WS" --state open -o json` |
 
 ### Merge PR
 
 | Provider  | Command                                                                |
 | --------- | ---------------------------------------------------------------------- |
 | GitHub    | `gh pr merge {id} --merge`                                             |
-| Bitbucket | `bb pr merge {id} --merge-strategy merge_commit --close-source-branch` |
+| Bitbucket | `bb pr merge {id} -p "$WS" --merge-strategy merge_commit --close-source-branch` |
 
 Merge commits only: squash and rebase give the branch's commits new SHAs, so ancestry checks never see the branch as landed.
 
@@ -100,14 +102,14 @@ Merge commits only: squash and rebase give the branch's commits new SHAs, so anc
 | Provider  | Command                       |
 | --------- | ----------------------------- |
 | GitHub    | `gh pr review {id} --approve` |
-| Bitbucket | `bb pr approve {id}`          |
+| Bitbucket | `bb pr approve {id} -p "$WS"` |
 
 ### Build Logs
 
 | Provider  | Command                                                                                                      |
 | --------- | ------------------------------------------------------------------------------------------------------------ |
 | GitHub    | `gh run view {id} --log-failed`                                                                              |
-| Bitbucket | `bb pipeline step list --pipeline {n} --show-logs-command`, then `bb pipeline step logs --pipeline {n} '{uuid}'` |
+| Bitbucket | `bb pipeline step list -p "$WS" --pipeline {n} --show-logs-command`, then `bb pipeline step logs -p "$WS" --pipeline {n} '{uuid}'` |
 
 Bitbucket needs the UUID with its braces — a step name is rejected despite the
 usage string. See the Pipelines section of the reference for the list shape.
