@@ -10,8 +10,8 @@ Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 2. **Triage what is left** per the [left for you](../stations/left-for-you.md) station.
 3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.
 4. **Run the full suite once.** First fold the fixups in and catch up with the base in one rebase: `git fetch origin <base>`, then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<base>`, resolving any conflict so both sides' intent survives. Then run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: fix with fixups, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun, and rebase again while fixups are left. Green: `git push --force-with-lease -u origin HEAD`.
-5. **Open the PR** through the `git-provider` skill, ready and never as a draft, targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with `transitions.review`. When the body lists anything under **Left for you**, run `kitchen.zsh order set <KEY> review=true "review_why=left for you: <n> items"`.
-6. Run the [merge](merge.md) recipe.
+5. **Open the PR.** First settle the review flag: when step 2 left any item and the order is not already flagged, run `kitchen.zsh order set <KEY> review=true "review_why=left for you: <n> items"`. Then open the PR through the `git-provider` skill, ready and never as a draft, targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with `transitions.review`.
+6. Run the [merge](merge.md) recipe. A PR flagged for the user's review still gets its verdict first: `sample` prints `verify` before `review`, and the PR goes to the user only when `sample` prints `review`.
 
 Opening a PR does not start a [follow a PR](follow-a-pr.md) pass. The scheduler wakes a session when the PR changes.
 
@@ -36,6 +36,8 @@ A one-minute briefing for a reviewer who has the diff, not a lab notebook. It sa
 - `## Decided alone`: every decision from the order's `decisions`, with its evidence.
 - `## Attention`: when the work kept a decision log, its review per the [show me your work](../stations/show-me-your-work.md) station.
 - `## Left for you`: the items from step 2, one question each, or the line "Nothing is left for you."
+
+These last three sections address the user and appear only when the order waits for the user's review (`review=true`). Otherwise the body ends at `## Verification`; the calls stay in the order book, where `kitchen.zsh status` lists them as decided alone in the user's catch-up.
 
 After the sections, attach screenshots or a video when they prove a claim. Full SHAs, lane recitals, and file-by-file checklists go in a linked artifact, not the body.
 

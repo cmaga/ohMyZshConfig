@@ -28,7 +28,7 @@ Before any other work, read the file for your command and follow it, however sma
 
 Orders live in `~/.claude-artifacts/workflows/kitchen/<project>/`. Read and write them only through `~/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh`, written `kitchen.zsh` in these files; run it by that full path. `kitchen.zsh help` lists its commands. A value written `@<file>`, `<file>` an absolute path, is read from that file; pass any text holding quotes, `$`, or backticks that way, since the shell would act on them.
 
-A ticket arrives `new`, intake serves it (`serving`), and it either becomes an order (`ready`) or waits `at-the-pass` for the user's call. Only decided work becomes an order: from `ready` it runs end to end through `cooking` (a session holds it), `pr-open`, and `done`, and stops only where its PR is flagged for the user's review. `86` means dropped or parked, with its `reason`.
+A ticket arrives `new`, intake serves it (`serving`), and it either becomes an order (`ready`) or waits `at-the-pass` for the user's call. Only decided work becomes an order: from `ready` it runs end to end through `cooking` (a session holds it), `pr-open`, and `done`, and stops only where its PR, with its verdict, waits for the user's review. `86` means dropped or parked, with its `reason`.
 
 The scheduler judges a session by its side effects: an order update or a commit in its worktree. One that shows neither for too long is stopped and retried by cause. So after each recipe step you finish, run `kitchen.zsh order set <KEY> "step=<n> <step name>"`.
 
@@ -60,7 +60,7 @@ The Principles below ground every trigger. In your reply and the PR, name each p
 - **A review bot commented**: assess each claim on its merits against the code; fix what is real, dismiss noise with a concrete reason, and never churn code to quiet a bot.
 - **This skill is wrong mid-task**: fix it in its own PR per [Defects and lessons](#defects-and-lessons). Don't block, and don't silently work around it.
 - **The user says "reflect"**: the [reflect](commands/cook/stations/reflect.md) station.
-- **Long, autonomous, multi-phase, or headless work**: a decision trail per the [show me your work](commands/cook/stations/show-me-your-work.md) station. A call made without the user also goes to `kitchen.zsh decide`, which the PR and the user's catch-up show.
+- **Long, autonomous, multi-phase, or headless work**: a decision trail per the [show me your work](commands/cook/stations/show-me-your-work.md) station. A call made without the user also goes to `kitchen.zsh decide`, which the user's catch-up shows, and the PR too when the PR waits for the user's review.
 
 ## Principles
 
