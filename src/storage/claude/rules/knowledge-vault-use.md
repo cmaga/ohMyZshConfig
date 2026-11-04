@@ -13,7 +13,7 @@ Not every project has a knowledge vault. The following rules are for projects th
 Start at `docs/project-knowledge/.cache/_digest.md` if it exists (the SessionStart audit regenerates it), else [`_index.md`](docs/project-knowledge/_index.md), for orientation. Vocabulary lives in [`glossary.md`](docs/project-knowledge/glossary.md).
 
 - When gathering context, **always investigate the codebase first**, then the vault. Code is truth.
-- jCodemunch does not index markdown. To find something in the vault, run `bash ~/.claude/skills/capture-documentation/scripts/vault-search.sh docs/project-knowledge "<terms>"` and read the section it names by line range.
+- To find something in the vault, run `bash ~/.claude/skills/capture-documentation/scripts/vault-search.sh docs/project-knowledge "<terms>"` and read the section it names by line range.
 - If the vault has drifted from the code, surface it to the user immediately. Don't reconcile silently.
 - Open drift flags come from `bash ~/.claude/skills/capture-documentation/scripts/vault-drift.sh --list .`. Judge each per `~/.claude/skills/capture-documentation/references/drift-triage.md`; clear it with a reason, or send the scribe a brief carrying the SHA.
 - A wrong fact in a note is fixed by dispatching the scribe with a correction brief: the claim as written, the right claim, the evidence. Never edit the sentence yourself.

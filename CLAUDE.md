@@ -60,7 +60,8 @@ Installs the Claude CLI with the native installer (`claude.ai/install.sh`, into 
 - `statusline-command.sh` → `~/.claude/statusline-command.sh`; `statusLine` in `~/.claude/settings.json` is set to run it.
 - `hooks.json` is **merged** into `~/.claude/settings.json` via a concat-plus-dedupe jq expression (requires `jq`). Per-event hook arrays (`PreToolUse`, `PostToolUse`, etc.) are concatenated and deduplicated by exact JSON stringification, so repo-managed entries stay authoritative but manual additions survive re-deploy. Empty `hooks` is skipped.
 - `BASH_DEFAULT_TIMEOUT_MS` (10 min) and `BASH_MAX_TIMEOUT_MS` (60 min) are merged into `~/.claude/settings.json` under `env` so runaway BashTool calls can't run unbounded. A companion `deny-busy-loops` PreToolUse hook blocks known no-yield loop shapes as a narrow safety rail. See `docs/terminal-hangs.md` for the full investigation.
-- Per-company accounts: for each company in `COMPANIES` (`lib/common.zsh`, shared with `03-company-setup.zsh`) it creates `~/.claude-<company>`, links CLAUDE.md, rules, skills, agents, hooks, settings.json, plugins and projects back to `~/.claude`, and registers jcodemunch there. Only the login and `.claude.json` are per account. `oc` sets `CLAUDE_CONFIG_DIR` to that directory under `~/dev/<company>/`.
+- Temporary: `remove_jcodemunch_mcp` drops the jCodemunch MCP registration that earlier deploys added, from `~/.claude.json` and each company account. Delete it once every machine has deployed past it (see the note on the function).
+- Per-company accounts: for each company in `COMPANIES` (`lib/common.zsh`, shared with `03-company-setup.zsh`) it creates `~/.claude-<company>`, links CLAUDE.md, rules, skills, agents, hooks, settings.json, plugins and projects back to `~/.claude`. Only the login and `.claude.json` are per account. `oc` sets `CLAUDE_CONFIG_DIR` to that directory under `~/dev/<company>/`.
 
 Skills have a conventional structure: `SKILL.md` (required), optional `dependencies/` (templates/docs/scripts, with `repos/` gitignored and fetched at deploy time), optional `modes/`, `evals/`, `human/`, `artifacts/` (runtime-only, gitignored except `.gitkeep`).
 
@@ -98,7 +99,3 @@ Machine-specific overrides (intentional): `~/.zshrc.local` and `~/.zshrc.$(hostn
 - **Deploy output must be inert if pasted into a shell.** Pasted output once ran line by line and truncated every deployed file through its `name -> path` summary. Print `name: path`, keep `>`, `|`, `;`, `&` and backticks out of printed text, and quiet git commands whose output carries them (diffstats, `-> FETCH_HEAD`).
 - Scripts that are meant to be executed need their exec bit set; `make lint` and `make setup` fix this, but new scripts should be created with `chmod +x`.
 - **The `find | cp` fallback in `06-deploy-claude.zsh` is the supported copy path.** Never propose installing `rsync`, and never treat its absence as a defect — the pipeline deploys with only what a stock Git Bash, macOS, or Linux shell provides, and depending on an extra binary is the thing being avoided. Fix copy defects inside the fallback.
-
-## Code exploration
-
-This repo is indexed for jCodemunch-MCP (repo id: `local/ohMyZshConfig-7dbefa5a`). Prefer `search_symbols` / `get_file_outline` / `get_file_content` over raw file reads for navigation.

@@ -5,8 +5,7 @@
 #   vault-coverage.sh VAULT POPULATION.tsv [--src LABEL] [--propose N] [--json] [--out DIR]
 #
 # POPULATION.tsv holds one "symbol<TAB>path" row per item, most important
-# first; the caller builds it (jcodemunch get_symbol_importance, a grep, a
-# hand list) and the script never mines one itself. The path may be blank.
+# first; the caller builds it (a grep, a hand list) and the script never mines one itself. The path may be blank.
 # Each row gets the first label that fits:
 #   EXCLUDED         a _coverage-exclusions.md entry matches (path glob or
 #                    exact symbol)

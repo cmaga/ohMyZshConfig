@@ -327,25 +327,28 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
         print_status "warning" "jq not found — skipping env merge"
     fi
 
-    # Register the jCodemunch MCP server at user scope (available in every
-    # project). ~/.claude.json is machine-local and not version-controlled, so
-    # this is the repo's reproducible hook for the registration rather than
-    # relying on `jcodemunch-mcp init` per machine. Indexing stays a deliberate
-    # per-repo action (`jcodemunch index`); this only makes the tools available.
-    # Idempotent: drop any existing user-scope entry, then re-add. Local-scope
-    # registrations in individual project dirs are left untouched.
-    if command_exists claude; then
-        print_status "info" "Registering jcodemunch MCP server (user scope)..."
-        claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
-        if claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1; then
-            print_status "success" "jcodemunch MCP registered at user scope"
-            command_exists uvx || print_status "warning" "uvx not on PATH, so the jcodemunch server will fail to start at launch until uv is installed"
+    # TEMPORARY, added 2026-11-03: jCodemunch was dropped after a benchmark on a
+    # real repo found it cost 35-69% more than the built-in tools at the same
+    # accuracy. Earlier deploys registered it at user scope; this removes that
+    # registration where it is still present. Once every machine has deployed
+    # since then (around 2026-12-03), delete this function and its two calls.
+    # The index store (~/.code-index) is left in place; deploys never delete files.
+    remove_jcodemunch_mcp() {
+        local claude_json="$1" label="$2"
+        command_exists claude || return 0
+        [ -f "$claude_json" ] || return 0
+        if command_exists jq; then
+            jq -e '.mcpServers // {} | has("jcodemunch")' "$claude_json" >/dev/null 2>&1 || return 0
         else
-            print_status "warning" "Failed to register jcodemunch MCP. Add manually: claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp"
+            grep -q '"jcodemunch"' "$claude_json" || return 0
         fi
-    else
-        print_status "warning" "claude CLI not available, skipping jcodemunch MCP registration"
-    fi
+        if env -u CLAUDE_CONFIG_DIR ${3:+CLAUDE_CONFIG_DIR=$3} claude mcp remove jcodemunch -s user >/dev/null 2>&1; then
+            print_status "success" "Removed the retired jcodemunch MCP server from $label"
+        else
+            print_status "warning" "Could not remove the jcodemunch MCP server from $label; run: claude mcp remove jcodemunch -s user"
+        fi
+    }
+    remove_jcodemunch_mcp "$HOME/.claude.json" "$HOME/.claude.json"
 
     # Each company in COMPANIES signs in with its own Claude account: `oc` under
     # ~/dev/<company>/ sets CLAUDE_CONFIG_DIR=~/.claude-<company>. Only the login
@@ -372,11 +375,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             print_status "warning" "Could not build $account_dir/agents for its account; it runs the agents in $CLAUDE_AGENTS_DEST"
             [ -e "$account_dir/agents" ] || MSYS=winsymlinks:nativestrict ln -sfn "$CLAUDE_AGENTS_DEST" "$account_dir/agents"
         fi
-        if command_exists claude; then
-            CLAUDE_CONFIG_DIR="$account_dir" claude mcp remove jcodemunch -s user >/dev/null 2>&1 || true
-            CLAUDE_CONFIG_DIR="$account_dir" claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp >/dev/null 2>&1 \
-                || print_status "warning" "Failed to register jcodemunch MCP for $company"
-        fi
+        remove_jcodemunch_mcp "$account_dir/.claude.json" "account '$company'" "$account_dir"
         print_status "success" "Claude account '$company': $account_dir (config linked from $CLAUDE_DIR)"
     done
 
@@ -407,7 +406,6 @@ echo "  - Hook scripts: $CLAUDE_DIR/hooks/"
 echo "  - Status line: $CLAUDE_DIR/statusline-command.sh (statusLine in $SETTINGS_DEST)"
 echo "  - Hooks: $SETTINGS_DEST (merged)"
 echo "  - BashTool timeouts, task tools, sonnet 1M alias env: $SETTINGS_DEST (env)"
-echo "  - jcodemunch MCP: registered at user scope (~/.claude.json)"
 echo "  - Company accounts: ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
 
 print_status "success" "Claude Code deployment complete!"
