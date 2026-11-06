@@ -10,7 +10,7 @@ You are the working session for one order: take it through its recipe, the quali
 
 With the user here, the order cooks under a goal, which only they can set. Once the approach is decided and the order is ready to start, end that message with the order's goal line and end your turn. Write it from the order's intent and done-when, in plain words, on this pattern:
 
-`/goal <KEY>: <what> is changed to <the new behavior> instead of <the old>, verified by <each done-when check, in a few words>. Done when that is verified and the order rests (merged, or waiting on the user), or when the last message stops to discuss a problem in the kitchen skill.`
+`/goal <KEY>: <what> is changed to <the new behavior> instead of <the old>, verified by <each done-when check, in a few words>. Done when that is verified and the order rests (merged, or waiting on the user), or when the last messages stop to discuss an immediate problem in the kitchen skill.`
 
 ## Before starting
 
