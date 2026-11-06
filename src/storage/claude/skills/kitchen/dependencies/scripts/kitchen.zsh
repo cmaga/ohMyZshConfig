@@ -560,8 +560,16 @@ fire() { # SLUG KEY PHASE STATUS DRY: start a headless session for an order
   [[ -n $model ]] && extra=(--model $model)
   mkdir -p $dir/log
   new_uuid; local sid=$REPLY
+  # the goal keeps the session going until it leaves the mark reap() reads as finished
+  local met
+  case $phase in
+    serve) met="kitchen.zsh order get $key prints a status other than serving" ;;
+    cook) met="kitchen.zsh order get $key prints a status other than cooking" ;;
+    follow) met="the session ran kitchen.zsh order pr, order verify, or order close for $key" ;;
+    verify) met="kitchen.zsh order verdict $key printed a verdict" ;;
+  esac
   # print mode stops background agents 10 minutes after the main loop goes idle; reap() is the limit instead
-  ( cd $project && source $ALIASES && CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 oc -p "/kitchen $cmd $key" --session-id $sid $extra < /dev/null ) > $logf 2>&1 &!
+  ( cd $project && source $ALIASES && CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 oc -p "/goal Run /kitchen $cmd $key and follow it to its end. The goal is met when $met, or when its claim of $key was refused." --session-id $sid $extra < /dev/null ) > $logf 2>&1 &!
   order_set $key status=$st pid=$! phase=$phase "log=$logf" "session=$sid" started=$EPOCHSECONDS stop_cause= stop_at=0
   log "$slug: $phase $key"
 }

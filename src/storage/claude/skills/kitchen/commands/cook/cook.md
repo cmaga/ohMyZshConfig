@@ -27,6 +27,10 @@ You are the working session for one order: take it through its recipe, the quali
 
 ## Working
 
+With the user here, hand them this line to paste, with the order's key, and end your turn:
+
+`/goal Carry order <KEY> through /kitchen cook to its end. The goal is met when kitchen.zsh order get <KEY> prints a status other than cooking, or when the last message stops to discuss a problem in the kitchen skill with the user.`
+
 10. **Follow the recipe.** After each step you finish, run `kitchen.zsh order set <KEY> "step=<n> <step name>"`; the scheduler reads it as progress, and the next session as where you stopped. While you work:
     - Keep the order's `station` current (`kitchen.zsh order set <KEY> station=@<file>`, a JSON array) as you learn which files it touches, since the scheduler keeps other orders off them.
     - When the approach departs from the ticket, comment what changed and why on the ticket.
