@@ -33,7 +33,7 @@ The scheduler runs intake headless, and `cook` runs it with the user when they t
           summary=@<file> intent=@<file> done_when=@<file> station=@<file> \
           steps=@<file> question=@<file>
 
-    `steps` only for `bespoke`. The summary carries the cause trace in a few lines, hypotheses labeled as such. Headless, `status` is `at-the-pass` with a `question` when `signoff=true`, else `ready`. With the user here, ask them the sign-off question now. They come to it fresh, without your trace: open with what the ticket is for in one or two plain sentences, then the one call, your recommendation, and the fact that forces it. Then, sign-off or not, give them the order summary and wait for their go before you write the order:
+    `steps` only for `bespoke`. The summary carries the cause trace in a few lines, hypotheses labeled as such. Headless, `status` is `at-the-pass` with a `question` when `signoff=true`, else `ready`. With the user here, ask them the sign-off question now. They come to it fresh, without your trace: open with what the ticket is for in one or two plain sentences, then the one call, your recommendation, and the fact that forces it. Then, sign-off or not, give them the order summary, ending with cook's [goal line](../cook/cook.md#the-goal-line) for them to paste as their go, and wait for it before you write the order:
 
     - what the order is and why, in two or three plain sentences;
     - the calls they made at the pass, and the calls you will make yourself while cooking;
