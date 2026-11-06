@@ -41,6 +41,21 @@ else
     targets=($ALL_TARGETS)
 fi
 
+# A machine on a profile (deploy-profile.zsh) takes only the profile's targets,
+# each due when the full target it is part of is due: deploy-zsh-config with deploy-zsh.
+PROFILE_FILE="${STATE_FILE:h}/deploy-profile"
+if [[ -f "$PROFILE_FILE" ]]; then
+    profile=$(<"$PROFILE_FILE")
+    [[ -n "${PROFILE_TARGETS[$profile]}" ]] || error "Unknown profile in $PROFILE_FILE: $profile"
+    due=($targets)
+    targets=()
+    for target in ${=PROFILE_TARGETS[$profile]}; do
+        if (( ${due[(Ie)${target%-config}]} )); then
+            targets+=($target)
+        fi
+    done
+fi
+
 if (( ! ${#targets} )); then
     print_status "success" "No deployable changes in ${deployed:0:7}..${head:0:7}"
 else

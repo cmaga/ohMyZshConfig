@@ -139,6 +139,13 @@ CLAUDE_AGENTS_DEST="$CLAUDE_DIR/agents"
 # Companies under ~/dev/<company>/, each with its own SSH keys and Claude account
 COMPANIES=("gsi" "ms")
 
+# Machines that take only part of this repo. `make <profile>` deploys its targets
+# and records it in .git/deploy-profile, and update.zsh then deploys only those.
+typeset -A PROFILE_TARGETS=(
+    amazon-laptop  "deploy-zsh-config"
+    amazon-desktop "deploy-zsh-config deploy-claude-config"
+)
+
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================

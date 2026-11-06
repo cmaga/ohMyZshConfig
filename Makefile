@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint update
+.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint update deploy-zsh-config deploy-claude-config amazon-laptop amazon-desktop
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -32,6 +32,8 @@ help: ## Show this help message
 	@printf "  $(GREEN)deploy-git$(NC)    - Deploy only git configs (.gitconfig, company profiles)\n"
 	@printf "  $(GREEN)deploy-claude$(NC) - Deploy only Claude Code configs (CLAUDE.md, rules, skills, agents)\n"
 	@printf "  $(GREEN)setup$(NC)         - Complete system setup (fresh system to fully configured)\n"
+	@printf "  $(GREEN)amazon-laptop$(NC) - Deploy aliases and scripts into the Oh-My-Zsh Amazon installs\n"
+	@printf "  $(GREEN)amazon-desktop$(NC) - Deploy aliases, scripts and Claude Code config, installing nothing\n"
 	@printf "  $(GREEN)help$(NC)          - Show this help message\n"
 	@printf "\n"
 	@printf "Typical workflow:\n"
@@ -151,6 +153,15 @@ deploy-automations: ## Register launchd jobs (macOS), systemd user services (Lin
 		exit 1; \
 	fi
 	@"$(DEPLOYMENT_DIR)/08-deploy-automations.zsh"
+
+deploy-zsh-config: ## Deploy only aliases.zsh and scripts, for a machine whose zsh and Oh-My-Zsh are set up by someone else
+	@"$(DEPLOYMENT_DIR)/04-deploy-zsh.zsh" --config-only
+
+deploy-claude-config: ## Deploy only Claude Code config, for a machine whose Claude CLI comes from its own installer
+	@"$(DEPLOYMENT_DIR)/06-deploy-claude.zsh" --config-only
+
+amazon-laptop amazon-desktop: ## Deploy a work machine's profile (PROFILE_TARGETS in lib/common.zsh) and record it for update
+	@"$(DEPLOYMENT_DIR)/deploy-profile.zsh" $@
 
 finalize: ## Final cleanup and shell reload prompt
 	@"$(DEPLOYMENT_DIR)/07-finalize.zsh"

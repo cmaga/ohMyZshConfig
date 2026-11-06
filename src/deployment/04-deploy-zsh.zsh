@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Deploy Zsh Configuration
 # Handles: zsh installation, default shell, Oh-My-Zsh, plugins, and config deployment
+# --config-only deploys only aliases.zsh and scripts/, for a machine whose zsh,
+# Oh-My-Zsh and ~/.zshrc are set up by someone else.
 
 set -e
 
@@ -19,11 +21,18 @@ BIN_SOURCE="${STORAGE_DIR}/bin"
 SCRIPTS_SOURCE="${STORAGE_DIR}/scripts"
 PLUGINS_FILE="${PROJECT_ROOT}/plugins.txt"
 
-# Destination paths
+# Destination paths. Oh-My-Zsh loads custom/*.zsh; a config-only machine
+# without it gets a plain directory, which ~/.zshrc sources instead.
+CONFIG_ONLY=false
+[[ "$1" == "--config-only" ]] && CONFIG_ONLY=true
+CUSTOM_DIR="$OMZ_DIR/custom"
+if $CONFIG_ONLY && [[ ! -d "$OMZ_DIR" ]]; then
+    CUSTOM_DIR="$HOME/.config/ohmyzshconfig"
+fi
 ZSHRC_DEST="$HOME/.zshrc"
-ALIASES_DEST="$OMZ_DIR/custom/aliases.zsh"
+ALIASES_DEST="$CUSTOM_DIR/aliases.zsh"
 BIN_DEST="$HOME/.local/bin"
-SCRIPTS_DEST="$OMZ_DIR/custom/scripts"
+SCRIPTS_DEST="$CUSTOM_DIR/scripts"
 PLUGINS_DIR="$OMZ_DIR/custom/plugins"
 
 
@@ -243,16 +252,11 @@ deploy_configs() {
     
     # Check if source files exist
     [ -f "$ZSHRC_SOURCE" ] || error "Source .zshrc not found at $ZSHRC_SOURCE"
-    [ -f "$ALIASES_SOURCE" ] || error "Source aliases.zsh not found at $ALIASES_SOURCE"
     [ -d "$BIN_SOURCE" ] || error "Source bin directory not found at $BIN_SOURCE"
 
     # Deploy .zshrc
     log "Deploying .zshrc from $ZSHRC_SOURCE to $ZSHRC_DEST"
     cp "$ZSHRC_SOURCE" "$ZSHRC_DEST" || error "Failed to deploy .zshrc"
-
-    # Deploy aliases.zsh, pointing glc at this clone
-    log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
-    sed "s|__OHMYZSHCONFIG_DIR__|$PROJECT_ROOT|g" "$ALIASES_SOURCE" > "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
 
     # Deploy bin/ shims. ~/.local/bin leads PATH, so these are reached from
     # every shell -- which a zsh function is not. `jira` was a zsh function,
@@ -266,6 +270,19 @@ deploy_configs() {
             || error "Failed to deploy $(basename "$shim")"
     done
 
+    deploy_aliases_and_scripts
+}
+
+# aliases.zsh and scripts/, the part of the zsh config every machine takes
+deploy_aliases_and_scripts() {
+    [ -f "$ALIASES_SOURCE" ] || error "Source aliases.zsh not found at $ALIASES_SOURCE"
+    mkdir -p "$SCRIPTS_DEST" || error "Failed to create $SCRIPTS_DEST"
+
+    # Deploy aliases.zsh, pointing glc at this clone and kgen at the deployed scripts
+    log "Deploying aliases.zsh from $ALIASES_SOURCE to $ALIASES_DEST"
+    sed -e "s|__OHMYZSHCONFIG_DIR__|$PROJECT_ROOT|g" -e "s|__SCRIPTS_DIR__|$SCRIPTS_DEST|g" \
+        "$ALIASES_SOURCE" > "$ALIASES_DEST" || error "Failed to deploy aliases.zsh"
+
     # Deploy utility scripts directory
     if [ -d "$SCRIPTS_SOURCE" ]; then
         log "Deploying scripts directory from $SCRIPTS_SOURCE to $SCRIPTS_DEST"
@@ -278,6 +295,33 @@ deploy_configs() {
     fi
 }
 
+# Without Oh-My-Zsh nothing loads aliases.zsh, so ~/.zshrc gets one line that
+# sources it, appended once. The rest of ~/.zshrc is never touched.
+source_from_zshrc() {
+    if grep -qF "$ALIASES_DEST" "$ZSHRC_DEST" 2>/dev/null; then
+        log "$ZSHRC_DEST already sources $ALIASES_DEST"
+        return 0
+    fi
+    printf '\n# ohMyZshConfig aliases (deploy-zsh-config)\n[[ -f "%s" ]] && source "%s"\n' \
+        "$ALIASES_DEST" "$ALIASES_DEST" >> "$ZSHRC_DEST" || error "Failed to add a line to $ZSHRC_DEST"
+    log "Added a line to $ZSHRC_DEST sourcing $ALIASES_DEST"
+}
+
+deploy_config_only() {
+    local login_shell=$(get_login_shell)
+    [[ "${login_shell:t}" == "zsh" ]] || warn "Login shell is ${login_shell:-unknown}, not zsh. aliases.zsh and glc need zsh"
+
+    deploy_aliases_and_scripts
+    [[ -d "$OMZ_DIR" ]] || source_from_zshrc
+    echo
+
+    print_status "success" "Zsh config deployed (config only)"
+    info "Deployed files:"
+    echo "  - aliases.zsh: $ALIASES_DEST"
+    echo "  - scripts: $SCRIPTS_DEST"
+    echo
+}
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -286,6 +330,11 @@ main() {
     echo
     print_status "info" "Zsh Deployment"
     echo
+
+    if $CONFIG_ONLY; then
+        deploy_config_only
+        return
+    fi
     
     # Step 1: Ensure zsh is installed
     check_install_zsh

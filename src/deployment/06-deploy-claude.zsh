@@ -1,7 +1,9 @@
 #!/bin/zsh
 # Claude Code Deployment Script
 # Deploys Claude Code configuration files from git repository to system
-# And installs the Claude CLI
+# And installs the Claude CLI. --config-only deploys only the configuration, for
+# a machine whose Claude CLI comes from its own installer: no CLI install, no
+# company accounts, no claude-proxy.
 
 set -e
 
@@ -16,10 +18,15 @@ STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 # Claude Code Configuration Source
 CLAUDE_CONFIG_SOURCE="${STORAGE_DIR}/claude"
 
+CONFIG_ONLY=false
+[[ "$1" == "--config-only" ]] && CONFIG_ONLY=true
+
 # Install Claude CLI
 print_status "info" "Checking for Claude CLI..."
 
-if command_exists claude; then
+if $CONFIG_ONLY; then
+    print_status "info" "Config only, so the Claude CLI is left to this machine's own installer"
+elif command_exists claude; then
     claude_version=$(claude --version 2>/dev/null || echo "unknown")
     print_status "success" "Claude CLI already installed ($claude_version)"
 elif [[ "$(detect_os)" == "windows" ]]; then
@@ -357,6 +364,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # account. A link Claude Code replaced with a real file is reported, not
     # clobbered. nativestrict makes Git Bash fail rather than copy silently.
     mkdir -p "$CLAUDE_DIR/projects" "$CLAUDE_DIR/plugins"
+    $CONFIG_ONLY && COMPANIES=()
     for company in "${COMPANIES[@]}"; do
         account_dir="$HOME/.claude-$company"
         mkdir -p "$account_dir" || error "Failed to create $account_dir"
@@ -383,7 +391,7 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     # the launchd agent, systemd user service, or Windows logon task
     # (src/storage/automations/claude-proxy/); the proxy needs only node, which
     # bootstrap already installs. The DeepSeek key is a secret and stays manual.
-    if [[ "$(detect_os)" == (macos|linux|windows) ]]; then
+    if ! $CONFIG_ONLY && [[ "$(detect_os)" == (macos|linux|windows) ]]; then
         ZSHRC_LOCAL="$HOME/.zshrc.local"
         if ! grep -q '^export DEEPSEEK_API_KEY=' "$ZSHRC_LOCAL" 2>/dev/null; then
             print_status "warning" "DEEPSEEK_API_KEY not set — add 'export DEEPSEEK_API_KEY=<key>' to $ZSHRC_LOCAL"
@@ -406,6 +414,6 @@ echo "  - Hook scripts: $CLAUDE_DIR/hooks/"
 echo "  - Status line: $CLAUDE_DIR/statusline-command.sh (statusLine in $SETTINGS_DEST)"
 echo "  - Hooks: $SETTINGS_DEST (merged)"
 echo "  - BashTool timeouts, task tools, sonnet 1M alias env: $SETTINGS_DEST (env)"
-echo "  - Company accounts: ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
+(( ${#COMPANIES} )) && echo "  - Company accounts: ~/.claude-{${(j:,:)COMPANIES}} (config linked from $CLAUDE_DIR)"
 
 print_status "success" "Claude Code deployment complete!"

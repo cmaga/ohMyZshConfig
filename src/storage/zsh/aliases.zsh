@@ -55,7 +55,7 @@ alias gskipped='git ls-files -v | grep "^S"'
 glc() { make --no-print-directory -C "__OHMYZSHCONFIG_DIR__" update && print "Reloading zsh" && exec zsh; }
 
 # SSH Key Generation and Management
-alias kgen='$ZSH/custom/scripts/ssh-key-generator.zsh'
+alias kgen='__SCRIPTS_DIR__/ssh-key-generator.zsh'
 
 # Claude Code - skip permission prompts. Routes through the local proxy
 # (automations/claude-proxy) when this machine has one, so DeepSeek model names
