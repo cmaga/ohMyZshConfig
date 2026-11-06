@@ -1,6 +1,6 @@
 # Open a PR
 
-The end of every recipe that ships a change: hold the quality gate, shape the commits, and open a PR a reviewer can read in a minute.
+The end of every recipe that ships a change: hold the quality gate, fold the branch into one commit, and open a PR a reviewer can read in a minute.
 
 Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 
@@ -9,7 +9,11 @@ Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 1. **Hold the quality gate**: follow the [taste](../../taste/taste.md) command on this branch with the order's key and done-when. Nothing goes out until it clears.
 2. **Triage what is left** per the [left for you](../stations/left-for-you.md) station.
 3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.
-4. **Run the full suite once.** First fold the fixups in and catch up with the base in one rebase: `git fetch origin <base>`, then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/<base>`, resolving any conflict so both sides' intent survives. Then run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: fix with fixups, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun, and rebase again while fixups are left. Green: `git push --force-with-lease -u origin HEAD`.
+4. **Fold the branch into one commit, then run the full suite once.**
+   1. With a clean tree, run `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base>`; it must not report the contract broken. After the fold every test edit sits in one commit, and the check can no longer tell who made it. It names the latest contract commit.
+   2. Note `git rev-parse HEAD^{tree}`, `git fetch origin <base>`, then `git reset --soft $(git merge-base HEAD origin/<base>)` and commit per [Commits](#commits). `git rev-parse HEAD^{tree}` must print what you noted.
+   3. `git rebase origin/<base>`, resolving any conflict so both sides' intent survives.
+   4. Run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: fix, `git commit --amend --no-edit`, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun. Green: `git push --force-with-lease -u origin HEAD`.
 5. **Open the PR.** First settle the review flag: when step 2 left any item and the order is not already flagged, run `kitchen.zsh order set <KEY> review=true "review_why=left for you: <n> items"`. Then open the PR through the `git-provider` skill, ready and never as a draft, targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with `transitions.review`.
 6. Run the [merge](merge.md) recipe. A PR flagged for the user's review still gets its verdict first: `sample` prints `verify` before `review`, and the PR goes to the user only when `sample` prints `review`.
 
@@ -17,7 +21,13 @@ Opening a PR does not start a [follow a PR](follow-a-pr.md) pass. The scheduler 
 
 ## Commits
 
-Commit liberally while working, then shape the history in step 4 into small, ordered commits, each landable and ordered to tell the story. Amend when a fix belongs in the commit just made; make a new commit when it is separable; on a commit further back, `git commit --fixup=<sha>`. A relocation is one commit per move. Commit bodies don't restate the subject. Use the project's commit format; with none, Conventional Commits.
+Commit liberally while working; those commits save work and never reach the base. Step 4 folds them into the PR's one commit, so reverting the PR's merge removes the change whole:
+
+- Subject: the PR's title in the project's commit format; with none, Conventional Commits.
+- Body: a few lines on what the change does, not how it got there.
+- Trailers: when the branch has a contract commit, end with that latest contract commit's trailers (`git log -1 --format='%(trailers)' <sha>`), which restate the whole contract.
+
+A change that needs two commits to read is two PRs, per [Size and stacks](#size-and-stacks). A move whose files also change goes in its own PR first, so git still follows the rename.
 
 ## Titles
 

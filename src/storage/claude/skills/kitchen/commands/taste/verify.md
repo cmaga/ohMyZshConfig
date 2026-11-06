@@ -13,7 +13,7 @@ The scheduler starts you (`/kitchen taste verify <KEY>`, phase `verify`) when a 
    - `FAIL`: at least one blocking problem.
    - `PASS+NOTES`: nothing blocks, and something is worth a follow-up.
    - `PASS`: nothing blocks and nothing to add.
-7. **Record it.** Write the notes to a file: for each finding the command, the output it printed, and what the intent requires; for a pass, what you ran and saw. From the checkout of the head you verified, run `kitchen.zsh order verdict <KEY> <WORD> @<file>`. Post the same on the PR as a comment starting with `kitchen: verdict <WORD>`, the body in a file.
+7. **Record it.** Write the notes to a file: for each finding the command, the output it printed, and what the intent requires; for a pass, what you ran and saw. From the checkout of the head you verified, run `kitchen.zsh order verdict <KEY> <WORD> @<file>`. Post nothing on the PR.
 8. **Clean up** what you started, keeping the evidence, then `ExitWorktree` with `action: "remove"`.
 
 **Reply:** the verdict, what you ran on head and base, each finding with its command and output, and where the evidence is.
