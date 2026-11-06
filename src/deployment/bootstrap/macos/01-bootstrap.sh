@@ -129,6 +129,7 @@ if command -v bb &>/dev/null; then
     echo "${GREEN}✅ Bitbucket CLI already installed${NC}"
 else
     echo "${YELLOW}📦 Installing Bitbucket CLI...${NC}"
+    brew trust --formula gildas/tap/bitbucket-cli
     brew install gildas/tap/bitbucket-cli
     if command -v bb &>/dev/null; then
         echo "${GREEN}✅ Bitbucket CLI installed${NC}"

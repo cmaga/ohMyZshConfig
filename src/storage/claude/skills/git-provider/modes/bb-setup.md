@@ -12,6 +12,7 @@ Add or repair a `bb` profile so the git-provider skill can hit `bb pr …` again
 ## Install
 
 ```bash
+brew trust --formula gildas/tap/bitbucket-cli
 brew install gildas/tap/bitbucket-cli
 bb --version
 ```

@@ -7,8 +7,11 @@ The examples below omit the profile. Add `-p {workspace}` to every one you run, 
 ## Installation
 
 ```bash
+brew trust --formula gildas/tap/bitbucket-cli
 brew install gildas/tap/bitbucket-cli
 ```
+
+Homebrew refuses a third-party tap's formula until it is trusted; `brew upgrade gildas/tap/bitbucket-cli` needs the same trust.
 
 ## Authentication
 
@@ -186,6 +189,8 @@ bb pr update {pr-id} \
   --description "Updated description"
 ```
 
+Right after a push, the first update can fail with `source: not a branch head: <old commit>`: the CLI sends back the PR as it fetched it, and Bitbucket still names the pre-push head for a few seconds. Rerun it a few seconds later, then confirm the description landed with `bb pr get {pr-id} -o json`.
+
 ### PR Comments
 
 ```bash
@@ -196,11 +201,13 @@ bb pr comment list --pullrequest {pr-id}
 bb pr comment create --pullrequest {pr-id} --comment "This is a comment"
 ```
 
+`comment list` (0.18.7) rejects any PR number above the newest open PR's, with `Flag value "<id>" is invalid`, so it fails on a PR merged after that one. Read those comments from `bb pr activities {pr-id} -o json`: the entries with a `comment` key are the comments.
+
 ### PR Activity
 
 ```bash
 # View PR activity/history
-bb pr activity list --pullrequest {pr-id}
+bb pr activities {pr-id}
 ```
 
 ## Repositories
@@ -222,36 +229,31 @@ Note: `bb repo get` requires the repo slug as a positional arg — there is no "
 bb branch list -o json
 ```
 
-### Get Branch
-
-```bash
-bb branch get {branch-name} -o json
-```
-
 ## Commits
 
 ### List Commits
 
 ```bash
-bb commit list -o json
-
-# For specific branch
-bb commit list --branch {branch-name}
+# Commits on a branch since an older commit
+bb commit list --include {branch-name} --exclude {older-commit} -o json
 ```
+
+Bound it with `--exclude`: without one it fetches the branch's whole history, page by page, and runs for minutes.
 
 ## Pipelines
 
 ### List Builds
 
 ```bash
-bb pipeline list -o json
+bb pipeline list --limit 50 -o json
 ```
 
-Two traps in the response shape:
+Two traps:
 
-- It returns every build on **one page, oldest first**. Reading the first N rows
-  gets the repository's earliest builds, not its recent ones. Sort by
-  `build_number` descending.
+- Without `--limit` it fetches every build the repository has ever run, page by
+  page: over a minute on a repository with 2,000 builds. `--limit 50` returns the
+  newest 50 in about two seconds. Sort them by `build_number` descending before
+  reading the first rows.
 - A **pull-request** build's `target` has no `ref_name` — its keys are `commit`,
   `destination`, `destination_commit`, `pullrequest`, `selector`, `source`, with
   `selector.type == "pull-requests"`. Only `branches` builds carry `ref_name`, so
@@ -289,7 +291,7 @@ bb pipeline step list --pipeline {n} --show-logs-command \
 ### Get Current User
 
 ```bash
-bb user get -o json
+bb user me -o json
 ```
 
 ## Workspaces
