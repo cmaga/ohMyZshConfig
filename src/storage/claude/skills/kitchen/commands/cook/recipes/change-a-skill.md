@@ -4,7 +4,7 @@ Writing or editing a SKILL.md, or any file a skill reads.
 
 **You own the skill's voice.**
 
-1. Use the `claude-feature-authoring` skill.
+1. Use the `claude-feature-authoring` skill. Other sessions edit and commit in the skill's source repository too: run `git status` there before editing, and commit only your own files, by pathspec (`git commit -- <paths>`).
 2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve.
 3. Test cases if structural, per the [eval](eval.md) recipe. Skip if subjective.
 4. Run the [open a PR](open-a-pr.md) recipe.
