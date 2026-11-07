@@ -46,7 +46,7 @@ before any command (see "Load Config"). That read **is** the gate:
 Branch on the error — each class has its own fix:
 
 - **Missing prerequisite** — `jira: command not found`, "config not found", HTTP
-  401, or a hang despite `--no-input`. Run the **Full detection battery**, then
+  401, or a hang despite `--no-input` and a redirected stdin. Run the **Full detection battery**, then
   route to setup.
 - **Field rejection** — Jira names a field it will not accept, e.g. `Field
   'customfield_10014' cannot be set. It is not on the appropriate screen, or
@@ -359,15 +359,19 @@ jira issue list -p {projectKey} --plain --no-headers
 ### Mutating Commands
 
 > **MANDATORY — applies to every `issue create`, `issue edit`, `issue comment add`,
-> `issue worklog add`, and `epic create`, here or in the full CLI reference. Both
-> rules are required to prevent session hangs; a missing `--no-input` has hung
-> sessions for hours.**
+> `issue worklog add`, and `epic create`, here or in the full CLI reference. All
+> three rules are required to prevent session hangs; a write missing either of
+> the first two has hung sessions for hours.**
 >
 > - Pass `--no-input`. Without it, jira-cli prompts for missing fields, opens an
 >   editor, or asks "Are you sure you want to submit?" and blocks indefinitely
 >   with nothing on stdin.
+> - Redirect stdin: `< body.md` when the body is in a file, else `< /dev/null`.
+>   jira-cli reads stdin to its end whenever stdin is not a terminal, even with
+>   `-b` and `--no-input`, and a session's stdin can be a pipe that never closes.
+>   On `issue edit`, an empty stdin leaves the description as it was.
 > - Set Bash tool `timeout: 60000`. A healthy write completes in well under a
->   second. If it exceeds, investigate — never retry without `--no-input`.
+>   second. If it exceeds, investigate — never retry without `--no-input` and the redirect.
 
 ### Common Operations
 
@@ -398,15 +402,15 @@ jira issue move {ticketId} "{transitions.start}"
 **Create issue:**
 
 ```bash
-jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -l{label} --no-input
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -l{label} --no-input < /dev/null
 ```
 
 Include `-l{label}` for each label in `config.labels`. Omit if the array is empty.
 
-For long descriptions, write content to a temp file first, then pass via stdin:
+For long descriptions, write content to a temp file first, then redirect it:
 
 ```bash
-cat /tmp/description.txt | jira issue create -p {projectKey} -t Task -s "Summary" -l{label} --no-input
+jira issue create -p {projectKey} -t Task -s "Summary" -l{label} --no-input < /tmp/description.txt
 ```
 
 **Create issue under an epic:**
@@ -416,7 +420,7 @@ requires tickets to live under an epic — parenting after the fact is a second
 round trip that gets skipped.
 
 ```bash
-jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -P {epicKey} --no-input
+jira issue create -p {projectKey} -t Task -s "Summary" -b "Description" -P {epicKey} --no-input < /dev/null
 ```
 
 `-P` is the flag that exposes a wrong `project.type`: on `next-gen` jira-cli sends
@@ -432,7 +436,7 @@ jira epic add {epicKey} {ticketId}
 **Edit issue:**
 
 ```bash
-jira issue edit {ticketId} -s "New summary" --no-input
+jira issue edit {ticketId} -s "New summary" --no-input < /dev/null
 ```
 
 To remove a label, prefix the value with `-` and attach it with `=`:
@@ -444,25 +448,25 @@ even with `--no-input` (this hung a session for two hours on 2026-06-10).
 **Add comment:**
 
 ```bash
-jira issue comment add {ticketId} "Comment text" --no-input
+jira issue comment add {ticketId} "Comment text" --no-input < /dev/null
 ```
 
-For multi-line or long comments, pipe via stdin (still pass `--no-input`, still cap timeout):
+For multi-line or long comments, redirect the body from a file (still pass `--no-input`, still cap timeout):
 
 ```bash
-cat /tmp/comment.txt | jira issue comment add {ticketId} --no-input
+jira issue comment add {ticketId} --no-input < /tmp/comment.txt
 ```
 
 **Add worklog:**
 
 ```bash
-jira issue worklog add {ticketId} "2h 30m" --no-input
+jira issue worklog add {ticketId} "2h 30m" --no-input < /dev/null
 ```
 
 With a comment:
 
 ```bash
-jira issue worklog add {ticketId} "2h 30m" --comment "Implementation work" --no-input
+jira issue worklog add {ticketId} "2h 30m" --comment "Implementation work" --no-input < /dev/null
 ```
 
 **Attach a file:**
