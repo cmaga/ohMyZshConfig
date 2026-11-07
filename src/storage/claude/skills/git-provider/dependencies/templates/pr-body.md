@@ -2,10 +2,6 @@
 
 [{TICKET_KEY}]({JIRA_URL})
 
-## Description
+## What and why
 
-{TICKET_DESCRIPTION}
-
-## Changes
-
-{COMMIT_LOG}
+{SUMMARY}

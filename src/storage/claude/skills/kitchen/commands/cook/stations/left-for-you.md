@@ -1,6 +1,6 @@
 # Left for you
 
-What only the user can decide never leaves as a sentence in prose, where it reads as already decided. It leaves as an item in the PR's `Left for you` section, one question per item, and a PR carrying any item waits for the user's review. This is how a candidate gets there.
+What only the user can decide never leaves as a sentence in prose, where it reads as already decided. It leaves as an item in the order's `left`, one question per item (`kitchen.zsh order set <KEY> left=@<file>`, the file a JSON array of the questions), never in the PR, and an order carrying any item waits for the user's review. This is how a candidate gets there.
 
 ## Discovered issues
 

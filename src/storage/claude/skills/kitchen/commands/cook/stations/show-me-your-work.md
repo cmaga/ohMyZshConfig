@@ -67,7 +67,7 @@ Before handing back, spawn an agent in the other family role ([SKILL.md](../../.
 - Choices that look risky in hindsight (premature, scope-creeping, papering over a symptom).
 - Gaps the user would otherwise miss on a casual skim.
 
-Every reply for a run that produced a trail ends with an "Attention" section. Lead with the reviewer's model on its own line (`reviewed by <model>`), then list each flag pointing to specific rows or moments. "No flags" is a valid value. The model name is not. Headless, nobody reads the reply, so the Attention section goes in the PR body, after `## Decided alone`.
+Every reply for a run that produced a trail ends with an "Attention" section. Lead with the reviewer's model on its own line (`reviewed by <model>`), then list each flag pointing to specific rows or moments. "No flags" is a valid value. The model name is not. Headless, nobody reads the reply, so record the section with `kitchen.zsh order set <KEY> attention=@<file>`; the user reads it in [their review](../recipes/merge.md#the-users-review).
 
 ## Reviewing the trail
 

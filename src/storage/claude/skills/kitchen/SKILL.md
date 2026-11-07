@@ -35,7 +35,7 @@ The scheduler judges a session by its side effects: an order update or a commit 
 
 ## Who is in the session
 
-The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `reflect`, `cook new <task>`, and a `taste` the user asked for always have the user here.
+The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `reflect`, `cook new <task>`, and a `taste` the user asked for always have the user here. When the user asks for an order's session ("give me the 123 session"), run `kitchen.zsh review <number> --line` and reply with the line it prints, for them to paste in a terminal; `/resume` inside a session cannot open a session saved under another folder. A message in a session that ran headless, other than the scheduler's `/goal Run /kitchen ...` line, is the user, who resumed it to review its PR: follow [the user's review](commands/cook/recipes/merge.md#the-users-review).
 
 With the user here, a message without a tool call ends your turn. Put a progress report in the same message as the next step's first tool call, unless you are stopping for their answer.
 
@@ -43,9 +43,9 @@ A goal (Claude Code's `/goal`) keeps a session working until its order rests. Th
 
 ## Non-negotiables
 
-The Principles below ground every trigger. In your reply and the PR, name each principle that shaped a decision and the choice it changed. Cite only principles whose file you read this session.
+The Principles below ground every trigger. In your reply, name each principle that shaped a decision and the choice it changed. Cite only principles whose file you read this session.
 
-- **The order's intent is the goal.** If the evidence rules out the change asked for, show it and stop. What the ticket says to keep is part of it: a change there, however safe, is never folded or decided alone but left as a [Left for you](commands/cook/stations/left-for-you.md) item. Restate the goal in each subagent brief, open each PR's `## Why` with it, and open each final report with it, except after a fully specified one-line edit.
+- **The order's intent is the goal.** If the evidence rules out the change asked for, show it and stop. What the ticket says to keep is part of it: a change there, however safe, is never folded or decided alone but left as a [Left for you](commands/cook/stations/left-for-you.md) item. Restate the goal in each subagent brief, open each PR description with it, and open each final report with it, except after a fully specified one-line edit.
 - **Nontrivial change, architecture decision, or "are we sure?"**: the [how](commands/cook/stations/how.md) station.
 - **About to ask "which approach", "how should I", or "what should this do"**: classify it first. A fact you could observe by running something (behavior, timing, layout, output, perf, whether an eval separates) is not the user's to answer: sketch it per the [prototype](commands/cook/recipes/prototype.md) recipe and let the result decide. In a read-only investigation, answer from the evidence instead. Only a product or preference call no experiment can settle is a call only the user can make, handled per [Autonomy](#autonomy).
 - **Any code**: name the data shape first, and choose its organizing structure per the [model the domain](dependencies/principles/model-the-domain.md) principle. Before the code is handed off, its tests are written and locked per the [contract](commands/cook/stations/contract.md) station.
@@ -62,7 +62,7 @@ The Principles below ground every trigger. In your reply and the PR, name each p
 - **Landing a PR**: the [merge](commands/cook/recipes/merge.md) recipe. Green is not safe: nothing merges before a verdict from a session that did not write the change covers its current patch.
 - **A review bot commented**: assess each claim on its merits against the code; fix what is real, dismiss noise with a concrete reason, and never churn code to quiet a bot.
 - **This skill is wrong mid-task**: address it right away per [Defects and lessons](#defects-and-lessons). Never silently work around it.
-- **Long, autonomous, multi-phase, or headless work**: a decision trail per the [show me your work](commands/cook/stations/show-me-your-work.md) station. A call made without the user also goes to `kitchen.zsh decide`, which the user's catch-up shows, and the PR too when the PR waits for the user's review.
+- **Long, autonomous, multi-phase, or headless work**: a decision trail per the [show me your work](commands/cook/stations/show-me-your-work.md) station. A call made without the user also goes to `kitchen.zsh decide`, which the user's catch-up and review show.
 
 ## Principles
 

@@ -35,21 +35,7 @@ A change that needs two commits to read is two PRs, per [Size and stacks](#size-
 
 ## The PR body
 
-A one-minute briefing for a reviewer who has the diff, not a lab notebook. It says why the change exists, what it leaves out, what it could break, and how you proved it works. Short, simple sentences with few identifiers. Use `##` headings in this order and drop a section with nothing to say:
-
-- `## Why`: the user's goal (the order's intent) and the approach, in one to three sentences. Who the change is for and what changes for them. No SHAs or rebase history.
-- `## What changed`: one to three bullets. Name a real symbol or path only when it carries the change; name both sides of a rename.
-- `## Scope`: always. One to three items on what it covers and what it deliberately leaves out.
-- `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about.
-- `## Blast radius`: each consumer of what changed and the run that confirmed it survives, from the [blast radius](../stations/blast-radius.md) station. One or two sentences when nothing outside the diff reads it.
-- `## Verification`: each done-when line with the run that proved it and its outcome, and each contract test with the line it pins. A contract corrected after the code says what changed and why. For perf, one primary number with its unit, before and after, with the rest in a linked artifact.
-- `## Decided alone`: every decision from the order's `decisions`, with its evidence.
-- `## Attention`: when the work kept a decision log, its review per the [show me your work](../stations/show-me-your-work.md) station.
-- `## Left for you`: the items from step 2, one question each, or the line "Nothing is left for you."
-
-These last three sections address the user and appear only when the order waits for the user's review (`review=true`). Otherwise the body ends at `## Verification`; the calls stay in the order book, where `kitchen.zsh status` lists them as decided alone in the user's catch-up.
-
-After the sections, attach screenshots or a video when they prove a claim. Full SHAs, lane recitals, and file-by-file checklists go in a linked artifact, not the body.
+Fill the project's `.claude/kitchen/pr-body.md` when it exists, else the [default template](../templates/pr-body.md). Everyone who can see the PR reads it, so nothing in it addresses the user: their questions go to the order's `left` per [left for you](../stations/left-for-you.md), and the calls made without them are already in `decisions`. They read both when they review the order in its own session ([the user's review](merge.md#the-users-review)). Write the body to a file and check it against the template's length limit with `wc -c` before opening the PR; cut it until it fits.
 
 ## Size and stacks
 

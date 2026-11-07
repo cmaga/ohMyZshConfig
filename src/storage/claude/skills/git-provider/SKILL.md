@@ -116,14 +116,13 @@ usage string. See the Pipelines section of the reference for the list shape.
 
 ## PR Body Template
 
-Use `dependencies/templates/pr-body.md` with placeholders:
+A body the calling skill supplies wins. With none, fill `dependencies/templates/pr-body.md`:
 
-| Placeholder            | Value                    |
-| ---------------------- | ------------------------ |
-| `{TICKET_KEY}`         | Jira key (e.g., ABC-123) |
-| `{JIRA_URL}`           | Full Jira ticket URL     |
-| `{TICKET_DESCRIPTION}` | Ticket description       |
-| `{COMMIT_LOG}`         | Git commit log           |
+| Placeholder    | Value                                                       |
+| -------------- | ----------------------------------------------------------- |
+| `{TICKET_KEY}` | Jira key (e.g., ABC-123)                                    |
+| `{JIRA_URL}`   | Full Jira ticket URL                                        |
+| `{SUMMARY}`    | What the PR changes and why, in two to four plain sentences |
 
 ## Modes
 

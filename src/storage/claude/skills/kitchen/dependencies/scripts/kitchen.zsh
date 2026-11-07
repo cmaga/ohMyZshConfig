@@ -14,6 +14,7 @@
 # Usage: a KEY may be an epic's key, for the order building it; a value written
 # @/absolute/path is read from that file.
 #   kitchen [status]                         what happened since the user last looked, then what waits on them
+#   kitchen review KEY|NUMBER [--line]       open the order's build session in this terminal to review its PR; --line prints the command instead
 #   kitchen signoff KEY ANSWER...            the user's answer at the pass; the work becomes an order on the next pass
 #   kitchen order get KEY                    print the order
 #   kitchen order new KEY [field=value...]   create an order in the current project
@@ -63,7 +64,7 @@ RISK_PATHS="(^|[^A-Za-z])($RISK_WORDS)([^a-z]|\$)|(${(C)RISK_WORDS}|OAuth)([^a-z
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
 # Fields stored as JSON; every other field is a string.
-typeset -A JSON_FIELDS=(after 1 signoff 1 review 1 sample 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1)
+typeset -A JSON_FIELDS=(after 1 signoff 1 review 1 sample 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1 left 1)
 
 die() { print -u2 -- "kitchen: $*"; exit 1; }
 now_iso() { strftime '%Y-%m-%dT%H:%M:%S' $EPOCHSECONDS; }
@@ -186,7 +187,7 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
   # a fired session holds the order while its claude lives, as reap judges it
   local sid=$(jq -r '.session // ""' $f)
   if (( pid > 0 )) && ! kill -0 $pid 2>/dev/null && [[ $(jq -r .phase $f) != session && -n $sid ]]; then
-    pid=${${(k)PROC_ARGS[(R)*--session-id $sid*]}[1]:-0}
+    pid=${${(k)PROC_ARGS[(R)*--(session-id|resume) $sid*]}[1]:-0}
   fi
   if (( pid > 0 )) && kill -0 $pid 2>/dev/null; then
     if (( ${chain[(Ie)$pid]} )); then
@@ -207,7 +208,10 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
     (( $#PROC_PARENT )) && die "cannot find this session's claude process; run /kitchen cook from a Claude Code session"
     print -u2 -- "kitchen: cannot list processes here; the scheduler will not see this session end"
   fi
-  order_set $1 status=cooking phase=session pid=$own started=$EPOCHSECONDS "claimed_from=$st"
+  # the first session to work an order is the one kitchen review opens later
+  local -a mine=()
+  [[ -z $(jq -r '.builder // ""' $f) && -n ${CLAUDE_CODE_SESSION_ID:-} ]] && mine=(builder=$CLAUDE_CODE_SESSION_ID)
+  order_set $1 status=cooking phase=session pid=$own started=$EPOCHSECONDS "claimed_from=$st" $mine
   print -- ok
 }
 
@@ -266,10 +270,22 @@ status() { # what happened since the user last looked, then what waits on them
         | ((.after // []) - ((.after // []) - $gone)) as $by | select($by | length > 0)
         | "  BLOCKED   \(.key)  waits on dropped \($by | join(", "))" ),
       ( map(select(.status == "pr-open" and .review)) | sort_by(.updated)[]
-        | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)" ),
+        | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)\(if .builder then "  kitchen review \(.key)" else "" end)" ),
       "  now: \(map(select(.status == "cooking")) | length) cooking, \(map(select(.status == "ready")) | length) ready, \(map(select(.status == "done" and (.updated | startswith($d)))) | length) done today, \(map(select(.status == "86")) | length) dropped"' <<< $book
   done
   mkdir -p $BOOK && now_iso > $BOOK/.last-look
+}
+
+review() { # KEY|NUMBER: resume the order's build session here, by id, which finds it from any folder
+  local -a f=( $BOOK/*/orders/$1.json(N) $BOOK/*/orders/*-$1.json(N) )
+  f=( ${(u)f} )
+  local -a keys=( ${f:t:r} )
+  (( $#f )) || die "no order $1"
+  (( $#f == 1 )) || die "$1 matches ${(j:, :)keys}; give the full key"
+  local key=${f[1]:t:r} b=$(jq -r '.builder // ""' $f[1]) project=$(jq -r .project ${f[1]:h:h}/line.json)
+  [[ -n $b ]] || die "$key has no build session on record; open it with /resume from $project/.claude/worktrees/$key"
+  if [[ ${2:-} == --line ]]; then print -r -- "cd ${(q)project} && oc --resume $b"; return; fi
+  cd $project && source $ALIASES && oc --resume $b
 }
 
 signoff() { # KEY [answer...]
@@ -560,6 +576,14 @@ fire() { # SLUG KEY PHASE STATUS DRY: start a headless session for an order
   [[ -n $model ]] && extra=(--model $model)
   mkdir -p $dir/log
   new_uuid; local sid=$REPLY
+  # a follow-up resumes the order's build session, so the order stays one conversation the user opens by its key
+  local -a sess=(--session-id $sid) builder=() bt=()
+  if [[ $phase == follow ]]; then
+    local b=$(jq -r '.builder // ""' $of)
+    [[ -n $b && $(jq -r '.retry_cause // ""' $of) != context ]] && bt=( $HOME/.claude*/projects/*/$b.jsonl(N) )
+    (( $#bt )) && sid=$b sess=(--resume $b)
+  fi
+  if [[ $phase == (cook|follow) && $sess[1] == --session-id ]]; then sess+=(--name $key) builder=(builder=$sid); fi
   # the goal keeps the session going until it leaves the mark reap() reads as finished
   local met
   case $phase in
@@ -569,19 +593,20 @@ fire() { # SLUG KEY PHASE STATUS DRY: start a headless session for an order
     verify) met="kitchen.zsh order verdict $key printed a verdict" ;;
   esac
   # print mode stops background agents 10 minutes after the main loop goes idle; reap() is the limit instead
-  ( cd $project && source $ALIASES && CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 oc -p "/goal Run /kitchen $cmd $key and follow it to its end. The goal is met when $met, or when its claim of $key was refused." --session-id $sid $extra < /dev/null ) > $logf 2>&1 &!
-  order_set $key status=$st pid=$! phase=$phase "log=$logf" "session=$sid" started=$EPOCHSECONDS stop_cause= stop_at=0
+  ( cd $project && source $ALIASES && CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 oc -p "/goal Run /kitchen $cmd $key and follow it to its end. The goal is met when $met, or when its claim of $key was refused." $sess $extra < /dev/null ) > $logf 2>&1 &!
+  order_set $key status=$st pid=$! phase=$phase "log=$logf" "session=$sid" started=$EPOCHSECONDS stop_cause= stop_at=0 $builder
   log "$slug: $phase $key"
 }
 
-pr_state() { # PROJECT URL: "<OPEN|MERGED|CLOSED>\t<updated>", UNSUPPORTED for a host it cannot read, empty when the read failed
+pr_state() { # PROJECT URL: "<OPEN|MERGED|CLOSED>\t<updated>|<approvals>", UNSUPPORTED for a host it cannot read, empty when the read failed
   case $2 in
     https://github.com/*)
-      ( cd $1 && gh pr view $2 --json state,updatedAt --jq '[.state, .updatedAt] | @tsv' < /dev/null 2>/dev/null ) ;;
+      ( cd $1 && gh pr view $2 --json state,updatedAt,reviewDecision --jq '[.state, .updatedAt + "|" + (.reviewDecision // "")] | @tsv' < /dev/null 2>/dev/null ) ;;
     https://bitbucket.org/*)
       local ws=${${2#https://bitbucket.org/}%%/*} id=${${2##*/pull-requests/}%%/*}
       ( cd $1 && bb pr get $id -o json --profile $ws < /dev/null 2>/dev/null ) \
-        | jq -r '[(if .state == "DECLINED" or .state == "SUPERSEDED" then "CLOSED" else .state end), (.updated_on // "")] | @tsv' 2>/dev/null ;;
+        | jq -r '[(if .state == "DECLINED" or .state == "SUPERSEDED" then "CLOSED" else .state end),
+                  ((.updated_on // "") + "|" + ([.participants[]? | select(.approved) | .user.uuid // .user.account_id // ""] | sort | join(",")))] | @tsv' 2>/dev/null ;;
     *) print -- UNSUPPORTED ;;
   esac
 }
@@ -672,7 +697,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
     # a fired session lives while its claude does, even after the subshell that started it is gone
     live=(); alive=0
     kill -0 $pid 2>/dev/null && live=($pid)
-    [[ $phase != session && $sid != - ]] && live+=( ${(k)PROC_ARGS[(R)*--session-id $sid*]} )
+    [[ $phase != session && $sid != - ]] && live+=( ${(k)PROC_ARGS[(R)*--(session-id|resume) $sid*]} )
     (( $#live )) && alive=1
     if (( alive )); then
       # a session the user started holds the order only while it is cooking
@@ -726,6 +751,8 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
         # a session that ended before intake finished leaves the ticket to intake
         elif [[ $recipe == - ]]; then order_set $key pid=0 status=new
         elif [[ $from == at-the-pass ]]; then order_set $key pid=0 status=at-the-pass
+        # the user resumed the order's session to review its PR and left without handing it back
+        elif [[ $from == pr-open ]]; then order_set $key pid=0 status=pr-open
         else order_set $key pid=0 status=ready; fi ;;
       *) order_set $key pid=0 retries=0 last_session= retry_cause= model= ;;
     esac
@@ -850,6 +877,7 @@ tick() { # [--dry-run]: one scheduler pass over every line
 
 case ${1:-status} in
   status) status ;;
+  review) shift; review "$@" ;;
   signoff) shift; signoff "$@" ;;
   line) shift; line_cmd "$@" ;;
   order) shift; order_cmd "$@" ;;
