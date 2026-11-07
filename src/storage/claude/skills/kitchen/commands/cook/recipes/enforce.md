@@ -1,8 +1,8 @@
 # Enforce
 
-Make the project enforce one kind of slip its reviewers keep catching. Its tickets are titled "Enforce <class>".
+Make the project enforce the kinds of slip its reviewers keep catching. Its tickets are titled "Enforce <class>" and may name several classes.
 
-A promotion: a kind of slip the quality gate caught twice (or the user caught once) becomes something the project enforces, so no reviewer has to catch it again. This recipe runs the [correct](../stations/correct.md) station on the one class the ticket names.
+A promotion: a kind of slip the quality gate caught twice (or the user caught once) becomes something the project enforces, so no reviewer has to catch it again. This recipe runs the [correct](../stations/correct.md) station on each class the ticket names: steps 1 to 5 once per class, then one PR for them all.
 
 1. **Read the catches** the ticket lists for its class: what slipped, where, and in which orders. They are the evidence the correct station's search for mistake classes would find, so skip that search.
 2. **Pick the highest rung that works**, trying the correct station's levels in order. The PR says why each higher rung did not work. Architecture is new structure other code depends on, so it needs the user's answer at the pass; without one, take the next rung down and say why in the PR. A ticket whose intent says "at least one rung above" an earlier ticket's starts above the rung that ticket used, since that enforcement did not take.

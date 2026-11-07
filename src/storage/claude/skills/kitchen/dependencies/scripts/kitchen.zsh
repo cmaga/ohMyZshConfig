@@ -8,6 +8,7 @@
 #   orders/<KEY>.json  one order per ticket
 #   catches.tsv        date key taster class note source
 #   promoted.tsv       class ticket date
+#   due.tsv            class due count: each class the catch-up lists until a promotion answers it
 #   log/               one log per session the scheduler starts
 #   notices.tsv        date text: vault and teardown events for the catch-up
 #
@@ -34,7 +35,7 @@
 #   kitchen decide KEY "decision: why" EVIDENCE      log a call made without the user, with what backs it
 #   kitchen catch KEY|- TASTER CLASS NOTE [--chef]   log a review finding; prints promote, or climb TICKET, when due
 #   kitchen classes [TASTER]                 catch classes this project has seen
-#   kitchen promoted CLASS TICKET            record a promotion
+#   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
 #   kitchen line add PATH JQL | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
@@ -263,6 +264,11 @@ status() { # what happened since the user last looked, then what waits on them
         | "  decided   \($k)  \(.what)\(if .evidence then "  (\(.evidence))" else "" end)" )' <<< $book
     [[ -f $dir/promoted.tsv ]] && awk -F'\t' -v s="${since[1,10]}" '$3 >= s {print "  promoted  " $1 " -> " $2}' $dir/promoted.tsv
     [[ -f $dir/notices.tsv ]] && awk -F'\t' -v s="$since" '$1 >= s {print "  notice    " $2}' $dir/notices.tsv
+    [[ -s $dir/due.tsv ]] && awk -F'\t' -v D=$dir/due.tsv '
+      FILENAME == D { due[$1] = $2; cnt[$1] = $3; at[++n] = $1; next }
+      ($4 in due) { seen[$4] = seen[$4] "\n      " $1 "  " $2 "  " $5 }
+      END { for (i = 1; i <= n; i++) { c = at[i]
+        print "  PROMOTE   " c "  " (due[c] == "promote" ? cnt[c] " catches" : "back after " substr(due[c], 7)) ", nothing checks it yet" seen[c] } }' $dir/due.tsv $dir/catches.tsv
     jq -r --arg d "$(today)" '
       ( map(select(.status == "at-the-pass")) | sort_by(.updated)[]
         | "  AT PASS   \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
@@ -378,12 +384,22 @@ catch_cmd() { # KEY|- TASTER CLASS NOTE [--chef]
   if [[ -n $due ]]; then
     awk -F'\t' -v c=$cls '$4 == c' $dir/catches.tsv
     print -- $due
+    undue $dir $cls
+    print -r -- "$cls	$due	$n" >> $dir/due.tsv
   fi
 }
 
-promoted() { # CLASS TICKET
-  local f; f=$(need_order $2) || exit 1
-  print -r -- "$1	$2	$(today)" >> ${f:h:h}/promoted.tsv
+undue() { # DIR CLASS: the catch-up stops listing the class as due
+  [[ -f $1/due.tsv ]] || return 0
+  awk -F'\t' -v c=$2 '$1 != c' $1/due.tsv > $1/due.tsv.new && mv $1/due.tsv.new $1/due.tsv
+}
+
+promoted() { # CLASS TICKET|-: a cleanup ticket is on the board, not in the book, so the line comes from the order or the current directory
+  (( $# == 2 )) || die "usage: promoted CLASS TICKET|-"
+  local f=$(order_file $2) dir slug
+  if [[ -n $f ]]; then dir=${f:h:h}; else slug=$(slug_here) || exit 1; dir=$BOOK/$slug; fi
+  [[ $2 == - ]] || print -r -- "$1	$2	$(today)" >> $dir/promoted.tsv
+  undue $dir $1
 }
 
 classes() { # [TASTER]: catch classes this project has seen; none when it is not registered
