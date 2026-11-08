@@ -17,6 +17,7 @@ negation, constant, jump (continue/break), swallow (shell `|| fail*`, `|| exit` 
 
 Tests: the Contract-Run trailer of the latest test(contract): commit in the range, narrowed
 per file to the Contract-Files whose text names it, and checked green unmutated once.
+Leading NAME=value words of that command set its environment, as in a shell.
 """
 
 import argparse
@@ -450,14 +451,24 @@ def build_command(run, files, test_cmd, narrowed):
 
 @functools.cache
 def has_xdist(pytest_prefix):
-    p = subprocess.run([*pytest_prefix, "--help"], capture_output=True, text=True)
+    env, argv = split_env([*pytest_prefix, "--help"])
+    p = subprocess.run(argv, capture_output=True, text=True, env=env)
     return "--max-worker-restart" in p.stdout
+
+
+def split_env(args):
+    """The environment with the leading NAME=value words applied, and the rest as argv."""
+    n = 0
+    while n < len(args) and re.fullmatch(r"[A-Za-z_]\w*=.*", args[n], re.S):
+        n += 1
+    return {**os.environ, **dict(a.split("=", 1) for a in args[:n])}, list(args[n:])
 
 
 def run_tests(args, timeout):
     # A stale .pyc from a same-size mutant written in the same second would run the wrong code.
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True, env=env)
+    env, argv = split_env(args)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    p = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True, env=env)
     try:
         return p.wait(timeout)
     except subprocess.TimeoutExpired:
