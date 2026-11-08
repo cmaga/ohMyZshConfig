@@ -39,6 +39,11 @@ The scheduler runs intake headless, and `cook` runs it with the user when they t
 
 Each message carries only what the user needs for the decision in front of them, in plain words. Leave out the checks behind it, the order's flags, principles, and the calls you will make yourself. End your turn after each one.
 
-1. **The problem**, once step 7 has sorted the ticket. A few sentences: what is wrong or asked for, and why it matters. A ticket steps 2 to 7 would hold or drop says why in those sentences and asks whether to. Answer their questions until you both state the problem the same way.
+1. **The problem**, once step 7 has sorted the ticket. Write it for a reader who has never seen this part of the system, under three bold labels with a few short lines each:
+   - **How it works**: the parts involved and what each one does, one bullet per part, as an everyday picture rather than names from the code.
+   - **What goes wrong**: the moment in that picture where it breaks, and what each part does wrong then.
+   - **Why it matters**: what the user or the system sees as a result.
+
+   A ticket steps 2 to 7 would hold or drop says why under the last label and asks whether to. Answer their questions until you both state the problem the same way.
 2. **The recommendation**, once they agree on the problem. Research how to solve it, run steps 8 to 10, then send the approach in a few sentences with its basis. Discuss it until they agree.
 3. **The goal line**, once they agree on the approach, and never before. Fold what you agreed into the files, write the order per step 11, and end the message with cook's [goal line](../cook/cook.md#the-goal-line).
