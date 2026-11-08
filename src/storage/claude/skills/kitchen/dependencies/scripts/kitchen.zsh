@@ -16,12 +16,12 @@
 # @/absolute/path is read from that file.
 #   kitchen [status]                         what happened since the user last looked, then what waits on them
 #   kitchen review KEY|NUMBER [--line]       open the order's build session in this terminal to review its PR; --line prints the command instead
-#   kitchen signoff KEY ANSWER...            the user's answer at the pass; the work becomes an order on the next pass
+#   kitchen signoff KEY ANSWER...            the user's answer to a ticket in the review queue; the work becomes an order on the next pass
 #   kitchen order get KEY                    print the order
 #   kitchen order new KEY [field=value...]   create an order in the current project
 #   kitchen order set KEY field=value...     update fields
 #   kitchen order claim KEY                  mark the order as worked by this session; refused while another holds it
-#   kitchen order withdraw KEY QUESTION      a decided premise proved impossible: back to the pass with the question
+#   kitchen order withdraw KEY QUESTION      a decided premise proved impossible: back to the review queue with the question
 #   kitchen order base KEY|-                 the branch the order's work starts from and merges into; - for this repo's
 #   kitchen order hold KEY REASON            intake tries the ticket again after followup_hours, as for an open blocker
 #   kitchen order pr KEY URL                 record the PR and hand it to the scheduler
@@ -199,7 +199,7 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
   fi
   # a new order is claimed only by a session the user started, which runs intake itself
   case $st in
-    new|ready|at-the-pass|cooking|pr-open) ;;
+    new|ready|review-queue|cooking|pr-open) ;;
     86) die "$1 was dropped: $(jq -r '.reason // "no reason recorded"' $f). kitchen.zsh signoff $1 @<file> brings it back" ;;
     serving) die "$1 is in intake; it can be worked once intake finishes" ;;
     *) die "$1 is $st" ;;
@@ -270,8 +270,8 @@ status() { # what happened since the user last looked, then what waits on them
       END { for (i = 1; i <= n; i++) { c = at[i]
         print "  PROMOTE   " c "  " (due[c] == "promote" ? cnt[c] " catches" : "back after " substr(due[c], 7)) ", nothing checks it yet" seen[c] } }' $dir/due.tsv $dir/catches.tsv
     jq -r --arg d "$(today)" '
-      ( map(select(.status == "at-the-pass")) | sort_by(.updated)[]
-        | "  AT PASS   \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
+      ( map(select(.status == "review-queue")) | sort_by(.updated)[]
+        | "  QUEUED    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
       ( (map(select(.status == "86")) | map(.key)) as $gone | map(select(.status == "ready"))[]
         | ((.after // []) - ((.after // []) - $gone)) as $by | select($by | length > 0)
         | "  BLOCKED   \(.key)  waits on dropped \($by | join(", "))" ),
@@ -298,7 +298,7 @@ signoff() { # KEY [answer...]
   local f; f=$(need_order $1) || exit 1
   local key=$1; shift
   local st=$(jq -r .status $f)
-  [[ $st == (at-the-pass|86) ]] || die "$key is $st, not waiting on you"
+  [[ $st == (review-queue|86) ]] || die "$key is $st, not waiting on you"
   local recipe=$(jq -r .recipe $f) next=ready
   [[ $recipe == catering ]] && die "$key is catering: run /kitchen cook $key in a session"
   # an order intake never finished goes back to intake
@@ -468,7 +468,7 @@ order_cmd() {
     new) shift; local slug; slug=$(slug_here) || exit 1; order_new $slug "$@" ;;
     set) shift; order_set "$@" ;;
     claim) claim ${2:?KEY} ;;
-    withdraw) order_set ${2:?KEY} status=at-the-pass signoff=true "question=${3:?question}" ;;
+    withdraw) order_set ${2:?KEY} status=review-queue signoff=true "question=${3:?question}" ;;
     base) if [[ ${2:?KEY} == - ]]; then base_of "$(git rev-parse --show-toplevel)"; else f=$(need_order $2) || exit 1; order_base $f; fi ;;
     hold) f=$(need_order ${2:?KEY}) || exit 1
         local hours=$(jq -r '.followup_hours // 6' ${f:h:h}/line.json)
@@ -762,11 +762,11 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
         else order_set $key retries=0 last_session= retry_cause= model=; fi ;;
       session:cooking)
         if [[ $recipe == catering ]]; then
-          order_set $key pid=0 status=at-the-pass signoff=true \
+          order_set $key pid=0 status=review-queue signoff=true \
             "question=The catering session ended. Run /kitchen cook $key in a session to carry on."
         # a session that ended before intake finished leaves the ticket to intake
         elif [[ $recipe == - ]]; then order_set $key pid=0 status=new
-        elif [[ $from == at-the-pass ]]; then order_set $key pid=0 status=at-the-pass
+        elif [[ $from == review-queue ]]; then order_set $key pid=0 status=review-queue
         # the user resumed the order's session to review its PR and left without handing it back
         elif [[ $from == pr-open ]]; then order_set $key pid=0 status=pr-open
         else order_set $key pid=0 status=ready; fi ;;
@@ -801,7 +801,7 @@ follow_prs() { # SLUG DRY: close merged PRs; wake the order's session when a PR 
         if [[ -n $dry ]]; then print -- "$slug: would close $key"
         elif [[ $recipe == catering && $spec == - ]]; then
           # a merged spec is planned into milestone orders with the user in a session
-          order_set $key status=at-the-pass signoff=true \
+          order_set $key status=review-queue signoff=true \
             "question=The spec merged. Run /kitchen cook $key in a session to plan its milestones."
         else finish $slug $key; fi ;;
       CLOSED) [[ -n $dry ]] || order_set $key status=86 "reason=PR closed without merging: $pr" ;;

@@ -16,7 +16,7 @@ Ground first, then commit. Don't start the run until you can state:
 - Scope, quantified: rough units and effort, plus the blockers grounding surfaced.
 - The rigor level, biased high. One-way doors and high blast radius get more. Reversible low-stakes steps get less. Rigor is gates and artifacts, not "try harder".
 
-Present the framing and tradeoffs before committing to a long run. Reversible work proceeds (the [never block on the human](../../../dependencies/principles/never-block-on-the-human.md) principle), but a multi-hour run earns one checkpoint. Headless, the user's answer at the pass was that checkpoint.
+Present the framing and tradeoffs before committing to a long run. Reversible work proceeds (the [never block on the human](../../../dependencies/principles/never-block-on-the-human.md) principle), but a multi-hour run earns one checkpoint. Headless, the user's sign-off was that checkpoint.
 
 ## Phase B: Design the workflow
 

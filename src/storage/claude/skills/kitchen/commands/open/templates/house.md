@@ -39,4 +39,4 @@ Paths whose changes always wait for the user's review, one extended regular expr
 
 Rules intake applies before its own judgment when it sets a ticket's flags.
 
-- <e.g. Tickets labelled `design` or carrying a Figma link go to the pass.>
+- <e.g. Tickets labelled `design` or carrying a Figma link go to the review queue.>
