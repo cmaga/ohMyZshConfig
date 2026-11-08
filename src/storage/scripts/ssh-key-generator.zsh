@@ -209,7 +209,7 @@ create_bitbucket_host() {
     fi
     
     local host_alias="bitbucket.org-$suffix"
-    local hostname="bitbucket.org"
+    local hostname="ssh.bitbucket.org"
     local username="git"
     
     # Ask for key type
@@ -722,7 +722,7 @@ create_key_noninteractive() {
             host_alias="github.com-$suffix"
             ;;
         bitbucket)
-            hostname="bitbucket.org"
+            hostname="ssh.bitbucket.org"
             host_alias="bitbucket.org-$suffix"
             ;;
         gitlab)
@@ -777,7 +777,7 @@ create_default_key_noninteractive() {
             host_alias="github.com"
             ;;
         bitbucket)
-            hostname="bitbucket.org"
+            hostname="ssh.bitbucket.org"
             host_alias="bitbucket.org"
             ;;
         gitlab)
