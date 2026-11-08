@@ -10,9 +10,9 @@ The scope is what the caller names. Otherwise it is the branch diff from its mer
 
 ## Fan out
 
-The adversaries default to two, one on the adversary role and one on the other family role ([SKILL.md](../../../SKILL.md#subagents)); a seat that cannot start runs on its role's fallback, and you say so. Spawn them in one message, each as its role's agent with `isolation: "worktree"`, copy the scope's uncommitted changes into each worktree, and give each the scope, the intent, and this brief:
+The adversaries default to two, one on the adversary role and one on the other family role ([SKILL.md](../../../SKILL.md#subagents)); a seat that cannot start runs on its role's fallback, and you say so. A scope that changes only tests or prose gets the adversary role alone. Spawn them in one message, each as its role's agent with `isolation: "worktree"`, copy the scope's uncommitted changes into each worktree, and give each the scope, the intent, and this brief:
 
-> Break this change. Prove each finding with a run against the real code, such as a failing test, a repro script, or command output that shows the wrong behavior. For a design or plan, run a prototype or probe the current tree. Keep repros in your own worktree. Report each finding with a title, the exact command, the output it printed, and the output the intent requires. Leave out anything you did not run. That covers style, naming, structure, and risks that need a future change to matter. No findings is a valid result.
+> Break this change. Prove each finding with a run against the real code, such as a failing test, a repro script, or command output that shows the wrong behavior. For a design or plan, run a prototype or probe the current tree. Keep repros in your own worktree. Report each finding with a title, the exact command, the output it printed, and the output the intent requires. Leave out anything you did not run. That covers style, naming, structure, and risks that need a future change to matter. Note the time when you start; 30 minutes later, stop and report what you have proven. No findings is a valid result.
 
 An adversary that returns nothing is a dropout: go on with the rest and say so.
 

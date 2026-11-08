@@ -39,7 +39,7 @@ Commit the contract, scaffold aside, as `git commit -m "test(contract): <what it
 - Every contract commit restates the whole contract. A later one (the next milestone's, a correction) lists every file, run, and test still in force, and a correction's body says why.
 - Leave `Contract-Run` and `Contract-Test` off only for tests too slow to run at every check, such as an end-to-end proof. Their files stay locked.
 
-Only a contract commit may touch a contract file. `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base> --run` checks that, and confirms each named test ran and passed. The [taste](../../taste/taste.md) and [verify](../../taste/verify.md) commands run it, and taste also breaks each test's behavior once the code exists, to prove the test can fail.
+Only a contract commit may touch a contract file. `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base> --run` checks that, and confirms each named test ran and passed. The [taste](../../taste/taste.md) and [verify](../../taste/verify.md) commands run it, and taste also runs the mutation sweep once the code exists, so every changed line has a test that fails when it breaks. Pin every survivor the sweep lists in one correction, not one at a time.
 
 ## The coder's side
 
