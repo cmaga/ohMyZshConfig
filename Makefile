@@ -1,7 +1,7 @@
 # Oh-My-Zsh Configuration Management
 # This Makefile provides convenient commands for managing your Zsh configuration
 
-.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint update deploy-zsh-config deploy-claude-config deploy-timesheet amazon-laptop amazon-desktop
+.PHONY: help setup deploy deploy-zsh deploy-git deploy-claude deploy-automations finalize lint update deploy-zsh-config deploy-claude-config deploy-timesheet amz-laptop amz-desktop
 .DEFAULT_GOAL := help
 
 # Use bash for recipe execution (ensures consistent behavior on all platforms)
@@ -32,8 +32,8 @@ help: ## Show this help message
 	@printf "  $(GREEN)deploy-git$(NC)    - Deploy only git configs (.gitconfig, company profiles)\n"
 	@printf "  $(GREEN)deploy-claude$(NC) - Deploy only Claude Code configs (CLAUDE.md, rules, skills, agents)\n"
 	@printf "  $(GREEN)setup$(NC)         - Complete system setup (fresh system to fully configured)\n"
-	@printf "  $(GREEN)amazon-laptop$(NC) - Deploy zsh (Oh-My-Zsh, plugins, .zshrc, aliases, scripts)\n"
-	@printf "  $(GREEN)amazon-desktop$(NC) - Deploy zsh, Claude Code config (no Claude CLI install) and the timesheet automations\n"
+	@printf "  $(GREEN)amz-laptop$(NC) - Deploy zsh (Oh-My-Zsh, plugins, .zshrc, aliases, scripts)\n"
+	@printf "  $(GREEN)amz-desktop$(NC) - Deploy zsh, Claude Code config (no Claude CLI install) and the timesheet automations\n"
 	@printf "  $(GREEN)help$(NC)          - Show this help message\n"
 	@printf "\n"
 	@printf "Typical workflow:\n"
@@ -163,7 +163,7 @@ deploy-timesheet: ## Deploy only the timesheet automations (Sunday reconcile, Fr
 deploy-claude-config: ## Deploy only Claude Code config, for a machine whose Claude CLI comes from its own installer
 	@"$(DEPLOYMENT_DIR)/06-deploy-claude.zsh" --config-only
 
-amazon-laptop amazon-desktop: ## Deploy a work machine's profile (PROFILE_TARGETS in lib/common.zsh) and record it for update
+amz-laptop amz-desktop: ## Deploy a work machine's profile (PROFILE_TARGETS in lib/common.zsh) and record it for update
 	@"$(DEPLOYMENT_DIR)/deploy-profile.zsh" $@
 
 finalize: ## Final cleanup and shell reload prompt

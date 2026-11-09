@@ -45,7 +45,7 @@ resolve_toml() {
 #   <key>_task      = "..."            Harvest task under that project
 #   <key>_cap       = 8                weekly hour cap; the one project without a
 #                                      cap takes the rest of the week's target
-#   fill_project    = "amazon"         project this machine's standup posts to
+#   fill_project    = "amz"            project this machine's standup posts to
 #   repo_roots      = "~/workplace"    folders scanned for git repos (and repos)
 #   exclude_repos   = "dotfiles"       repo folder names that are not client work
 #   standup_dir     = "~/dev/x/.standup"  where the weekly standup files go
