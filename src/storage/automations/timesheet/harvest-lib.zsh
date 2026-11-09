@@ -51,6 +51,10 @@ resolve_toml() {
 #   standup_dir     = "~/dev/x/.standup"  where the weekly standup files go
 #   extra_activity  = "..."            extra instruction for gathering a day's work
 #   reconcile       = true             this machine runs the Sunday reconcile
+#   reconcile_after_fill = true        reconcile right after the Friday fill, for a
+#                                      machine that is off at weekends; give it only
+#                                      its own projects, all capped, so it sets those
+#                                      and leaves the rest of the week to another
 TIMESHEET_CONFIG="${TIMESHEET_CONFIG:-$HOME/.config/harvest/timesheet.toml}"
 
 has_timesheet_config() { [[ -f "$TIMESHEET_CONFIG" ]]; }
@@ -182,10 +186,13 @@ days_from_today() {
     date -d "$n days" '+%Y-%m-%d' 2>/dev/null || date -v"${n}d" '+%Y-%m-%d'
 }
 
-# The just-ended Sun-Sat week as "START END" (YYYY-MM-DD), for the Sunday cron:
-# start = 7 days ago (last Sunday), end = yesterday (Saturday).
+# The Sun-Sat week to reconcile as "START END" (YYYY-MM-DD): the one holding the
+# day before yesterday. That is this week on a Friday (the VA laptop's fill-and-
+# reconcile), the just-ended one on Sunday, and still the just-ended one on a
+# Monday, when a timer that missed Sunday (the machine was off) catches up.
 prev_week_range() {
-    print -- "$(days_from_today -7) $(days_from_today -1)"
+    local w=$(( ($(date +%w) + 5) % 7 ))   # weekday of the day before yesterday
+    print -- "$(days_from_today $(( -2 - w ))) $(days_from_today $(( 4 - w )))"
 }
 
 # Find the time-entry id for a date under the resolved project/task (empty if none).

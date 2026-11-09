@@ -24,4 +24,12 @@ log() { print -- "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 log "filling $FILL through today via standup skill"
 cd "$HOME"
 claude -p "/standup auto --through-today" --dangerously-skip-permissions 2>&1 | sed 's/^/  standup: /'
+
+# A machine off at weekends squares its own projects now (see harvest-lib.zsh)
+if [[ "$(ts_bool reconcile_after_fill)" == "true" ]]; then
+    log "reconciling this machine's projects"
+    "${SCRIPT_DIR:h}/timesheet/reconcile.zsh"
+    log "done (reconcile exit $?)"
+    exit 0
+fi
 log "done"

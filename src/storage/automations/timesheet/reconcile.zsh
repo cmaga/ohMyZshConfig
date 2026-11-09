@@ -17,7 +17,7 @@
 #
 # Idempotent: the same entries give the same numbers on every run. Never submits.
 #
-# Usage: reconcile.zsh [START END]   (default: the just-ended Sun-Sat week)
+# Usage: reconcile.zsh [START END]   (default: prev_week_range in harvest-lib.zsh)
 
 set -uo pipefail
 
@@ -151,7 +151,8 @@ plan=$(print -r -- "$entries" | awk -F'|' -v TARGET="$TARGET" -v CAPS="${(j:,:)C
         if (RK != "" && (RK in W)) {
             given += spread(RK, left, 20); left = 0
         }
-        if (left > 0) printf "LOG %.2fh of the %sh target left unassigned: no %s work this week\n", left / 4, TARGET, (RK == "" ? "uncapped" : RK)
+        if (left > 0 && RK == "") printf "LOG %.2fh of the %sh target left to projects this machine does not manage\n", left / 4, TARGET
+        else if (left > 0) printf "LOG %.2fh of the %sh target left unassigned: no %s work this week\n", left / 4, TARGET, RK
         printf "LOG week total %.2fh (fixed %.2fh, auto %.2fh)\n", fixed + given / 4, fixed, given / 4
     }')
 
