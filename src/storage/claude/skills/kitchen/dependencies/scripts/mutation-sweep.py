@@ -461,7 +461,17 @@ def split_env(args):
     n = 0
     while n < len(args) and re.fullmatch(r"[A-Za-z_]\w*=.*", args[n], re.S):
         n += 1
-    return {**os.environ, **dict(a.split("=", 1) for a in args[:n])}, list(args[n:])
+    return {**os.environ, **dict(shell_assignment(a) for a in args[:n])}, list(args[n:])
+
+
+def shell_assignment(word):
+    """NAME=value with the value expanded by bash, as the shell that ran the trailer would."""
+    name, value = word.split("=", 1)
+    if "$" in value or "`" in value:
+        value = subprocess.run(
+            ["bash", "-c", 'eval "printf %s \"${1#*=}\""', "_", word], capture_output=True, text=True, check=True
+        ).stdout
+    return name, value
 
 
 def run_tests(args, timeout):
