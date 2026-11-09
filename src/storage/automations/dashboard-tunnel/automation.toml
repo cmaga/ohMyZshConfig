@@ -5,7 +5,9 @@
 # unchanged on purpose; only the box-side port moved. Not a scheduled job —
 # a KeepAlive daemon, so it declares `keepalive` instead of `cron`.
 # macOS only (launchd); the deploy script no-ops on Linux/Windows.
-# Only `enabled` and `keepalive` are read by the deploy script.
+# Only `enabled` and `keepalive` are read by the deploy script. A Mac that should
+# not run the tunnel sets dashboard_tunnel_enabled = false in its
+# ~/.config/cmagana-automations/schedule.toml.
 
 enabled = true
 keepalive = true

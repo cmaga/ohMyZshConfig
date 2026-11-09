@@ -19,6 +19,8 @@
 # A machine can run an automation on its own schedule: a <name>_cron line
 # (dashes as underscores) in ~/.config/cmagana-automations/schedule.toml, e.g.
 # timesheet_fill_cron = "0 22 * * 5", replaces the cron of its automation.toml.
+# A <name>_enabled line there replaces its `enabled` the same way, so
+# dashboard_tunnel_enabled = false keeps the tunnel off a machine without the box.
 #
 # Idempotent: existing plists/units/tasks are unloaded and rewritten on each deploy.
 
@@ -396,6 +398,8 @@ process_automation() {
     local toml="$3"
 
     local enabled=$(toml_bool enabled "$toml")
+    local own_enabled=$(toml_bool "${name//-/_}_enabled" "$SCHEDULE_OVERRIDES")
+    [[ -n "$own_enabled" ]] && enabled="$own_enabled"
     local keepalive=$(toml_bool keepalive "$toml")
     local cron=$(toml_string cron "$toml")
     local own_cron=$(toml_string "${name//-/_}_cron" "$SCHEDULE_OVERRIDES")
