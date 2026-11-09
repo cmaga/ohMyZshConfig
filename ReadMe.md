@@ -11,7 +11,7 @@ Each platform has a bootstrap script that installs prerequisites (including nvm,
 ```bash
 git clone https://github.com/cmaga/ohMyZshConfig.git
 cd ohMyZshConfig
-./src/deployment/bootstrap/macos/bootstrap.sh
+./src/deployment/bootstrap/macos/01-bootstrap.sh
 make setup
 ```
 
@@ -20,7 +20,7 @@ make setup
 ```bash
 git clone https://github.com/cmaga/ohMyZshConfig.git
 cd ohMyZshConfig
-./src/deployment/bootstrap/linux/bootstrap.sh
+./src/deployment/bootstrap/linux/01-bootstrap.sh
 make setup
 ```
 
@@ -41,8 +41,8 @@ make setup
 
 | Platform | Script                                                     | Installs                                                                                                             |
 | -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| macOS    | `src/deployment/bootstrap/macos/bootstrap.sh`              | Xcode CLI Tools (git, make; zsh is default), Homebrew, nvm, Node.js LTS, pnpm (via corepack)                         |
-| Linux    | `src/deployment/bootstrap/linux/bootstrap.sh`              | git, make, zsh, curl, nvm, Node.js LTS, pnpm (via corepack)                                                          |
+| macOS    | `src/deployment/bootstrap/macos/01-bootstrap.sh`           | Xcode CLI Tools (git, make; zsh is default), Homebrew, nvm, Node.js LTS, pnpm (via corepack)                         |
+| Linux    | `src/deployment/bootstrap/linux/01-bootstrap.sh`           | git, make, zsh, curl, nvm, Node.js LTS, pnpm (via corepack)                                                          |
 | Windows  | `src/deployment/bootstrap/windows/windows-bootstrap-1.ps1` | Chocolatey, Git, 7-Zip, Make + Zsh (MSYS2 into Git Bash), nvm-windows, Node.js LTS, pnpm, Claude Code CLI, Oh-My-Zsh |
 
 ### `make setup` (all platforms)
