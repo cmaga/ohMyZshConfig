@@ -33,12 +33,11 @@ KGEN_SCRIPT="${STORAGE_DIR}/scripts/ssh-key-generator.zsh"
 
 # Check kgen exists
 if [[ ! -f "$KGEN_SCRIPT" ]]; then
-    print_color $RED "Error: kgen script not found: $KGEN_SCRIPT"
-    exit 1
+    error "kgen script not found: $KGEN_SCRIPT"
 fi
 
-print_color $BLUE "Company Setup"
-print_color $BLUE "============="
+info "Company Setup"
+info "============="
 echo ""
 
 # Track what was created
@@ -47,21 +46,21 @@ KEYS_CREATED=()
 
 # Process each company
 for company in "${COMPANIES[@]}"; do
-    print_color $BLUE "Setting up: $company"
+    info "Setting up: $company"
     
     # Create directory
     company_dir="$DEV_PREFIX/$company"
     if [[ ! -d "$company_dir" ]]; then
         mkdir -p "$company_dir"
         DIRS_CREATED+=("$company_dir")
-        print_color $GREEN "  Created directory: $company_dir"
+        log "  Created directory: $company_dir"
     else
-        print_color $YELLOW "  Directory exists: $company_dir"
+        info "  Directory exists: $company_dir"
     fi
     
     # Create SSH keys for all services
     for service in "${SERVICES[@]}"; do
-        print_color $BLUE "  Creating SSH key for $service..."
+        info "  Creating SSH key for $service..."
         
         # Run kgen non-interactively
         if "$KGEN_SCRIPT" --create "$service" "$company" 2>/dev/null; then
@@ -77,16 +76,16 @@ personal_dir="$DEV_PREFIX/personal"
 if [[ ! -d "$personal_dir" ]]; then
     mkdir -p "$personal_dir"
     DIRS_CREATED+=("$personal_dir")
-    print_color $GREEN "Created personal directory: $personal_dir"
+    log "Created personal directory: $personal_dir"
 else
-    print_color $YELLOW "Personal directory exists: $personal_dir"
+    info "Personal directory exists: $personal_dir"
 fi
 
 # Create default SSH keys for personal use (no suffix)
-print_color $BLUE "Setting up personal SSH keys (default)..."
+info "Setting up personal SSH keys (default)..."
 echo ""
 for service in "${SERVICES[@]}"; do
-    print_color $BLUE "  Creating default SSH key for $service..."
+    info "  Creating default SSH key for $service..."
     
     # Run kgen with --create-default flag
     if "$KGEN_SCRIPT" --create-default "$service" 2>/dev/null; then
@@ -97,12 +96,12 @@ echo ""
 
 # Summary
 echo ""
-print_color $BLUE "Setup Complete!"
-print_color $BLUE "==============="
+info "Setup Complete!"
+info "==============="
 echo ""
 
 if [[ ${#DIRS_CREATED[@]} -gt 0 ]]; then
-    print_color $GREEN "Created directories:"
+    log "Created directories:"
     for dir in "${DIRS_CREATED[@]}"; do
         echo "  $dir"
     done
@@ -110,7 +109,7 @@ if [[ ${#DIRS_CREATED[@]} -gt 0 ]]; then
 fi
 
 if [[ ${#KEYS_CREATED[@]} -gt 0 ]]; then
-    print_color $GREEN "Created SSH keys:"
+    log "Created SSH keys:"
     for key in "${KEYS_CREATED[@]}"; do
         echo "  $key"
     done
