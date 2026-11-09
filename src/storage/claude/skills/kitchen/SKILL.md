@@ -13,6 +13,8 @@ Invoking this skill is the user's request to use subagents; it overrides any sta
 
 Before any other work, read the file for your command and follow it, however small the request: a question is an order like any other. When the user asked in words, take the row their request matches.
 
+With the user here, for any command but `open`, `status`, `roster`, and `reflect`, first run `kitchen.zsh house` in the project. When it prints `not set up`, the project's rules lack a review section: tell the user what is missing, offer to run `open` now, and do nothing else until they answer. Headless, the scheduler starts no new work in such a project.
+
 | Command                            | For                                                                                                                                                       | Read                                        |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `status`, or none                  | What happened, and what waits on the user                                                                                                                 | [status.md](commands/status/status.md)      |

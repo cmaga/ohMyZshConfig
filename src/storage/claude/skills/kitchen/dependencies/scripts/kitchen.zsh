@@ -26,7 +26,7 @@
 #   kitchen order hold KEY REASON            intake tries the ticket again after followup_hours, as for an open blocker
 #   kitchen order pr KEY URL                 record the PR and hand it to the scheduler
 #   kitchen order verify KEY                 hand the PR to the scheduler for a verdict from a session that did not write it
-#   kitchen order verdict KEY WORD NOTES     record PASS, PASS+NOTES, or FAIL for the change checked out here
+#   kitchen order verdict KEY WORD NOTES [REASON...]  record PASS, PASS+NOTES, or FAIL for the change checked out here; each REASON is a `## Review when` criterion that holds
 #   kitchen order gated KEY                  record the change the quality gate passed; run in the order's worktree
 #   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same
 #   kitchen order close KEY                  mark the order done and move its ticket with transitions.merged
@@ -38,6 +38,7 @@
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
 #   kitchen line add PATH JQL | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
+#   kitchen house [PATH]                     whether the project is set up: its base branch's project rules hold both review sections
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
 #   kitchen tick [--dry-run]                 one scheduler pass over every project
 
@@ -56,11 +57,10 @@ PROBATION=5
 DEFAULT_MINUTES='{"serve":45,"cook":360,"follow":120,"verify":90}'
 # A session with no side effect this long is stuck: no order update, no commit or reset in its worktree.
 DEFAULT_STALL='{"cook":60,"follow":45,"verify":45}'
-# A change to these paths loosens or moves a check, so the user reviews it.
+# A change to these paths moves a check, so a base that changed one leaves a branch untested until it rebases.
 CHECK_PATHS='(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/|\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.|\.claude/kitchen/house\.md$|\.claude/skills/verify[-/])'
-# A mistake under these paths is costly: a lower-case word at a word start, or Capitalized inside camelCase, never inside a longer word (author).
-RISK_WORDS='auth|authn|authz|authentication|authorization|oauth|billing|payments?|migrations?|migrate|secrets?|security|crypto|permissions?'
-RISK_PATHS="(^|[^A-Za-z])($RISK_WORDS)([^a-z]|\$)|(${(C)RISK_WORDS}|OAuth)([^a-z]|\$)|(^|/)alembic/versions/"
+# Every project's rules hold both, empty or not: the paths that always wait for the user, and the questions a verifier answers.
+REVIEW_SECTIONS=('## Always review' '## Review when')
 # An added line matching this skips or silences a check.
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
@@ -123,6 +123,23 @@ slug_here() { # the line whose project holds the current directory
 base_of() { # PROJECT: its base branch
   local b=$(jq -r '.baseBranch // empty' $1/.claude/skills/jira/config.json 2>/dev/null)
   print -- ${b:-main}
+}
+
+house_missing() { # PROJECT: the review sections its base branch's project rules lack, one per line; nothing when it is set up
+  local rules=$(git -C $1 show origin/$(base_of $1):.claude/kitchen/house.md 2>/dev/null) s
+  for s in $REVIEW_SECTIONS; do print -r -- $rules | grep -qxF -- $s || print -- $s; done
+}
+
+house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its rules lack
+  local root=${1:-} common missing
+  if [[ -z $root ]]; then
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
+    root=${common:h}
+  fi
+  missing=$(house_missing $root)
+  [[ -z $missing ]] && { print -- "set up"; return 0; }
+  print -- "not set up: .claude/kitchen/house.md on origin/$(base_of $root) lacks ${(j:, :)${(f)missing}}; run /kitchen open"
+  return 1
 }
 
 order_base() { # ORDER-FILE: the order's own base (a catering milestone's spec branch), else its project's
@@ -254,7 +271,7 @@ status() { # what happened since the user last looked, then what waits on them
   local since=$(cat $BOOK/.last-look 2>/dev/null || print '0000') line slug dir book
   for line in $BOOK/*/line.json(N); do
     slug=${line:h:t} dir=${line:h}
-    print -- "$slug$([[ $(jq -r '.paused // false' $line) == true ]] && print ' (paused)')"
+    print -- "$slug$([[ $(jq -r '.paused // false' $line) == true ]] && print ' (paused)')$([[ -n $(house_missing $(jq -r .project $line)) ]] && print '  NOT SET UP: run /kitchen open there')"
     book=$(orders_json $slug)
     jq -r --arg s "$since" '
       ( map(select(.updated >= $s)) as $new
@@ -417,8 +434,6 @@ risk() { # BASE: why this checkout's change needs the user's eyes, one reason pe
   extra=$(git show origin/$1:.claude/kitchen/house.md 2>/dev/null \
     | awk '/^## /{on = ($0 == "## Always review")} on && /^- `/ {sub(/^- `/, ""); sub(/`.*/, ""); print}' | paste -sd'|' -)
   {
-    print -r -- $files | LC_ALL=C grep -E "$CHECK_PATHS" | sed 's/^/changes a check: /'
-    print -r -- $files | LC_ALL=C grep -E "$RISK_PATHS" | sed 's/^/risky area: /'
     [[ -n $extra ]] && print -r -- $files | grep -E "$extra" | sed 's/^/project rule: /'
     git diff --name-only --diff-filter=D origin/$1...HEAD | grep -iE '(^|/)(tests?|specs?|__tests__)/|[._-](test|spec)\.' | sed 's/^/deletes a test: /'
     git diff -U0 origin/$1...HEAD | grep -E '^\+[^+]' | grep -E "$SKIP_LINES" | sed 's/^+[[:space:]]*/silences a check: /'
@@ -447,10 +462,15 @@ sample() { # KEY: what this PR needs before it merges, run from its worktree: re
     print -- verify; return 0
   fi
   local -a why=( ${(f)"$(risk $base)"} )
+  local judged=$(jq -r '.verdict_review // ""' $f)
+  [[ -n $judged ]] && why+=("judged: $judged")
   local merged=$(jq -s 'map(select(.status == "done" and .pr)) | length' ${f:h}/*.json) prob=$(jq -r ".probation // $PROBATION" $line)
   (( merged < prob )) && why+=("probation: $merged of $prob merged")
   if (( $#why )); then
-    order_set $1 review=true "review_why=${(j:; :)why}"
+    # a reason the order already carries (a left item, a call decided alone) stays; each found reason joins it once
+    local had=$(jq -r 'if .review then .review_why // "" else "" end' $f) r
+    for r in $why; do [[ $had == *"$r"* ]] || had=${had:+$had; }$r; done
+    order_set $1 review=true "review_why=$had"
   elif [[ $(jq -r .review $f) != true ]]; then
     local others=$(jq -rs --arg d "$(today)" --arg k $(jq -r .key $f) \
       'map(select(.key != $k and .review and ((.pr_opened // "") == $d))) | length' ${f:h}/*.json)
@@ -494,8 +514,8 @@ order_cmd() {
         local fails=$(jq -r '.verify_fails // 0' $f)
         [[ $3 == FAIL ]] && fails=$(( fails + 1 ))
         # pr_seen and followed clear so the scheduler wakes a session to act on the verdict
-        order_set $2 "verdict=$3" "verdict_notes=${4:?notes}" "verdict_patch=$(patch_id $base)" "verdict_head=$(git rev-parse HEAD)" \
-          verify=false verify_fails=$fails verified_at=$EPOCHSECONDS pr_seen= followed=0
+        order_set $2 "verdict=$3" "verdict_notes=${4:?notes}" "verdict_review=${(j:; :)@[5,-1]}" "verdict_patch=$(patch_id $base)" \
+          "verdict_head=$(git rev-parse HEAD)" verify=false verify_fails=$fails verified_at=$EPOCHSECONDS pr_seen= followed=0
         print -- "verdict=$3 fails=$fails" ;;
     close) close_order ${2:?KEY} ;;
     list) order_list ${2:-} ;;
@@ -879,6 +899,11 @@ tick() { # [--dry-run]: one scheduler pass over every line
     [[ -n $dry ]] || reap $slug
     (( $(jq -r '.retry_after // 0' $line) > EPOCHSECONDS )) && continue  # waiting out a usage limit
     follow_prs $slug "$dry"
+    # a project whose rules lack a review section takes no new work until /kitchen open sets it up
+    if [[ -n $(house_missing $(jq -r .project $line)) ]]; then
+      log "$slug: not set up, so no new work; run /kitchen open there"
+      continue
+    fi
     serve_next $slug "$dry"
     cook_next $slug "$dry"
   done
@@ -902,6 +927,7 @@ case ${1:-status} in
   classes) shift; classes "$@" ;;
   promoted) shift; promoted "$@" ;;
   sample) shift; sample "$@" ;;
+  house) shift; house_cmd "$@" ;;
   prune) shift; prune "$@" ;;
   tick) shift; tick "$@" ;;
   help) sed -n '/^# Usage:/,/^$/p' $0 ;;

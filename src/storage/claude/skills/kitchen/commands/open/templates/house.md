@@ -31,9 +31,20 @@ Paths where a mistake loses money, data, or a safety check, one extended regular
 
 ## Always review
 
-Paths whose changes always wait for the user's review, one extended regular expression per line, written as - `<regex>`, on top of the built-in ones: CI, lint, type, test-runner, and formatter config, these project rules, the verify skill, deleted tests, silenced checks, and auth, billing, payment, migration, secret, security, crypto, and permission paths.
+Paths whose changes always wait for the user's review, one extended regular expression per line, written as - `<regex>` and what it covers. The lines below are defaults: keep the ones that fit this project and delete the rest. Deleted tests and silenced checks wait for the user whatever this list holds.
 
+- `(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/)` CI
+- `(^|/)(\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.)` lint, type, formatter and test-runner config
+- `(^|/)\.claude/kitchen/house\.md$` these project rules
+- `(^|/)\.claude/skills/verify[-/]` the verify skill
+- `(^|[^A-Za-z])(auth|authn|authz|authentication|authorization|oauth|billing|payments?|migrations?|migrate|secrets?|security|crypto|permissions?)([^a-z]|$)|(Auth|Authn|Authz|Authentication|Authorization|Oauth|OAuth|Billing|Payments?|Migrations?|Migrate|Secrets?|Security|Crypto|Permissions?)([^a-z]|$)|(^|/)alembic/versions/` auth, billing, payment, migration, secret, security, crypto and permission paths
 - `<e.g. ^src/ledger/>`
+
+## Review when
+
+Questions the verifying session answers for every change, one per line, written as - <question>. A yes sends the PR to the user with the question and why. Ask here what no path shows, such as what a change costs or whether it changes what a feature is meant to do. This section and `## Always review` stay in the file even when empty: kitchen treats a project missing either as not set up.
+
+- <e.g. Does it raise what the project costs to run?>
 
 ## Sorting
 
