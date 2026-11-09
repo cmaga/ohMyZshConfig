@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The scaffold every case shares, run in the empty workspace by its place-files.sh: the case's files
-# as a cloned project set up for the jira skill, the kitchen where its commands look for it, the
+# as a cloned project set up for the ticket-provider and git-provider skills, the kitchen and ticket-provider where
+# their scripts look for them, the
 # project registered with the pipeline, and the backlog plus the case's tickets for the stand-in Jira.
 # Usage: scaffold.sh <case dir> <repo name>
 set -eu
@@ -8,29 +9,38 @@ case_dir=$(cd "$1" && pwd)
 repo=$2
 evals=${case_dir%/*}
 kitchen=$(cd "$evals/../skills/kitchen" && pwd)
+tickets_skill=$(cd "$evals/../skills/ticket-provider" && pwd)
 
 cp -R "$case_dir/files/." .
-mkdir -p .claude/skills/jira
-cat > .claude/skills/jira/config.json <<'JSON'
+mkdir -p .claude/ticket-provider .claude/git-provider
+cat > .claude/ticket-provider/config.json <<'JSON'
 {
-    "server": "http://northwind.atlassian.test",
-    "email": "jordan.lee@northwind.dev",
-    "installationType": "cloud",
-    "username": "jlee",
-    "projectKey": "PLAT",
-    "branchFormat": "{username}/{ticketId}-{description}",
-    "commitFormat": "{ticketId}: {message}",
-    "baseBranch": "main",
-    "labels": [],
-    "transitions": {
+    "provider": "jira",
+    "me": "Jordan Lee",
+    "ready": "project = PLAT AND status = \"To Do\"",
+    "moments": {
         "start": "In Progress",
         "review": "In Review",
         "merged": "Done"
     },
+    "jira": {
+        "server": "http://northwind.atlassian.test",
+        "email": "jordan.lee@northwind.dev",
+        "installationType": "cloud",
+        "projectKey": "PLAT",
+        "labels": []
+    }
+}
+JSON
+cat > .claude/git-provider/config.json <<'JSON'
+{
+    "baseBranch": "main",
+    "branchFormat": "{username}/{ticketId}-{description}",
+    "commitFormat": "{ticketId}: {message}",
     "prTemplate": "Resolves {ticketId}\n\n## Changes\n- \n\n## Testing\n- "
 }
 JSON
-printf '.claude/worktrees/\n' > .gitignore
+printf '.claude/worktrees/\n.claude/ticket-provider/\n.claude/git-provider/\n' > .gitignore
 git init -q -b main
 git add -A
 git -c user.name="Priya Natarajan" -c user.email=priya.natarajan@northwind.dev commit -q -m "Initial commit"
@@ -42,7 +52,8 @@ git push -q -u origin main 2>/dev/null
 
 mkdir -p "$HOME/.claude/skills"
 cp -R "$kitchen" "$HOME/.claude/skills/kitchen"
-zsh "$HOME/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh" line add "$PWD" 'project = PLAT AND status = "To Do"' >/dev/null
+cp -R "$tickets_skill" "$HOME/.claude/skills/ticket-provider"
+zsh "$HOME/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh" line add "$PWD" >/dev/null
 
 mkdir -p "$HOME/.jira-mock"
 tickets=$case_dir/tickets.json

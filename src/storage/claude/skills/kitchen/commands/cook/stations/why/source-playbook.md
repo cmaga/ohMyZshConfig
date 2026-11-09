@@ -5,7 +5,7 @@ The [why](../why.md) station spawns one investigator per available evidence cate
 | Category | Playbook | Example MCP it documents |
 |---|---|---|
 | Source control history | [`code-archaeology.md`](./sources/code-archaeology.md) | git, `gh` |
-| Issue / ticket tracker | [`linear.md`](./sources/linear.md) | Linear (adapt for Jira through the `jira` skill, GitHub Issues, Plane, Shortcut) |
+| Issue / ticket tracker | [`linear.md`](./sources/linear.md) | Linear (adapt for the project's tracker through the `ticket-provider` skill, GitHub Issues, Plane, Shortcut) |
 | Long-form documents | [`notion.md`](./sources/notion.md) | Notion (adapt for Confluence, Google Docs, Coda) |
 | Real-time team chat | [`slack.md`](./sources/slack.md) | Slack (adapt for Discord, Microsoft Teams, Mattermost) |
 | Infrastructure observability | [`datadog.md`](./sources/datadog.md) | Datadog (adapt for New Relic, Honeycomb, Grafana, Splunk) |

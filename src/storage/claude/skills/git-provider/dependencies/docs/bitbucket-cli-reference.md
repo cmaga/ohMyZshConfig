@@ -350,7 +350,7 @@ PR_ID=$(create_pr "feature/STAX-123" "develop" "Title" "Description")
 echo "Created PR #$PR_ID"
 ```
 
-### Full PR Creation with Jira Link
+### Full PR Creation with Ticket Link
 
 ```bash
 TICKET_KEY="STAX-123"
@@ -358,7 +358,7 @@ JIRA_URL="https://company.atlassian.net/browse/STAX-123"
 SOURCE_BRANCH="feature/STAX-123-login"
 DEST_BRANCH="develop"
 TITLE="[$TICKET_KEY] Add login functionality"
-DESCRIPTION="## Jira Ticket
+DESCRIPTION="## Ticket
 [$TICKET_KEY]($JIRA_URL)
 
 ## Description

@@ -14,7 +14,7 @@ Linear is where the product/business context often lives: the "we're doing this 
 
 ## How to search it
 
-Use the Linear MCP. Where the tracker is Jira, reach it through the `jira` skill and map each step below onto Jira's issues, epics, comments, labels, and linked issues.
+Use the Linear MCP. Where the tracker is the project's own, reach it through the `ticket-provider` skill and map each step below onto its tickets, parents, comments, labels, and links.
 
 1. **Start with linked tickets.** If the seed commits or PRs reference ticket IDs (e.g., `ENG-1234`, `[BUG-567]`), fetch those first with `get_issue`. Read the full issue including comments.
 2. **List related issues by keyword.** Use `list_issues` with text search for the feature name, key symbol, or business term. Try multiple phrasings.

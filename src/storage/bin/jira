@@ -10,7 +10,7 @@
 # created in the wrong project that way before anyone noticed, and they could
 # not be deleted afterwards.
 #
-# Lookup: walk $PWD ancestors for .claude/skills/jira/.jira-config.yml, read
+# Lookup: walk $PWD ancestors for .claude/ticket-provider/jira-cli.yml, read
 # `server:` from it, strip scheme and trailing slash, and find the ~/.netrc
 # `machine <host>` entry for the password.
 #
@@ -50,13 +50,13 @@ fi
 cfg=""
 dir=$PWD
 while [ "$dir" != "/" ]; do
-    if [ -f "$dir/.claude/skills/jira/.jira-config.yml" ]; then
-        cfg="$dir/.claude/skills/jira/.jira-config.yml"
+    if [ -f "$dir/.claude/ticket-provider/jira-cli.yml" ]; then
+        cfg="$dir/.claude/ticket-provider/jira-cli.yml"
         break
     fi
     dir=$(dirname "$dir")
 done
-[ -n "$cfg" ] || die "no .claude/skills/jira/.jira-config.yml in any ancestor of $PWD.
+[ -n "$cfg" ] || die "no .claude/ticket-provider/jira-cli.yml in any ancestor of $PWD.
     Refusing to fall back to the default config -- it points at whichever
     instance was set up last, and filing there is silent and unrecoverable.
     Add a project config, or set JIRA_CONFIG_FILE to name one explicitly."

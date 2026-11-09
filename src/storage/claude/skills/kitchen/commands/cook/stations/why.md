@@ -26,7 +26,7 @@ Before spawning investigators, build the seed context inline: file paths and lin
 
 ### Discovery
 
-Before spawning investigators, list the evidence sources the session can reach: its MCP servers (tools named `mcp__<server>__*`, including deferred ones `ToolSearch` can load) and the skills that reach a source from the command line, such as the `jira` skill for the ticket tracker or the `sentry-cli` skill for error tracking.
+Before spawning investigators, list the evidence sources the session can reach: its MCP servers (tools named `mcp__<server>__*`, including deferred ones `ToolSearch` can load) and the skills that reach a source from the command line, such as the `ticket-provider` skill for the ticket tracker or the `sentry-cli` skill for error tracking.
 
 Map each available source to one evidence category:
 
@@ -52,7 +52,7 @@ Each investigator's prompt is [the investigator prompt](why/investigator-prompt.
 Each category below is uniquely positioned to surface one shape of "why", shown after "Best at". Use it to know what to expect back, to name a gap when a category returns empty, and, only in the rare provably-irrelevant case, to justify a skip.
 
 1. **Source control** (git history, PRs through the `git-provider` skill, code comments, tests). Always spawn, the only guaranteed source. Best at *implementation-time rationale captured during review*.
-2. **Issue / ticket tracker** (Jira through the `jira` skill here; elsewhere Linear, GitHub Issues, Plane, Shortcut). Best at *the product or business forcing function*. Strongest when the why is external to engineering.
+2. **Issue / ticket tracker** (the project's tracker through the `ticket-provider` skill here; elsewhere Linear, GitHub Issues, Plane, Shortcut). Best at *the product or business forcing function*. Strongest when the why is external to engineering.
 3. **Long-form documents** (e.g. Notion, Confluence, Google Docs, Coda). Best at *long-form design rationale*, written out before it becomes code.
 4. **Real-time team chat** (e.g. Slack, Discord, Microsoft Teams, Mattermost). Best at *real-time deliberation that never reached a doc*. Especially important when the source control, ticket, and doc paper trail is thin.
 5. **Infrastructure observability** (e.g. Datadog, New Relic, Honeycomb, Grafana, Splunk). Best at *infrastructure and runtime reality that motivated the code*. Strongest when the target reacts to an infra signal (timeouts, retries, rate limits, circuit breakers).

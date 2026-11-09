@@ -4,7 +4,7 @@
 # only through this script, so the format lives in one place.
 #
 # State lives in ~/.claude-artifacts/workflows/kitchen/<slug>/ (user lifecycle):
-#   line.json          project path, ready JQL, capacity, models
+#   line.json          project path, capacity, models (the ready queue is the project's ticket-provider config)
 #   orders/<KEY>.json  one order per ticket
 #   catches.tsv        date key taster class note source
 #   promoted.tsv       class ticket date
@@ -29,7 +29,7 @@
 #   kitchen order verdict KEY WORD NOTES [REASON...]  record PASS, PASS+NOTES, or FAIL for the change checked out here; each REASON is a `## Review when` criterion that holds
 #   kitchen order gated KEY                  record the change the quality gate passed; run in the order's worktree
 #   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same
-#   kitchen order close KEY                  mark the order done and move its ticket with transitions.merged
+#   kitchen order close KEY                  mark the order done and move its ticket with the merged moment
 #   kitchen order list [STATUS]              every order, or those with that status
 #   kitchen order transcript KEY             path of the order's last session transcript
 #   kitchen decide KEY "decision: why" EVIDENCE      log a call made without the user, with what backs it
@@ -37,7 +37,7 @@
 #   kitchen classes [TASTER]                 catch classes this project has seen
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
-#   kitchen line add PATH JQL | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
+#   kitchen line add PATH | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
 #   kitchen house [PATH]                     whether the project is set up: its base branch's project rules hold both review sections
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
 #   kitchen tick [--dry-run]                 one scheduler pass over every project
@@ -50,6 +50,7 @@ zmodload -F zsh/stat b:zstat
 BOOK="${KITCHEN_BOOK:-$HOME/.claude-artifacts/workflows/kitchen}"
 ALIASES="${KITCHEN_ALIASES:-${ZSH:-$HOME/.oh-my-zsh}/custom/aliases.zsh}"
 VAULT_GIT="$HOME/.claude/skills/capture-documentation/scripts/vault-git.sh"
+TICKET="$HOME/.claude/skills/ticket-provider/dependencies/scripts/ticket.zsh"
 MAX_RETRIES=3
 LIMIT_WAIT=1800
 KILL_AFTER=300
@@ -115,13 +116,14 @@ slug_here() { # the line whose project holds the current directory
   done
   # project rules in git mean /kitchen open ran on another machine; the scheduler stays there
   git -C $root ls-files --error-unmatch .claude/kitchen/house.md >/dev/null 2>&1 || die "no line for $root; run /kitchen open there"
-  local slug; slug=$(line_write $root '' true) || exit 1
+  local slug; slug=$(line_write $root true) || exit 1
   print -u2 -- "kitchen: registered $root as $slug on this machine, paused, from its committed project rules"
   print -- $slug
 }
 
-base_of() { # PROJECT: its base branch
-  local b=$(jq -r '.baseBranch // empty' $1/.claude/skills/jira/config.json 2>/dev/null)
+base_of() { # PROJECT: its base branch, from its git-provider config, else the host's default (git-provider's config table)
+  local b=$(jq -r '.baseBranch // empty' $1/.claude/git-provider/config.json 2>/dev/null)
+  [[ -z $b && $(git -C $1 remote get-url origin 2>/dev/null) == *git.amazon.com* ]] && b=mainline
   print -- ${b:-main}
 }
 
@@ -233,13 +235,12 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
   print -- ok
 }
 
-close_order() { # KEY: mark the order done and move its ticket (catering's epic) with transitions.merged
+close_order() { # KEY: mark the order done and move its ticket (catering's epic) with the merged moment
   local f; f=$(need_order $1) || exit 1
   local project=$(jq -r .project ${f:h:h}/line.json) ticket=$(jq -r '.epic // .key' $f)
-  local merged=$(jq -r '.transitions.merged // empty' $project/.claude/skills/jira/config.json 2>/dev/null)
   local pr=$(jq -r '.pr // empty' $f)
-  if [[ -n $merged ]] && ! ( cd $project && jira issue move $ticket "$merged" --comment "Merged: ${pr:-investigation answered}" < /dev/null >/dev/null 2>&1 ); then
-    notice ${f:h:h} "could not move $ticket to $merged"
+  if ! ( cd $project && $TICKET move $ticket merged "Merged: ${pr:-investigation answered}" < /dev/null >/dev/null 2>>${f:h:h}/log/ticket.log ); then
+    notice ${f:h:h} "could not move $ticket with the merged moment; see log/ticket.log"
   fi
   # a delivered catering order's spec branch has nothing left that the base lacks
   [[ $(jq -r .recipe $f) == catering && -n $(git -C $project ls-remote --heads origin spec/$ticket 2>/dev/null) ]] &&
@@ -328,27 +329,23 @@ signoff() { # KEY [answer...]
 
 # --- lines --------------------------------------------------------------------
 
-line_add() { # PATH JQL
+line_add() { # PATH
   local common
-  text_of "${2:?JQL}"
   # a worktree registers its main checkout, the one slug_here matches
-  common=$(git -C $1 rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "$1 is not a git checkout"
-  line_write ${common:h} "$REPLY" false
+  common=$(git -C ${1:?PATH} rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "$1 is not a git checkout"
+  ( cd ${common:h} && $TICKET provider >/dev/null ) || die "no ticket-provider config for ${common:h}; run the ticket-provider skill's setup there"
+  line_write ${common:h} false
 }
 
-line_write() { # PROJECT JQL PAUSED: create the project's line, or set the JQL of the one it has; prints its slug
-  local project=$1 jql=$2 slug=${1:t}
+line_write() { # PROJECT PAUSED: create the project's line unless it has one; prints its slug
+  local project=$1 slug=${1:t}
   if [[ -f $BOOK/$slug/line.json && $(jq -r .project $BOOK/$slug/line.json) != $project ]]; then
     slug=${project:h:t}-${project:t}
   fi
   mkdir -p $BOOK/$slug/orders $BOOK/$slug/log
   local f=$BOOK/$slug/line.json
-  if [[ -f $f ]]; then
-    jq_write $f '.jql = $q' --arg q "$jql"
-  else
-    jq -n --arg p $project --arg q "$jql" --argjson paused $3 \
-      '{project:$p, jql:$q, max_cooking:2, rail_depth:3, models:{serve:"sonnet", cook:""}, followup_hours:6, paused:$paused}' > $f
-  fi
+  [[ -f $f ]] || jq -n --arg p $project --argjson paused $2 \
+    '{project:$p, max_cooking:2, rail_depth:3, models:{serve:"sonnet", cook:""}, followup_hours:6, paused:$paused}' > $f
   print -- $slug
 }
 
@@ -356,7 +353,7 @@ line_cmd() {
   local f
   case ${1:-list} in
     add) shift; line_add "$@" ;;
-    list) for f in $BOOK/*/line.json(N); do jq -r --arg s ${f:h:t} '"\($s)\t\(.project)\t\(if .paused then "paused" else "on" end)\t\(.jql)"' $f; done ;;
+    list) for f in $BOOK/*/line.json(N); do jq -r --arg s ${f:h:t} '"\($s)\t\(.project)\t\(if .paused then "paused" else "on" end)"' $f; done ;;
     set)
       f=$BOOK/${2:?slug}/line.json; [[ -f $f ]] || die "no line $2"
       local kv
@@ -643,6 +640,12 @@ pr_state() { # PROJECT URL: "<OPEN|MERGED|CLOSED>\t<updated>|<approvals>", UNSUP
       ( cd $1 && bb pr get $id -o json --profile $ws < /dev/null 2>/dev/null ) \
         | jq -r '[(if .state == "DECLINED" or .state == "SUPERSEDED" then "CLOSED" else .state end),
                   ((.updated_on // "") + "|" + ([.participants[]? | select(.approved) | .user.uuid // .user.account_id // ""] | sort | join(",")))] | @tsv' 2>/dev/null ;;
+    https://code.amazon.com/reviews/CR-*)
+      # the CR page's own JSON, read with the Midway cookie, per git-provider's crux mode (Get PR); an expired cookie reads as a failed read
+      local cr=${${2#https://code.amazon.com/reviews/}%%/*}
+      curl -sfL --max-time 30 --cookie $HOME/.midway/cookie -H 'Accept: application/json' "https://code.amazon.com/reviews/$cr.json" < /dev/null 2>/dev/null \
+        | jq -r '.revision.cr_revision | [(if .status == "SHIPPED" then "MERGED" elif (.status | test("DISCARD|CANCEL|CLOSE|ABANDON")) then "CLOSED" else "OPEN" end),
+                  ((.last_updated_at // "" | tostring) + "|" + ((.approved_by // []) | sort | join(",")))] | @tsv' 2>/dev/null ;;
     *) print -- UNSUPPORTED ;;
   esac
 }
@@ -848,12 +851,13 @@ serve_next() { # SLUG DRY: keep the ready queue stocked, one intake at a time
   # a ticket whose intake stopped short goes first
   local key=$(jq -r --argjson now $EPOCHSECONDS 'map(select(.status == "new" and .retry_after <= $now)) | sort_by(.created) | .[0].key // empty' <<< $book)
   if [[ -z $key ]]; then
-    local project=$(jq -r .project $dir/line.json) jql=$(jq -r .jql $dir/line.json) k
+    local project=$(jq -r .project $dir/line.json) k
     # order_new refuses a key any line holds, so skip those, not only this line's
     typeset -A known=()
     local -a all=( $BOOK/*/orders/*.json(N) )
     (( $#all )) && for k in ${(f)"$(jq -r '.key, (.epic // empty)' $all)"}; do known[$k]=1; done
-    for k in ${(f)"$(cd $project && jira issue list -q "$jql" --order-by rank --reverse --plain --no-headers --columns key 2>>$dir/log/jira.log)"}; do
+    # wide enough that keys holding orders already do not hide the next ready one
+    for k in ${(f)"$(cd $project && $TICKET ready 100 2>>$dir/log/ticket.log)"}; do
       k=${k//[[:space:]]/}
       [[ -n $k && -z ${known[$k]:-} ]] && { key=$k; break; }
     done

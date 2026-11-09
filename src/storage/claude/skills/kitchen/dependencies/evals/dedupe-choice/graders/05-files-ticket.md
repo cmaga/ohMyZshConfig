@@ -1,5 +1,5 @@
 ---
 type: regex
 target: trace
-pattern: '"command":"(?:[^"\\]|\\.)*jira issue create'
+pattern: '"command":"(?:[^"\\]|\\.)*(?:ticket\.zsh|\$T)\s+create\b'
 ---

@@ -348,7 +348,7 @@ gh pr create \
   --base develop \
   --head feature/STAX-123-login \
   --title "[STAX-123] Add login functionality" \
-  --body "## Jira Ticket
+  --body "## Ticket
 [STAX-123](https://company.atlassian.net/browse/STAX-123)
 
 ## Description

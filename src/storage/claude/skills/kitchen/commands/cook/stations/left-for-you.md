@@ -8,7 +8,7 @@ A problem found mid-order is routed when found, never parked as prose.
 
 - **Fix it.** The one question is whether the fix can ride this branch, not whether it is in scope. This is the cheapest moment the fix will ever have.
 - Leave it only when it genuinely cannot ride: a different subsystem, a design decision the user owns, a scope that would double the diff. If your own answer is that it rides, that answer is final: fold it. Otherwise it is a triage candidate, with your recommendation and why it could not ride. A third candidate means re-asking whether any could have been fixed.
-- **Search before proposing.** `jira issue list -p {projectKey} -q "statusCategory != Done" --plain --no-headers --columns key,status,summary` (`projectKey` from `.claude/skills/jira/config.json`), then read every close candidate; search component and file names too. An existing ticket ends the matter: cite its key.
+- **Search before proposing.** `ticket.zsh search "<terms>"` through the `ticket-provider` skill, once per distinctive term, then read every close candidate with `ticket.zsh get`; search component and file names too. An existing ticket ends the matter: cite its key.
 - **File only after the user says to.** The one exception is a cleanup ticket that [taste](../../taste/taste.md) step 6 files.
 - **Before adding a validator that refuses a configuration, grep the tests for the field it would refuse.** A defect-guard test is the record of *we tried that*.
 
@@ -24,7 +24,7 @@ Everything else fails: a finding you fixed, anything a ticket already owns, an `
 
 ## Triage
 
-Decide what you can first. A candidate your own recommendation would fold is folded now, never sent on and never asked. The rest goes to the escalation agent, a `general-purpose` agent on the `escalation_model` lever, in one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence: `file:line`, the finding or marker verbatim, the Jira search result. It returns one verdict per candidate:
+Decide what you can first. A candidate your own recommendation would fold is folded now, never sent on and never asked. The rest goes to the escalation agent, a `general-purpose` agent on the `escalation_model` lever, in one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence: `file:line`, the finding or marker verbatim, the ticket search result. It returns one verdict per candidate:
 
 - **`fold`**: the fix rides this branch. It needs no decision only the user can make and does not double the diff. Never judge it on the ticket's scope or the defect's age. It names the fix.
 - **`escalate`**: only the user can answer it; it needs knowledge or authority only they hold. It names that, and gives its recommendation.

@@ -1,11 +1,11 @@
 ---
 name: kitchen
-description: Works Jira tickets to verified, merged PRs, unattended through a scheduler or with the user, routing each task to a recipe (feature, bug fix, refactor, perf, investigation, and more) and holding a quality gate. Use when the user says "take" followed by a ticket key ("take PROJ-123"), or "new take" followed by work that has no ticket yet ("new take: add a --dry-run flag").
+description: Works tickets (Jira, Taskei) to verified, merged PRs, unattended through a scheduler or with the user, routing each task to a recipe (feature, bug fix, refactor, perf, investigation, and more) and holding a quality gate. Use when the user says "take" followed by a ticket key ("take PROJ-123"), or "new take" followed by work that has no ticket yet ("new take: add a --dry-run flag").
 ---
 
 # Kitchen
 
-Every piece of work is an order: a Jira ticket that intake judged worth working. Work the user brings without a ticket gets one filed first. A working session matches the order to a recipe, follows it through the quality gate to a PR, gets a verdict from a session that did not write the change, and merges unless the order needs the user's review. A scheduler (`kitchen.zsh tick`, kept running by this skill's `automation.toml`) does all of this around the clock in headless sessions. The user signs off where an order asks, reviews flagged PRs, and can work anything with you directly.
+Every piece of work is an order: a ticket that intake judged worth working. Work the user brings without a ticket gets one filed first. A working session matches the order to a recipe, follows it through the quality gate to a PR, gets a verdict from a session that did not write the change, and merges unless the order needs the user's review. A scheduler (`kitchen.zsh tick`, kept running by this skill's `automation.toml`) does all of this around the clock in headless sessions. The user signs off where an order asks, reviews flagged PRs, and can work anything with you directly.
 
 Invoking this skill is the user's request to use subagents; it overrides any standing instruction to avoid them.
 
@@ -133,7 +133,7 @@ Never deploy to production. Merging is allowed; a merge that triggers the projec
 
 **No is an acceptable answer.** Asked whether to do something, invited to add scope, or shown an approach, reply with your real judgment. Decline or push back when it doesn't earn its place.
 
-Reach Jira through the `jira` skill and PRs through the `git-provider` skill. Every Jira change carries a comment saying why.
+Reach the ticket tracker only through the `ticket-provider` skill and PRs only through the `git-provider` skill, so no step names a tracker or a host. `ticket.zsh` in any step is `~/.claude/skills/ticket-provider/dependencies/scripts/ticket.zsh`. Every ticket change carries a comment saying why.
 
 ## Subagents
 

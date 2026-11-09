@@ -1,0 +1,18 @@
+{
+    "provider": "taskei",
+    "me": "Your Name",
+    "ready": {
+        "labels": ["kitchen-ready"],
+        "unassigned": true
+    },
+    "moments": {
+        "start": "in_progress",
+        "review": "in_progress",
+        "merged": "closed"
+    },
+    "taskei": {
+        "roomId": "00000000-0000-0000-0000-000000000000",
+        "prefix": "PROJ",
+        "labels": []
+    }
+}

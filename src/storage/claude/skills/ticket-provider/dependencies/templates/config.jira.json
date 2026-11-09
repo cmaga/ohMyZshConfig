@@ -1,0 +1,17 @@
+{
+    "provider": "jira",
+    "me": "Your Name",
+    "ready": "project = PROJ AND status = \"Ready\"",
+    "moments": {
+        "start": "IN PROGRESS",
+        "review": "IN REVIEW",
+        "merged": "DONE"
+    },
+    "jira": {
+        "server": "https://company.atlassian.net",
+        "email": "your-email@company.com",
+        "installationType": "cloud",
+        "projectKey": "PROJ",
+        "labels": []
+    }
+}

@@ -1,7 +1,7 @@
-## Jira Ticket
+## Ticket
 
-[{TICKET_KEY}]({JIRA_URL})
+[{ticketId}]({ticketUrl})
 
 ## What and why
 
-{SUMMARY}
+{summary}

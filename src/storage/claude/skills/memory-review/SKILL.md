@@ -45,7 +45,7 @@ Then run once per distinct `## Skill: <name>` found in any `~/.claude/projects/*
    - **Keep** — everything else, including every lesson still working.
 2. **Present the proposals before changing anything**, grouped by class, one line each: the entry, what happens to it, and where it goes. Keep entries are not listed. The user picks. Append `Declined: <date>` and one line of why to each entry they decline.
 3. **Apply each picked change.**
-   - **Belongs elsewhere:** confirm its home holds it, and put it there first when it does not — the vault per the `knowledge-vault-use` rule, Jira through the `jira` skill. Then delete the entry.
+   - **Belongs elsewhere:** confirm its home holds it, and put it there first when it does not — the vault per the `knowledge-vault-use` rule, the ticket tracker through the `ticket-provider` skill. Then delete the entry.
    - **Promote:** agree the change in plain words, then draft the rule, skill, hook, or CLAUDE.md text through `claude-feature-authoring` and show the rendered text. Once approved, mark the entry `Resolved: <commit subject or worktree path>`; a later review deletes it once the change ships.
    - **Nuance:** agree its fate in plain words. A project change (a hook, rule, skill, or `CLAUDE.md` line) is drafted fresh from what the note teaches, never by copying the note into the project, and made per the Rules below. A global change, the kitchen included, goes to ohMyZshConfig through `claude-feature-authoring`. Then mark the entry `Resolved:` as for Promote; with no change, delete it or keep it as the user says.
    - **Stale:** name what contradicts it, then correct or delete it.

@@ -31,28 +31,28 @@ The topic file:
       type: feedback
     ---
 
-    **Skill:** jira
-    **File:** SKILL.md
+    **Skill:** ticket-provider
+    **File:** modes/jira.md
     **Trigger:** correction
     **Date:** 2026-08-27
     **Run:** EN-326
 
-    **What I did:** ran `jira issue move` with the target status name, "In Review".
+    **What I did:** wrote the target status name, "In Review", into `moments.review`.
 
-    **What the text said:** setup stores transition names, but the move step never
-    says which name it takes.
+    **What the text said:** setup stores transition names, but the config table never
+    says which name a moment takes.
 
     **What it cost:** the move failed and the ticket stayed in To Do.
 
-    **How to apply:** pass the stored transition name to `jira issue move`, never the status.
+    **How to apply:** store the transition name in `moments`, never the status.
 
-    **What would have helped:** one line in the move step naming `transitions.<moment>`.
+    **What would have helped:** one line in the config table saying moments are transition names.
 
     Recurrences:
 
 Its `MEMORY.md` line, under the skill's section:
 
-    ## Skill: jira
-    - [Move by transition name](feedback_move_by_transition_name.md) — `jira issue move` takes the transition name, not the status
+    ## Skill: ticket-provider
+    - [Move by transition name](feedback_move_by_transition_name.md) — a Jira moment is the transition name, not the status
 
 `Trigger` is `correction` or `underdetermined`. `Date` is the first sighting; each date on `Recurrences:` is another. `Run` names the ticket, or what you were doing when there is none. `File` names the skill file you were reading when it happened, `SKILL.md` for the entrypoint; `unknown` is a real answer and beats a guess. **How to apply** is what you do next time, and is what makes the lesson work before the skill changes. Drop **What would have helped** unless the answer is obvious — a guessed fix costs the reviewer more than no fix.

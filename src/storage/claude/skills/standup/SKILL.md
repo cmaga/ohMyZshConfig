@@ -53,7 +53,7 @@ $HOME/.local/share/cmagana-automations/timesheet/standup-gather.zsh commits D
 
 If `extra_activity` is set, follow it to gather more of the day's work (code reviews from another system, say). It is optional evidence: if it fails, log to stderr and continue with commits.
 
-In the original single-repo setup (`fill_project` empty), if `<repo_path>/.claude/skills/jira/config.json` exists (`repo_path` from `automation.toml` next to this file), also gather Jira activity dated `D` — comments I authored on `D` and tickets I resolved on `D` (read `projectKey`/`email` from that config; JQL `resolved >= "D 00:00" AND resolved <= "D 23:59"`). Skip Jira silently if the config is missing. If a Jira call fails, log to stderr and continue with commits.
+In the original single-repo setup (`fill_project` empty), if `<repo_path>/.claude/ticket-provider/config.json` exists (`repo_path` from `automation.toml` next to this file), also gather the tracker's activity dated `D` through the `ticket-provider` skill, run from `<repo_path>`: comments I authored on `D` and tickets I resolved on `D`. On Jira that is `ticket.zsh raw issue list -q 'resolved >= "D 00:00" AND resolved <= "D 23:59"' --plain`; on Taskei, `ticket.zsh raw search --closed-after D --closed-before <D+1> --assignee $USER --limit 50 --json`. Skip the tracker silently if the config is missing. If a call fails, log to stderr and continue with commits.
 
 If a day has no commits and no other activity, it has no entry — skip it.
 

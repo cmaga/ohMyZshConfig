@@ -17,12 +17,12 @@ const SUB_BLOCKS = [
 	"Merge.",
 ];
 const PROGRAM_H3 = ["File the tickets", "PR mechanics", "Verdict and merge", "Boot recipe"];
-const PROGRAM_MARKERS = ["`jira` skill", "is blocked by", "kitchen.zsh order new"];
+const PROGRAM_MARKERS = ["`ticket-provider` skill", "is blocked by", "kitchen.zsh order new"];
 const HOW_TO_READ_MARKERS = [
 	"One box is one unit of work",
 	"names the evidence",
 	"Check a box only when its evidence exists",
-	"one Jira ticket and one order",
+	"one ticket and one order",
 	RULE,
 ];
 const PERF_ITEMS = ["Metric.", "Probe.", "Baseline.", "Rule."];

@@ -94,13 +94,13 @@ The server reads a ticket, checks it against the code (still a problem? already 
 - **Review** is set when any line of the done-when is something only you can judge, such as look and feel. "The page loads with no error, and errored before the fix" needs no review.
 - **The review queue** is where a ticket waits when it needs a call only you can make before it becomes an order: whether to do it, how, what instead, and how it will look. An order is decided work and runs end to end.
 - **No bounce.** A call that comes up while cooking is the cook's: decided, logged, and flagged on the PR when you would want to see it. Only a decided premise that proves impossible withdraws the order back to the review queue.
-- **Not every customer is served.** The server closes stale tickets and rewrites wrong ones in Jira itself, with a comment saying why.
+- **Not every customer is served.** The server closes stale tickets and rewrites wrong ones in the tracker itself, with a comment saying why.
 - **Shallow rail.** The server takes orders in priority order only until the rail has a few queued, so placeholder tickets at the bottom of the backlog cost nothing.
 - **1:1 with tickets.** An order the kitchen creates for itself (a promotion, below) files its ticket first.
 
 ## The line
 
-- The expo is a shell script on a launchd timer, on this Mac for now. It runs one Jira query, the project's "ready" section, whatever the board calls it. Polling costs no tokens; Claude starts only for a ticket to serve or an order to cook.
+- The expo is a shell script on a launchd timer, on this Mac for now. It runs one tracker query through `ticket.zsh ready`, the project's "ready" section, whatever the board calls it. Polling costs no tokens; Claude starts only for a ticket to serve or an order to cook.
 - Each order runs headless through `oc`, from the project directory, so the right account is used: `cd <project> && oc -p "<order>" < /dev/null`. Several orders cook at once, each in its own worktree.
 - A crash or a rate limit puts the order back on the rail with a retry count. A rate limit means wait, never quit, and the project's line starts nothing until it lifts.
 - The expo holds no state but the order book, so a restart resumes where it stopped.
@@ -109,7 +109,7 @@ The server reads a ticket, checks it against the code (still a problem? already 
 ## Safety
 
 - The line never deploys to production. A merge that triggers a project's own auto-deploy is the project's accepted risk; nothing extra is built around it.
-- The server may change Jira.
+- The server may change the tracker.
 
 ---
 

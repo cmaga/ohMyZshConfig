@@ -313,7 +313,7 @@ deploy_configs() {
         || error "Failed to record $ZSHRC_SNAPSHOT"
 
     # Deploy bin/ shims. ~/.local/bin leads PATH, so these are reached from
-    # every shell -- which a zsh function is not. `jira` was a zsh function,
+    # every shell -- which a zsh function is not. `jira` (used by the ticket-provider skill) was a zsh function,
     # and anything that was not zsh silently got the raw binary and its
     # default config, pointing at a different company's Jira.
     log "Deploying bin shims from $BIN_SOURCE to $BIN_DEST"

@@ -9,6 +9,6 @@ Diagnose a runtime symptom (leak, idle-CPU spin, glitch) from live instrumentati
 3. Prove the mechanism before believing it. Inject instrumentation via CDP eval on the running process, or hotfix the live code without reloading, to confirm the hypothesis cheaply.
 4. Map the finding back to source: file, symbol, the line that allocates or schedules.
 5. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only forensics`.
-6. With an order, post the reply as a comment on the ticket through the `jira` skill and run `kitchen.zsh order close <KEY>`.
+6. With an order, post the reply as a comment on the ticket through the `ticket-provider` skill and run `kitchen.zsh order close <KEY>`.
 
 **Reply:** the signal captured, the reduced finding, how you proved the mechanism, the source location, artifact paths. No fix unless asked. Once the cause is known, recommend the [bug fix](bug-fix.md) or [perf](perf.md) recipe for it.
