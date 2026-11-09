@@ -423,9 +423,23 @@ def narrow(path, kind, files):
             body = Path(f).read_text(errors="replace")
         except OSError:
             continue
-        if any(k in body for k in keys):
+        if any(k in body for k in keys) or (kind != "sh" and binds_module(body, path)):
             hit.append(f)
     return hit or files
+
+
+def binds_module(body, path):
+    """Whether the text imports the module as a name in a `from <pkg> import a, (b as c), ...` list."""
+    parts = Path(path).with_suffix("").parts
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    if len(parts) < 2:
+        return False
+    pkg, mod = parts[-2:]
+    for names in re.findall(rf"\bfrom\s+(?:[\w.]*\.)?{re.escape(pkg)}\s+import\s+(\([^)]*\)|[^\n]*)", body):
+        if re.search(rf"\b{re.escape(mod)}\b", names):
+            return True
+    return False
 
 
 def build_command(run, files, test_cmd, narrowed):
