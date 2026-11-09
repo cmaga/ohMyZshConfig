@@ -372,7 +372,10 @@ pass2() {
 pass2b_region() {
   local recs="$1" repo="$2" relvault="$3" upto="$4" scopef="$5" out="$6"
   : > "$out"
-  declare -A note_commit_cache prefilter_cache
+  # Caches are newline-delimited "key<RS>value" lines, looked up with case:
+  # bash 3.2 (macOS) has no associative arrays.
+  local RS=$'\x1e' NL=$'\n'
+  local note_commit_cache="$NL" prefilter_cache="$NL"
   "$JQ" -r --slurpfile scope "$scopef" '
     ($scope[0] // []) as $sc |
     .path as $p | select(($sc|length) > 0 and ($sc|index($p))) |
@@ -381,18 +384,24 @@ pass2b_region() {
   ' "$recs" 2>/dev/null |
   while IFS=$'\x1f' read -r p ln sym sp; do
     spath="${sp%%:*}"
-    nc="${note_commit_cache[$p]:-}"
+    nc=""
+    case "$note_commit_cache" in
+      (*"$NL$p$RS"*) nc="${note_commit_cache#*"$NL$p$RS"}"; nc="${nc%%"$NL"*}" ;;
+    esac
     if [ -z "$nc" ]; then
       nc=$(vault_note_commit "$repo" "$repo/$relvault" "$p")
       [ -z "$nc" ] && nc="__none__"
-      note_commit_cache[$p]="$nc"
+      note_commit_cache="$note_commit_cache$p$RS$nc$NL"
     fi
     [ "$nc" = "__none__" ] && continue
     ckey="$p"$'\x1f'"$spath"
-    pf="${prefilter_cache[$ckey]:-}"
+    pf=""
+    case "$prefilter_cache" in
+      (*"$NL$ckey$RS"*) pf="${prefilter_cache#*"$NL$ckey$RS"}"; pf="${pf%%"$NL"*}" ;;
+    esac
     if [ -z "$pf" ]; then
       if [ -n "$(git -C "$repo" log -1 "$nc..$upto" -- "$spath" 2>/dev/null)" ]; then pf="changed"; else pf="same"; fi
-      prefilter_cache[$ckey]="$pf"
+      prefilter_cache="$prefilter_cache$ckey$RS$pf$NL"
     fi
     [ "$pf" = "same" ] && continue
     esym=$(printf '%s' "$sym" | sed 's/[.[\*^$]/\\&/g')

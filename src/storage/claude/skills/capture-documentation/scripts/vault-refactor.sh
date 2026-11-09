@@ -89,7 +89,7 @@ resolve() {
   case "$name" in
     */*) [ -f "$VAULT/$name.md" ] && { printf '%s\n' "$name.md"; return 0; }; return 1 ;;
   esac
-  hits=$(note_files | while IFS= read -r f; do rel="${f#"$VAULT"/}"; case "$rel" in */"$name.md") printf '%s\n' "$rel" ;; esac; done)
+  hits=$(note_files | while IFS= read -r f; do rel="${f#"$VAULT"/}"; case "$rel" in (*/"$name.md") printf '%s\n' "$rel" ;; esac; done)
   [ -n "$hits" ] || return 1
   if [ "$(printf '%s\n' "$hits" | wc -l | tr -d ' ')" -gt 1 ]; then
     echo "vault-refactor: ambiguous basename $name: $(printf '%s' "$hits" | tr '\n' ' ')" >&2; exit 3
