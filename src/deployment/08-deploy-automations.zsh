@@ -2,7 +2,9 @@
 # Automation deployment script
 # Discovers automation.toml files in two locations and registers a launchd
 # job for each on macOS, a systemd user service (and, when scheduled, timer) on
-# Linux, or a per-user Task Scheduler logon task on Windows (keepalive only):
+# Linux, or a per-user Task Scheduler logon task on Windows (keepalive only).
+# A Linux host with no systemd user manager (Amazon Linux 2) runs scheduled ones
+# from the user's crontab instead, in a managed block, and no keepalive ones:
 #   1. Skill-bundled: ~/.claude/skills/<name>/automation.toml
 #      Triggered run script: ~/.claude/skills/<name>/dependencies/scripts/run.zsh
 #   2. Standalone:   src/storage/automations/<name>/automation.toml
@@ -37,6 +39,7 @@ STORAGE_DIR="${PROJECT_ROOT}/src/storage"
 STANDALONE_SOURCE="${STORAGE_DIR}/automations"
 STANDALONE_DEST="$HOME/.local/share/cmagana-automations"
 OS="$(detect_os)"
+LINUX_SCHEDULER=""
 
 case "$OS" in
     macos)
@@ -45,13 +48,19 @@ case "$OS" in
         mkdir -p "$LOG_DIR" "$LAUNCH_AGENTS_DIR"
         ;;
     linux)
-        if ! command_exists systemctl || ! systemctl --user show-environment >/dev/null 2>&1; then
-            print_status "info" "Skipping automation deployment — no systemd user manager"
+        LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cmagana-automations"
+        if command_exists systemctl && systemctl --user show-environment >/dev/null 2>&1; then
+            LINUX_SCHEDULER=systemd
+            SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+            mkdir -p "$SYSTEMD_USER_DIR"
+        elif command_exists crontab; then
+            LINUX_SCHEDULER=cron
+            print_status "info" "No systemd user manager, so scheduled automations run from crontab"
+        else
+            print_status "info" "Skipping automation deployment — no systemd user manager and no crontab"
             exit 0
         fi
-        LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cmagana-automations"
-        SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-        mkdir -p "$LOG_DIR" "$SYSTEMD_USER_DIR"
+        mkdir -p "$LOG_DIR"
         ;;
     windows)
         LOG_DIR="$HOME/AppData/Local/cmagana-automations/logs"
@@ -165,11 +174,62 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+    # A host that once ran it from crontab (before it had a user manager)
+    command_exists crontab && write_cron_block "$name"
+
     systemctl --user daemon-reload
     if systemctl --user enable --now "$unit.timer" >/dev/null 2>&1; then
         print_status "success" "Registered systemd timer '$unit.timer' (cron: $cron)"
     else
         print_status "warning" "systemctl --user failed to start $unit.timer"
+    fi
+}
+
+# Rewrite the user's crontab: its own lines, then the managed block with every
+# cmagana entry except $1's, plus $2 when given. CRON_TZ in the block pins the
+# entries to AUTOMATION_TZ; the block goes last so the user's lines keep the
+# system zone. Nothing is written when $1 has no entry and none is added.
+# Args: name [entry]
+write_cron_block() {
+    local name="$1" entry="${2:-}"
+    local tag=" # cmagana-$name"
+    local current=$(crontab -l 2>/dev/null || true)
+    [[ -z "$entry" && $'\n'"$current"$'\n' != *"$tag"$'\n'* ]] && return 0
+    local outside=$(print -r -- "$current" | awk '/^# BEGIN cmagana-automations/{b=1;next} /^# END cmagana-automations/{b=0;next} !b')
+    local kept=$(print -r -- "$current" | awk -v tag="$tag" '/^# BEGIN cmagana-automations/{b=1;next} /^# END cmagana-automations/{b=0;next} b && !/^CRON_TZ=/ && substr($0, length($0) - length(tag) + 1) != tag')
+    local -a entries=(${(f)kept})
+    [[ -n "$entry" ]] && entries+=("$entry")
+    {
+        [[ -n "$outside" ]] && print -r -- "$outside"
+        if (( ${#entries} )); then
+            print -r -- "# BEGIN cmagana-automations (written by 08-deploy-automations.zsh)"
+            [[ -n "${AUTOMATION_TZ:-}" ]] && print -r -- "CRON_TZ=$AUTOMATION_TZ"
+            print -rl -- "${entries[@]}"
+            print -r -- "# END cmagana-automations"
+        fi
+    } | crontab -
+}
+
+# The crontab counterpart of register_timer_unit, for a host without a systemd
+# user manager. cron runs it whether or not the user is logged in.
+# Args: name run_script cron_expr
+register_cron_entry() {
+    local name="$1" run_script="$2" cron="$3"
+    if write_cron_block "$name" "$cron $(command -v zsh) $run_script >> $LOG_DIR/$name.log 2>&1 # cmagana-$name"; then
+        print_status "success" "Registered crontab entry 'cmagana-$name' (cron: $cron${AUTOMATION_TZ:+ $AUTOMATION_TZ})"
+    else
+        print_status "warning" "crontab failed to register $name"
+    fi
+}
+
+# Linux teardown on whichever scheduler this host uses.
+unregister_linux() {
+    local name="$1"
+    if [[ "$LINUX_SCHEDULER" == "cron" ]]; then
+        crontab -l 2>/dev/null | grep -q " # cmagana-$name\$" || return 0
+        write_cron_block "$name" && print_status "info" "Automation '$name' disabled — removed its crontab entry"
+    else
+        unregister_unit "$name"
     fi
 }
 
@@ -409,7 +469,7 @@ process_automation() {
 
     if [[ " ${platforms:-macos} " != *" $OS "* ]]; then
         case "$OS" in
-            linux) unregister_unit "$name" ;;
+            linux) unregister_linux "$name" ;;
             windows) unregister_windows_task "$name" ;;
         esac
         return 0
@@ -428,7 +488,7 @@ process_automation() {
     fi
 
     if [[ "$enabled" != "true" ]]; then
-        if [[ "$OS" == "linux" ]]; then unregister_unit "$name"; else unregister_plist "$name"; fi
+        if [[ "$OS" == "linux" ]]; then unregister_linux "$name"; else unregister_plist "$name"; fi
         return 0
     fi
 
@@ -440,7 +500,9 @@ process_automation() {
 
     # KeepAlive daemon — no cron; relaunched whenever it exits.
     if [[ "$keepalive" == "true" ]]; then
-        if [[ "$OS" == "linux" ]]; then
+        if [[ "$LINUX_SCHEDULER" == "cron" ]]; then
+            print_status "warning" "Automation '$name' is a keepalive daemon, which needs a systemd user manager — skipping"
+        elif [[ "$OS" == "linux" ]]; then
             register_keepalive_unit "$name" "$run_script"
         else
             register_keepalive_plist "$name" "$run_script"
@@ -453,7 +515,9 @@ process_automation() {
         return 0
     fi
 
-    if [[ "$OS" == "linux" ]]; then
+    if [[ "$LINUX_SCHEDULER" == "cron" ]]; then
+        register_cron_entry "$name" "$run_script" "$cron"
+    elif [[ "$OS" == "linux" ]]; then
         register_timer_unit "$name" "$run_script" "$cron"
     else
         register_plist "$name" "$run_script" "$cron"
@@ -514,7 +578,7 @@ if [ -d "$STANDALONE_SOURCE" ]; then
 fi
 
 # A user's systemd timers stop at logout unless lingering is on.
-if [[ "$OS" == "linux" ]] && [[ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != "yes" ]]; then
+if [[ "${LINUX_SCHEDULER:-}" == "systemd" ]] && [[ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != "yes" ]]; then
     print_status "warning" "Timers run only while $USER is logged in. To run them anyway: sudo loginctl enable-linger $USER"
 fi
 
