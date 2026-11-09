@@ -85,7 +85,7 @@ Outside the kitchen: `skill-eval`, `standup` and the `timesheet` and `timesheet-
 
 ### Platform handling in `.zshrc`
 
-`src/storage/zsh/.zshrc` has a `case "$OSTYPE"` block with branches for `darwin*`, `linux*`, and `msys*|cygwin*|mingw*`. The Windows branch does nvm-windows PATH wiring (via `cygpath`) and auto-starts/loads `ssh-agent` from `~/.ssh/agent.env`. macOS/Linux rely on system keychain.
+Before Oh-My-Zsh loads, `src/storage/zsh/.zshrc` runs `brew shellenv` when `/opt/homebrew/bin/brew` exists, so Apple Silicon Homebrew is on PATH and its completions reach compinit. It has a `case "$OSTYPE"` block with branches for `darwin*`, `linux*`, and `msys*|cygwin*|mingw*`. The Windows branch does nvm-windows PATH wiring (via `cygpath`) and auto-starts/loads `ssh-agent` from `~/.ssh/agent.env`. macOS/Linux rely on system keychain.
 
 Machine-specific overrides (intentional): `~/.zshrc.local` and `~/.zshrc.$(hostname)` are sourced at the end if present — do not overwrite them.
 

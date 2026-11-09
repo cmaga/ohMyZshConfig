@@ -20,6 +20,10 @@ fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 # Update settings
 zstyle ':omz:update' mode auto
 
+# Homebrew on Apple Silicon. Loaded before Oh-My-Zsh so compinit picks up its
+# completions. Intel Homebrew lives in /usr/local/bin, already on PATH.
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+
 # Initialization
 source $ZSH/oh-my-zsh.sh
 
