@@ -121,6 +121,8 @@ if command -v nvm &>/dev/null; then
 
     # --- Enable corepack for pnpm ---
     echo "${YELLOW}📦 Enabling corepack (provides pnpm)...${NC}"
+    # Node.js 25 and later no longer ship corepack, so npm installs it there
+    command -v corepack &>/dev/null || npm install -g corepack
     corepack enable
     echo "${GREEN}✅ corepack enabled${NC}"
 else
