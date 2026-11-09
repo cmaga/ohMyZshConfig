@@ -34,6 +34,56 @@ resolve_toml() {
     print -- "${lib_dir}/automation.toml"
 }
 
+# --- Per-machine config (never in a repo) ---
+# ~/.config/harvest/timesheet.toml holds what differs per machine and must not be
+# published: the Harvest projects (client and contract names), their caps, the
+# repos to read, and this machine's role. Without it, the automation runs in its
+# original single-project form from automation.toml (project_name, repo_path).
+#
+#   projects        = "amazon va"      managed projects, by key
+#   <key>_project   = "..."            Harvest project: name, code, or "[code] name"
+#   <key>_task      = "..."            Harvest task under that project
+#   <key>_cap       = 8                weekly hour cap; the one project without a
+#                                      cap takes the rest of the week's target
+#   fill_project    = "amazon"         project this machine's standup posts to
+#   repo_roots      = "~/workplace"    folders scanned for git repos (and repos)
+#   exclude_repos   = "dotfiles"       repo folder names that are not client work
+#   standup_dir     = "~/dev/x/.standup"  where the weekly standup files go
+#   extra_activity  = "..."            extra instruction for gathering a day's work
+#   reconcile       = true             this machine runs the Sunday reconcile
+TIMESHEET_CONFIG="${TIMESHEET_CONFIG:-$HOME/.config/harvest/timesheet.toml}"
+
+has_timesheet_config() { [[ -f "$TIMESHEET_CONFIG" ]]; }
+
+# ts_string/ts_int/ts_bool KEY: the per-machine config, else automation.toml.
+ts_string() {
+    local v=""
+    has_timesheet_config && v=$(_toml_string "$1" "$TIMESHEET_CONFIG")
+    [[ -n "$v" ]] || v=$(_toml_string "$1" "$(resolve_toml)")
+    print -r -- "${v/#\~/$HOME}"
+}
+ts_int() {
+    local v=""
+    has_timesheet_config && v=$(_toml_int "$1" "$TIMESHEET_CONFIG")
+    [[ -n "$v" ]] || v=$(_toml_int "$1" "$(resolve_toml)")
+    print -r -- "$v"
+}
+ts_bool() {
+    local v=""
+    has_timesheet_config && v=$(_toml_bool "$1" "$TIMESHEET_CONFIG")
+    [[ -n "$v" ]] || v=$(_toml_bool "$1" "$(resolve_toml)")
+    print -r -- "$v"
+}
+
+# Managed project keys. The original single-project form is one key, "default",
+# whose project/task come from project_name/task_name.
+project_keys() {
+    local keys=$(ts_string projects)
+    print -r -- "${keys:-default}"
+}
+project_name_for() { [[ "$1" == default ]] && ts_string project_name || ts_string "${1}_project"; }
+task_name_for()    { [[ "$1" == default ]] && ts_string task_name    || ts_string "${1}_task"; }
+
 # --- Credentials (chmod-600 env file) ---
 HARVEST_ENV_FILE="${HARVEST_ENV_FILE:-$HOME/.config/harvest/env}"
 
@@ -50,7 +100,7 @@ EOF
         return 1
     fi
     local perms
-    perms=$(stat -f '%A' "$HARVEST_ENV_FILE" 2>/dev/null)
+    perms=$(stat -c '%a' "$HARVEST_ENV_FILE" 2>/dev/null || stat -f '%A' "$HARVEST_ENV_FILE" 2>/dev/null)
     if [[ -n "$perms" && "$perms" != "600" ]]; then
         echo "timesheet: $HARVEST_ENV_FILE has perms $perms; expected 600. Run: chmod 600 $HARVEST_ENV_FILE" >&2
         return 1
@@ -93,17 +143,20 @@ harvest_api() {
     [[ "$http_code" -lt 400 ]]
 }
 
-# Sets PROJECT_ID and TASK_ID by matching names from automation.toml.
+# Sets PROJECT_ID and TASK_ID from a project and task name. The project may be
+# given as Harvest stores its name, as its code, or as "[code] name", which is
+# how Harvest's UI shows it.
 resolve_project_task() {
     local project_name="$1" task_name="$2" body
-    body=$(harvest_api GET "/users/me/project_assignments") || {
+    body=$(harvest_api GET "/users/me/project_assignments?per_page=2000") || {
         echo "timesheet: failed to fetch project assignments" >&2
         return 1
     }
+    local match='.project.name == $p or .project.code == $p or ("[" + (.project.code // "") + "] " + .project.name) == $p'
     PROJECT_ID=$(print -r -- "$body" | jq -r --arg p "$project_name" \
-        '[.project_assignments[] | select(.project.name == $p)][0].project.id // empty')
+        "[.project_assignments[] | select($match)][0].project.id // empty")
     TASK_ID=$(print -r -- "$body" | jq -r --arg p "$project_name" --arg t "$task_name" \
-        '[.project_assignments[] | select(.project.name == $p) | .task_assignments[] | select(.task.name == $t)][0].task.id // empty')
+        "[.project_assignments[] | select($match) | .task_assignments[] | select(.task.name == \$t)][0].task.id // empty")
     if [[ -z "$PROJECT_ID" ]]; then
         echo "timesheet: no project assignment matching '$project_name'" >&2
         return 1
@@ -121,10 +174,18 @@ round_up_quarter() {
     awk -v h="$1" 'BEGIN { q = h * 4; iq = int(q); if (q > iq + 1e-9) iq++; printf "%.2f", iq / 4 }'
 }
 
+# A date N days from today (negative for the past), YYYY-MM-DD. GNU date
+# (Linux) and BSD date (macOS) spell this differently.
+days_from_today() {
+    local n="$1"
+    [[ "$n" == [-+]* ]] || n="+$n"
+    date -d "$n days" '+%Y-%m-%d' 2>/dev/null || date -v"${n}d" '+%Y-%m-%d'
+}
+
 # The just-ended Sun-Sat week as "START END" (YYYY-MM-DD), for the Sunday cron:
 # start = 7 days ago (last Sunday), end = yesterday (Saturday).
 prev_week_range() {
-    print -- "$(date -v-7d '+%Y-%m-%d') $(date -v-1d '+%Y-%m-%d')"
+    print -- "$(days_from_today -7) $(days_from_today -1)"
 }
 
 # Find the time-entry id for a date under the resolved project/task (empty if none).

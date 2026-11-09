@@ -7,7 +7,11 @@
 # the rest are read by reconcile.zsh / harvest-post.zsh at run time.
 # Format is intentionally minimal so a regex parser in zsh can read it.
 
+# A per-machine ~/.config/harvest/timesheet.toml (see harvest-lib.zsh) replaces
+# repo_path/project_name/task_name, and then this job only reconciles.
+
 enabled = true
+platforms = "macos linux"
 cron = "0 11 * * 0"
 repo_path = "/Users/cmagana/dev/gsi/symage/symdocs/symdocs"
 project_name = "Symage R&D"

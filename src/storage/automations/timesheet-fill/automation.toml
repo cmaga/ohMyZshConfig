@@ -1,0 +1,10 @@
+# Timesheet fill: Friday 4:30pm, the standup skill posts this machine's project
+# notes for every unposted day of the week through today, headless.
+# Runs only with a per-machine ~/.config/harvest/timesheet.toml that sets
+# fill_project; reconciling is the timesheet automation's job, on Sunday.
+# It runs on Friday, not Sunday, because it needs Claude, and Claude's
+# credentials may lapse over a weekend (a company login that needs a person).
+
+enabled = true
+platforms = "macos linux"
+cron = "30 16 * * 5"

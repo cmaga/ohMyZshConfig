@@ -6,15 +6,23 @@ disable-model-invocation: true
 
 # Standup
 
-Draft a plain-language summary of recent work, let me review and tweak it, and on `done` post it to Harvest as that day's time entry. The standup file (summary + post-standup + notes, for the meeting) lives at `<repo>/.claude-artifacts/workflows/standup/MM-DD-week.md`, Sunday-anchored.
+Draft a plain-language summary of recent work, let me review and tweak it, and on `done` post it to Harvest as that day's time entry. The standup file (summary + post-standup + notes, for the meeting) lives at `<standup_dir>/MM-DD-week.md`, Sunday-anchored.
+
+This machine's setup comes from one command; run it first:
+
+```sh
+$HOME/.local/share/cmagana-automations/timesheet/standup-gather.zsh config
+```
+
+It prints `fill_project` (the Harvest project this machine posts to; empty means the single project of the original setup), `standup_dir`, `extra_activity` (an extra instruction for gathering, or empty) and how many repos this machine's work spans.
 
 ## Critical Rules
 
 - This posts **real (unsubmitted) Harvest entries**. In interactive mode nothing is posted until I type `done`.
 - Submitted/locked Harvest days are **never modified**, even with `--force` — `harvest-post.zsh` and the reconciler skip them.
-- Fill every **unposted day from yesterday back to the most recent day already in Harvest** — normally just yesterday, more if I missed days. Skip days with no activity.
-- Entry hours are a **7h placeholder**; the Sunday reconciler sets final hours. Never post hours ≥8 — that value is the manual-entry marker.
-- Post through `$HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh` — it resolves Harvest credentials and the project/task.
+- Fill every **unposted day from yesterday back to the most recent day already in Harvest** — normally just yesterday, more if I missed days. With `--through-today`, today counts too. Skip days with no activity.
+- Entry hours are a **placeholder** (harvest-post's default); the Sunday reconciler sets final hours. Never post hours ≥8 — a day at 8h or more is the manual-entry marker.
+- Post through `$HOME/.local/share/cmagana-automations/timesheet/harvest-post.zsh` — it resolves Harvest credentials and this machine's project/task (`fill_project`).
 - `auto` mode is headless (the Sunday reconciler calls it): gather and post without review, and **never overwrite a day that already has a note**.
 
 ## Modes
@@ -24,27 +32,30 @@ Draft a plain-language summary of recent work, let me review and tweak it, and o
 | `/standup`              | Draft summaries for all unposted days (last entry → yesterday), show them, take tweaks; post on `done`. |
 | `/standup YYYY-MM-DD`   | Same, for one specific day (manual backfill).                                              |
 | `/standup auto`         | Headless: gather and post all unposted days, no review. The Sunday reconciler calls this.  |
+| `/standup auto --through-today` | Same, including today. The Friday timesheet-fill job calls this.                  |
 | `/standup show [weekly]`| Print summaries (+ post-standup + notes) from the file. No gathering, no posting.          |
 
 ## Which days to fill
 
-1. Resolve `repo_path` from `automation.toml` next to this file.
-2. Look at the last ~10 days ending **yesterday**. A day is **unposted** if Harvest has no entry for it yet (the reconciler's `harvest-post.zsh` checks this; you can also list recent entries to see the gap).
+1. Run `standup-gather.zsh config` (above).
+2. Look at the last ~10 days ending **yesterday** (**today** with `--through-today`). A day is **unposted** if Harvest has no entry for it yet (the reconciler's `harvest-post.zsh` checks this; you can also list recent entries to see the gap).
 3. Fill each unposted day that has activity. Leave days that already have an entry untouched — `harvest-post.zsh` without `--force` preserves them, so reviewed and manual days are never clobbered.
 
 Normally only yesterday is unposted. If I missed standups, the gap (e.g., Monday + Tuesday) all fills at once, each reviewable. On Sunday the reconciler's `auto` run fills Friday + Saturday this way.
 
 ## Gathering a day's work
 
-For day `D` (`YYYY-MM-DD`):
+For day `D` (`YYYY-MM-DD`), my commits across every repo this machine's work spans, one `repo: hash subject` line each:
 
 ```sh
-git --no-pager -C <repo_path> log --since="D 00:00:00" --until="D 23:59:59" --author="$(git -C <repo_path> config user.email)" --no-merges --pretty=format:'%h %s'
+$HOME/.local/share/cmagana-automations/timesheet/standup-gather.zsh commits D
 ```
 
-If `<repo_path>/.claude/skills/jira/config.json` exists, also gather Jira activity dated `D` — comments I authored on `D` and tickets I resolved on `D` (read `projectKey`/`email` from that config; JQL `resolved >= "D 00:00" AND resolved <= "D 23:59"`). Skip Jira silently if the config is missing. If a Jira call fails, log to stderr and continue with commits.
+If `extra_activity` is set, follow it to gather more of the day's work (code reviews from another system, say). It is optional evidence: if it fails, log to stderr and continue with commits.
 
-If a day has no commits and no Jira activity, it has no entry — skip it.
+In the original single-repo setup (`fill_project` empty), if `<repo_path>/.claude/skills/jira/config.json` exists (`repo_path` from `automation.toml` next to this file), also gather Jira activity dated `D` — comments I authored on `D` and tickets I resolved on `D` (read `projectKey`/`email` from that config; JQL `resolved >= "D 00:00" AND resolved <= "D 23:59"`). Skip Jira silently if the config is missing. If a Jira call fails, log to stderr and continue with commits.
+
+If a day has no commits and no other activity, it has no entry — skip it.
 
 ## Summary rules
 
@@ -53,6 +64,7 @@ Audience is non-engineers in standup — a spoken update, not a ticket dump. Wri
 - Cluster related tickets into a single thread of work, not three separate items.
 - Plain language: describe the effect, not the mechanism. Translate tool names into what they do; a short clarifying parenthetical is fine ("smoke tests (AWS Synthetics)").
 - No ticket IDs, PR numbers, version numbers, file paths, or function names.
+- No internal project codenames, service or system names, or package names: Harvest is outside the client, so describe the kind of work ("sped up the robot cell's deploy checks"), not what it is called inside.
 - Trivial commits (formatting, typo fixes, merges) earn no mention unless they were the day's actual work.
 
 ## Interactive flow (`/standup` or `/standup <date>`)

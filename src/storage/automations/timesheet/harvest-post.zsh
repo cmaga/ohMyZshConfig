@@ -2,7 +2,10 @@
 # Post or update a single day's Harvest entry. Used by the standup skill (interactive
 # `done` and the headless fill the reconciler triggers). Never submits.
 #
-# Usage: harvest-post.zsh <YYYY-MM-DD> [--note "text"] [--hours H] [--force]
+# Usage: harvest-post.zsh <YYYY-MM-DD> [--note "text"] [--hours H] [--force] [--project KEY]
+#
+#   --project KEY             a key from the per-machine config's `projects`; defaults
+#                             to its `fill_project` (or the single project of automation.toml)
 #
 #   no entry for the day      -> create with hours (default base) + note
 #   entry exists, --force     -> overwrite the note (interactive `done`); hours untouched
@@ -17,12 +20,13 @@ SCRIPT_PATH="${(%):-%x}"
 SCRIPT_DIR="${SCRIPT_PATH:A:h}"
 source "${SCRIPT_DIR}/harvest-lib.zsh"
 
-DATE="" NOTE="" HOURS="" FORCE=0
+DATE="" NOTE="" HOURS="" FORCE=0 KEY=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --note)  NOTE="$2"; shift 2 ;;
         --hours) HOURS="$2"; shift 2 ;;
         --force) FORCE=1; shift ;;
+        --project) KEY="$2"; shift 2 ;;
         *)       DATE="$1"; shift ;;
     esac
 done
@@ -32,10 +36,15 @@ if [[ ! "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
     exit 2
 fi
 
-TOML=$(resolve_toml)
-PROJECT_NAME=$(_toml_string project_name "$TOML")
-TASK_NAME=$(_toml_string task_name "$TOML")
-BASE_HOURS=$(_toml_int default_hours "$TOML"); BASE_HOURS=${BASE_HOURS:-7}
+[[ -n "$KEY" ]] || KEY=$(ts_string fill_project)
+[[ -n "$KEY" ]] || KEY=default
+PROJECT_NAME=$(project_name_for "$KEY")
+TASK_NAME=$(task_name_for "$KEY")
+if [[ -z "$PROJECT_NAME" || -z "$TASK_NAME" ]]; then
+    echo "harvest-post: no project/task configured for '$KEY'" >&2
+    exit 2
+fi
+BASE_HOURS=$(ts_int default_hours); BASE_HOURS=${BASE_HOURS:-7}
 [[ -n "$HOURS" ]] || HOURS="$BASE_HOURS"
 
 require_credentials || exit 1

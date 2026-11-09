@@ -143,7 +143,15 @@ COMPANIES=("gsi" "ms")
 # and records it in .git/deploy-profile, and update.zsh then deploys only those.
 typeset -A PROFILE_TARGETS=(
     amazon-laptop  "deploy-zsh"
-    amazon-desktop "deploy-zsh deploy-claude-config"
+    amazon-desktop "deploy-zsh deploy-claude-config deploy-timesheet"
+)
+
+# The full target each partial profile target is part of, for update.zsh: a
+# partial target is due whenever its full one is.
+typeset -A PART_OF=(
+    deploy-zsh-config    deploy-zsh
+    deploy-claude-config deploy-claude
+    deploy-timesheet     deploy-automations
 )
 
 # =============================================================================

@@ -1,8 +1,8 @@
 #!/bin/zsh
 # Automation deployment script
 # Discovers automation.toml files in two locations and registers a launchd
-# job for each on macOS, a systemd user service on Linux, or a per-user Task
-# Scheduler logon task on Windows (Linux and Windows: keepalive only):
+# job for each on macOS, a systemd user service (and, when scheduled, timer) on
+# Linux, or a per-user Task Scheduler logon task on Windows (keepalive only):
 #   1. Skill-bundled: ~/.claude/skills/<name>/automation.toml
 #      Triggered run script: ~/.claude/skills/<name>/dependencies/scripts/run.zsh
 #   2. Standalone:   src/storage/automations/<name>/automation.toml
@@ -10,12 +10,17 @@
 #      (deployed to ~/.local/share/cmagana-automations/<name>/ at install time)
 #
 # An automation runs on macOS unless its toml sets `platforms`, a space-separated
-# list of macos|linux|windows. Linux and Windows support keepalive automations
-# only; scheduled ones are skipped there.
+# list of macos|linux|windows. Windows supports keepalive automations only;
+# scheduled ones are skipped there.
+#
+# Names given as arguments deploy only those standalone automations (and skip
+# skill-bundled ones and retirements), for a machine that takes just a few.
 #
 # Idempotent: existing plists/units/tasks are unloaded and rewritten on each deploy.
 
 set -e
+
+ONLY=("$@")
 
 SCRIPT_DIR="${0:A:h}"
 source "${SCRIPT_DIR}/lib/common.zsh"
@@ -84,6 +89,80 @@ cron_dow_to_weekdays() {
         echo "${dow//,/ }"
     else
         return 1
+    fi
+}
+
+# A cron expression's minute, hour and day-of-week as a systemd OnCalendar
+# value, e.g. "0 11 * * 0" as "Sun *-*-* 11:00:00".
+cron_to_oncalendar() {
+    local cron="$1"
+    local minute=$(echo "$cron" | awk '{print $1}')
+    local hour=$(echo "$cron" | awk '{print $2}')
+    local dow=$(echo "$cron" | awk '{print $5}')
+    local weekdays out="" d
+    local -a names=(Sun Mon Tue Wed Thu Fri Sat)
+    weekdays=$(cron_dow_to_weekdays "$dow") || return 1
+    [[ "$minute" == <-> && "$hour" == <-> ]] || return 1
+    if [[ "$dow" != "*" ]]; then
+        for d in ${=weekdays}; do out+="${names[$((d + 1))]},"; done
+        out="${out%,} "
+    fi
+    printf '%s*-*-* %02d:%02d:00\n' "$out" "$hour" "$minute"
+}
+
+# Render and start a systemd user timer and its oneshot service: the Linux
+# counterpart of register_plist. Persistent, so a run missed while the machine
+# was off happens at the next boot. AUTOMATION_TZ (e.g. America/New_York) pins
+# the schedule to that zone instead of the system's, which on a cloud host is
+# often UTC; it needs systemd 235 or later.
+# Args: name run_script cron_expr
+register_timer_unit() {
+    local name="$1"
+    local run_script="$2"
+    local cron="$3"
+    local unit="cmagana-$name"
+
+    local calendar
+    if ! calendar=$(cron_to_oncalendar "$cron"); then
+        print_status "warning" "Automation '$name': unsupported cron '$cron' — skipping"
+        return 0
+    fi
+    if [[ -n "${AUTOMATION_TZ:-}" ]]; then
+        local systemd_version=$(systemctl --version 2>/dev/null | awk 'NR == 1 {print $2}')
+        if [[ "$systemd_version" == <-> ]] && (( systemd_version >= 235 )); then
+            calendar+=" $AUTOMATION_TZ"
+        else
+            print_status "warning" "Automation '$name': systemd ${systemd_version:-unknown} has no time zones in timers, so it runs at $cron system time ($(date +%Z))"
+        fi
+    fi
+
+    cat > "$SYSTEMD_USER_DIR/$unit.service" <<EOF
+[Unit]
+Description=cmagana automation: $name
+
+[Service]
+Type=oneshot
+ExecStart=$(command -v zsh) $run_script
+StandardOutput=append:$LOG_DIR/$name.log
+StandardError=append:$LOG_DIR/$name.log
+EOF
+    cat > "$SYSTEMD_USER_DIR/$unit.timer" <<EOF
+[Unit]
+Description=cmagana automation schedule: $name
+
+[Timer]
+OnCalendar=$calendar
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    systemctl --user daemon-reload
+    if systemctl --user enable --now "$unit.timer" >/dev/null 2>&1; then
+        print_status "success" "Registered systemd timer '$unit.timer' (cron: $cron)"
+    else
+        print_status "warning" "systemctl --user failed to start $unit.timer"
     fi
 }
 
@@ -223,15 +302,20 @@ EOF
     fi
 }
 
-# Linux counterpart of unregister_plist.
+# Linux counterpart of unregister_plist: the service, and its timer if scheduled.
 unregister_unit() {
     local name="$1"
-    local unit="cmagana-$name.service"
-    if [ -f "$SYSTEMD_USER_DIR/$unit" ]; then
+    local unit kind removed=""
+    for kind in timer service; do
+        unit="cmagana-$name.$kind"
+        [ -f "$SYSTEMD_USER_DIR/$unit" ] || continue
         systemctl --user disable --now "$unit" >/dev/null 2>&1 || true
         rm -f "$SYSTEMD_USER_DIR/$unit"
+        removed+=" $unit"
+    done
+    if [[ -n "$removed" ]]; then
         systemctl --user daemon-reload
-        print_status "info" "Automation '$name' disabled — removed $unit"
+        print_status "info" "Automation '$name' disabled — removed$removed"
     fi
 }
 
@@ -353,17 +437,16 @@ process_automation() {
         return 0
     fi
 
-    if [[ "$OS" == "linux" ]]; then
-        print_status "info" "Automation '$name': scheduled jobs are macOS-only — skipping"
-        return 0
-    fi
-
-    if [[ -z "$cron" || -z "$repo_path" || "$repo_path" == "/CHANGEME" ]]; then
+    if [[ -z "$cron" || "$repo_path" == "/CHANGEME" ]]; then
         print_status "warning" "Automation '$name' has incomplete automation.toml — skipping"
         return 0
     fi
 
-    register_plist "$name" "$run_script" "$cron"
+    if [[ "$OS" == "linux" ]]; then
+        register_timer_unit "$name" "$run_script" "$cron"
+    else
+        register_plist "$name" "$run_script" "$cron"
+    fi
 }
 
 print_status "info" "Deploying automations..."
@@ -371,7 +454,7 @@ print_status "info" "Deploying automations..."
 # Retired automations: unload and remove anything previously registered that is not in source.
 # Runs before registration so a successor that takes over a retired agent's port can bind it.
 for name in cost-tracker litellm-proxy; do
-    [[ "$OS" == "macos" ]] || break
+    [[ "$OS" == "macos" && ${#ONLY} -eq 0 ]] || break
     label="com.cmagana.$name"
     plist="$LAUNCH_AGENTS_DIR/$label.plist"
     if launchctl list 2>/dev/null | grep -q "$label"; then
@@ -387,7 +470,7 @@ for name in cost-tracker litellm-proxy; do
 done
 
 # 1. Skill-bundled automations under ~/.claude/skills/<name>/ (macOS only)
-if [[ "$OS" == "macos" && -d "$CLAUDE_SKILLS_DEST" ]]; then
+if [[ "$OS" == "macos" && ${#ONLY} -eq 0 && -d "$CLAUDE_SKILLS_DEST" ]]; then
     for skill_dir in "$CLAUDE_SKILLS_DEST"/*/; do
         skill_dir="${skill_dir%/}"
         toml="$skill_dir/automation.toml"
@@ -407,6 +490,7 @@ if [ -d "$STANDALONE_SOURCE" ]; then
     for src_dir in "$STANDALONE_SOURCE"/*/; do
         [ -d "$src_dir" ] || continue
         name=$(basename "${src_dir%/}")
+        (( ${#ONLY} == 0 || ${ONLY[(Ie)$name]} )) || continue
         dest_dir="$STANDALONE_DEST/$name"
         toml="$src_dir/automation.toml"
         [ -f "$toml" ] || continue
@@ -416,6 +500,11 @@ if [ -d "$STANDALONE_SOURCE" ]; then
         run_script="$dest_dir/run.zsh"
         process_automation "$name" "$run_script" "$dest_dir/automation.toml"
     done
+fi
+
+# A user's systemd timers stop at logout unless lingering is on.
+if [[ "$OS" == "linux" ]] && [[ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" != "yes" ]]; then
+    print_status "warning" "Timers run only while $USER is logged in. To run them anyway: sudo loginctl enable-linger $USER"
 fi
 
 print_status "success" "Automation deployment complete!"

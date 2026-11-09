@@ -42,7 +42,7 @@ else
 fi
 
 # A machine on a profile (deploy-profile.zsh) takes only the profile's targets,
-# each due when the full target it is part of is due: deploy-zsh-config with deploy-zsh.
+# each due when the full target it is part of (PART_OF in lib/common.zsh) is due.
 PROFILE_FILE="${STATE_FILE:h}/deploy-profile"
 if [[ -f "$PROFILE_FILE" ]]; then
     profile=$(<"$PROFILE_FILE")
@@ -50,7 +50,7 @@ if [[ -f "$PROFILE_FILE" ]]; then
     due=($targets)
     targets=()
     for target in ${=PROFILE_TARGETS[$profile]}; do
-        if (( ${due[(Ie)${target%-config}]} )); then
+        if (( ${due[(Ie)${PART_OF[$target]:-$target}]} )); then
             targets+=($target)
         fi
     done
