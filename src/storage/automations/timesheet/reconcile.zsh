@@ -11,7 +11,10 @@
 #     length, the only per-day evidence Harvest holds.
 #   - Within a project, hours follow each day's activity, and an auto day stays
 #     under 8h counting that day's fixed hours, so it never reads as manual. If
-#     the days cannot hold a project's hours, its longest-note day takes the rest.
+#     the days cannot hold a project's hours, its longest-note day takes the rest,
+#     up to 10h that day. Past that the hours are reported, not logged: a week
+#     short of days (a day off with no PTO or holiday entry) shows as short, and
+#     is never padded onto the days that were worked.
 #   - With no uncapped project in the week (say, only capped work), the hours
 #     left over are reported, not logged.
 #
@@ -80,7 +83,7 @@ plan=$(print -r -- "$entries" | awk -F'|' -v TARGET="$TARGET" -v CAPS="${(j:,:)C
     function ceilq(h,  q) { q = h * 4; return (q > int(q) + 1e-9) ? int(q) + 1 : int(q) }
     # Spread RQ quarters over key k'"'"'s auto entries by note length, each under its
     # day'"'"'s room (31 minus what the day already holds), with a floor when it fits.
-    function spread(k, RQ, fl,   j, m, ix, w, cap, flo, q, tot, sumq, best, bw, g) {
+    function spread(k, RQ, fl,   j, m, ix, w, cap, flo, q, tot, sumq, best, bw, g, room, add) {
         m = 0
         for (j = 1; j <= n; j++) if (AUTO[j] && K[j] == k) ix[++m] = j
         if (m == 0 || RQ <= 0) return 0
@@ -112,15 +115,17 @@ plan=$(print -r -- "$entries" | awk -F'|' -v TARGET="$TARGET" -v CAPS="${(j:,:)C
         }
         if (sumq < RQ) {
             best = 1; for (j = 2; j <= m; j++) if (w[j] > w[best]) best = j
-            q[best] += RQ - sumq
-            printf "LOG %s: its days cannot hold %.2fh under 8h each; the longest-note day takes the rest\n", k, RQ / 4
-            sumq = RQ
+            room = MAXDAY - USED[D[ix[best]]] - q[best]; if (room < 0) room = 0
+            add = (RQ - sumq < room) ? RQ - sumq : room
+            q[best] += add; sumq += add
+            printf "LOG %s: its days cannot hold %.2fh under 8h each; the longest-note day takes %.2fh more\n", k, RQ / 4, add / 4
         }
         for (j = 1; j <= m; j++) { USED[D[ix[j]]] += q[j]; printf "SET %s %.2f %s %s\n", ID[ix[j]], q[j] / 4, k, D[ix[j]] }
         return sumq
     }
     { n++; D[n] = $1; ID[n] = $2; K[n] = $3; H[n] = $4 + 0; NL[n] = $5 + 0; LK[n] = $6; DAY[$1] += $4 }
     END {
+        MAXDAY = 40   # 10h: the most any one day takes in overflow
         ncap = split(CAPS, cp, ",")
         for (i = 1; i <= ncap; i++) { split(cp[i], kv, "="); CAPQ[kv[1]] = kv[2] * 4; CORD[i] = kv[1] }
         fixed = 0
@@ -149,9 +154,10 @@ plan=$(print -r -- "$entries" | awk -F'|' -v TARGET="$TARGET" -v CAPS="${(j:,:)C
         }
         left = avail - given
         if (RK != "" && (RK in W)) {
-            given += spread(RK, left, 20); left = 0
+            got = spread(RK, left, 20); given += got; left -= got
         }
         if (left > 0 && RK == "") printf "LOG %.2fh of the %sh target left to projects this machine does not manage\n", left / 4, TARGET
+        else if (left > 0 && (RK in W)) printf "LOG %.2fh of the %sh target left unassigned: more than the worked days hold. A day off with no PTO or holiday entry? Add it, or log the hours by hand\n", left / 4, TARGET
         else if (left > 0) printf "LOG %.2fh of the %sh target left unassigned: no %s work this week\n", left / 4, TARGET, RK
         printf "LOG week total %.2fh (fixed %.2fh, auto %.2fh)\n", fixed + given / 4, fixed, given / 4
     }')
