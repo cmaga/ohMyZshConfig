@@ -35,6 +35,12 @@ BIN_DEST="$HOME/.local/bin"
 SCRIPTS_DEST="$CUSTOM_DIR/scripts"
 PLUGINS_DIR="$OMZ_DIR/custom/plugins"
 
+# ~/.zshrc as the last deploy left it. Anything added to ~/.zshrc since (an
+# installer appending its PATH line) moves to ~/.zshrc.local before the deploy
+# replaces ~/.zshrc, so it keeps working.
+ZSHRC_SNAPSHOT="$HOME/.config/ohmyzshconfig/zshrc.deployed"
+ZSHRC_LOCAL="$HOME/.zshrc.local"
+
 
 # Function to check and install zsh if its not present
 check_install_zsh() {
@@ -67,6 +73,46 @@ get_login_shell() {
         linux) getent passwd "$USER" | cut -d: -f7 ;;
         *)     echo "$SHELL" ;;
     esac
+}
+
+# Move what was added to ~/.zshrc since the last deploy into ~/.zshrc.local.
+# Runs before Oh-My-Zsh's installer, which also moves ~/.zshrc aside. Added
+# lines are split into blocks at blank lines, as installers write them; a block
+# is kept whole unless every line of it is already in ~/.zshrc.local (an
+# installer re-adding its line after every deploy).
+keep_zshrc_additions() {
+    [[ -f "$ZSHRC_DEST" ]] || return 0
+    local baseline
+    if [[ -f "$ZSHRC_SNAPSHOT" ]]; then
+        baseline="$ZSHRC_SNAPSHOT"
+    elif grep -q 'oh-my-zsh.sh' "$ZSHRC_DEST"; then
+        # Deployed before snapshots existed: nothing to tell apart from ours
+        return 0
+    else
+        # Not ours (stock, or written by a company's installers): keep all of it
+        baseline=/dev/null
+    fi
+
+    # deploy-zsh-config's sourcing line is dropped: aliases.zsh loads from
+    # Oh-My-Zsh's custom/ once this deploy is done.
+    local added
+    added=$(diff "$baseline" "$ZSHRC_DEST" | awk -v localrc="$ZSHRC_LOCAL" '
+        function flush() { if (fresh) out = out block "\n"; block = ""; fresh = 0 }
+        BEGIN { while ((getline line < localrc) > 0) have[line] = 1 }
+        /^[0-9]/ { flush(); next }
+        /^> / {
+            l = substr($0, 3)
+            if (l ~ /\(deploy-zsh-config\)|\/ohmyzshconfig\/aliases\.zsh/) next
+            if (l ~ /^[[:space:]]*$/) { flush(); next }
+            block = block l "\n"
+            if (!(l in have)) fresh = 1
+        }
+        END { flush(); printf "%s", out }') || true
+    [[ -n "$added" ]] || return 0
+
+    printf '\n# Added to ~/.zshrc after a deploy, moved here by deploy-zsh on %s\n%s\n' \
+        "$(date +%Y-%m-%d)" "$added" >> "$ZSHRC_LOCAL" || error "Failed to update $ZSHRC_LOCAL"
+    print_status "success" "Kept what was added to ~/.zshrc in $ZSHRC_LOCAL"
 }
 
 # Function to set zsh as the default shell
@@ -124,10 +170,16 @@ check_install_oh_my_zsh() {
     print_status "warning" "Oh-My-Zsh not found"
     print_status "download" "Installing Oh-My-Zsh..."
     
-    # Download and install Oh-My-Zsh
-    if sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
+    # Download and install Oh-My-Zsh. ZSH pins it to $OMZ_DIR, where the
+    # installer would otherwise pick $ZDOTDIR/ohmyzsh when ZDOTDIR is set;
+    # KEEP_ZSHRC stops it replacing ~/.zshrc, which deploy_configs writes.
+    # Its output is shown only on failure: the git fetch inside it prints
+    # "branch -> origin/branch" lines, and deploy output must be inert.
+    local omz_out
+    if omz_out=$(ZSH="$OMZ_DIR" KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended 2>&1); then
         print_status "success" "Oh-My-Zsh installed successfully"
     else
+        print -r -- "$omz_out" | tail -n 15
         print_status "error" "Oh-My-Zsh installation failed"
         exit 1
     fi
@@ -257,6 +309,8 @@ deploy_configs() {
     # Deploy .zshrc
     log "Deploying .zshrc from $ZSHRC_SOURCE to $ZSHRC_DEST"
     cp "$ZSHRC_SOURCE" "$ZSHRC_DEST" || error "Failed to deploy .zshrc"
+    mkdir -p "${ZSHRC_SNAPSHOT:h}" && cp "$ZSHRC_DEST" "$ZSHRC_SNAPSHOT" \
+        || error "Failed to record $ZSHRC_SNAPSHOT"
 
     # Deploy bin/ shims. ~/.local/bin leads PATH, so these are reached from
     # every shell -- which a zsh function is not. `jira` was a zsh function,
@@ -344,7 +398,8 @@ main() {
     set_default_shell
     echo
     
-    # Step 3: Install Oh-My-Zsh
+    # Step 3: Keep what was added to ~/.zshrc, then install Oh-My-Zsh
+    keep_zshrc_additions
     check_install_oh_my_zsh
     echo
     
