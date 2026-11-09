@@ -16,11 +16,16 @@
 # Names given as arguments deploy only those standalone automations (and skip
 # skill-bundled ones and retirements), for a machine that takes just a few.
 #
+# A machine can run an automation on its own schedule: a <name>_cron line
+# (dashes as underscores) in ~/.config/cmagana-automations/schedule.toml, e.g.
+# timesheet_fill_cron = "0 22 * * 5", replaces the cron of its automation.toml.
+#
 # Idempotent: existing plists/units/tasks are unloaded and rewritten on each deploy.
 
 set -e
 
 ONLY=("$@")
+SCHEDULE_OVERRIDES="${XDG_CONFIG_HOME:-$HOME/.config}/cmagana-automations/schedule.toml"
 
 SCRIPT_DIR="${0:A:h}"
 source "${SCRIPT_DIR}/lib/common.zsh"
@@ -393,6 +398,8 @@ process_automation() {
     local enabled=$(toml_bool enabled "$toml")
     local keepalive=$(toml_bool keepalive "$toml")
     local cron=$(toml_string cron "$toml")
+    local own_cron=$(toml_string "${name//-/_}_cron" "$SCHEDULE_OVERRIDES")
+    [[ -n "$own_cron" ]] && cron="$own_cron"
     local repo_path=$(toml_string repo_path "$toml")
     local platforms=$(toml_string platforms "$toml")
 
