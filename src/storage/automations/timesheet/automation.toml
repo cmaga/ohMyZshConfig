@@ -1,20 +1,10 @@
-# Timesheet reconciler config.
-# Runs Sunday 11am: fills any unposted day of the just-ended Sun-Sat week via the
-# standup skill, then squares the week's hours to weekly_target.
-# Edit repo_path when you switch active projects.
-# Edit project_name / task_name to change the Harvest billing target.
-# Only `cron`, `repo_path`, and `enabled` are read by the deploy script;
-# the rest are read by reconcile.zsh / harvest-post.zsh at run time.
-# Format is intentionally minimal so a regex parser in zsh can read it.
-
-# A per-machine ~/.config/harvest/timesheet.toml (see harvest-lib.zsh) replaces
-# repo_path/project_name/task_name, and then this job only reconciles.
+# Timesheet reconciler: Sunday 11am squares the just-ended Sun-Sat week's
+# Harvest hours to the weekly target, on a machine whose per-machine config
+# (~/.config/harvest/timesheet.toml, keys in harvest-lib.zsh) sets
+# reconcile = true. Without that config the job does nothing: client projects
+# and repos live only in that file, never here.
+# Only `cron`, `platforms` and `enabled` are read by the deploy script.
 
 enabled = true
 platforms = "macos linux"
 cron = "0 11 * * 0"
-repo_path = "/Users/cmagana/dev/gsi/symage/symdocs/symdocs"
-project_name = "Symage R&D"
-task_name = "All Software Development"
-default_hours = 7
-weekly_target = 40

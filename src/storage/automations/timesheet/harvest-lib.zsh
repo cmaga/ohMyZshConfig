@@ -37,8 +37,9 @@ resolve_toml() {
 # --- Per-machine config (never in a repo) ---
 # ~/.config/harvest/timesheet.toml holds what differs per machine and must not be
 # published: the Harvest projects (client and contract names), their caps, the
-# repos to read, and this machine's role. Without it, the automation runs in its
-# original single-project form from automation.toml (project_name, repo_path).
+# repos to read, and this machine's role. Without it, the timesheet jobs do
+# nothing (the single "default" project of automation.toml's project_name and
+# task_name remains only as a fallback for a manual harvest-post).
 #
 #   projects        = "amazon va"      managed projects, by key
 #   <key>_project   = "..."            Harvest project: name, code, or "[code] name"
