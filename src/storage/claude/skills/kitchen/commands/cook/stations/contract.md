@@ -4,13 +4,14 @@ Write the tests before the code is handed off, as a contract between the session
 
 ## Who writes it
 
-A `worker-agent` on the contract role ([SKILL.md](../../../SKILL.md#subagents)), never the agent that will write the code. Brief it with this file's path, the intent, the done-when, the scope, and the recipe. Existing tests the change makes wrong are its to update, in the contract commit.
+A `worker-agent` on the contract role ([SKILL.md](../../../SKILL.md#subagents)), never the agent that will write the code. Brief it with this file's path, the intent, the done-when, the scope, the recipe, and for a bug fix the planned fix. Existing tests the change makes wrong are its to update, in the contract commit.
 
 ## What the tests answer to
 
 A test is only as right as what it was checked against, and a test seen only failing has been checked against nothing. Each recipe has its own oracle:
 
-- **Bug fix**: the report. One test that reproduces the bug through the real code path and fails on the base branch with the reported symptom.
+- **Bug fix**: the report. One test that reproduces the bug through the real code path and fails on the base branch with the reported symptom, added as a case to the test that already covers that code when one does.
+  - When the planned fix makes the bug unwritable, the contract is instead the check that rejects the buggy code: a `@ts-expect-error` line, or a `# type: ignore` line under mypy's `warn_unused_ignores`, holding the buggy call; a schema test that the bad row is refused; or a new lint rule's test with the buggy code as an invalid case. On the base branch it fails because the base accepts that code. Its `Contract-Run` is the type check, schema test, or lint test command, with no `Contract-Test` lines when that command names no tests: its exit code is the proof.
 - **Refactor**: the current code. Pins that pass on the base branch and must still pass after.
 - **Feature**: there is none, so the tests are the spec. Write them from the done-when and the edge cases that change what a user sees, through the interface users touch, never against internals. When they need something to call, the author first commits the scaffold: the signatures, types, and modules the code will fill, each body raising the language's not-implemented error. Then you, not the author, read each test against the intent before the coder starts, and send back any that pins the wrong behavior.
 - **Perf and hillclimb**: the frozen harness and its baseline.
@@ -35,7 +36,7 @@ Commit the contract, scaffold aside, as `git commit -m "test(contract): <what it
     Contract-Test: <a test's name exactly as that command prints it>
     Contract-Test: <the next>
 
-- Pick a run command whose output names each test: `pytest -v`, `vitest run --reporter=verbose`, `jest --verbose`, `go test -v`, `cargo test`.
+- Pick a run command whose output names each test: `pytest -v`, `vitest run --reporter=verbose`, `jest --verbose`, `go test -v`, `cargo test`. Make it one command, with only leading `NAME=value` or `export` words: the mutation sweep runs it without a shell, so `cd`, `&&`, and pipes break it.
 - Every contract commit restates the whole contract. A later one (the next milestone's, a correction) lists every file, run, and test still in force, and a correction's body says why.
 - Leave `Contract-Run` and `Contract-Test` off only for tests too slow to run at every check, such as an end-to-end proof. Their files stay locked.
 
@@ -47,4 +48,4 @@ Only a contract commit may touch a contract file. `bash ~/.claude/skills/kitchen
 - The coder runs the contract as often as it likes, keeps no tests of its own, and challenges a test it believes wrong in its report instead of editing it.
 - A challenge you accept goes back to the contract author as a correction. The coder never makes a contract commit.
 
-**Report:** each contract test with the line it pins and how it failed before the code (the reported symptom for a bug, the not-implemented error for a feature), and each place no test was cheap with what stands in for it.
+**Report:** each contract test with the line it pins and how it failed before the code (the reported symptom for a bug, the rejecting check's error on the base branch for an unwritable fix, the not-implemented error for a feature), and each place no test was cheap with what stands in for it.
