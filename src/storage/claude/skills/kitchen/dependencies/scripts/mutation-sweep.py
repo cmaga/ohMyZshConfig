@@ -17,7 +17,7 @@ negation, constant, jump (continue/break), swallow (shell `|| fail*`, `|| exit` 
 
 Tests: the Contract-Run trailer of the latest test(contract): commit in the range, narrowed
 per file to the Contract-Files whose text names it, and checked green unmutated once.
-Leading NAME=value words of that command set its environment, as in a shell.
+Leading `export`, `;` and NAME=value words of that command set its environment, as in a shell.
 """
 
 import argparse
@@ -446,7 +446,7 @@ def build_command(run, files, test_cmd, narrowed):
     if test_cmd:
         args = shlex.split(test_cmd.replace("{files}", shlex.join(narrowed)))
     else:
-        args = shlex.split(run)
+        args = shell_words(run)
         in_cmd = [t for t in args if t in set(files)]
         keep = [t for t in narrowed if t in in_cmd] or in_cmd
         if in_cmd:
@@ -463,6 +463,12 @@ def build_command(run, files, test_cmd, narrowed):
     return args
 
 
+def shell_words(command):
+    lex = shlex.shlex(command, posix=True, punctuation_chars=";")
+    lex.whitespace_split = True
+    return list(lex)
+
+
 @functools.cache
 def has_xdist(pytest_prefix):
     env, argv = split_env([*pytest_prefix, "--help"])
@@ -473,9 +479,10 @@ def has_xdist(pytest_prefix):
 def split_env(args):
     """The environment with the leading NAME=value words applied, and the rest as argv."""
     n = 0
-    while n < len(args) and re.fullmatch(r"[A-Za-z_]\w*=.*", args[n], re.S):
+    while n < len(args) and (args[n] in ("export", ";") or re.fullmatch(r"[A-Za-z_]\w*=.*", args[n], re.S)):
         n += 1
-    return {**os.environ, **dict(shell_assignment(a) for a in args[:n])}, list(args[n:])
+    assigns = [a for a in args[:n] if a not in ("export", ";")]
+    return {**os.environ, **dict(shell_assignment(a) for a in assigns)}, list(args[n:])
 
 
 def shell_assignment(word):
