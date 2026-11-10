@@ -45,12 +45,12 @@ No config means the project was never set up: stop and run setup in the provider
 | Start work | `$T claim KEY` (assigns to the user, moves with `moments.start`) |
 | Move it | `$T move KEY MOMENT BODY`, MOMENT one of `start`, `review`, `merged`; to take a ticket yourself use `claim`, which also assigns it |
 | Comment | `$T comment KEY BODY` |
-| File one | `$T create "TITLE" BODY [--parent KEY] [--type TYPE]` prints the new key |
+| File one | `$T template` first, then `$T create "TITLE" BODY [--parent KEY] [--type TYPE]`, which prints the new key |
 | Relate two | `$T link KEY OTHER` |
 | Attach a file | `$T attach KEY FILE`; exit 3 means the provider has none, so post the content as a comment |
 | Link to it | `$T url KEY` |
 
-Keep a ticket problem- and outcome-oriented: enough context that anyone can tell what needs doing, with the implementation left to whoever does it unless the user chose one. Relate tickets with `link`; a key in a description does not relate them.
+When `$T template` prints a template (`.claude/ticket-provider/ticket-template.md`), write the title and body in its shape, every section it marks required filled. Keep a ticket problem- and outcome-oriented: enough context that anyone can tell what needs doing, with the implementation left to whoever does it unless the user chose one. Relate tickets with `link`; a key in a description does not relate them.
 
 ## Modes
 

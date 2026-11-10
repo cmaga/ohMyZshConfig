@@ -18,6 +18,7 @@
 #   ticket move KEY MOMENT BODY         move with moments.<MOMENT> (start, review, merged), commenting BODY
 #   ticket comment KEY BODY             add a comment
 #   ticket create TITLE BODY [--parent KEY] [--type TYPE]   file a ticket; prints its key
+#   ticket template                     the project's ticket template, the shape every filed ticket's body takes; exit 1 when it has none
 #   ticket link KEY OTHER               relate two tickets
 #   ticket attach KEY FILE              attach a file; exit 3 where the provider has no attachments
 #   ticket url KEY                      the ticket's web URL
@@ -147,6 +148,7 @@ taskei_() {
 
 (( $# )) || die "usage: ticket <command> [args]; see the header of $0"
 [[ $1 == provider ]] && { print -- $provider; exit 0; }
+[[ $1 == template ]] && { [[ -f $dir/ticket-template.md ]] && cat $dir/ticket-template.md && exit 0; print -u2 -- "ticket: no $dir/ticket-template.md"; exit 1; }
 # file arguments are resolved here, before a provider changes directory
 args=()
 for x in "$@"; do [[ $x == @* ]] && x=@${${x#@}:a}; args+=("$x"); done

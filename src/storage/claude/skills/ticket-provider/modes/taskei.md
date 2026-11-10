@@ -15,7 +15,7 @@ Amazon's tracker (also reached as SIM, `i.amazon.com`, `issues.amazon.com`). `ti
 | `moments.*` | A bdei status: `open`, `in_progress`, `deferred`, or `closed`; `closed` closes the ticket with the move's comment as its reason |
 | `taskei.roomId` | The room's UUID |
 | `taskei.prefix` | The key prefix the room's tickets carry, such as `CARD` |
-| `taskei.labels` | Tags added to every ticket filed; may be empty |
+| `taskei.labels` | Tags added to every ticket filed; may be empty. Room labels are not tags: after `create`, add each `labels:` ID in `ready.board`'s filter with builder-mcp `TaskeiUpdateTask` `addLabels`, so the ticket lands on the user's board |
 
 ## Setup
 
