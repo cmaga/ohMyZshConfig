@@ -6,6 +6,7 @@ What gets checked on every change in this project. Every rule names what enforce
 
 - **Gate:** `<one command that runs tests, lint, and build>`
 - **Reach:** touched lines | touched files | neighborhood
+- **Mutation:** stryker `<command that runs Stryker in this project>` | off: <reason>
 
 ## Rules
 

@@ -5,10 +5,11 @@ Usage: mutation-sweep.py <base-ref> [--paths P...] [--max-per-line N] [--test-cm
                          [--timeout S] [--out FILE] [--list]
 
 Run from the root of the repository under test, on a clean committed HEAD. Mutates the
-lines HEAD changed since the merge base with <base-ref>, in Python and shell source only,
-and runs the tests once per mutant, in place. Every other changed file outside the tests
-and docs prints as `not swept: <path>`. Exit 0: nothing survived, 1: a mutant survived,
-2: error, 3: nothing survived but a file was not swept.
+lines HEAD changed since the merge base with <base-ref>, in Python and shell source,
+and runs the tests once per mutant, in place. JavaScript and TypeScript go to Stryker, one
+run per file on its changed lines, when the project rules' Mutation line names it. Every
+other changed file outside the tests and docs prints as `not swept: <path>`. Exit 0: nothing
+survived, 1: a mutant survived, 2: error, 3: nothing survived but a file was not swept.
 
 Skipped as arid: blank lines, comments, docstrings and other multi-line strings, imports,
 def/class/decorator lines, string-only lines, and logging calls (shell: log, echo to stderr).
@@ -19,10 +20,14 @@ negation, constant, jump (continue/break), swallow (shell `|| fail*`, `|| exit` 
 Tests: the Contract-Run trailer of the latest test(contract): commit in the range, narrowed
 per file to the Contract-Files whose text names it, and checked green unmutated once.
 Leading `export`, `;` and NAME=value words of that command set its environment, as in a shell.
+Stryker runs the same command through its command runner and checks it green itself; the
+arid skips, --max-per-line, and --timeout above apply only to built-in mutants, and Stryker
+keeps its own per-mutant timeout.
 """
 
 import argparse
 import ast
+import contextlib
 import dataclasses
 import functools
 import io
@@ -33,14 +38,19 @@ import shlex
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import tokenize
 from collections import Counter
 from pathlib import Path
 
 MASK = "\x00"
-SKIP_DIRS = {"tests", "test", "docs"}
+SKIP_DIRS = {"tests", "test", "docs", "__tests__"}
 SHELL_SUFFIXES = {".sh", ".bash", ".zsh"}
+JS_SUFFIXES = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}
+HOUSE = ".claude/kitchen/house.md"
+STRYKER_REPORT = Path("reports/mutation/mutation.json")
+STRYKER_STATUS = {"Killed": "killed", "Survived": "survived", "NoCoverage": "survived", "Timeout": "timeout"}
 SIMPLE_STMTS = (
     ast.Expr, ast.Assign, ast.AugAssign, ast.AnnAssign, ast.Return,
     ast.Raise, ast.Assert, ast.Delete, ast.Global, ast.Nonlocal,
@@ -92,7 +102,8 @@ def changed_lines(base):
 
 def excluded(path):
     parts = Path(path).parts
-    return bool(SKIP_DIRS & set(parts[:-1])) or parts[-1] == "conftest.py" or parts[-1].startswith("test_")
+    return (bool(SKIP_DIRS & set(parts[:-1])) or parts[-1] == "conftest.py" or parts[-1].startswith("test_")
+            or bool(re.search(r"\.(test|spec)\.[cm]?[jt]sx?$", parts[-1])))  # fmt: skip
 
 
 def source_kind(path):
@@ -101,6 +112,8 @@ def source_kind(path):
     name = Path(path).name
     if name.endswith(".py"):
         return "py"
+    if Path(path).suffix in JS_SUFFIXES:
+        return "js"
     if Path(path).suffix in SHELL_SUFFIXES:
         return "sh"
     try:
@@ -413,6 +426,8 @@ def contract(merge_base):
 def needles(path, kind):
     if kind == "sh":
         return [Path(path).name]
+    if kind == "js":
+        return [f"/{Path(path).stem}{end}" for end in "'\"."]
     parts = Path(path).with_suffix("").parts
     if parts[-1] == "__init__":
         parts = parts[:-1]
@@ -428,7 +443,7 @@ def narrow(path, kind, files):
             body = Path(f).read_text(errors="replace")
         except OSError:
             continue
-        if any(k in body for k in keys) or (kind != "sh" and binds_module(body, path)):
+        if any(k in body for k in keys) or (kind == "py" and binds_module(body, path)):
             hit.append(f)
     return hit or files
 
@@ -523,6 +538,84 @@ def kill(p):
     p.wait()
 
 
+def stryker_command(base):
+    """The command the project rules' Mutation line runs Stryker with, None when absent or off.
+
+    A copy of the rules on the base branch wins over the main checkout's file, as kitchen.zsh reads them.
+    """
+    rules = git("show", f"{base}:{HOUSE}", check=False)
+    if not rules:
+        main_root = Path(git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()).parent
+        with contextlib.suppress(OSError):
+            rules = (main_root / HOUSE).read_text()
+    m = re.search(r"^- \*\*Mutation:\*\*\s*stryker\s+`([^`]+)`", rules, re.M)
+    return m[1] if m else None
+
+
+def line_ranges(lines):
+    out = []
+    for n in sorted(lines):
+        if out and n == out[-1][1] + 1:
+            out[-1][1] = n
+        else:
+            out.append([n, n])
+    return out
+
+
+def stryker_args(stryker, path, lines, test_args):
+    """Stryker on the file's changed lines, judged by the test command, whose env words lead to reach both."""
+    _, argv = split_env(test_args)
+    mutate = ",".join(f"{path}:{start}-{end}" for start, end in line_ranges(lines))
+    return [*test_args[: len(test_args) - len(argv)], *shell_words(stryker), "--mutate", mutate,
+            "--testRunner", "command", "--commandRunner.command", shlex.join(argv), "--inPlace",
+            "--reporters", "json"]  # fmt: skip
+
+
+def run_stryker(args):
+    env, argv = split_env(args)
+    p = subprocess.Popen(argv, stdout=sys.stderr, env=env, start_new_session=True)
+    try:
+        return p.wait()
+    except BaseException:
+        # One signal only: on the first, Stryker puts back the files it changed in place; a second quits at once.
+        p.terminate()
+        p.wait()
+        raise
+
+
+def stryker_results(path, args):
+    """Run Stryker on one file and return its valid mutants as (Mutant, status) pairs."""
+    kept = STRYKER_REPORT.read_bytes() if STRYKER_REPORT.is_file() else None
+    STRYKER_REPORT.unlink(missing_ok=True)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            rc = run_stryker([*args, "--tempDirName", f"{tmp}/stryker"])
+        if not STRYKER_REPORT.is_file():
+            verify_clean()
+            raise SweepError(f"stryker failed on {path} (exit {rc}); its output is above")
+        report = json.loads(STRYKER_REPORT.read_text())
+    finally:
+        if kept is not None:
+            STRYKER_REPORT.write_bytes(kept)
+        elif STRYKER_REPORT.is_file():
+            STRYKER_REPORT.unlink()
+            with contextlib.suppress(OSError):
+                os.removedirs(STRYKER_REPORT.parent)
+    out = []
+    for f in report["files"].values():
+        rows = f["source"].split("\n")
+        for mu in f["mutants"]:
+            if mu["status"] not in STRYKER_STATUS:
+                continue
+            start, end = mu["location"]["start"], mu["location"]["end"]
+            original = "\n".join(rows[start["line"] - 1 : end["line"]])
+            head, tail = rows[start["line"] - 1][: start["column"] - 1], rows[end["line"] - 1][end["column"] - 1 :]
+            mutated = head + mu.get("replacement", "") + tail
+            m = Mutant(path, start["line"], mu["mutatorName"], " ".join(original.split()), " ".join(mutated.split()), "")
+            out.append((m, STRYKER_STATUS[mu["status"]]))
+    return out
+
+
 def on_term(signum, frame):
     raise KeyboardInterrupt
 
@@ -542,29 +635,32 @@ def main():
     if git("status", "--porcelain", "--untracked-files=no").strip():
         raise SweepError("the working tree has tracked changes; commit or restore them first")
     merge_base, changed = changed_lines(opts.base_ref)
-    mutants, unswept = [], []
+    stryker = stryker_command(opts.base_ref)
+    mutants, unswept, js = [], [], {}
     for path in sorted(changed):
         if excluded(path) or not Path(path).is_file():
             continue
         if opts.paths and not any(path == p.rstrip("/") or path.startswith(p.rstrip("/") + "/") for p in opts.paths):
             continue
         kind = source_kind(path)
-        if kind is None:
+        if kind == "js" and stryker:
+            js[path] = changed[path]
+        elif kind in (None, "js"):
             unswept.append(path)
-            continue
-        mutants += mutants_for_file(path, kind, changed[path], opts.max_per_line)
+        else:
+            mutants += mutants_for_file(path, kind, changed[path], opts.max_per_line)
 
     run, files = None, []
-    if mutants:
+    if mutants or js:
         try:
             run, files = contract(merge_base)
         except SweepError:
             if not opts.test_cmd:
                 raise
     commands = {}
-    for m in mutants:
-        narrowed = narrow(m.path, source_kind(m.path), files)
-        commands[m.path] = build_command(run, files, opts.test_cmd, narrowed)
+    for path in {m.path for m in mutants} | set(js):
+        commands[path] = build_command(run, files, opts.test_cmd, narrow(path, source_kind(path), files))
+    strykers = {path: stryker_args(stryker, path, lines, commands[path]) for path, lines in js.items()}
 
     if opts.list:
         per_file = Counter(m.path for m in mutants)
@@ -572,8 +668,10 @@ def main():
             print(m.label())
         for path, n in per_file.items():
             print(f"{path}: {n} mutants -> {shlex.join(commands[path])}")
-        baselines = len({tuple(c) for c in commands.values()})
+        baselines = len({tuple(commands[path]) for path in per_file})
         print(f"{len(mutants)} mutants, {len(mutants) + baselines} test runs ({baselines} baseline)")
+        for path, args in strykers.items():
+            print(f"{path}: {shlex.join(args)}")
         for path in unswept:
             print(f"not swept: {path}")
         return 0
@@ -600,6 +698,9 @@ def main():
             status = "timeout" if rc is None else "survived" if rc == 0 else "killed"
             results.append((m, status))
             print(f"[{i}/{len(mutants)}] {m.path}:{m.line} {m.operator} {status} {time.monotonic() - t0:.0f}s", file=sys.stderr)
+        for path, args in strykers.items():
+            print(f"stryker: {shlex.join(args)}", file=sys.stderr)
+            results += stryker_results(path, args)
     except KeyboardInterrupt:
         print("interrupted; files restored", file=sys.stderr)
         verify_clean()
@@ -635,6 +736,6 @@ def verify_clean():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except SweepError as exc:
+    except (SweepError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(2)
