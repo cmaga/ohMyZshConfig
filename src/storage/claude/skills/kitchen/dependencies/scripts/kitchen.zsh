@@ -38,7 +38,8 @@
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
 #   kitchen line add PATH | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
-#   kitchen house [PATH]                     whether the project is set up: its base branch's project rules hold both review sections
+#   kitchen house [PATH]                     whether the project is set up: its project rules hold both review sections
+#   kitchen rules [PATH]                     print the project rules: the base branch's copy when it holds one, else the main checkout's file
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
 #   kitchen tick [--dry-run]                 one scheduler pass over every project
 
@@ -127,20 +128,26 @@ base_of() { # PROJECT: its base branch, from its git-provider config, else the h
   print -- ${b:-main}
 }
 
-house_missing() { # PROJECT: the review sections its base branch's project rules lack, one per line; nothing when it is set up
-  local rules=$(git -C $1 show origin/$(base_of $1):.claude/kitchen/house.md 2>/dev/null) s
+main_root() { # the main checkout of the repo holding the current directory, even from a worktree
+  local common
+  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
+  print -- ${common:h}
+}
+
+house_rules() { # PROJECT [BASE]: the project rules; a copy on the base branch wins, so a branch cannot loosen committed rules
+  git -C $1 show origin/${2:-$(base_of $1)}:.claude/kitchen/house.md 2>/dev/null || cat $1/.claude/kitchen/house.md 2>/dev/null
+}
+
+house_missing() { # PROJECT: the review sections its project rules lack, one per line; nothing when it is set up
+  local rules=$(house_rules $1) s
   for s in $REVIEW_SECTIONS; do print -r -- $rules | grep -qxF -- $s || print -- $s; done
 }
 
 house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its rules lack
-  local root=${1:-} common missing
-  if [[ -z $root ]]; then
-    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
-    root=${common:h}
-  fi
+  local root=${1:-$(main_root)} missing
   missing=$(house_missing $root)
   [[ -z $missing ]] && { print -- "set up"; return 0; }
-  print -- "not set up: .claude/kitchen/house.md on origin/$(base_of $root) lacks ${(j:, :)${(f)missing}}; run /kitchen open"
+  print -- "not set up: the project rules (origin/$(base_of $root) or $root/.claude/kitchen/house.md) lack ${(j:, :)${(f)missing}}; run /kitchen open"
   return 1
 }
 
@@ -428,7 +435,7 @@ patch_id() { # BASE [REF]: the id of REF's change (default HEAD) against origin/
 
 risk() { # BASE: why this checkout's change needs the user's eyes, one reason per line
   local files=$(git diff --name-only origin/$1...HEAD) extra
-  extra=$(git show origin/$1:.claude/kitchen/house.md 2>/dev/null \
+  extra=$(house_rules $(main_root) $1 \
     | awk '/^## /{on = ($0 == "## Always review")} on && /^- `/ {sub(/^- `/, ""); sub(/`.*/, ""); print}' | paste -sd'|' -)
   {
     [[ -n $extra ]] && print -r -- $files | grep -E "$extra" | sed 's/^/project rule: /'
@@ -932,6 +939,7 @@ case ${1:-status} in
   promoted) shift; promoted "$@" ;;
   sample) shift; sample "$@" ;;
   house) shift; house_cmd "$@" ;;
+  rules) shift; house_rules "${1:-$(main_root)}" ;;
   prune) shift; prune "$@" ;;
   tick) shift; tick "$@" ;;
   help) sed -n '/^# Usage:/,/^$/p' $0 ;;
