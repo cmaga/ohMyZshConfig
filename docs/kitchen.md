@@ -46,7 +46,7 @@ So you own *what* gets checked, and the kitchen does the checking, on every chan
 | Order book | Local per-project state, outside the repo, uncommitted |
 | Rail | Orders ready to cook |
 | Mise en place | Worktree, scaffold, failing tests |
-| Fire | Dispatch line cooks |
+| Fire | Dispatch line cooks. `/kitchen fire` is the other kind, a fire in the kitchen: a production incident |
 | Taste as you go | Verify each piece before starting the next |
 | The pass | Thermometers and tasters check the plate before it goes out |
 | Clean as you go | The tidy taster: fix what is messy or unintuitive, within reach |
@@ -108,7 +108,7 @@ The server reads a ticket, checks it against the code (still a problem? already 
 
 ## Safety
 
-- The line never deploys to production. A merge that triggers a project's own auto-deploy is the project's accepted risk; nothing extra is built around it.
+- The line never deploys to production. A merge that triggers a project's own auto-deploy is the project's accepted risk; nothing extra is built around it. The one exception is `/kitchen fire`, which ships a mitigation only with you there and on your go.
 - The server may change the tracker.
 
 ---
@@ -186,6 +186,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/taste/verify.md` | The verdict, `/kitchen taste verify <KEY>`: a session that did not write the change runs it and records PASS, PASS+NOTES, or FAIL |
 | `commands/roster/roster.md`, `commands/roster/` | Model and effort levers, was `optimize-usage`; the vault agents left it, pinned to opus |
 | `commands/reflect/reflect.md`, `commands/reflect/` | `/kitchen reflect`: three reviewers mine the session for lessons; the kitchen rows you pick are edited and left uncommitted for your review, and the rest route per Defects and lessons. pstack's manual `/reflect`; a station until 2026-11-03 |
+| `commands/fire/fire.md` | `/kitchen fire`: a production incident worked with you, root cause to mitigation, each step on your go; the long-term fix and any remedy leave as tickets for the line. `open` asks for the project's `## Production` facts |
 | `agents/taster-agent.md` | One narrow judgment checker |
 | `agents/worker-agent.md`, `agents/comment-sicko-agent.md` | The line cook, pstack's poteto-agent: reads `SKILL.md` before work; and the comment hater the no-comments station spawns |
 

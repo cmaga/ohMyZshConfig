@@ -51,3 +51,14 @@ Questions the verifying session answers for every change, one per line, written 
 Rules intake applies before its own judgment when it sets a ticket's flags.
 
 - <e.g. Tickets labelled `design` or carrying a Figma link go to the review queue.>
+
+## Production
+
+How `/kitchen fire` reaches production in an incident. Optional: what is missing is asked during the incident.
+
+- **Errors:** `<the error tracker and its project>`
+- **Logs and metrics:** `<where they live and how to query them>`
+- **Data:** `<how to read production data read-only>`
+- **Deploys:** `<how a deploy ships and how it is rolled back>`
+- **Flags:** `<the feature-flag tool, if any>`
+- **Direct pushes:** yes | no, whether the default branch takes them

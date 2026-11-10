@@ -13,7 +13,7 @@ Invoking this skill is the user's request to use subagents; it overrides any sta
 
 Before any other work, read the file for your command and follow it, however small the request: a question is an order like any other. When the user asked in words, take the row their request matches.
 
-With the user here, for any command but `open`, `status`, `roster`, and `reflect`, first run `kitchen.zsh house` in the project. When it prints `not set up`, the project's rules lack a review section: tell the user what is missing, offer to run `open` now, and do nothing else until they answer. Headless, the scheduler starts no new work in such a project.
+With the user here, for any command but `open`, `status`, `roster`, `reflect`, and `fire`, first run `kitchen.zsh house` in the project. When it prints `not set up`, the project's rules lack a review section: tell the user what is missing, offer to run `open` now, and do nothing else until they answer. Headless, the scheduler starts no new work in such a project.
 
 | Command                            | For                                                                                                                                                       | Read                                        |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
@@ -26,6 +26,7 @@ With the user here, for any command but `open`, `status`, `roster`, and `reflect
 | `open`                             | Set the current repo up for the pipeline                                                                                                                  | [open.md](commands/open/open.md)            |
 | `roster [context]`                 | Tune which model and effort each role runs on                                                                                                             | [roster.md](commands/roster/roster.md)      |
 | `reflect`                          | Mine this session for lessons and route each one                                                                                                          | [reflect.md](commands/reflect/reflect.md)   |
+| `fire <symptom>`                   | Work a production incident with the user: root cause, impact, severity, mitigation, each step on their go                                                 | [fire.md](commands/fire/fire.md)            |
 
 ## The order book
 
@@ -37,7 +38,7 @@ The scheduler judges a session by its side effects: an order update or a commit 
 
 ## Who is in the session
 
-The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `reflect`, `cook new <task>`, and a `taste` the user asked for always have the user here. When the user asks for an order's session ("give me the 123 session"), run `kitchen.zsh review <number> --line` and reply with the line it prints, for them to paste in a terminal; `/resume` inside a session cannot open a session saved under another folder. A message in a session that ran headless, other than the scheduler's `/goal Run /kitchen ...` line, is the user, who resumed it to review its PR: follow [the user's review](commands/cook/recipes/merge.md#the-users-review).
+The scheduler's sessions are headless: nobody reads your messages or answers a question, so results go only to the order book, the ticket, and the PR. The order's `phase` (`kitchen.zsh order get <KEY>`) says which you are: `serve`, `cook`, `follow`, or `verify` is the scheduler; `session` is the user, who is here. `status`, `open`, `roster`, `reflect`, `fire`, `cook new <task>`, and a `taste` the user asked for always have the user here. When the user asks for an order's session ("give me the 123 session"), run `kitchen.zsh review <number> --line` and reply with the line it prints, for them to paste in a terminal; `/resume` inside a session cannot open a session saved under another folder. A message in a session that ran headless, other than the scheduler's `/goal Run /kitchen ...` line, is the user, who resumed it to review its PR: follow [the user's review](commands/cook/recipes/merge.md#the-users-review).
 
 With the user here, a message without a tool call ends your turn. Put a progress report in the same message as the next step's first tool call, unless you are stopping for their answer.
 
@@ -121,7 +122,7 @@ Read the principle's file in full before you apply it. Each entry says when it a
 
 **A design that looks better than the one the user decided** does not change the work: keep building the decided one, record the alternative with `kitchen.zsh decide`, and leave it as a [Left for you](commands/cook/stations/left-for-you.md) item, which flags the PR for the user's review. The item reads cold: what the ticket is for, what was decided, the alternative and who found it, and your recommendation.
 
-Never deploy to production. Merging is allowed; a merge that triggers the project's own auto-deploy is the project's choice.
+Never deploy to production, except a mitigation the user said go to in [fire](commands/fire/fire.md). Merging is allowed; a merge that triggers the project's own auto-deploy is the project's choice.
 
 **Settle what you can look up.** A question that reading the code, running something, or reading the ticket answers is yours: answer it and carry on. A refused tool call blocks you only once every route to the same information is refused.
 
