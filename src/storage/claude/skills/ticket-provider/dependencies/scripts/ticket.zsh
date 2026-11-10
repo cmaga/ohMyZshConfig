@@ -92,6 +92,23 @@ jira_() {
 }
 
 # ---- taskei: bdei, run from the directory holding .beads/ so it finds this project's room
+
+board_ready() { # N: the board in ready.board, through SIM search, which filters on room labels where bdei cannot
+  local url=$(conf .ready.board) room filter q term prefix=$(conf .taskei.prefix) out
+  room=${${url#*/rooms/}%%/*}
+  [[ $room == $url || -z $room ]] && die "ready.board is not a Taskei room URL: $url"
+  # the board URL's f= filter (key:value AND key:value) becomes SIM's key:(value) terms inside the room
+  filter=$(python3 -I -c 'import sys,urllib.parse as u; print(u.parse_qs(u.urlsplit(sys.argv[1]).query).get("f",[""])[0])' $url)
+  q="containingFolder:($room)"
+  for term in ${(s: AND :)filter}; do [[ $term == *:* ]] && q+=" ${term%%:*}:(${term#*:})"; done
+  out=$(curl -sf -L --max-time 60 --cookie ~/.midway/cookie -H 'Accept: application/json' -G \
+    --data-urlencode "q=$q" --data-urlencode "sort=lastUpdatedDate desc" --data-urlencode maxResults=100 \
+    https://maxis-service-prod-iad.amazon.com/issues) || die "SIM search failed; if the Midway session expired, run mwinit"
+  jq -r --arg p "$prefix-" --argjson un $([[ $(conf .ready.unassigned) == true ]] && print true || print false) --argjson n ${1:-20} \
+    '[.documents[] | select(($un | not) or ((.assigneeIdentity // "") == ""))
+      | ([.aliases[]?.id | select(startswith($p))][0] // .aliases[0].id // .id)] | .[:$n][]' <<< $out
+}
+
 taskei_() {
   [[ -d $dir/.beads ]] || die "no $dir/.beads; run the ticket-provider skill's setup for this project"
   export BEADS_ACTOR=${BEADS_ACTOR:-$USER}
@@ -105,7 +122,7 @@ taskei_() {
     holder)
       a=$(bdei show $2 --json) || die "cannot read $2"
       holder "$(jq -r '.[0].assignee // empty' <<< $a)" ;;
-    ready) bdei ready $ready --max-items ${2:-20} --json | jq -r "${ROWS}[].id" ;;
+    ready) if [[ -n $(conf .ready.board) ]]; then board_ready ${2:-20}; else bdei ready $ready --max-items ${2:-20} --json | jq -r "${ROWS}[].id"; fi ;;
     search)
       # one status per call, so --limit counts only open work
       for st in open in_progress; do bdei search $2 --status $st --limit ${3:-20} --json | jq -r "${ROWS}[] | [.id, .status, .title] | @tsv"; done ;;

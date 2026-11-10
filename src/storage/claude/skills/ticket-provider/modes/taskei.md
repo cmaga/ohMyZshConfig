@@ -11,7 +11,7 @@ Amazon's tracker (also reached as SIM, `i.amazon.com`, `issues.amazon.com`). `ti
 | `me` | The `.assignee` value `ticket.zsh raw show <KEY> --json` prints for a ticket assigned to the user: Taskei's display name, such as `Lixuan Luo` |
 | `ready.labels` | Taskei tags the user's own board already filters on, empty when it filters on none; bdei calls tags labels |
 | `ready.unassigned` | `true` to take only unassigned tickets |
-| `ready.board` | The user's board as a Taskei URL, the filter the queue stands for |
+| `ready.board` | The user's board as a Taskei URL; when set, `ticket.zsh ready` runs its `f=` filter inside the room through SIM search, the issues.amazon.com backend Taskei shares, with the Midway cookie, newest-updated first, up to 100 tickets |
 | `moments.*` | A bdei status: `open`, `in_progress`, `deferred`, or `closed`; `closed` closes the ticket with the move's comment as its reason |
 | `taskei.roomId` | The room's UUID |
 | `taskei.prefix` | The key prefix the room's tickets carry, such as `CARD` |
@@ -36,4 +36,4 @@ Amazon's tracker (also reached as SIM, `i.amazon.com`, `issues.amazon.com`). `ti
 
 ## MCP fallback
 
-bdei has no sprint, kanban board, or workflow-step filters, and its statuses do not reach a room's custom workflow steps (such as "Ready for Release"). For those, use the builder-mcp Taskei tools with the room from the config: `TaskeiListTasks` (`roomId`, `sprint`, `kanbanBoard`, `workflowStep`) and `TaskeiUpdateTask` (`workflowAction`, `addSprints`, `addKanbanBoards`). Every such change still carries a comment saying why (`postCommentMessage`).
+bdei has no room-label, sprint, kanban board, or workflow-step filters (`ready.board` covers room labels for the ready queue), and its statuses do not reach a room's custom workflow steps (such as "Ready for Release"). For those, use the builder-mcp Taskei tools with the room from the config: `TaskeiListTasks` (`roomId`, `sprint`, `kanbanBoard`, `workflowStep`) and `TaskeiUpdateTask` (`workflowAction`, `addSprints`, `addKanbanBoards`). Every such change still carries a comment saying why (`postCommentMessage`).
