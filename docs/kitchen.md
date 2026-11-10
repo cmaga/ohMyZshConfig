@@ -236,8 +236,6 @@ dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merg
 
 Unverified:
 
-- A real order end to end on a real project.
-- The pstack port as an agent reads it: no session has run a recipe or station yet, and the saved eval cases have not been run with `claude plugin eval`.
 - Catering's plan and close, and milestone orders on a spec branch: written and harness-tested in `kitchen.zsh`, never run by an agent.
 - A company-account run, and a Workflow executing headless.
 - This revision's script changes until the stub run passes: claims, time limits, prune by order, the merge check and approvals, Bitbucket reads, `@/path` values, and the epic alias.

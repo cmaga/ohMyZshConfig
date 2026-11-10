@@ -6,8 +6,9 @@ Usage: mutation-sweep.py <base-ref> [--paths P...] [--max-per-line N] [--test-cm
 
 Run from the root of the repository under test, on a clean committed HEAD. Mutates the
 lines HEAD changed since the merge base with <base-ref>, in Python and shell source only,
-and runs the tests once per mutant, in place. Exit 0: nothing survived, 1: a mutant
-survived, 2: error.
+and runs the tests once per mutant, in place. Every other changed file outside the tests
+and docs prints as `not swept: <path>`. Exit 0: nothing survived, 1: a mutant survived,
+2: error, 3: nothing survived but a file was not swept.
 
 Skipped as arid: blank lines, comments, docstrings and other multi-line strings, imports,
 def/class/decorator lines, string-only lines, and logging calls (shell: log, echo to stderr).
@@ -89,11 +90,15 @@ def changed_lines(base):
     return merge_base, out
 
 
-def source_kind(path):
+def excluded(path):
     parts = Path(path).parts
-    name = parts[-1]
-    if SKIP_DIRS & set(parts[:-1]) or name == "conftest.py" or name.startswith("test_"):
+    return bool(SKIP_DIRS & set(parts[:-1])) or parts[-1] == "conftest.py" or parts[-1].startswith("test_")
+
+
+def source_kind(path):
+    if excluded(path):
         return None
+    name = Path(path).name
     if name.endswith(".py"):
         return "py"
     if Path(path).suffix in SHELL_SUFFIXES:
@@ -537,12 +542,15 @@ def main():
     if git("status", "--porcelain", "--untracked-files=no").strip():
         raise SweepError("the working tree has tracked changes; commit or restore them first")
     merge_base, changed = changed_lines(opts.base_ref)
-    mutants = []
+    mutants, unswept = [], []
     for path in sorted(changed):
-        kind = source_kind(path)
-        if kind is None or not Path(path).is_file():
+        if excluded(path) or not Path(path).is_file():
             continue
         if opts.paths and not any(path == p.rstrip("/") or path.startswith(p.rstrip("/") + "/") for p in opts.paths):
+            continue
+        kind = source_kind(path)
+        if kind is None:
+            unswept.append(path)
             continue
         mutants += mutants_for_file(path, kind, changed[path], opts.max_per_line)
 
@@ -566,6 +574,8 @@ def main():
             print(f"{path}: {n} mutants -> {shlex.join(commands[path])}")
         baselines = len({tuple(c) for c in commands.values()})
         print(f"{len(mutants)} mutants, {len(mutants) + baselines} test runs ({baselines} baseline)")
+        for path in unswept:
+            print(f"not swept: {path}")
         return 0
 
     signal.signal(signal.SIGTERM, on_term)
@@ -604,14 +614,17 @@ def main():
     for m in survivors:
         print(m.label())
     print(summary)
+    for path in unswept:
+        print(f"not swept: {path}")
     if opts.out:
         Path(opts.out).write_text(json.dumps({
             "base": opts.base_ref, "merge_base": merge_base, "mutants": len(results),
             "killed": len(results) - len(survivors), "survived": len(survivors), "timed_out": timed_out,
             "elapsed_seconds": round(elapsed, 1),
             "survivors": [dict(path=m.path, line=m.line, operator=m.operator, original=m.original, mutated=m.mutated) for m in survivors],
+            "not_swept": unswept,
         }, indent=2) + "\n")  # fmt: skip
-    return 1 if survivors else 0
+    return 1 if survivors else 3 if unswept else 0
 
 
 def verify_clean():
