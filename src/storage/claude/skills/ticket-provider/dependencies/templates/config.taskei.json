@@ -3,7 +3,8 @@
     "me": "Your Name",
     "ready": {
         "labels": [],
-        "unassigned": true
+        "unassigned": false,
+        "board": "https://taskei.amazon.dev/rooms/<roomId>/tasks?f=labels%3A<labelId>+AND+status%3AOpen&d=board"
     },
     "moments": {
         "start": "in_progress",

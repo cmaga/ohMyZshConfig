@@ -26,7 +26,7 @@ One file per project, never committed: `<main checkout>/.claude/ticket-provider/
 | --- | --- |
 | `provider` | `jira` or `taskei`, which picks the mode below |
 | `me` | The user's display name exactly as the tracker shows an assignee; `holder` compares against it |
-| `ready` | The ready queue, the user's own board: a JQL string for jira, `{"labels": [...], "unassigned": true}` for taskei |
+| `ready` | The ready queue, the user's own board, which setup finds from the tickets the commit log names: a JQL string for jira, `{"labels": [...], "unassigned": false, "board": "<url>"}` for taskei |
 | `moments` | The tracker's value for each point where work moves a ticket: `start` (work begins), `review` (PR open), `merged` (PR merged) |
 | `jira` / `taskei` | The provider's own fields; see its mode |
 
