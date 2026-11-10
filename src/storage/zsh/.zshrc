@@ -155,6 +155,21 @@ msys*|cygwin*|mingw*)
     ;;
 esac
 
+# Put nvm's default node on PATH, since programs a script starts never see the
+# shims. Resolves alias/default as nvm does, with builtins and globs only, so
+# startup still runs no process. typeset -U (shell-wide) stops nvm, once it
+# loads, from adding this directory a second time.
+if (( $+functions[nvm_lazy_init] )); then
+    typeset -U path PATH
+    _nvm_v=default
+    repeat 10 { [[ -f $NVM_DIR/alias/$_nvm_v ]] || break; read -r _nvm_v < "$NVM_DIR/alias/$_nvm_v" }
+    [[ $_nvm_v == (node|stable) ]] && _nvm_v='v*'
+    [[ $_nvm_v == <->* ]] && _nvm_v=v$_nvm_v
+    [[ $_nvm_v == v<->(|.<->) ]] && _nvm_v+='.*'
+    [[ $_nvm_v == v* ]] && path=( $NVM_DIR/versions/node/${~_nvm_v}/bin(/Nn[-1]) $path )
+    unset _nvm_v
+fi
+
 # Source custom aliases if file exists
 [ -f "$HOME/.oh-my-zsh/custom/aliases.zsh" ] && source "$HOME/.oh-my-zsh/custom/aliases.zsh"
 
