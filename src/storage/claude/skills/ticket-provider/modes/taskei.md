@@ -9,7 +9,7 @@ Amazon's tracker (also reached as SIM, `i.amazon.com`, `issues.amazon.com`). `ti
 | Field | Meaning |
 | --- | --- |
 | `me` | The `.assignee` value `ticket.zsh raw show <KEY> --json` prints for a ticket assigned to the user: Taskei's display name, such as `Lixuan Luo` |
-| `ready.labels` | Taskei tags a ready ticket carries; bdei calls tags labels |
+| `ready.labels` | Taskei tags the user's own board already filters on, empty when it filters on none; bdei calls tags labels |
 | `ready.unassigned` | `true` to take only unassigned tickets |
 | `moments.*` | A bdei status: `open`, `in_progress`, `deferred`, or `closed`; `closed` closes the ticket with the move's comment as its reason |
 | `taskei.roomId` | The room's UUID |
@@ -21,7 +21,7 @@ Amazon's tracker (also reached as SIM, `i.amazon.com`, `issues.amazon.com`). `ti
 1. **Install bdei:** `command -v bdei || { toolbox registry add s3://buildertoolbox-registry-gtei-us-west-2/tools.json && toolbox install gtei; }`. Every call needs a valid Midway session; on an auth error ask the user to run `mwinit`.
 2. **Find the room:** read a recent ticket key from the commit log (`git log -200 --format=%B | grep -oE '[A-Z][A-Z0-9]+-[0-9]+'`), then read that ticket through the builder-mcp `TaskeiGetTask` tool: its `room.id` is the room, its key prefix is the prefix. With no ticket in the log, ask the user for one.
 3. **Find `me`:** take a ticket assigned to the user (`TaskeiListTasks` with `assignee: currentUser`), then after step 5 read its `.[0].assignee` with `ticket.zsh raw show <KEY> --json` and write that string exactly. With no such ticket, ask the user for their name as Taskei shows it.
-4. **Ready queue and moments:** ask which tag marks a ticket ready to work and whether to take only unassigned ones. Default the moments to `start: in_progress`, `review: in_progress`, `merged: closed`.
+4. **Ready queue and moments:** ask which board or filter the user already works from, and whether to take only unassigned tickets. Write `ready.labels` only from tags that filter already uses; never invent a tag, and never ask the user to tag tickets for kitchen. Default the moments to `start: in_progress`, `review: in_progress`, `merged: closed`.
 5. **Write** `config.json`, run `cd .claude/ticket-provider && bdei init -q --room <roomId> --prefix <prefix>`, and add `.claude/ticket-provider/` to `$(git rev-parse --git-common-dir)/info/exclude`.
 6. **Verify:** `ticket.zsh raw ping` prints ok, `ticket.zsh get <a known key>` reads it, and `ticket.zsh ready 5` shows the user the first keys the queue would take.
 

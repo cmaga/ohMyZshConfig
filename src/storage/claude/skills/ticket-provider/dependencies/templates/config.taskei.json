@@ -2,7 +2,7 @@
     "provider": "taskei",
     "me": "Your Name",
     "ready": {
-        "labels": ["kitchen-ready"],
+        "labels": [],
         "unassigned": true
     },
     "moments": {
