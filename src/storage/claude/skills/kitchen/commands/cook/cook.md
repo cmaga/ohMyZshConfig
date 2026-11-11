@@ -12,6 +12,8 @@ With the user here, the order cooks under a goal, which only they can set. Hand 
 
 `/goal <KEY>: <what> is changed to <the new behavior> instead of <the old>, verified by <each done-when check, in a few words>. Done when that is verified and the order rests (merged, or waiting on the user), or when the last messages stop to discuss an immediate problem in the kitchen skill.`
 
+A `catering` order gets no goal line: its spec and plan are written with the user one question at a time, which a goal would push past, and its milestones and close run headless under the scheduler's own goal.
+
 ## Before starting
 
 1. **Claim the order**: `kitchen.zsh order claim <KEY>`, then `kitchen.zsh order get <KEY>`. Its `phase` now says whether the user is here.
@@ -21,7 +23,7 @@ With the user here, the order cooks under a goal, which only they can set. Hand 
    - `new`: intake has not run. Run [intake](../serve/serve.md) with them, then carry on to the recipe's end, even when intake already found the answer.
    - `review-queue`: take them through the three messages of [intake with the user](../serve/serve.md#with-the-user-here), built from the order's `summary` and `question`, unless all the question says is to run this session. Write what they agreed to a file and run `kitchen.zsh order set <KEY> answer=@<file>`. When they say to drop it, run `kitchen.zsh order set <KEY> status=86 reason=@<file>`, comment why on the ticket, and end.
 
-   Then hand them the [goal line](#the-goal-line): once they agree on the approach for `new` and `review-queue`, and right after the claim for any other status.
+   Then hand them the [goal line](#the-goal-line), unless the order is `catering`: once they agree on the approach for `new` and `review-queue`, and right after the claim for any other status.
 3. **Read the order**: intent, done-when, flags, station, recipe, any `steps`, and any `answer` the user gave, which binds you. Re-read the ticket with the `ticket-provider` skill; a change since intake that moves the intent is a call only the user can make. When the order has a `retry_cause`, the last session stopped for that reason: `context` means it ran out of room, so keep your own context small this time by handing each remaining step to a fresh agent and keeping only its report; `stuck` or `tool` means it ran on another model and you are the replacement. An order with a `spec` and a `base` is a catering milestone: read it per [catering](recipes/catering.md#the-milestone-orders) too.
 4. **A `catering` order** follows [its recipe](recipes/catering.md) from here. The rest of this file is for every other recipe.
 5. **Enter the order's worktree.** The base branch is what `kitchen.zsh order base <KEY>` prints: a catering milestone's spec branch, else the project's. If `.claude/worktrees/<KEY>` exists, `EnterWorktree` with that `path`: this is a pickup. Otherwise `EnterWorktree` with `name: <KEY>`; it branches from the default branch, so then `git fetch origin <base>` and `git reset --hard origin/<base>`. Inside the worktree git reaches nothing outside it; when a command is refused for that reason, write it to a scratchpad script and run that by absolute path.

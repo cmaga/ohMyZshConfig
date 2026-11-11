@@ -46,4 +46,4 @@ Each message carries only what the user needs for the decision in front of them,
 
    A ticket steps 2 to 7 would hold or drop says why under the last label and asks whether to. Answer their questions until you both state the problem the same way.
 2. **The recommendation**, once they agree on the problem. Research how to solve it, run steps 8 to 10, then send the approach in a few sentences with its basis. Discuss it until they agree.
-3. **The goal line**, once they agree on the approach, and never before. Fold what you agreed into the files, write the order per step 11, and end the message with cook's [goal line](../cook/cook.md#the-goal-line).
+3. **The goal line**, once they agree on the approach, and never before. Fold what you agreed into the files, write the order per step 11, and end the message with cook's [goal line](../cook/cook.md#the-goal-line). A `catering` order gets no goal line: carry on into [its recipe](../cook/recipes/catering.md), whose spec opens with a question to the user.

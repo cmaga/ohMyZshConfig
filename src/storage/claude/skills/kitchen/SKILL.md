@@ -42,7 +42,7 @@ The scheduler's sessions are headless: nobody reads your messages or answers a q
 
 With the user here, a message without a tool call ends your turn. Put a progress report in the same message as the next step's first tool call, unless you are stopping for their answer.
 
-A goal (Claude Code's `/goal`) keeps a session working until its order rests. The scheduler starts every session it runs with one. Only the user can set one in their session, so cook hands them the line to paste once the approach is decided ([cook](commands/cook/cook.md#the-goal-line)).
+A goal (Claude Code's `/goal`) keeps a session working until its order rests. The scheduler starts every session it runs with one. Only the user can set one in their session, so cook hands them the line to paste once the approach is decided, for every recipe but `catering` ([cook](commands/cook/cook.md#the-goal-line)).
 
 ## Non-negotiables
 
