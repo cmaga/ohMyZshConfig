@@ -551,6 +551,8 @@ land_worktree() { # PROJECT WORKTREE DRY DIR MERGED BASE: remove a closed order'
   if [[ -f $wt/.claude-artifacts/teardown.sh ]] && ! ( cd $wt && bash .claude-artifacts/teardown.sh < /dev/null ) >> $dir/log/teardown.log 2>&1; then
     notice $dir "teardown failed in ${wt:t}; see $dir/log/teardown.log"
   fi
+  # a test the run timed out can leave its child looping after the worktree is gone
+  reap_orphans $wt
   # the vault branch can only tell it landed while the code branch still exists
   if [[ -f $VAULT_GIT ]]; then
     bash $VAULT_GIT sync $project < /dev/null 2>&1 | while IFS= read -r l; do [[ $l == vault:* ]] && notice $dir "$l"; done
@@ -657,14 +659,28 @@ pr_state() { # PROJECT URL: "<OPEN|MERGED|CLOSED>\t<updated>|<approvals>", UNSUP
   esac
 }
 
-kill_tree() { # PID SIGNAL: signal a process and everything under it, from one ps snapshot
+kill_tree() { # SIGNAL PID...: signal each process and everything under it, from one ps snapshot
   proc_table
-  local -a tree=($1); local i=1 c
+  local -a tree=(${@:2}); local i=1 c
+  (( $#tree )) || return 0
   while (( i <= $#tree )); do
     for c in ${(k)PROC_PARENT[(R)$tree[i]]}; do tree+=($c); done
     (( i++ ))
   done
-  kill -$2 $tree 2>/dev/null
+  kill -$1 $tree 2>/dev/null
+}
+
+reap_orphans() { # DIR: kill every orphan working under DIR, and everything under it
+  proc_table
+  local l pid
+  local -a orphans
+  for l in ${(f)"$(lsof -d cwd -Fpn 2>/dev/null)"}; do
+    case $l in
+      p*) pid=${l#p} ;;
+      n*) [[ $PROC_PARENT[$pid] == 1 && ${l#n} == $1(|/*) ]] && orphans+=($pid) ;;
+    esac
+  done
+  kill_tree KILL $orphans
 }
 
 stop_cause() { # LOG: why a session ended early, read from the end of its log
@@ -731,7 +747,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
   local lim=$(jq -c --argjson d "$DEFAULT_MINUTES" '$d + (.max_minutes // {})' $line)
   local stall=$(jq -c --argjson d "$DEFAULT_STALL" '$d + (.stall_minutes // {})' $line)
   local project=$(jq -r .project $line)
-  local key st pid phase logf pr recipe started sid from limit handed sig alive p touched stopat stallmin verified why
+  local key st pid phase logf pr recipe started sid from limit handed sig alive touched stopat stallmin verified why
   local -a live
   proc_table
   orders_json $slug | jq -r --arg us $'\x1f' --argjson lim "$lim" --argjson stall "$stall" '.[] | select(.pid > 0)
@@ -767,7 +783,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
           (( stallmin > 0 && EPOCHSECONDS - REPLY > stallmin * 60 )) || continue
           sig=TERM why="no progress in $stallmin minutes"
         fi
-        for p in $live; do kill_tree $p $sig; done
+        kill_tree $sig $live
         if [[ $st == 86 ]]; then
           (( stopat > 0 )) || order_set $key stop_at=$EPOCHSECONDS
           log "$slug: $key was dropped; sent $sig to its $phase session"

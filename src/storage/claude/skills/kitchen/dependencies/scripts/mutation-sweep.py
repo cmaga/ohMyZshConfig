@@ -523,11 +523,10 @@ def run_tests(args, timeout):
     try:
         return p.wait(timeout)
     except subprocess.TimeoutExpired:
-        kill(p)
         return None
-    except BaseException:
+    finally:
+        # A mutant can leave a child running after the tests exit, still in the run's group.
         kill(p)
-        raise
 
 
 def kill(p):
