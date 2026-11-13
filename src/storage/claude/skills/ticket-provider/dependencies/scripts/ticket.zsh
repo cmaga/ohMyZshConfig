@@ -75,7 +75,7 @@ jira_() {
     ready) jira issue list -q "$(conf .ready)" --order-by rank --reverse --plain --no-headers --columns key --paginate ${2:-20} | tr -d '[:blank:]' ;;
     search) jira issue list -p $key -q "text ~ \"${2//\"/\\\"}\" AND statusCategory != Done" --plain --no-headers --columns key,status,summary --paginate ${3:-20} ;;
     claim) moment start; jira issue assign $2 $(jira me) && jira issue move $2 "$REPLY" ;;
-    move) body $4; f=$REPLY; moment $3; jira issue move $2 "$REPLY" --comment "$(<$f)" ;;
+    move) body $4; f=$REPLY; moment $3; jira issue move $2 "$REPLY" && jira issue comment add $2 --no-input < $f ;;
     comment) body $3; jira issue comment add $2 --no-input < $REPLY ;;
     create)
       local title=$2 type=Task; body $3; f=$REPLY; shift 3
