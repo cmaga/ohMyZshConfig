@@ -37,13 +37,15 @@ The scheduler runs intake headless, and `cook` runs it with the user when they t
 
 ## With the user here
 
-Each message carries only what the user needs for the decision in front of them, in plain words. Leave out the checks behind it, the order's flags, principles, and the calls you will make yourself. End your turn after each one.
+Intake with the user runs in stages, one stage a message.
 
-1. **The problem**, once step 7 has sorted the ticket. Write it for a reader who has never seen this part of the system, under three bold labels with a few short lines each:
-   - **How it works**: the parts involved and what each one does, one bullet per part, as an everyday picture rather than names from the code.
-   - **What goes wrong**: the moment in that picture where it breaks, and what each part does wrong then.
-   - **Why it matters**: what the user or the system sees as a result.
+- A stage moves on only once the user says they follow it.
+- Answer a question they ask inside the stage it comes up in. A question about why the system works as it does gets the code or vault line behind it.
+- Write each stage in short paragraphs of plain prose: no bold labels over bullet lists, no file, table or function names, and no numbers until a stage needs them.
+- Leave out the checks behind it, the order's flags, principles, and the calls you will make yourself.
+- End each message with one question, whether they follow, and end your turn.
 
-   A ticket steps 2 to 7 would hold or drop says why under the last label and asks whether to. Answer their questions until you both state the problem the same way.
-2. **The recommendation**, once they agree on the problem. Research how to solve it, run steps 8 to 10, then send the approach in a few sentences with its basis. Discuss it until they agree.
-3. **The goal line**, once they agree on the approach, and never before. Fold what you agreed into the files, write the order per step 11, and end the message with cook's [goal line](../cook/cook.md#the-goal-line). A `catering` order gets no goal line: carry on into [its recipe](../cook/recipes/catering.md), whose spec opens with a question to the user.
+1. **The system**, once step 7 has sorted the ticket: what the part of the system the ticket is about is and what it does, for a reader who has never seen it. Nothing yet about what goes wrong.
+2. **What fails**, once they follow the system: the moment it breaks, why, and what it costs, each measured number saying who measured it. A ticket steps 2 to 7 would hold or drop says why here and asks whether to.
+3. **The recommendation**, once they follow the failure. Research how to solve it, run steps 8 to 10, then send the approach in a few sentences with its basis, and, when the approach changes something that exists, the option of keeping it. Discuss it until they agree.
+4. **The goal line**, once they agree on the approach, and never before. Fold what you agreed into the files, write the order per step 11, and end the message with cook's [goal line](../cook/cook.md#the-goal-line). A `catering` order gets no goal line: carry on into [its recipe](../cook/recipes/catering.md), whose spec opens with a question to the user.
