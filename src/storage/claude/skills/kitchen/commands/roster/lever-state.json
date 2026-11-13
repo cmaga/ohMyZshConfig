@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-29",
+  "updated": "2026-11-13",
   "accounts": {
     "personal": {
       "config_dirs": [
@@ -15,6 +15,14 @@
       "config_dirs": [
         ".claude-ms"
       ]
+    },
+    "amazon": {
+      "config_dirs": [
+        ".claude"
+      ],
+      "env": {
+        "CLAUDE_CODE_USE_BEDROCK": "1"
+      }
     }
   },
   "levers": {
@@ -33,7 +41,8 @@
       "value": {
         "personal": "opus",
         "work": "opus",
-        "ms": "opus"
+        "ms": "opus",
+        "amazon": "opus"
       },
       "kind": "skill",
       "note": "2026-10-29: the judgment, contract, and adversary roles in kitchen SKILL.md, passed as the model opt; the review agents it bound (code-review, plan-review, qa-planner) retired with the pstack port"
@@ -42,7 +51,8 @@
       "value": {
         "personal": "max",
         "work": "max",
-        "ms": "max"
+        "ms": "max",
+        "amazon": "max"
       },
       "kind": "skill",
       "note": "2026-10-29: the adversary role only (the bug review), passed as the effort opt; max was set 2026-10-10 for code-review-agent, the gate it replaces"
@@ -51,7 +61,8 @@
       "value": {
         "personal": "sonnet[1m]",
         "work": "sonnet[1m]",
-        "ms": "deepseek-flash[1m]"
+        "ms": "deepseek-flash[1m]",
+        "amazon": "sonnet[1m]"
       },
       "kind": "skill",
       "agents": [
@@ -65,7 +76,8 @@
       "value": {
         "personal": "opus",
         "work": "opus",
-        "ms": "opus"
+        "ms": "opus",
+        "amazon": "opus"
       },
       "note": "both accounts stepped fable->opus 2026-10-21: fable trails opus on both independent coding boards at 2.15x the cost",
       "kind": "skill"
@@ -74,7 +86,8 @@
       "value": {
         "personal": "inherit",
         "work": "inherit",
-        "ms": "inherit"
+        "ms": "inherit",
+        "amazon": "inherit"
       },
       "kind": "skill",
       "agents": [
@@ -87,7 +100,8 @@
       "value": {
         "personal": "sonnet[1m]",
         "work": "sonnet[1m]",
-        "ms": "sonnet[1m]"
+        "ms": "sonnet[1m]",
+        "amazon": "sonnet[1m]"
       },
       "kind": "skill"
     },
@@ -95,7 +109,8 @@
       "value": {
         "personal": "opus",
         "work": "sonnet[1m]",
-        "ms": "opus"
+        "ms": "opus",
+        "amazon": "opus"
       },
       "note": "work stepped opus->sonnet 2026-10-21: level coding scores at 0.62x, and adversarial verification gates its claims",
       "kind": "skill"
@@ -104,29 +119,34 @@
       "value": {
         "personal": "sonnet[1m]",
         "work": "sonnet[1m]",
-        "ms": "sonnet[1m]"
+        "ms": "sonnet[1m]",
+        "amazon": "opus"
       },
       "kind": "skill",
       "readers": [
         "kitchen SKILL.md verify role"
-      ]
+      ],
+      "note": "2026-11-13 by user decision: amazon on opus, since the verdict is the last check before a merge"
     },
     "review_fanout_effort": {
       "value": {
         "personal": "xhigh",
         "work": "xhigh",
-        "ms": "xhigh"
+        "ms": "xhigh",
+        "amazon": "max"
       },
       "kind": "skill",
       "readers": [
         "kitchen SKILL.md verify role"
-      ]
+      ],
+      "note": "2026-11-13 by user decision: amazon on max, same reason as review_fanout_model"
     },
     "parent_fanout_model": {
       "value": {
         "personal": "opus",
         "work": "sonnet[1m]",
-        "ms": "opus"
+        "ms": "opus",
+        "amazon": "opus"
       },
       "note": "work stepped opus->sonnet 2026-10-21: the largest dispatch surface, level coding scores at 0.62x",
       "kind": "skill"

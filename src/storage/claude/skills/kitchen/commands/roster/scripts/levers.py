@@ -3,7 +3,8 @@
     python3 levers.py [account]
 
 The account defaults to this session's: the one whose config_dirs names the directory in
-$CLAUDE_CONFIG_DIR (~/.claude when unset). A lever whose value is keyed by account takes that
+$CLAUDE_CONFIG_DIR (~/.claude when unset), and whose env, when it has one, matches the
+environment. An account with a matching env wins, since hosts share config dir names. A lever whose value is keyed by account takes that
 account's value. Prints {account, levers, agents}: levers maps each lever to its value, and agents
 maps each agent type to the opts a dispatch of it passes. inherit and DeepSeek values bind through
 the agent's frontmatter, so they pass no opt; [1m] is dropped, since the opt enum lacks it.
@@ -17,12 +18,17 @@ from pathlib import Path
 STATE = Path(__file__).resolve().parent.parent / 'lever-state.json'
 
 
+def account_of(state, config_dir):
+    matches = [key for key, a in state['accounts'].items()
+               if config_dir.name in a['config_dirs']
+               and all(os.environ.get(k) == v for k, v in a.get('env', {}).items())]
+    if not matches:
+        sys.exit(f'no account in {STATE} lists {config_dir.name} in config_dirs')
+    return max(matches, key=lambda key: len(state['accounts'][key].get('env', {})))
+
+
 def account(state):
-    name = Path(os.environ.get('CLAUDE_CONFIG_DIR') or Path.home() / '.claude').name
-    for key, a in state['accounts'].items():
-        if name in a['config_dirs']:
-            return key
-    sys.exit(f'no account in {STATE} lists {name} in config_dirs')
+    return account_of(state, Path(os.environ.get('CLAUDE_CONFIG_DIR') or Path.home() / '.claude'))
 
 
 def resolve(acct=None):

@@ -3,7 +3,7 @@
     python3 account-agents.py <config dir> <agents dir>
 
 The agents dir holds the deployed agents, whose frontmatter carries personal's values. The config
-dir's account comes from the config_dirs in lever-state.json. When every agent already carries
+dir's account is resolved as levers.py resolves it, env included. When every agent already carries
 that account's values, <config dir>/agents links to the agents dir whole. Otherwise it becomes a
 directory of links back to each agent, with a copy in place of each agent whose values differ.
 """
@@ -13,16 +13,9 @@ import shutil
 import sys
 from pathlib import Path
 
-from levers import STATE
+from levers import STATE, account_of
 
 MARKER = '.per-account'
-
-
-def account_of(state, config_dir):
-    for key, account in state['accounts'].items():
-        if config_dir.name in account['config_dirs']:
-            return key
-    sys.exit(f'no account in {STATE} lists {config_dir.name} in config_dirs')
 
 
 def frontmatter_values(state, account):
