@@ -34,7 +34,13 @@ Start at `docs/project-knowledge/.cache/_digest.md` if it exists (the SessionSta
 
 ### Writing/Editing and Initial Setup
 
+The vault is what later sessions trust without re-checking. A wrong sentence misleads every agent that reads it, and a padded one buries the sentence they need, so correct and concise come before everything else there.
+
 - All changes to the knowledge vault **MUST** go through the `vault-scribe-agent` subagent. Dispatch it with a content brief — the facts, numbers, and why — then review the content summary it returns and approve or reply with tweaks. The agent owns all vault mechanics.
+- Brief only claims you confirmed this session at `file:line` or by a run, with that evidence beside each one. The scribe writes what it is handed and checks none of it.
+- Leave an inferred cause, figure or behavior out of the brief, or hand it marked `[unverified]`.
+- Brief the fact, its evidence and why it holds. Leave out how you found it.
+- Before approving the scribe's summary, check each claim in it against the evidence you briefed, and cut any sentence a reader would not act on.
 - For a quick manual capture, invoking the capture-documentation skill inline is acceptable — same rules, same handoff.
 
 ### Local vaults
