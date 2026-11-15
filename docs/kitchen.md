@@ -1,6 +1,6 @@
 # Kitchen: a 24/7 engineering line run by a head chef
 
-The design of the engineering line on branch `kitchen`, decided in conversation on 2026-10-28. On this branch the kitchen absorbs `dev-workflow`; `main` keeps dev-workflow, so the branch itself is the comparison. See [What is built](#what-is-built) for the files and the calls made while building.
+The design of the engineering line on branch `kitchen`, decided in conversation on 2026-10-28. On this branch the kitchen absorbs `dev-workflow`; `main` keeps dev-workflow, so the branch itself is the comparison. See [What is built](#what-is-built) for the files and the calls made while building. A redesign decided on 2026-11-15, not yet built, changes how work enters the line and who does it: see [Redesign: three modes](#redesign-three-modes).
 
 ---
 
@@ -57,7 +57,7 @@ So you own *what* gets checked, and the kitchen does the checking, on every chan
 
 ### In the directions
 
-File and directory names carry the analogy (`kitchen/`, `recipes/`, `stations/`, `cook.md`, `serve.md`, `taste.md`, `roster.md`, `house.md`, `taster-agent`, `kitchen.zsh`), and so do mode names, since each is a file name. The instructions agents read use plain words, so no agent picks up the lingo and starts writing about cooking:
+File and directory names carry the analogy (`kitchen/`, `recipes/`, `stations/`, `cook.md`, `serve.md`, `taste.md`, `roster.md`, `house.md`, `taster-agent`, `kitchen.zsh`), and so do command names, since each is a file name. The instructions agents read use plain words, so no agent picks up the lingo and starts writing about cooking:
 
 | Kitchen | In the directions |
 |---|---|
@@ -162,6 +162,139 @@ How the kitchen's own process improves. Same shape as today's memory loop.
 
 ---
 
+## Redesign: three modes
+
+Decided in conversation on 2026-11-15. None of it is built yet; until it is, the rest of this document describes what runs. [What it replaces](#what-it-replaces) closes the section.
+
+### Why
+
+The kitchen checks work against your standard and cannot supply one. Tasters, house rules, and promotions enforce consistency with what the project already does; intake and review rest on your judgment. In a technology you do not know, the first patterns the agents write become the standard, and the catch loop locks them in. And you learn nothing while the line cooks. The order books showed it, one finding behind each change:
+
+- **Manual mode.** act_to_recover (Flutter) logged 14 catches. 2 were yours, both product issues (a watermarked stock image, text overflowing at large font sizes); none was about the code's design.
+- **Intake only with you.** engine dropped or parked 9 of the 55 tickets intake served, at least 7 by your call at intake. Headless, intake would have guessed on each.
+- **Review set at intake.** 31 of engine's 33 PRs waited for your review, 20 of them for a path on its `## Always review` list, and 2 of its 1,305 catches were yours. A review that holds everything tells you nothing.
+
+### Work enters only through you
+
+- A ticket enters the line only when you type `take <KEY>`, which runs intake with you. The scheduler stops reading the board, and headless intake goes.
+- At intake you decide whether the ticket is worked at all, its approach, its mode, and whether its PR waits for your review. Then an auto order goes to the scheduler, and a manual or guided one waits until you start it with `/kitchen next` or `take <KEY>` again.
+- This gives up requirement 1 of the [Goal](#goal), never stopping and high volume: volume is capped by your intake time, in exchange for never cooking an order you would not have approved. Requirement 5 still holds, since `take` works with any tracker the `ticket-provider` skill reaches.
+
+### Three modes
+
+Every order carries a `mode`, set at intake:
+
+| Mode | Who writes the code | Who starts it | Can it ask you |
+|---|---|---|---|
+| manual | You, tests included. The AI fills in what you would otherwise look up and answers your questions | You | Yes |
+| guided | The line, with you in the session | You | Yes |
+| auto | The line, headless | The scheduler | Never |
+
+- **Starting.** `/kitchen next manual` or `/kitchen next guided` claims the project's oldest waiting order of that mode, by when you approved it at intake, and works it. It is a row in `SKILL.md`'s command table that points at `cook.md`, and `kitchen.zsh order next <mode>` prints the key. `take <KEY>` starts a specific one.
+- The verify session and PR follow-ups always run headless and never ask, whatever the mode.
+- Asking for an auto order's session ("give me the 123 session") makes it guided for good.
+- The order's `phase` field says what kind of session holds it. It loses `serve`, since headless intake goes, and `session`, which marked an order worked in a session with you (`SKILL.md`, "Who is in the session"), since `mode` now says that.
+
+### Choosing the mode
+
+**Unlocking modes.** Every project starts manual-only. Per project in `line.json`, `guided_after` merged manual orders (default 5) unlock guided, and `auto_after` merged guided orders (default 5) unlock auto. The counts start at 0 in every project, engine and act_to_recover included; `kitchen.zsh line set <slug> guided_after=<n>` lowers a threshold. This replaces `probation`, which held a project's first 5 PRs for your review.
+
+**The recommendation.** Intake recommends a mode from `commands/serve/mode.md`, beside the approach, in one line: the mode, the reason, and the rule that decided it. You approve or change it. Intake offers only the modes the project has unlocked; among those, the first rule that matches decides:
+
+1. **A `## Sorting` rule.** The project rules' rules that intake applies before its own judgment when it sets a ticket's flags. It is your earlier call.
+2. **Manual, for risk**, when a mistake would cost a lot and the checks could not catch it: a data model, an interface between components, failure behavior. A path in the order's `station` (the files intake expects it to touch) that the project rules list under `## Critical` (where a mistake loses money, data, or a safety check) or `## Always review` counts toward it.
+3. **Manual, for practice**, when under 15% of this project's orders in the last two weeks were manual.
+4. **Guided** when calls only you can make are likely mid-work: open design questions, unclear scope, no precedent in the repo, or an area where an earlier order in this project was parked.
+5. **Auto** otherwise: a bug fix with a reproduction, a refactor whose behavior the tests pin, a mechanical change.
+
+No project section is added. Every override you make is logged in the order book (ticket, recommended, chosen, why) and climbs into `## Sorting` by the two-rung ladder in [Quality](#quality-the-food-loop).
+
+### Auto orders never wait on you
+
+An auto order always reaches its PR. Where today's line stops, it carries on:
+
+| When | Today | Auto |
+|---|---|---|
+| A hard call while cooking | The escalation agent (the `escalation` role in `SKILL.md`'s Subagents) decides | Unchanged; the call is also listed in the PR |
+| A product call made alone | The escalation agent decides, and the PR waits for your review | Unchanged |
+| A fix that cannot ride the branch | A Left for you item, which holds the PR for your review | It files a follow-up ticket and cites it in the PR. That is safe now, since a ticket enters the line only through `take` |
+| The approach you approved proves impossible | `order withdraw` sends it back to the review queue | The escalation agent replans, and the PR waits for your review, since it overturns your decision |
+| An irreversible step outside the branch | A bounce, like a production deploy | Never taken; the PR says so |
+| An investigation finishes | Its order waits in the review queue until you pick the change | It ends in its answer and the tickets it files |
+
+### Manual orders
+
+- **The writing help is a new standalone skill**, `manual-mode`, a technique like `frontend-design` that knows nothing of orders, gates, or PRs. To fill in something you would otherwise look up, you select the name and ask in the Claude panel. It inserts only that (the import, the type, the call), never the logic, and shows the shape of the data that comes back in one line.
+- **The editor.** You write in VS Code with the Claude Code extension, which shares the open file and your selection with Claude. Edits land in its edit-automatically mode, and its `autosave` saves your buffers before Claude's tools run.
+- **Its own window.** Worktrees sit under a git-ignored `.claude/worktrees/`, and the panel withholds selections from git-ignored files, so the order's worktree opens as its own VS Code window. `/kitchen next manual`:
+  1. claims the order and creates its worktree;
+  2. opens the worktree with `code -n`;
+  3. runs `kitchen.zsh handoff <KEY>`, which ends the terminal session (its `claude` process, which Claude Code exposes as `CLAUDE_PID`), waits for it to exit, and opens the same conversation in the new window with `vscode://anthropic.claude-code/open?session=$CLAUDE_CODE_SESSION_ID`.
+- **Tests.** You write them too, so a manual order skips the contract station. The verify session's own inputs, the mutation sweep, and the test-honesty and gaming tasters still check your work. The order records your test command for the sweep, and taste and verify accept `contract-check.sh`'s exit 2 (no contract commit) on a manual order.
+- **Ending.** You say "done" in the panel. The gate reports every finding, worst first, with its evidence, and fixes nothing. You fix them and say "done" again; the gate reruns what your fixes could change. The kitchen opens the PR, and a verify session gives its verdict; a FAIL comes back to you as findings. The PR always waits for you, and the kitchen never merges it: you do, as with catering's final PR.
+
+### Review
+
+- Whether a PR waits for your review is set at intake, forced to yes by a surprise, and always yes on a manual order. A review always means you reading the PR in the browser.
+- A surprise is a deleted test, a silenced or changed check, a `## Review when` question (one the verify session answers for every change) judged yes, or an `## Always review` path outside the order's `station`. Paths inside the station were weighed at intake, which is what ends the 20 engine PRs held by that list alone.
+- A PR is finished code. No question rides on it and no comment addresses you. Calls made alone go in its description under Approach. This reverses [open a PR](../src/storage/claude/skills/kitchen/commands/cook/recipes/open-a-pr.md), which keeps them out of the PR, in the order's `decisions`; the "Decided alone" list that [Calls made while building](#calls-made-while-building) describes was never built.
+- To change a PR, you ask for its session and work it as guided; `kitchen.zsh review <number> --line` already prints the command.
+
+### Status
+
+Everything is per project: status, `/kitchen next`, the practice share, and the unlock counts. No view spans projects.
+
+| | Today | Redesign |
+|---|---|---|
+| Scope | Every project, with one last-look marker for all | The current project, with its own marker; outside a project it says so and stops |
+| Waiting on you | QUEUED, PROMOTE, BLOCKED, REVIEW | PROMOTE, BLOCKED, REVIEW |
+| Ready for you to start | Nothing | Waiting manual orders, then guided |
+| Since you last looked | merged, dropped, decided, promoted, notices | The same plus filed tickets, with the calls made alone shown under each merge you did not review |
+
+### A work session
+
+Decision windows of 20 to 30 minutes alternate with focus blocks of 90 to 120. In a window you read status; review the held PRs, starting with those other orders wait on; take new tickets, and the ones you set to auto start cooking at once; then run `/kitchen next manual` for the coming block. In a block you work the manual order, and nothing interrupts it.
+
+### Before the scheduler is turned back on
+
+1. **A committed stub harness**, `dependencies/tests/scheduler.zsh`, since the one behind the 47 cases in [Verified](#verified) was never saved. Its 54 cases cover the paths that survive this redesign; cases for the new paths come with them.
+2. **A dry run.** `kitchen.zsh tick --dry-run` on the timer for a day against a real project's orders and PRs, its log read for any wrong call.
+3. **A supervised run** on a personal repo, with `guided_after` and `auto_after` at 0 there: one auto order, `max_cooking` at 1, and review set at intake. `kitchen.zsh line pause <slug>` stops new work while running sessions keep their time limits and stall checks; dropping an order stops its session on the next pass.
+4. **The first real project**, once auto unlocks there.
+
+### Closed and declined
+
+- **Notifications**: none. Status at each decision window covers it.
+- **A weekly tour** of the merges you did not review: declined as not worth its overhead. Add it only if familiarity becomes a problem.
+- **A separate tutor mode**: a tutor is you asking questions in manual mode.
+- **Dictation** in manual mode: typing for now; it can be added later.
+
+### What it replaces
+
+| Today | Under the redesign |
+|---|---|
+| The scheduler reads each project's ready query ([The line](#the-line)) | Goes. Work enters through `take` |
+| Headless intake on `sonnet`, its time limit, and the shallow rail (`rail_depth`) | Go |
+| The review queue, where intake parks a call for you ([Orders](#orders)) | Goes. Every call it held is made at intake with you |
+| The two flags in [Orders](#orders) | `mode` and the review decision at intake |
+| Promotions open an order in `new` for intake; the ladder's Rail column | A promotion files its ticket, which enters the line when you take it |
+| `probation` | Unlocking modes |
+| An `## Always review` path inside the order's files holds the PR | Weighed at intake instead |
+| The daily sample: one PR per project per day waits for you ([Tasting](#quality-the-food-loop)) | Goes. Your catches come from the changes you ask for in an order's session |
+| Left for you items that hold a PR | Follow-up tickets in auto; questions asked live in guided |
+| `order withdraw` | The escalation agent replans and the PR waits for you |
+| Calls made alone kept out of the PR | Listed in its description under Approach |
+| You ask for a change in a PR comment | You ask in the order's session, which becomes guided; follow-ups still handle other reviewers' comments |
+| `phase` values `serve` and `session` | `mode` |
+| One status across every project | Status per project |
+
+### Unverified
+
+- The session link reaching the new VS Code window rather than another open one.
+- The conversation's last turn surviving the terminal session's end in the handoff.
+
+---
+
 ## What is built
 
 The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and hook in one area. The kitchen's own pieces:
@@ -179,7 +312,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `dependencies/principles/` | pstack's 24 principles plus look-it-up, read when applied |
 | `dependencies/evals/` | Saved eval cases in `claude plugin eval` layout |
 | `commands/cook/templates/`, `commands/cook/scripts/` | Spec, milestone plan, plan view, exit report; `plan-view.py` and `check-plan.mjs` |
-| `dependencies/scripts/kitchen.zsh` | Order book, status, expo, prune; shared by every mode |
+| `dependencies/scripts/kitchen.zsh` | Order book, status, expo, prune; shared by every command |
 | `automation.toml`, `dependencies/scripts/run.zsh` | The expo as a launchd KeepAlive agent. **Off** (`enabled = false`) |
 | `commands/taste/calibrate.md` | Taste bud calibration, `/kitchen taste calibrate`: brings the verify skill back in line with the app |
 | `commands/taste/taste.md`, `taste/done-when.md` | The pass, also `/kitchen taste` on any branch: done-when, thermometers, tasters, no-comments, and the bug review (the interrogate station) |
@@ -251,4 +384,4 @@ Unverified:
 
 ## Open
 
-- **Notifications.** How you hear about your rail, shipped PRs, and a stuck or dead line. Waiting until a real run shows what orders look like.
+- **Notifications.** How you hear about your rail, shipped PRs, and a stuck or dead line. Waiting until a real run shows what orders look like. Closed by the [redesign](#closed-and-declined): no notifications; status at each decision window covers it.
