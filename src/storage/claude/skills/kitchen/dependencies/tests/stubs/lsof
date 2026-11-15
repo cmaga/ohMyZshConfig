@@ -1,0 +1,3 @@
+#!/bin/sh
+# no process lists: the orphan sweep reads every process's directory on the machine
+exit 0

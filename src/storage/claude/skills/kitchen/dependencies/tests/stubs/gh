@@ -1,0 +1,5 @@
+#!/bin/sh
+# gh pr view URL: print the state file of the PR number, as the real call's tsv; fail when there is none
+n=${3##*/}
+[ -f "$GH_STATE/$n" ] || exit 1
+cat "$GH_STATE/$n"

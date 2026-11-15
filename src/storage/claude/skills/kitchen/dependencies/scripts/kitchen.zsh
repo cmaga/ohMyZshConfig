@@ -7,7 +7,7 @@
 #   line.json          project path, capacity, models (the ready queue is the project's ticket-provider config)
 #   orders/<KEY>.json  one order per ticket
 #   catches.tsv        date key taster class note source
-#   promoted.tsv       class ticket date
+#   promoted.tsv       class ticket time
 #   due.tsv            class due count: each class the catch-up lists until a promotion answers it
 #   log/               one log per session the scheduler starts
 #   notices.tsv        date text: vault and teardown events for the catch-up
@@ -70,7 +70,8 @@ SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]
 typeset -A JSON_FIELDS=(after 1 signoff 1 review 1 sample 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1 left 1)
 
 die() { print -u2 -- "kitchen: $*"; exit 1; }
-now_iso() { strftime '%Y-%m-%dT%H:%M:%S' $EPOCHSECONDS; }
+# Microseconds, so the catch-up can tell an event after the last look from one in the same second.
+now_iso() { local r=$EPOCHREALTIME s; strftime -s s '%Y-%m-%dT%H:%M:%S' ${r%.*}; print -- "$s.${${r#*.}[1,6]}"; }
 today() { strftime '%Y-%m-%d' $EPOCHSECONDS; }
 log() { print -- "[$(now_iso)] $*"; }
 
@@ -276,19 +277,20 @@ transcript() { # KEY: path of the order's last session transcript
 
 status() { # what happened since the user last looked, then what waits on them
   ( slug_here ) >/dev/null 2>&1
-  local since=$(cat $BOOK/.last-look 2>/dev/null || print '0000') line slug dir book
+  # the look starts before the reads, so an event during them shows again rather than never
+  local since=$(cat $BOOK/.last-look 2>/dev/null || print '0000') look=$(now_iso) line slug dir book
   for line in $BOOK/*/line.json(N); do
     slug=${line:h:t} dir=${line:h}
     print -- "$slug$([[ $(jq -r '.paused // false' $line) == true ]] && print ' (paused)')$([[ -n $(house_missing $(jq -r .project $line)) ]] && print '  NOT SET UP: run /kitchen open there')"
     book=$(orders_json $slug)
     jq -r --arg s "$since" '
-      ( map(select(.updated >= $s)) as $new
+      ( map(select(.updated > $s)) as $new
         | ( $new | map(select(.status == "done" and .pr)) | .[] | "  merged    \(.key)  \(.summary // "")" ),
           ( $new | map(select(.status == "86")) | .[] | "  dropped   \(.key)  \(.reason // "")" ) ),
-      ( .[] | .key as $k | (.decisions // [])[] | select(.at >= $s)
+      ( .[] | .key as $k | (.decisions // [])[] | select(.at > $s)
         | "  decided   \($k)  \(.what)\(if .evidence then "  (\(.evidence))" else "" end)" )' <<< $book
-    [[ -f $dir/promoted.tsv ]] && awk -F'\t' -v s="${since[1,10]}" '$3 >= s {print "  promoted  " $1 " -> " $2}' $dir/promoted.tsv
-    [[ -f $dir/notices.tsv ]] && awk -F'\t' -v s="$since" '$1 >= s {print "  notice    " $2}' $dir/notices.tsv
+    [[ -f $dir/promoted.tsv ]] && awk -F'\t' -v s="$since" '$3 > s {print "  promoted  " $1 " -> " $2}' $dir/promoted.tsv
+    [[ -f $dir/notices.tsv ]] && awk -F'\t' -v s="$since" '$1 > s {print "  notice    " $2}' $dir/notices.tsv
     [[ -s $dir/due.tsv ]] && awk -F'\t' -v D=$dir/due.tsv '
       FILENAME == D { due[$1] = $2; cnt[$1] = $3; at[++n] = $1; next }
       ($4 in due) { seen[$4] = seen[$4] "\n      " $1 "  " $2 "  " $5 }
@@ -304,7 +306,7 @@ status() { # what happened since the user last looked, then what waits on them
         | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)\(if .builder then "  kitchen review \(.key)" else "" end)" ),
       "  now: \(map(select(.status == "cooking")) | length) cooking, \(map(select(.status == "ready")) | length) ready, \(map(select(.status == "done" and (.updated | startswith($d)))) | length) done today, \(map(select(.status == "86")) | length) dropped"' <<< $book
   done
-  mkdir -p $BOOK && now_iso > $BOOK/.last-look
+  mkdir -p $BOOK && print -- $look > $BOOK/.last-look
 }
 
 review() { # KEY|NUMBER: resume the order's build session here, by id, which finds it from any folder
@@ -419,7 +421,7 @@ promoted() { # CLASS TICKET|-: a cleanup ticket is on the board, not in the book
   (( $# == 2 )) || die "usage: promoted CLASS TICKET|-"
   local f=$(order_file $2) dir slug
   if [[ -n $f ]]; then dir=${f:h:h}; else slug=$(slug_here) || exit 1; dir=$BOOK/$slug; fi
-  [[ $2 == - ]] || print -r -- "$1	$2	$(today)" >> $dir/promoted.tsv
+  [[ $2 == - ]] || print -r -- "$1	$2	$(now_iso)" >> $dir/promoted.tsv
   undue $dir $1
 }
 
@@ -921,9 +923,10 @@ tick() { # [--dry-run]: one scheduler pass over every line
   trap "rmdir $BOOK/.tick.lock 2>/dev/null" EXIT
   for line in $BOOK/*/line.json(N); do
     slug=${line:h:t}
-    [[ $(jq -r '.paused // false' $line) == true ]] && continue
     [[ -d $(jq -r .project $line) ]] || { log "$slug: project is gone"; continue; }
+    # pausing stops new work only: a running session keeps its time limit and stall check
     [[ -n $dry ]] || reap $slug
+    [[ $(jq -r '.paused // false' $line) == true ]] && continue
     (( $(jq -r '.retry_after // 0' $line) > EPOCHSECONDS )) && continue  # waiting out a usage limit
     follow_prs $slug "$dry"
     # a project whose rules lack a review section takes no new work until /kitchen open sets it up

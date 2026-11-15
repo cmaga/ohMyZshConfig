@@ -1,0 +1,4 @@
+#!/bin/sh
+# claude, jira, bb and curl reach outside the sandbox; any call is a harness failure
+printf '%s\n' "${0##*/} $*" >> "$FORBIDDEN_LOG"
+exit 1
