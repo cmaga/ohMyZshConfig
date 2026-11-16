@@ -32,7 +32,7 @@ Paths where a mistake loses money, data, or a safety check, one extended regular
 
 ## Always review
 
-Paths whose changes always wait for the user's review, one extended regular expression per line, written as - `<regex>` and what it covers. The lines below are defaults: keep the ones that fit this project and delete the rest. Deleted tests and silenced checks wait for the user whatever this list holds.
+Paths intake weighs for every order that expects to touch them, one extended regular expression per line, written as - `<regex>` and what it covers. A change to one the order's `station` did not name always waits for the user's review. The lines below are defaults: keep the ones that fit this project and delete the rest. Deleted tests and silenced checks wait for the user whatever this list holds.
 
 - `(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/)` CI
 - `(^|/)(\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.)` lint, type, formatter and test-runner config
@@ -49,9 +49,9 @@ Questions the verifying session answers for every change, one per line, written 
 
 ## Sorting
 
-Rules intake applies before its own judgment when it sets a ticket's flags.
+Rules intake applies before its own judgment when it recommends a ticket's mode and sets its review flag.
 
-- <e.g. Tickets labelled `design` or carrying a Figma link go to the review queue.>
+- <e.g. Tickets labelled `design` or carrying a Figma link are manual.>
 
 ## Production
 

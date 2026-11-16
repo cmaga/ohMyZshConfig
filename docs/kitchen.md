@@ -1,6 +1,6 @@
 # Kitchen: a 24/7 engineering line run by a head chef
 
-The design of the engineering line on branch `kitchen`, decided in conversation on 2026-10-28. On this branch the kitchen absorbs `dev-workflow`; `main` keeps dev-workflow, so the branch itself is the comparison. See [What is built](#what-is-built) for the files and the calls made while building. A redesign decided on 2026-11-15, not yet built, changes how work enters the line and who does it: see [Redesign: three modes](#redesign-three-modes).
+The design of the engineering line on branch `kitchen`, decided in conversation on 2026-10-28. On this branch the kitchen absorbs `dev-workflow`; `main` keeps dev-workflow, so the branch itself is the comparison. See [What is built](#what-is-built) for the files and the calls made while building. A redesign decided and built on 2026-11-15 changes how work enters the line and who does it: see [Redesign: three modes](#redesign-three-modes). Where an earlier section disagrees with it, the redesign holds.
 
 ---
 
@@ -164,7 +164,7 @@ How the kitchen's own process improves. Same shape as today's memory loop.
 
 ## Redesign: three modes
 
-Decided in conversation on 2026-11-15. None of it is built yet; until it is, the rest of this document describes what runs. [What it replaces](#what-it-replaces) closes the section.
+Decided in conversation and built on 2026-11-15. Where an earlier section disagrees, this one holds; [What it replaces](#what-it-replaces) closes the section.
 
 ### Why
 
@@ -191,13 +191,13 @@ Every order carries a `mode`, set at intake:
 | auto | The line, headless | The scheduler | Never |
 
 - **Starting.** `/kitchen next manual` or `/kitchen next guided` claims the project's oldest waiting order of that mode, by when you approved it at intake, and works it. It is a row in `SKILL.md`'s command table that points at `cook.md`, and `kitchen.zsh order next <mode>` prints the key. `take <KEY>` starts a specific one.
-- The verify session and PR follow-ups always run headless and never ask, whatever the mode.
+- Whatever the mode, the verdict comes from a session or agent that did not write the change and never asks, and PR follow-ups always run headless.
 - Asking for an auto order's session ("give me the 123 session") makes it guided for good.
 - The order's `phase` field says what kind of session holds it. It loses `serve`, since headless intake goes, and `session`, which marked an order worked in a session with you (`SKILL.md`, "Who is in the session"), since `mode` now says that.
 
 ### Choosing the mode
 
-**Unlocking modes.** Every project starts manual-only. Per project in `line.json`, `guided_after` merged manual orders (default 5) unlock guided, and `auto_after` merged guided orders (default 5) unlock auto. The counts start at 0 in every project, engine and act_to_recover included; `kitchen.zsh line set <slug> guided_after=<n>` lowers a threshold. This replaces `probation`, which held a project's first 5 PRs for your review.
+**Unlocking modes.** Every project starts manual-only. Per project in `line.json`, `guided_after` merged manual orders (default 5) unlock guided, and `auto_after` merged guided orders (default 5) unlock auto. The counts start at 0 in every project, engine and act_to_recover included, since an order merged before modes existed counts toward nothing; `kitchen.zsh line set <slug> guided_after=<n>` lowers a threshold. This replaces `probation`, which held a project's first 5 PRs for your review.
 
 **The recommendation.** Intake recommends a mode from `commands/serve/mode.md`, beside the approach, in one line: the mode, the reason, and the rule that decided it. You approve or change it. Intake offers only the modes the project has unlocked; among those, the first rule that matches decides:
 
@@ -257,7 +257,7 @@ Decision windows of 20 to 30 minutes alternate with focus blocks of 90 to 120. I
 
 ### Before the scheduler is turned back on
 
-1. **A committed stub harness**, `dependencies/tests/scheduler.zsh`, since the one behind the 47 cases in [Verified](#verified) was never saved. Its 54 cases cover the paths that survive this redesign; cases for the new paths come with them.
+1. **A committed stub harness**, `dependencies/tests/scheduler.zsh`, since the one behind the 47 cases in [Verified](#verified) was never saved. Its 83 cases cover the paths that survived this redesign and each new one.
 2. **A dry run.** `kitchen.zsh tick --dry-run` on the timer for a day against a real project's orders and PRs, its log read for any wrong call.
 3. **A supervised run** on a personal repo, with `guided_after` and `auto_after` at 0 there: one auto order, `max_cooking` at 1, and review set at intake. `kitchen.zsh line pause <slug>` stops new work while running sessions keep their time limits and stall checks; dropping an order stops its session on the next pass.
 4. **The first real project**, once auto unlocks there.
@@ -305,6 +305,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `skills/kitchen/` layout | One directory per command under `commands/`; `SKILL.md` is the only loose markdown file; `dependencies/` holds the scripts and the scheduler loop |
 | `commands/status/status.md` | `/kitchen status`: the chef's catch-up and what waits on them. The rail is only the ready queue |
 | `commands/serve/serve.md` | The server. Every order starts from a ticket |
+| `commands/serve/mode.md` | The mode recommendation intake gives with the approach |
 | `commands/open/open.md`, `open/templates/house.md` | Opening a restaurant, which writes its house rules and verify skill |
 | `commands/cook/cook.md` | The sous chef: claim, read, worktree, pickup, the recipe, and the scheduler's wakes; `cook new <task>` files a ticket for work that has none |
 | `commands/cook/recipes/` | pstack's playbooks as recipes: feature, bug-fix, refactor, perf, hillclimb, investigation, runtime-forensics, trace-forensics, prototype, change-a-skill, eval, multi-phase-plan, autonomous-run, session-pickup, pause-safely, and the PR lifecycle open-a-pr, follow-a-pr (babysit), merge (shipping); plus enforce and catering (`catering/spec.md` was ultra; `catering/plan.md` and `catering/close.md` replace the milestone build) |
@@ -321,6 +322,8 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/reflect/reflect.md`, `commands/reflect/` | `/kitchen reflect`: three reviewers mine the session for lessons; the kitchen rows you pick are edited and left uncommitted for your review, and the rest route per Defects and lessons. pstack's manual `/reflect`; a station until 2026-11-03 |
 | `commands/fire/fire.md` | `/kitchen fire`: a production incident worked with you, root cause to mitigation, each step on your go; the long-term fix and any remedy leave as tickets for the line. `open` asks for the project's `## Production` facts |
 | `agents/taster-agent.md` | One narrow judgment checker |
+| `dependencies/tests/scheduler.zsh` | The stub harness: the scheduler script against fake `oc`, `gh`, `code`, `open`, and tracker, in a throwaway sandbox |
+| `skills/manual-mode/SKILL.md` | The writing help a manual order's VS Code session loads; standalone, outside the kitchen |
 | `agents/worker-agent.md`, `agents/comment-sicko-agent.md` | The line cook, pstack's poteto-agent: reads `SKILL.md` before work; and the comment hater the no-comments station spawns |
 
 dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merges (or the session that merged it runs `order close`) and removes its worktrees then; `kitchen.zsh prune`, daily from the scheduler, clears what is left. Prune touches only the worktrees of closed orders no session holds: a merged order's whatever its branch's ancestry, squash merges included; a dropped order's only when its branch changes nothing the base lacks; never a worktree the pipeline did not create. It runs the worktree's teardown and syncs the vault first, and a failed teardown or a `vault:` line becomes a `notice` in the catch-up.

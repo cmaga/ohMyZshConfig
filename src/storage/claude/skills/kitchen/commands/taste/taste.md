@@ -7,7 +7,7 @@ The quality of the code is capped by what gets checked, and an agent told to che
 ## Inputs
 
 - **The branch**: the current one unless named; check a named one out here first, and when git refuses (uncommitted changes, or another worktree has it), say why and stop. The base branch is what `kitchen.zsh order base <KEY>` prints, with `-` for the key outside an order.
-- **The order key**, when cook runs this; otherwise `-`. Run on its own, commit each fix on the branch and leave pushing to the user.
+- **The order key**, when cook runs this; otherwise `-`. Run on its own, commit each fix on the branch and leave pushing to the user. When the order's `mode` is `manual`, the user wrote the code: follow [a manual order](#a-manual-order) below, which changes steps 2 and 6 and the bug review.
 - **The done-when**: the order's, when there is one. Otherwise derive it from the PR description and commit messages: each claim of what now works becomes a check.
 - **The project rules**: `.claude/kitchen/house.md` in the project. When it is missing, use the default reviewers below, Reach `touched lines`, and the project's own lint, type, and test commands, and say so.
 
@@ -28,9 +28,9 @@ Under an order, after each step run `kitchen.zsh order set <KEY> "step=taste <n>
        kitchen.zsh catch <KEY or -> <taster> <class> @<file>
 
    - `promote`, once per class however many catches print it: search the base branch for the pattern the catches describe.
-     - **Found in more places than this branch can fix without doubling its diff:** the codebase taught the slip, so it gets a cleanup, not a check. Search the tracker per [left for you](../cook/stations/left-for-you.md#discovered-issues) for an open ticket cleaning it up; with none, file one through the `ticket-provider` skill without asking, "Clean up <class>": how many instances and where, the command that finds them, and what to write instead per the language's, stack's, and industry's best practice, with sources. Open no order for it. Then `kitchen.zsh promoted <class> <its key>`.
+     - **Found in more places than this branch can fix without doubling its diff:** the codebase taught the slip, so it gets a cleanup, not a check. Search the tracker per [left for you](../cook/stations/left-for-you.md#discovered-issues) for an open ticket cleaning it up; with none, file one through the `ticket-provider` skill without asking, "Clean up <class>": how many instances and where, the command that finds them, and what to write instead per the language's, stack's, and industry's best practice, with sources. Open no order for it: it enters the line when the user takes it. Then `kitchen.zsh promoted <class> <its key>`.
      - **Found in a few places:** fix them on this branch, then, run from an order, `kitchen.zsh promoted <class> <KEY>`.
-     - **Not found:** a real slip, and only the user decides on a check. Search the tracker the same way for an open "Enforce <class>" ticket; one found answers it: `kitchen.zsh promoted <class> <its key>`. Otherwise file nothing. With the user here, ask once at the hand-back about every due class together, each with its catches: one "Enforce" ticket for them all, or leave them. On their go, file it listing each class's catches, run `kitchen.zsh order new <NEW-KEY>`, and `kitchen.zsh promoted <class> <NEW-KEY>` for each class; for each class they leave, `kitchen.zsh promoted <class> -`, which drops it from the catch-up until its next catch makes it due again. Headless, leave it: the user's catch-up lists every due class.
+     - **Not found:** a real slip, and only the user decides on a check. Search the tracker the same way for an open "Enforce <class>" ticket; one found answers it: `kitchen.zsh promoted <class> <its key>`. Otherwise file nothing. With the user here, ask once at the hand-back about every due class together, each with its catches: one "Enforce" ticket for them all, or leave them. On their go, file it listing each class's catches, open no order for it (it enters the line when the user takes it), and run `kitchen.zsh promoted <class> <NEW-KEY>` for each class; for each class they leave, `kitchen.zsh promoted <class> -`, which drops it from the catch-up until its next catch makes it due again. Headless, leave it: the user's catch-up lists every due class.
    - `climb <ticket>`: the slip came back after `<ticket>` landed. Handle it as a real slip; a check it asks for starts at least one rung above any `<ticket>` built.
    - `kitchen.zsh catch` fails when the project is not registered: then skip logging and list the findings in your report.
 7. **Re-run the checks** after the last fix: the `check:` commands, and the `Gate` when taste runs on its own.
@@ -53,3 +53,14 @@ Run the [interrogate](../cook/stations/interrogate.md) station on the diff (or t
 **One round.** Run interrogate once; a second round on the fixes mostly adds false positives (arXiv 2603.16244). Prove each fix with its repro failing before the fix and passing after, rerun the mutation sweep on the fixes, and name each fix in the report as checked by its repro and the sweep. What you leave unfixed goes through [left for you](../cook/stations/left-for-you.md#triage).
 
 A suspected bug no run could reproduce is not confirmed: record it with `kitchen.zsh decide <KEY> "unproven: <scenario>: <why no run reproduced it>" "<the command you ran>"` (in your report when the key is `-`), and change no code for it.
+
+## A manual order
+
+The user wrote the code, so the gate reports and fixes nothing. Run every step above except the fixes, and:
+
+- **Step 2**: `contract-check.sh` exiting 2 (no contract commit) passes. The mutation sweep runs the command recorded on the order, `python3 ~/.claude/skills/kitchen/dependencies/scripts/mutation-sweep.py origin/<base> --test-cmd "<the order's test_cmd>"`; each survivor is a finding, not a brief to a contract author.
+- **Step 6 and the bug review**: log each finding with `kitchen.zsh catch` as step 6 says, and fix none. A verified bug is a finding like any other.
+- **Tasters**: the user's tests are the contract, so test-honesty does not flag a test for being outside the contract, and the gaming taster gets the user's changed test files as the contract paths.
+- **The report**: every finding, worst first, each with its evidence (the command, its output, the file and line). Say that nothing is fixed.
+
+The user fixes and says "done" again. Rerun the steps their fixes could change, and report only what is still open.

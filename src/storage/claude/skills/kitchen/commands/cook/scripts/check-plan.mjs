@@ -17,7 +17,7 @@ const SUB_BLOCKS = [
 	"Merge.",
 ];
 const PROGRAM_H3 = ["File the tickets", "PR mechanics", "Verdict and merge", "Boot recipe"];
-const PROGRAM_MARKERS = ["`ticket-provider` skill", "is blocked by", "kitchen.zsh order new"];
+const PROGRAM_MARKERS = ["`ticket-provider` skill", "is blocked by", "Open no order"];
 const HOW_TO_READ_MARKERS = [
 	"One box is one unit of work",
 	"names the evidence",

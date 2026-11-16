@@ -1,6 +1,6 @@
 # Contract
 
-Write the tests before the code is handed off, as a contract between the session that decides what the code must do and the agent that writes it. A coder talks itself out of anything it can argue with; it cannot argue with a test it may not edit. Every recipe that ships code runs this before its code delegate starts. Prototype and investigation skip it.
+Write the tests before the code is handed off, as a contract between the session that decides what the code must do and the agent that writes it. A coder talks itself out of anything it can argue with; it cannot argue with a test it may not edit. Every recipe that ships code runs this before its code delegate starts. Prototype, investigation, and a manual order (the user writes its tests) skip it.
 
 ## Who writes it
 

@@ -6,15 +6,15 @@ Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 
 ## Steps
 
-1. **Hold the quality gate**: follow the [taste](../../taste/taste.md) command on this branch with the order's key and done-when. Nothing goes out until it clears.
-2. **Triage what is left** per the [left for you](../stations/left-for-you.md) station.
+1. **Hold the quality gate**: follow the [taste](../../taste/taste.md) command on this branch with the order's key and done-when. Nothing goes out until it clears. On a manual order the gate reports and fixes nothing, per [a manual order](../cook.md#a-manual-order); the user fixes or accepts each finding (an accepted one goes in the PR description under Approach with their reason) and says "done" again, and steps 2 to 6 wait for that. When the first run reports nothing, they go on without a second "done".
+2. **Route what is left** per the [left for you](../stations/left-for-you.md) station: follow-up tickets filed, and calls made alone.
 3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.
 4. **Fold the branch into one commit, then run the full suite once.**
-   1. With a clean tree, run `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base>`; it must not report the contract broken. After the fold every test edit sits in one commit, and the check can no longer tell who made it. It names the latest contract commit.
+   1. With a clean tree, run `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base>`; it must not report the contract broken (a manual order has no contract commit, so exit 2 is fine). After the fold every test edit sits in one commit, and the check can no longer tell who made it. It names the latest contract commit.
    2. Note `git rev-parse HEAD^{tree}`, `git fetch origin <base>`, then `git reset --soft $(git merge-base HEAD origin/<base>)` and commit per [Commits](#commits). `git rev-parse HEAD^{tree}` must print what you noted.
    3. `git rebase origin/<base>`, resolving any conflict so both sides' intent survives.
-   4. Run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: fix, `git commit --amend --no-edit`, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun. Green: push through the `git-provider` skill (its Push operation).
-5. **Open the PR.** First settle the review flag: when step 2 left any item and the order is not already flagged, run `kitchen.zsh order set <KEY> review=true "review_why=left for you: <n> items"`. Then open the PR through the `git-provider` skill (its Create PR operation, which says whether it starts ready or as a draft), targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with the `review` moment.
+   4. Run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: on a manual order, report it per [SKILL.md](../../../SKILL.md#autonomy) and fix nothing. Otherwise fix, `git commit --amend --no-edit`, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun. Green: push through the `git-provider` skill (its Push operation).
+5. **Open the PR** through the `git-provider` skill (its Create PR operation, which says whether it starts ready or as a draft), targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with the `review` moment.
 6. Run the [merge](merge.md) recipe. A PR flagged for the user's review still gets its verdict first: `sample` prints `verify` before `review`, and the PR goes to the user only when `sample` prints `review`.
 
 Opening a PR does not start a [follow a PR](follow-a-pr.md) pass. The scheduler wakes a session when the PR changes.
@@ -35,10 +35,10 @@ A change that needs two commits to read is two PRs, per [Size and stacks](#size-
 
 ## The PR body
 
-Fill the project's `.claude/kitchen/pr-body.md` when it exists, else the [default template](../templates/pr-body.md). Everyone who can see the PR reads it, so nothing in it addresses the user: their questions go to the order's `left` per [left for you](../stations/left-for-you.md), and the calls made without them are already in `decisions`. They read both when they review the order in its own session ([the user's review](merge.md#the-users-review)). Write the body to a file and check it against the template's length limit with `wc -c` before opening the PR; cut it until it fits.
+Fill the project's `.claude/kitchen/pr-body.md` when it exists, else the [default template](../templates/pr-body.md). Everyone who can see the PR reads it. A PR is finished code: no question rides on it and nothing in it addresses the user. Calls made without the user go in it under Approach, each with why, and so does each follow-up ticket filed, by key. To change a PR the user asks for its session ([the user's review](merge.md#the-users-review)). Write the body to a file and check it against the template's length limit with `wc -c` before opening the PR; cut it until it fits.
 
 ## Size and stacks
 
-Prefer several narrow PRs to one large one; an order whose change splits cleanly says so in **Left for you** or, at intake, becomes a [multi-phase plan](multi-phase-plan.md). A stack is a chain of base branches: the root PR targets the base, and each child branch rebases onto its parent's exact tip and targets the parent's branch (Create PR through the `git-provider` skill with the parent's branch as its base). Branch from the base only for independent work.
+Prefer several narrow PRs to one large one; an order whose change splits cleanly becomes, at intake, a [multi-phase plan](multi-phase-plan.md). A stack is a chain of base branches: the root PR targets the base, and each child branch rebases onto its parent's exact tip and targets the parent's branch (Create PR through the `git-provider` skill with the parent's branch as its base). Branch from the base only for independent work.
 
-**Reply:** the PR link as a full URL, what it changes for whom, and anything waiting on the user.
+**Reply:** the PR link as a full URL, what it changes for whom, and whether it waits on the user's review.

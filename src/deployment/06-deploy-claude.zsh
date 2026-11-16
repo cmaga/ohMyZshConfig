@@ -357,6 +357,34 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
     }
     remove_jcodemunch_mcp "$HOME/.claude.json" "$HOME/.claude.json"
 
+    # TEMPORARY, added 2026-11-15: the kitchen's three-mode redesign changed its
+    # order book. This brings a book written before it in line: each project gets
+    # its own last-look marker, phase "session" becomes "cook", and an unfinished
+    # order a user session worked becomes guided. It changes only what is still in
+    # the old form, so a second run does nothing. By January 2027 every machine
+    # should have deployed past it; delete this function and its call then.
+    migrate_kitchen_order_books() {
+        local book="$HOME/.claude-artifacts/workflows/kitchen" dir f n=0
+        local legacy='.phase == "session" or (.mode == null and (.status == "cooking" or .status == "pr-open"))'
+        [ -d "$book" ] && command_exists jq || return 0
+        for dir in "$book"/*(N/); do
+            [ -f "$dir/line.json" ] || continue
+            if [ -f "$book/.last-look" ] && [ ! -f "$dir/.last-look" ]; then
+                cp "$book/.last-look" "$dir/.last-look" && n=$((n + 1))
+            fi
+            local -a orders=( "$dir"/orders/*.json(N) )
+            (( $#orders )) || continue
+            for f in ${(f)"$(jq -r "select($legacy) | input_filename" $orders)"}; do
+                jq '(if .phase == "session" then .phase = "cook" else . end)
+                    | (if .mode == null and (.status == "cooking" or .status == "pr-open") then .mode = "guided" else . end)' \
+                    "$f" > "$f.tmp" && mv "$f.tmp" "$f" && n=$((n + 1))
+            done
+        done
+        (( n )) && print_status "success" "Kitchen order books: $n entries brought to the three-mode format"
+        return 0
+    }
+    migrate_kitchen_order_books
+
     # Each company in COMPANIES signs in with its own Claude account: `oc` under
     # ~/dev/<company>/ sets CLAUDE_CONFIG_DIR=~/.claude-<company>. Only the login
     # and .claude.json are per account; the rest links back to ~/.claude, so one

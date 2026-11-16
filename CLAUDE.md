@@ -62,6 +62,7 @@ Installs the Claude CLI with the native installer (`claude.ai/install.sh`, into 
 - `hooks.json` is **merged** into `~/.claude/settings.json` via a concat-plus-dedupe jq expression (requires `jq`). Per-event hook arrays (`PreToolUse`, `PostToolUse`, etc.) are concatenated and deduplicated by exact JSON stringification, so repo-managed entries stay authoritative but manual additions survive re-deploy. Empty `hooks` is skipped.
 - `BASH_DEFAULT_TIMEOUT_MS` (10 min) and `BASH_MAX_TIMEOUT_MS` (60 min) are merged into `~/.claude/settings.json` under `env` so runaway BashTool calls can't run unbounded. A companion `deny-busy-loops` PreToolUse hook blocks known no-yield loop shapes as a narrow safety rail. See `docs/terminal-hangs.md` for the full investigation.
 - Temporary: `remove_jcodemunch_mcp` drops the jCodemunch MCP registration that earlier deploys added, from `~/.claude.json` and each company account. Delete it once every machine has deployed past it (see the note on the function).
+- Temporary: `migrate_kitchen_order_books` brings kitchen order books written before the three-mode redesign (2026-11-15) to the new format, changing only what is still old. Delete it in January 2027 (see the note on the function).
 - Per-company accounts: for each company in `COMPANIES` (`lib/common.zsh`, shared with `03-company-setup.zsh`) it creates `~/.claude-<company>`, links CLAUDE.md, rules, skills, agents, hooks, settings.json, plugins and projects back to `~/.claude`. Only the login and `.claude.json` are per account. `oc` sets `CLAUDE_CONFIG_DIR` to that directory under `~/dev/<company>/`.
 
 Skills have a conventional structure: `SKILL.md` (required), optional `dependencies/` (templates/docs/scripts, with `repos/` gitignored and fetched at deploy time), optional `modes/`, `evals/`, `human/`, `artifacts/` (runtime-only, gitignored except `.gitkeep`).
@@ -76,7 +77,7 @@ Everything under `src/storage/claude/` is organized as a kitchen (design: `docs/
 | Standards | Rules every cook follows everywhere | `CLAUDE.md`, rules `cli-rules`, `code-quality`, `response-length`, `research-before-recommending`; `deny-busy-loops` hook |
 | The line | Orders in, PRs out | `kitchen` (server, expo, status, sous chef, the pass, the roster: who cooks on which model) |
 | Recipes | One per kind of work, with shared stations and principles (forked from pstack) | `kitchen/commands/cook/recipes/`, `kitchen/commands/cook/stations/`, `kitchen/dependencies/principles/` |
-| Techniques | Skills a recipe uses that also stand alone | `frontend-design` |
+| Techniques | Skills a recipe uses that also stand alone | `frontend-design`, `manual-mode` |
 | Equipment | Connections to outside systems | `ticket-provider` (Jira, Taskei), `git-provider` (GitHub, Bitbucket, CRUX), `playwright-mcp-setup`; `claude-proxy` automation |
 | Brigade | Agents | line cook `worker-agent`, `deepseek-flash-agent`; tasters `taster-agent`, `comment-sicko-agent` |
 | The house | Per project: house rules, verify skill, and the vault as the restaurant's binder | `capture-documentation`, `vault-scribe-agent`, `adr-auditor-agent`, `knowledge-vault-use` rule, `guard-vault-write` hook |

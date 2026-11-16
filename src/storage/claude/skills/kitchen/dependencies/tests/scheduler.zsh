@@ -36,6 +36,10 @@ mkdir -p $SB/bin $HOME/.claude/skills/ticket-provider/dependencies/scripts $HOME
 print -r -- $'[init]\n\tdefaultBranch = main' > $SB/gitconfig
 cp $HERE/stubs/{gh,lsof,aliases.zsh} $SB/bin/
 for t in claude jira bb curl; do cp $HERE/stubs/forbidden $SB/bin/$t; done
+# recording fakes: code logs its arguments; open logs its link and whether the handed-off session's process was already gone
+print -r -- $'#!/bin/sh\nprintf "%s\\n" "$*" >> "$CODE_LOG"' > $SB/bin/code
+print -r -- $'#!/bin/sh\nif kill -0 "$(cat "$VICTIM_FILE")" 2>/dev/null; then s=alive; else s=gone; fi\nprintf "%s %s\\n" "$*" "$s" >> "$OPEN_LOG"' > $SB/bin/open
+chmod +x $SB/bin/code $SB/bin/open
 cp $HERE/stubs/ticket.zsh $HOME/.claude/skills/ticket-provider/dependencies/scripts/
 cp $HERE/stubs/vault-git.sh $HOME/.claude/skills/capture-documentation/scripts/
 
@@ -64,7 +68,7 @@ fresh() {
   PROJ=$CASE/proj
   BOOKDIR=$CASE/book/proj
   export KITCHEN_BOOK=$CASE/book OC_CALLS=$CASE/oc.calls OC_MODE=$CASE/oc.mode GH_STATE=$CASE/gh
-  export TICKET_LOG=$CASE/ticket.log VAULT_LOG=$CASE/vault.log
+  export TICKET_LOG=$CASE/ticket.log VAULT_LOG=$CASE/vault.log CODE_LOG=$CASE/code.log OPEN_LOG=$CASE/open.log VICTIM_FILE=$CASE/victim.pid
 }
 
 k() { ( cd $PROJ && zsh $KITCHEN "$@" ) }
@@ -89,13 +93,15 @@ wait_dead() { # KEY: until the order's session process is gone
   return 1
 }
 alive() { kill -0 $1 2>/dev/null }
+victim() { ( sleep 60 < /dev/null > /dev/null 2>&1 & print $! > $VICTIM_FILE ) } # a process whose parent is gone, as a terminal session's claude is once its shell reaps it
+wait_open() { local i; for i in {1..300}; do [[ -s $OPEN_LOG ]] && return 0; nap; done; return 1 }
 
 mkline() { # [field=value...]
   k line add $PROJ > /dev/null
-  k line set proj probation=0 "$@"
+  k line set proj guided_after=0 auto_after=0 "$@"
   today_str > $BOOKDIR/.pruned
 }
-mkorder() { k order new "$1" status=ready recipe=feature "${@:2}" }
+mkorder() { k order new "$1" status=ready recipe=feature mode=auto "${@:2}" }
 mkwt() { git -C $PROJ worktree add -q $(wt $1) -b $1 origin/main 2>/dev/null }
 wtcommit() { # KEY FILE LINE
   mkdir -p $(wt $1)/${2:h}
@@ -155,10 +161,22 @@ claim_records_the_session() {
   spawn_claimer A $CASE/h1
   eq "$(<$CASE/h1)" $'ok\n0' 'claim output'
   eq "$(ord A status)" cooking status
-  eq "$(ord A phase)" session phase
+  eq "$(ord A phase)" cook phase
   eq "$(ord A pid)" $CLAIMER pid
   eq "$(ord A claimed_from)" ready claimed_from
   eq "$(ord A builder)" sess-A builder
+}
+
+claiming_an_auto_order_from_a_user_session_makes_it_guided_for_good() {
+  mkline; mkorder A > /dev/null; mkorder M mode=manual > /dev/null
+  spawn_claimer A $CASE/h1
+  eq "$(ord A mode)" guided 'auto order claimed by the user'
+  stop_claimer
+  tick
+  eq "$(ord A status)" ready 'released'
+  eq "$(ord A mode)" guided 'stays guided'
+  spawn_claimer M $CASE/h2
+  eq "$(ord M mode)" manual 'a manual order stays manual'
 }
 
 claim_is_released_when_the_holder_dies() {
@@ -179,6 +197,16 @@ dead_claim_holder_returns_the_order_to_ready() {
   eq "$(ord A pid)" 0 pid
 }
 
+a_user_session_is_never_stopped_by_the_scheduler() {
+  mkline 'max_minutes={"cook":1}' 'stall_minutes={"cook":1}'; mkorder A > /dev/null
+  spawn_claimer A $CASE/h1
+  jqedit A '.started -= 100000 | .touched -= 100000'
+  tick
+  lacks "$OUT" 'sent' 'no signal'
+  isyes "alive $CLAIMER" 'the user session lives'
+  eq "$(ord A status)" cooking status
+}
+
 # --- fire and reap ----------------------------------------------------------------
 
 scheduler_starts_a_cook_session_for_a_ready_order() {
@@ -195,6 +223,26 @@ scheduler_starts_a_cook_session_for_a_ready_order() {
   eq "$(ord A phase)" cook phase
   isyes "(( $(ord A pid) > 0 ))" 'pid recorded'
   eq "$(ord A builder)" "$(ord A session)" 'builder is the session'
+}
+
+the_scheduler_starts_only_auto_orders() {
+  mkline; mode hang
+  mkorder M mode=manual > /dev/null; mkorder G mode=guided > /dev/null; mkorder A > /dev/null
+  tick; wait_calls 1; nap 20
+  eq $(ncalls) 1 'sessions'
+  has "$OUT" 'cook A' 'the auto order starts'
+  eq "$(ord M status)" ready 'manual waits'
+  eq "$(ord G status)" ready 'guided waits'
+}
+
+the_scheduler_neither_reads_the_board_nor_starts_an_intake() {
+  mkline; mode hang
+  mkorder N status=new > /dev/null
+  tick; nap 20
+  eq $(ncalls) 0 'no session for a new order'
+  eq "$(ord N status)" new 'still new'
+  isyes "[[ ! -f $TICKET_LOG ]] || [[ $(<$TICKET_LOG) != *ready* ]]" 'the ready query is never run'
+  isyes "jq -e '(has(\"rail_depth\") or (.models | has(\"serve\"))) | not' $BOOKDIR/line.json > /dev/null" 'no rail depth or serve model in line.json'
 }
 
 scheduler_settles_the_order_when_the_session_hands_off_a_pr() {
@@ -431,6 +479,17 @@ a_pr_whose_last_update_changed_wakes_a_follow_session() {
   eq "$(ord A phase)" follow phase
 }
 
+a_follow_session_on_a_guided_order_is_held_to_its_time_limit() {
+  mkline 'max_minutes={"follow":1}' 'stall_minutes={"follow":0}'; mode stubborn; mkpr A 7
+  k order set A mode=guided phase=cook > /dev/null
+  setpr 7 OPEN u2
+  tick; wait_calls 1
+  eq "$(ord A phase)" follow phase
+  jqedit A '.started -= 120'
+  tick
+  has "$OUT" 'ran past 1 minutes; sent TERM' 'the scheduler holds a follow-up whatever the mode'
+}
+
 a_follow_session_resumes_the_builder_session_when_its_transcript_exists() {
   mkline; mode hang; mkpr A 7
   mkdir -p $HOME/.claude/projects/p; touch $HOME/.claude/projects/p/bld-7.jsonl
@@ -440,6 +499,18 @@ a_follow_session_resumes_the_builder_session_when_its_transcript_exists() {
   has "$(call 1)" $'--resume\tbld-7' 'resume'
   lacks "$(call 1)" $'--name' 'no new name'
   eq "$(ord A session)" bld-7 session
+}
+
+a_follow_session_never_resumes_the_conversation_of_an_order_a_user_claimed() {
+  mkline; mode hang; mkpr A 7
+  mkdir -p $HOME/.claude/projects/p; touch $HOME/.claude/projects/p/bld-7.jsonl
+  k order set A builder=bld-7 mode=guided > /dev/null
+  setpr 7 OPEN u2
+  tick; wait_calls 1
+  has "$(call 1)" $'--session-id\t' 'a fresh session'
+  lacks "$(call 1)" '--resume' 'no resume'
+  eq "$(ord A builder)" bld-7 'builder stays recorded for kitchen review'
+  isyes "[[ $(ord A session) != bld-7 ]]" 'the order runs in the new session'
 }
 
 an_unchanged_pr_does_not_wake_a_session() {
@@ -552,18 +623,69 @@ sample_says_review_for_an_added_line_that_silences_a_check() {
   has "$(ord A review_why)" 'silences a check: // eslint-disable-next-line' reason
 }
 
-sample_says_no_when_another_review_already_waits_today() {
-  clean_change
-  mkorder B status=pr-open review=true pr_opened=$(today_str) > /dev/null
-  sample; eq "$OUT" no output
-}
-
-sample_picks_the_first_clean_pr_of_the_day_for_review() {
-  clean_change
+sample_says_review_for_a_changed_check() {
+  sampled; wtcommit A .eslintrc.json '{}'; gated; verdict PASS
   sample
   eq "$OUT" review output
-  eq "$(ord A sample)" true sample
-  eq "$(ord A review_why)" "today's review sample" reason
+  has "$(ord A review_why)" 'changes a check: .eslintrc.json' reason
+}
+
+sample_says_review_for_a_review_when_reason_in_the_verdict() {
+  sampled; wtcommit A src/a.txt two; gated
+  kw $(wt A) order verdict A PASS notes 'the change moves money' > /dev/null
+  sample
+  eq "$OUT" review output
+  has "$(ord A review_why)" 'judged: the change moves money' reason
+}
+
+sample_says_review_for_an_order_flagged_at_intake() {
+  sampled; k order set A review=true 'review_why=looks and feels' > /dev/null
+  wtcommit A src/a.txt two; gated; verdict PASS
+  sample
+  eq "$OUT" review output
+  eq "$(ord A review_why)" 'looks and feels' reason
+}
+
+sample_leaves_an_always_review_path_inside_the_orders_station_to_intake() {
+  mkline; mkorder A status=pr-open 'station=["secrets/"]' > /dev/null; mkwt A
+  wtcommit A secrets/key.txt x; gated; verdict PASS
+  sample
+  eq "$OUT" no output
+  eq "$(ord A review)" false review
+}
+
+sample_says_no_for_a_clean_auto_change_whatever_else_waits() {
+  clean_change
+  mkorder B status=pr-open review=true pr_opened=$(today_str) > /dev/null
+  sample
+  eq "$OUT" no output
+  eq "$(ord A review)" false 'no daily sample'
+  eq "$(ord A sample)" '' 'no sample field'
+}
+
+sample_says_review_for_a_manual_order_even_after_the_user_approved_it() {
+  clean_change
+  k order set A mode=manual > /dev/null
+  sample
+  eq "$OUT" review output
+  has "$(ord A review_why)" 'manual order' reason
+  kw $(wt A) order approve A HEAD > /dev/null
+  sample
+  eq "$OUT" review 'approval does not release a manual order'
+}
+
+sample_flags_a_manual_order_for_review_even_while_it_reports_fix_or_verify() {
+  sampled; k order set A mode=manual > /dev/null
+  wtcommit A src/a.txt two; gated
+  sample
+  eq "$OUT" verify 'no verdict yet'
+  eq "$(ord A review)" true 'review set while a verdict is missing'
+  has "$(ord A review_why)" 'manual order' 'reason recorded'
+  verdict FAIL
+  sample
+  eq "$OUT" fix 'a failed verdict still prints fix'
+  eq "$(ord A review)" true 'review still set'
+  eq "$(ord A review_why)" 'manual order: the user merges it' 'reason recorded once'
 }
 
 the_users_approval_survives_a_clean_rebase() {
@@ -587,33 +709,39 @@ the_users_approval_lapses_when_the_patch_changes() {
 
 # --- decisions, status, catches -----------------------------------------------------
 
-a_decision_is_logged_with_its_evidence_and_status_shows_it_once() {
-  mkline; mkorder A > /dev/null
+a_decision_is_logged_with_its_evidence_and_shown_once_under_a_merge_that_never_waited_for_review() {
+  mkline; mkorder A status=done pr=$(prurl 1) summary=shipped > /dev/null
+  mkorder R status=done pr=$(prurl 2) summary=reviewed review=true > /dev/null
   k decide A 'chose X: because Y' 'f.py:1' > /dev/null
+  k decide R 'chose Z: because W' 'g.py:2' > /dev/null
   eq "$(ord A decisions | jq -r '.[0].what + "|" + .[0].evidence')" 'chose X: because Y|f.py:1' 'logged'
-  jqedit A '.decisions[].at = "2000-01-01T00:00:00"'
   OUT=$(k status 2>&1)
-  has "$OUT" '  decided   A  chose X: because Y  (f.py:1)' 'first look'
-  k decide A 'chose Z: because W' 'g.py:2' > /dev/null
+  has "$OUT" $'  merged    A  shipped\n    decided   chose X: because Y  (f.py:1)' 'the call sits under its merge'
+  lacks "$OUT" 'chose Z' 'a merge the user reviewed lists no calls'
+  lacks "$OUT" $'\n  decided' 'no standalone decided line'
   OUT=$(k status 2>&1)
-  has "$OUT" 'chose Z: because W' 'new decision'
-  lacks "$OUT" 'chose X' 'seen decision'
+  lacks "$OUT" 'chose X' 'shown once'
 }
 
 status_never_repeats_what_it_showed_even_from_the_same_second() {
   mkline
   mkorder A status=86 reason=nope > /dev/null
-  k decide A 'chose X: because Y' 'f.py:1' > /dev/null
+  mkorder B status=done pr=$(prurl 1) summary=shipped > /dev/null
+  k decide B 'chose X: because Y' 'f.py:1' > /dev/null
   k promoted some-class T-1 > /dev/null
+  k filed A T-9 'cleanup needed' > /dev/null
   OUT=$(k status 2>&1)
   has "$OUT" '  dropped   A  nope' 'first look shows the drop'
   has "$OUT" 'chose X' 'first look shows the decision'
   has "$OUT" '  promoted  some-class -> T-1' 'first look shows the promotion'
-  local look=$(<$KITCHEN_BOOK/.last-look)
-  jqedit A '.updated = $l | .decisions[0].at = $l' --arg l $look
+  has "$OUT" '  filed     A  T-9  cleanup needed' 'first look shows the filed ticket'
+  local look=$(<$BOOKDIR/.last-look)
+  jqedit A '.updated = $l | .filed[0].at = $l' --arg l $look
+  jqedit B '.updated = $l' --arg l $look
   OUT=$(k status 2>&1)
   lacks "$OUT" '  dropped   A' 'an event stamped with the look itself is not repeated'
   lacks "$OUT" 'chose X' 'nor its decision'
+  lacks "$OUT" '  filed' 'nor its filed ticket'
   lacks "$OUT" '  promoted' 'a promotion shows once, not all day'
 }
 
@@ -621,19 +749,69 @@ status_shows_only_what_is_new_and_marks_it_seen() {
   mkline
   mkorder A status=done pr=$(prurl 1) summary=shipped > /dev/null
   mkorder B status=86 reason=nope > /dev/null
-  mkorder Q status=review-queue question='which way?' > /dev/null
+  mkorder P status=pr-open review=true pr=$(prurl 2) > /dev/null
   OUT=$(k status 2>&1)
   has "$OUT" '  merged    A  shipped' 'merged'
   has "$OUT" '  dropped   B  nope' 'dropped'
-  has "$OUT" '  QUEUED    Q  which way?' 'queued'
-  isyes "[[ -f $KITCHEN_BOOK/.last-look ]]" 'look recorded'
+  has "$OUT" '  REVIEW    P' 'review'
+  isyes "[[ -f $BOOKDIR/.last-look ]]" 'look recorded under the project'
+  isyes "[[ ! -f $KITCHEN_BOOK/.last-look ]]" 'no look spanning projects'
   jqedit A '.updated = "2000-01-01T00:00:00"'; jqedit B '.updated = "2000-01-01T00:00:00"'
   mkorder C status=86 reason=late > /dev/null
   OUT=$(k status 2>&1)
   has "$OUT" '  dropped   C  late' 'new drop'
   lacks "$OUT" '  merged    A' 'seen merge'
   lacks "$OUT" '  dropped   B' 'seen drop'
-  has "$OUT" '  QUEUED    Q' 'what waits on the user stays'
+  has "$OUT" '  REVIEW    P' 'what waits on the user stays'
+}
+
+a_manual_orders_open_pr_always_shows_as_review_in_status() {
+  mkline
+  mkorder M mode=manual status=pr-open pr=$(prurl 1) > /dev/null
+  mkorder G mode=guided status=pr-open pr=$(prurl 2) > /dev/null
+  eq "$(ord M review)" false 'the manual order was never flagged'
+  OUT=$(k status 2>&1)
+  has "$OUT" '  REVIEW    M' 'manual PR waits on the user'
+  lacks "$OUT" '  REVIEW    G' 'a guided PR with no flag does not'
+}
+
+status_shows_only_the_current_project_and_stops_outside_one() {
+  mkline; mkorder A status=86 reason=mine > /dev/null
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  ( cd $CASE/other && zsh $KITCHEN line add $CASE/other > /dev/null && zsh $KITCHEN order new Z status=86 reason=theirs > /dev/null )
+  OUT=$(k status 2>&1)
+  has "$OUT" '  dropped   A  mine' 'this project'
+  lacks "$OUT" 'theirs' 'not the other project'
+  lacks "$OUT" 'other' 'no other project header'
+  mkdir $CASE/nowhere
+  OUT=$(kw $CASE/nowhere status 2>&1); RC=$?
+  eq $RC 1 'exit code outside a project'
+  has "$OUT" 'no registered project' 'message'
+  isyes "[[ ! -f $CASE/book/other/.last-look ]]" 'the other project was not marked seen'
+}
+
+order_list_shows_only_the_current_project_and_stops_outside_one() {
+  mkline; mkorder A status=86 reason=mine > /dev/null
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  ( cd $CASE/other && zsh $KITCHEN line add $CASE/other > /dev/null && zsh $KITCHEN order new Z status=86 reason=theirs > /dev/null )
+  OUT=$(k order list 2>&1)
+  has "$OUT" $'proj\tA\t86\tmine' 'this project'
+  lacks "$OUT" Z 'not the other project'
+  mkdir $CASE/nowhere
+  OUT=$(kw $CASE/nowhere order list 2>&1); RC=$?
+  eq $RC 1 'exit code outside a project'
+  has "$OUT" 'no registered project' 'message'
+}
+
+status_lists_ready_manual_then_guided_orders_with_when_they_were_approved() {
+  mkline
+  mkorder G mode=guided > /dev/null; mkorder M1 mode=manual > /dev/null; mkorder A > /dev/null
+  OUT=$(k status 2>&1)
+  local -a rows=( ${(M)${(f)OUT}:#  READY *} )
+  eq $#rows 2 'auto orders are not listed'
+  has $rows[1] 'READY     M1  manual  approved 20' 'manual first'
+  has $rows[2] 'READY     G  guided  approved 20' 'then guided'
+  lacks "$OUT" QUEUED 'no queue row'
 }
 
 a_class_is_promoted_on_its_second_sighting() {
@@ -675,21 +853,202 @@ a_catch_without_an_order_is_recorded_in_the_project() {
   has "$(<$BOOKDIR/catches.tsv)" $'\t-\ttaster1\tcls1\tnote1\tline' 'row'
 }
 
-# --- hold, prune, dry run ---------------------------------------------------------
+# --- modes ------------------------------------------------------------------------
 
-a_held_ticket_is_tried_again_after_followup_hours() {
-  mkline followup_hours=2; mkorder A > /dev/null
-  k order hold A 'waiting on X' > /dev/null
-  eq "$(ord A status)" new status
-  eq "$(ord A reason)" 'waiting on X' reason
-  local due=$(ord A retry_after)
-  isyes "(( due > EPOCHSECONDS + 7100 && due < EPOCHSECONDS + 7300 ))" 'retry_after is two hours out'
-  tick --dry-run
-  lacks "$OUT" 'would serve A' 'held'
-  jqedit A '.retry_after = 0'
-  tick --dry-run
-  has "$OUT" 'proj: would serve A' 'tried again'
+an_order_starts_as_manual() {
+  mkline
+  k order new X > /dev/null
+  eq "$(ord X mode)" manual mode
 }
+
+a_project_starts_manual_only_and_refuses_a_locked_mode() {
+  k line add $PROJ > /dev/null
+  eq "$(k modes)" manual 'unlocked modes'
+  OUT=$(k order new X mode=guided 2>&1); RC=$?
+  eq $RC 1 'exit code'
+  has "$OUT" 'guided is locked: 0 of 5 merged manual orders (guided_after)' 'unmet threshold'
+  k order new X > /dev/null
+  OUT=$(k order set X mode=auto 2>&1); RC=$?
+  eq $RC 1 'auto refused'
+  has "$OUT" 'auto is locked: 0 of 5 merged guided orders (auto_after)' 'unmet threshold'
+  OUT=$(k order set X mode=sideways 2>&1); RC=$?
+  eq $RC 1 'unknown mode refused'
+}
+
+order_new_validates_before_it_writes_so_a_retry_is_not_blocked() {
+  k line add $PROJ > /dev/null
+  OUT=$(k order new X mode=guided 2>&1); RC=$?
+  eq $RC 1 'locked mode refused'
+  isyes "[[ ! -e $BOOKDIR/orders/X.json ]]" 'no stray order'
+  OUT=$(k order new X mode=sideways 2>&1); RC=$?
+  eq $RC 1 'unknown mode refused'
+  isyes "[[ ! -e $BOOKDIR/orders/X.json ]]" 'no stray order for an unknown mode'
+  OUT=$(k order new X 'review=maybe' 2>&1); RC=$?
+  eq $RC 1 'a JSON field that is not JSON refused'
+  OUT=$(k order new X notakv 2>&1); RC=$?
+  eq $RC 1 'a bare word refused'
+  isyes "[[ ! -e $BOOKDIR/orders/X.json ]]" 'no stray order for a bad field'
+  k order new X mode=manual > /dev/null
+  eq "$(ord X mode)" manual 'the retry creates the order'
+}
+
+share_counts_manual_orders_made_ready_in_the_last_two_weeks() {
+  mkline
+  mkorder A mode=manual > /dev/null; mkorder B mode=manual > /dev/null; mkorder C > /dev/null
+  mkorder D mode=manual > /dev/null; jqedit D '.ready_at = "2000-01-01T00:00:00"'
+  k order new N > /dev/null
+  OUT=$(k share 2>&1)
+  has "$OUT" 'manual 2 of 3 orders made ready since' 'two of the three recent ready orders are manual'
+}
+
+orders_merged_before_modes_existed_unlock_nothing() {
+  k line add $PROJ > /dev/null
+  local i
+  for i in 1 2 3 4 5 6; do k order new L$i status=done pr=$(prurl $i) > /dev/null; jqedit L$i 'del(.mode)'; done
+  eq "$(k modes)" manual 'six merges with no mode leave the project manual-only'
+}
+
+merged_manual_orders_unlock_guided_and_merged_guided_orders_unlock_auto() {
+  k line add $PROJ > /dev/null
+  local i
+  for i in 1 2 3 4; do k order new M$i status=done pr=$(prurl $i) > /dev/null; done
+  k order new open1 status=pr-open pr=$(prurl 9) > /dev/null
+  eq "$(k modes)" manual '4 merged manual orders'
+  k order new M5 status=done pr=$(prurl 5) > /dev/null
+  eq "$(k modes)" $'manual\nguided' '5 merged manual orders'
+  k line set proj auto_after=2 > /dev/null
+  k order new G1 status=done pr=$(prurl 6) mode=guided > /dev/null
+  eq "$(k modes)" $'manual\nguided' 'one of two merged guided orders'
+  OUT=$(k order set open1 mode=auto 2>&1); RC=$?
+  eq $RC 1 'auto still locked'
+  has "$OUT" 'auto is locked: 1 of 2 merged guided orders (auto_after)' 'unmet threshold'
+  k order new G2 status=done pr=$(prurl 7) mode=guided > /dev/null
+  eq "$(k modes)" $'manual\nguided\nauto' 'two merged guided orders'
+  k order set open1 mode=auto > /dev/null
+  eq "$(ord open1 mode)" auto 'auto accepted'
+}
+
+order_next_prints_the_oldest_ready_order_of_a_mode_by_when_it_became_ready() {
+  mkline
+  k order new LATE recipe=feature mode=manual > /dev/null
+  mkorder EARLY mode=manual > /dev/null
+  mkorder G mode=guided > /dev/null
+  mkorder A > /dev/null
+  nap 5
+  k order set LATE status=ready > /dev/null
+  isyes "[[ $(ord LATE ready_at) > $(ord EARLY ready_at) ]]" 'stamped when it became ready, not when created'
+  local stamp=$(ord EARLY ready_at)
+  k order set EARLY status=ready > /dev/null
+  eq "$(ord EARLY ready_at)" $stamp 'stamped once'
+  eq "$(k order next manual)" EARLY 'manual'
+  eq "$(k order next guided)" G 'guided'
+  k order set EARLY status=cooking > /dev/null
+  eq "$(k order next manual)" LATE 'a claimed order is not next'
+}
+
+order_next_exits_non_zero_when_nothing_waits_and_refuses_auto() {
+  mkline; mkorder A > /dev/null
+  OUT=$(k order next manual 2>&1); RC=$?
+  eq $RC 1 'exit code'
+  has "$OUT" 'no ready manual order' 'message'
+  OUT=$(k order next auto 2>&1); RC=$?
+  eq $RC 1 'auto refused'
+}
+
+# --- mode overrides ---------------------------------------------------------------
+
+overrides_lists_this_projects_orders_with_a_mode_override_oldest_first_and_status_never_shows_them() {
+  mkline
+  mkorder B > /dev/null; mkorder A > /dev/null; mkorder C > /dev/null
+  print -r -- $'kept manual:\nthe user asked' > $CASE/why
+  k order set A mode_override=@$CASE/why > /dev/null
+  k order set B 'mode_override=guided asked for, manual chosen' > /dev/null
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  ( cd $CASE/other && zsh $KITCHEN line add $CASE/other > /dev/null && zsh $KITCHEN order new Z mode_override=theirs > /dev/null )
+  eq "$(k overrides)" $'B  guided asked for, manual chosen\nA  kept manual: the user asked' 'one line each, oldest first, this project only'
+  OUT=$(k status 2>&1)
+  lacks "$OUT" 'kept manual' 'not in status'
+  lacks "$OUT" 'decided' 'not among decisions'
+}
+
+# --- retired paths ----------------------------------------------------------------
+
+order_withdraw_and_the_review_queue_are_gone() {
+  mkline; mkorder A > /dev/null
+  OUT=$(k order withdraw A 'which way?' 2>&1); RC=$?
+  eq $RC 1 'withdraw exit code'
+  eq "$(ord A status)" ready 'nothing moved'
+  OUT=$(k signoff A answer 2>&1); RC=$?
+  eq $RC 1 'signoff refuses an order that was not dropped'
+  has "$OUT" 'A is ready, not dropped' 'message'
+}
+
+signoff_brings_back_a_dropped_order() {
+  mkline; mkorder A status=86 reason=nope > /dev/null
+  k signoff A 'do it after all' > /dev/null
+  eq "$(ord A status)" ready status
+  eq "$(ord A answer)" 'do it after all' answer
+  eq "$(ord A retries)" 0 retries
+}
+
+# --- filed tickets ------------------------------------------------------------------
+
+a_filed_follow_up_ticket_is_stored_on_the_order_and_shown_in_status() {
+  mkline; mkorder A status=pr-open > /dev/null
+  k filed A T-9 'the retry path needs its own change' > /dev/null
+  k filed A T-10 'second' > /dev/null
+  eq "$(ord A filed | jq -r 'map(.ticket) | join(",")')" T-9,T-10 'stored in order'
+  eq "$(ord A filed | jq -r '.[0].why')" 'the retry path needs its own change' why
+  OUT=$(k status 2>&1)
+  has "$OUT" '  filed     A  T-9  the retry path needs its own change' 'status row'
+  has "$OUT" '  filed     A  T-10  second' 'second row'
+}
+
+# --- handoff ------------------------------------------------------------------------
+
+handoff_ends_the_session_then_opens_its_conversation_in_the_worktree_window() {
+  mkline; mkorder A mode=manual > /dev/null; mkwt A
+  victim; local v=$(<$VICTIM_FILE)
+  OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
+  eq $RC 0 'exit code'
+  eq "$(<$CODE_LOG)" "-n $(wt A)" 'code opens the worktree in a new window'
+  isyes "alive $v" 'the session is not ended before the command returns'
+  wait_open
+  isyes "! alive $v" 'the session received TERM'
+  eq "$(<$OPEN_LOG)" 'vscode://anthropic.claude-code/open?session=sess-9 gone' 'the link opened after the session exited'
+  kill $v 2>/dev/null
+}
+
+handoff_prints_the_link_instead_of_opening_it_off_macos() {
+  mkline; mkorder A mode=manual > /dev/null; mkwt A
+  victim; local v=$(<$VICTIM_FILE)
+  print -r -- $'#!/bin/sh\necho Linux' > $SB/bin/uname; chmod +x $SB/bin/uname
+  OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
+  rm -f $SB/bin/uname
+  eq $RC 0 'exit code'
+  has "$OUT" 'vscode://anthropic.claude-code/open?session=sess-9' 'link printed'
+  nap 300
+  isyes "[[ ! -f $OPEN_LOG ]]" 'open is not called'
+  kill $v 2>/dev/null
+}
+
+handoff_refuses_an_order_that_is_not_manual_and_missing_session_variables() {
+  mkline; mkorder A mode=guided > /dev/null; mkorder M mode=manual > /dev/null; mkwt A; mkwt M
+  victim; local v=$(<$VICTIM_FILE)
+  OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
+  eq $RC 1 'guided exit code'
+  has "$OUT" 'A is not a manual order' 'guided message'
+  OUT=$( unset CLAUDE_PID; export CLAUDE_CODE_SESSION_ID=sess-9; k handoff M 2>&1 ); RC=$?
+  eq $RC 1 'unset CLAUDE_PID exit code'
+  has "$OUT" 'CLAUDE_PID and CLAUDE_CODE_SESSION_ID must be set' 'message'
+  OUT=$( export CLAUDE_PID=$v; unset CLAUDE_CODE_SESSION_ID; k handoff M 2>&1 ); RC=$?
+  eq $RC 1 'unset session id exit code'
+  isyes "[[ ! -f $CODE_LOG && ! -f $OPEN_LOG ]]" 'nothing opened'
+  isyes "alive $v" 'the session was not touched'
+  kill $v 2>/dev/null
+}
+
+# --- prune, dry run ---------------------------------------------------------------
 
 prune_removes_the_worktree_of_a_closed_order_no_session_holds() {
   mkline
@@ -754,6 +1113,7 @@ run_case() {
   fresh
   $1
   kill_matching $CASE
+  [[ -f $VICTIM_FILE ]] && kill $(<$VICTIM_FILE) 2>/dev/null
   if (( $#FAILS )); then
     local why=${(j:; :)FAILS}
     why=${why//[>|;&\`$'\n']/ }
