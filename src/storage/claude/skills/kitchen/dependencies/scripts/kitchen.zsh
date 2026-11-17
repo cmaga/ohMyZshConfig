@@ -71,7 +71,7 @@ REVIEW_SECTIONS=('## Always review' '## Review when')
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
 # Fields stored as JSON; every other field is a string.
-typeset -A JSON_FIELDS=(after 1 review 1 filed 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1)
+typeset -A JSON_FIELDS=(earned 1 after 1 review 1 filed 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1)
 
 die() { print -u2 -- "kitchen: $*"; exit 1; }
 # Microseconds, so the catch-up can tell an event after the last look from one in the same second.
@@ -166,12 +166,14 @@ lock_reason() { # DIR MODE: why the project has not unlocked MODE; nothing when 
   case $2 in
     manual) return 0 ;;
     guided) need=guided_after prev=manual ;;
-    auto) need=auto_after prev=guided ;;
+    auto) need=auto_after prev=guided
+      local below=$(lock_reason $1 $prev)
+      [[ -z $below ]] || { print -- "$2 is locked: $below"; return 0; } ;;
   esac
   local after=$(jq -r --arg k $need --argjson d $UNLOCK_AFTER '.[$k] // $d' $1/line.json)
   local -a f=( $1/orders/*.json(N) )
-  # an order merged before modes existed has none, and counts toward nothing
-  (( $#f )) && merged=$(jq -s --arg m $prev 'map(select(.status == "done" and (.pr // "") != "" and .mode == $m)) | length' $f)
+  # an order merged before modes existed, or while its mode was locked, is not earned and counts toward nothing
+  (( $#f )) && merged=$(jq -s --arg m $prev 'map(select(.status == "done" and (.pr // "") != "" and .mode == $m and .earned == true)) | length' $f)
   (( merged >= after )) || print -- "$2 is locked: $merged of $after merged $prev orders ($need)"
 }
 
@@ -309,7 +311,9 @@ close_order() { # KEY: mark the order done and move its ticket (catering's epic)
   # a delivered catering order's spec branch has nothing left that the base lacks
   [[ $(jq -r .recipe $f) == catering && -n $(git -C $project ls-remote --heads origin spec/$ticket 2>/dev/null) ]] &&
     git -C $project push -q origin --delete spec/$ticket >/dev/null 2>&1
-  order_set $1 status=done
+  local earned=true
+  [[ -z $(lock_reason ${f:h:h} $(jq -r '.mode // "manual"' $f)) ]] || earned=false
+  order_set $1 status=done earned=$earned
 }
 
 order_list() { # [STATUS]: every order of the current project, or those with that status

@@ -870,7 +870,7 @@ a_project_starts_manual_only_and_refuses_a_locked_mode() {
   k order new X > /dev/null
   OUT=$(k order set X mode=auto 2>&1); RC=$?
   eq $RC 1 'auto refused'
-  has "$OUT" 'auto is locked: 0 of 5 merged guided orders (auto_after)' 'unmet threshold'
+  has "$OUT" 'auto is locked: guided is locked: 0 of 5 merged manual orders (guided_after)' 'auto waits on guided'
   OUT=$(k order set X mode=sideways 2>&1); RC=$?
   eq $RC 1 'unknown mode refused'
 }
@@ -911,21 +911,49 @@ orders_merged_before_modes_existed_unlock_nothing() {
 merged_manual_orders_unlock_guided_and_merged_guided_orders_unlock_auto() {
   k line add $PROJ > /dev/null
   local i
-  for i in 1 2 3 4; do k order new M$i status=done pr=$(prurl $i) > /dev/null; done
+  for i in 1 2 3 4; do k order new M$i status=done earned=true pr=$(prurl $i) > /dev/null; done
   k order new open1 status=pr-open pr=$(prurl 9) > /dev/null
   eq "$(k modes)" manual '4 merged manual orders'
-  k order new M5 status=done pr=$(prurl 5) > /dev/null
+  k order new M5 status=done earned=true pr=$(prurl 5) > /dev/null
   eq "$(k modes)" $'manual\nguided' '5 merged manual orders'
   k line set proj auto_after=2 > /dev/null
-  k order new G1 status=done pr=$(prurl 6) mode=guided > /dev/null
+  k order new G1 status=done earned=true pr=$(prurl 6) mode=guided > /dev/null
   eq "$(k modes)" $'manual\nguided' 'one of two merged guided orders'
   OUT=$(k order set open1 mode=auto 2>&1); RC=$?
   eq $RC 1 'auto still locked'
   has "$OUT" 'auto is locked: 1 of 2 merged guided orders (auto_after)' 'unmet threshold'
-  k order new G2 status=done pr=$(prurl 7) mode=guided > /dev/null
+  k order new G2 status=done earned=true pr=$(prurl 7) mode=guided > /dev/null
   eq "$(k modes)" $'manual\nguided\nauto' 'two merged guided orders'
   k order set open1 mode=auto > /dev/null
   eq "$(ord open1 mode)" auto 'auto accepted'
+}
+
+an_unstamped_or_unearned_merge_counts_toward_no_unlock() {
+  k line add $PROJ > /dev/null
+  local i
+  for i in 1 2 3 4 5 6; do k order new G$i status=done pr=$(prurl $i) > /dev/null; jqedit G$i '.mode = "guided"'; done
+  eq "$(k modes)" manual 'six merged guided orders with no stamp and no manual merge'
+  k order new X > /dev/null
+  OUT=$(k order set X mode=auto 2>&1); RC=$?
+  eq $RC 1 'auto refused'
+  has "$OUT" 'auto is locked: guided is locked: 0 of 5 merged manual orders (guided_after)' 'names the lower lock'
+  for i in 1 2 3 4 5; do k order new M$i status=done earned=true pr=$(prurl 1$i) > /dev/null; done
+  eq "$(k modes)" $'manual\nguided' 'five earned manual orders, guided orders unstamped'
+  for i in 1 2 3 4 5; do jqedit G$i '.earned = false'; done
+  eq "$(k modes)" $'manual\nguided' 'five unearned guided orders'
+  for i in 1 2 3 4 5; do jqedit G$i '.earned = true'; done
+  eq "$(k modes)" $'manual\nguided\nauto' 'five earned manual and five earned guided orders'
+}
+
+closing_an_order_stamps_whether_its_mode_was_unlocked_then() {
+  k line add $PROJ > /dev/null
+  k order new A > /dev/null
+  k order close A > /dev/null
+  eq "$(ord A earned)" true 'manual is always unlocked'
+  k order new B > /dev/null
+  jqedit B '.mode = "guided"'
+  k order close B > /dev/null
+  eq "$(ord B earned)" false 'guided closed while locked'
 }
 
 order_next_prints_the_oldest_ready_order_of_a_mode_by_when_it_became_ready() {
