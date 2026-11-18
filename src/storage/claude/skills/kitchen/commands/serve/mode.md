@@ -2,7 +2,7 @@
 
 Intake recommends a mode beside the approach, and the user approves or changes it. The mode says who writes the code:
 
-- `manual`: the user writes it, tests included. The session only looks things up for them.
+- `manual`: the user writes it, against tests the contract station wrote first. The session only looks things up for them.
 - `guided`: the line writes it, with the user in the session to ask.
 - `auto`: the line writes it headless, started by the scheduler. It never waits on the user.
 
@@ -14,7 +14,7 @@ Intake recommends a mode beside the approach, and the user approves or changes i
 
 ## The rules
 
-Take the first rule that matches among the unlocked modes. `manual` applies only to recipes that ship code (feature, bug-fix, refactor, perf, hillclimb); an investigation, prototype, eval, multi-phase-plan, or catering spec is `guided` or `auto`.
+Take the first rule that matches among the unlocked modes. `manual` applies only to recipes that ship code (feature, bug-fix, refactor, perf, hillclimb); an investigation, prototype, eval, or multi-phase-plan is `guided` or `auto`. A `catering` order takes no mode: it runs with the user, and each deployment it files takes the project's highest unlocked mode.
 
 1. **A `## Sorting` rule** that names a mode for this ticket. It is the user's earlier call.
 2. **Manual, for risk**: a mistake would cost a lot and the checks could not catch it. A data model, an interface between components, or failure behavior qualifies. So does a path in the `station` that `## Critical` or `## Always review` lists.

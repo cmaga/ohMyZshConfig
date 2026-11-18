@@ -1,24 +1,25 @@
 # Recipe: catering
 
-A new system, a new design, or a large refactor whose target design is unsettled. The user writes a spec with you and plans its milestones with you; those two are intake work with the user, so the scheduler never starts them, and the user runs `/kitchen cook <KEY>` in a session. Each milestone then becomes an ordinary order on the branch `spec/<EPIC>`, and this order comes back once more to deliver that branch as one PR. The milestones and the close take `mode=auto`, cooked headless by the scheduler, only when `kitchen.zsh modes` lists `auto`; otherwise they take the highest unlocked mode and the user starts each with `/kitchen next <mode>`. Once the epic is filed, every `kitchen.zsh` command takes the epic's key in place of this order's.
+A new system, a new design, or a large refactor whose target design is unsettled. With the user, you agree the context and goals, investigate, settle a direction, and write three documents: the plan, for them or a team to review; the spec, a functional spec for agents; and the implementation plan, which puts every call an agent would make to the user now. The work then ships in deployments: one order and one PR each, its skeleton built with the user and its bodies in the project's highest unlocked mode. Once every deployment merged, the user runs `/kitchen cook <KEY>` once more, and the planning documents retire into documentation.
 
-Every row works in the order's worktree, entered per [cook](../cook.md) steps 5 and 6, which pick up where an earlier session stopped. Find where it stands from the order's `spec` and `stage` fields and its PR (the order's `pr`, or one the provider lists for the branch), whose state you read through the `git-provider` skill:
+Every stage of this order runs with the user, so it has no mode (its `mode` is only the default, and no rule for manual orders applies to it), and the scheduler never starts it. Every row works in the order's worktree, `.claude/worktrees/<KEY>`, entered per [cook](../cook.md) steps 5 and 6, which pick up where an earlier session stopped. The documents live there, untracked, in the order's `docs` directory, and its deployments read them by that path, so the worktree stays until wrap-up.
 
-| `spec` | `stage` | PR | Do |
-|---|---|---|---|
-| empty | | none | Move the ticket per [cook](../cook.md) step 9, and write the spec per [spec](catering/spec.md). |
-| empty | | open | Fold in the user's comments on the PR per [spec](catering/spec.md) step 6, push, run `kitchen.zsh order pr <KEY> <url>`, and stop. |
-| empty | | merged | Run [spec](catering/spec.md) wrap-up step 4, which goes on into the plan. |
-| set | empty | | Plan it per [plan](catering/plan.md). |
-| set | `close` | none | Deliver it per [close](catering/close.md). |
-| set | `close` | open | With the user here, fix what their comments on it ask and, after a `FAIL` verdict, each finding in its `verdict_notes` per [follow a PR](follow-a-pr.md) step 6. Push, run `kitchen.zsh order pr <EPIC> <url>`, then `kitchen.zsh order verify <EPIC>` when you fixed a finding, and stop. |
-| set | `close` | merged | `kitchen.zsh order close <KEY>`, and end. |
-| either | either | closed without merging | Ask the user whether to work it again. If so, run `kitchen.zsh order set <KEY> pr=` and go on as for no PR. |
+Find where it stands from the order's `stage` and its PR (the order's `pr`, or one the provider lists for the branch), whose state you read through the `git-provider` skill:
 
-## The milestone orders
+| `stage` | PR | Do |
+|---|---|---|
+| empty or `plan` | | Move the ticket per [cook](../cook.md) step 9, then plan per [plan](catering/plan.md). |
+| `spec` | | Write the spec per [spec](catering/spec.md). |
+| `implementation` | | Write the implementation plan and file the deployments per [implementation](catering/implementation.md). |
+| `building` | none | When every order in its `after` is done (`kitchen.zsh order get <DEPLOYMENT-KEY>` for each), wrap up per [wrap-up](catering/wrap-up.md). Otherwise say which deployment waits on what, and stop. |
+| `building` | open | The docs PR: with the user here, fix what their comments on it ask and, after a `FAIL` verdict, each finding in its `verdict_notes` per [follow a PR](follow-a-pr.md) step 6. Push, run `kitchen.zsh order pr <KEY> <url>`, then `kitchen.zsh order verify <KEY>` when you fixed a finding, and stop. |
+| `building` | merged | `kitchen.zsh order close <KEY>`, and end. |
+| any | closed without merging | Ask the user whether to work it again. If so, run `kitchen.zsh order set <KEY> pr=` and go on as for no PR. |
 
-A milestone order is a `feature`, `refactor`, `bug-fix`, or `perf` order like any other, cooked by its own recipe. It carries `spec` (the spec's path), `parts` (the spec's part ids it touches), and `base=spec/<EPIC>`, so its worktree starts from that branch and its PR merges into it. Its `after` lists the milestones it builds on, and the scheduler starts it only once each of those is done.
+A deployment order carries `catering`, the epic's key, and follows [deployment](catering/deployment.md).
 
-- **A dropped milestone holds the rest.** A milestone at `86` blocks every order whose `after` names it, the close included, and `kitchen.zsh status` shows them `BLOCKED`. Bring it back with `kitchen.zsh signoff <KEY> @<file>`, or take it out of each waiting order's `after` with `kitchen.zsh order set <LATER> after=@<file>`.
-- **The spec is its guidance.** Read the sections for its `parts` before its recipe's first step, and hold the code to them.
-- **A call that changes the spec is yours to make**, per [SKILL.md](../../../SKILL.md#autonomy), unless it overturns what the user decided. Commit the spec change in this order's PR, its commit body saying why. In the same session, update everything that relied on the old text: each later milestone it touches (`kitchen.zsh order set <LATER> done_when=@<file> station=@<file>`), their tickets through the `ticket-provider` skill, and the plan. Record the call with `kitchen.zsh decide`.
+## Talking to the user
+
+Every stage moves one point at a time: track the points with `TaskCreate` (the list is the agenda and the resumption state), discuss one until the user is satisfied, then stop until they say `next`. Discussing and writing are separate acts: a point goes into a document only on their word. When a question needs real data, dispatch it to a background agent and keep discussing.
+
+When a stage shows the user a document, give them its path; they read and edit it directly, and their text wins, so read it again before the next point. Make each change they ask for, say what changed, and stop. A stage moves on only on their go.

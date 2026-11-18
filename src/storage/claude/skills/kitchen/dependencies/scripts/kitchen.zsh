@@ -21,6 +21,7 @@
 #   kitchen overrides                        this project's orders that carry a mode_override, oldest first
 #   kitchen share                            how many of this project's orders made ready in the last 14 days are manual
 #   kitchen handoff KEY                      move a manual order's session into VS Code in its worktree
+#   kitchen stage KEY                        open a catering deployment's PR as staged changes in a review worktree in VS Code
 #   kitchen filed KEY TICKET WHY             record a follow-up ticket filed for the order
 #   kitchen order get KEY                    print the order
 #   kitchen order new KEY [field=value...]   create an order in the current project
@@ -42,7 +43,7 @@
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
 #   kitchen line add PATH | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
-#   kitchen house [PATH]                     whether the project is set up: its project rules hold both review sections
+#   kitchen house [PATH]                     whether the project is set up: its project rules hold the review and docs sections
 #   kitchen rules [PATH]                     print the project rules: the base branch's copy when it holds one, else the main checkout's file
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
 #   kitchen tick [--dry-run]                 one scheduler pass over every project; it starts only auto orders
@@ -65,8 +66,8 @@ DEFAULT_MINUTES='{"cook":360,"follow":120,"verify":90}'
 DEFAULT_STALL='{"cook":60,"follow":45,"verify":45}'
 # A change to these paths moves a check, so a base that changed one leaves a branch untested until it rebases.
 CHECK_PATHS='(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/|\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.|\.claude/kitchen/house\.md$|\.claude/skills/verify[-/])'
-# Every project's rules hold both, empty or not: the paths that always wait for the user, and the questions a verifier answers.
-REVIEW_SECTIONS=('## Always review' '## Review when')
+# Every project's rules hold all three, empty or not: the paths that always wait for the user, the questions a verifier answers, and where the project's docs go and what a change must update.
+REVIEW_SECTIONS=('## Always review' '## Review when' '## Docs')
 # An added line matching this skips or silences a check.
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
@@ -156,7 +157,7 @@ house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its r
   return 1
 }
 
-order_base() { # ORDER-FILE: the order's own base (a catering milestone's spec branch), else its project's
+order_base() { # ORDER-FILE: the order's own base, else its project's
   local b=$(jq -r '.base // empty' $1)
   [[ -n $b ]] && print -- $b || base_of $(jq -r .project ${1:h:h}/line.json)
 }
@@ -260,8 +261,8 @@ proc_table() { # one ps snapshot into PROC_PARENT, PROC_NAME and PROC_ARGS by pi
   return 0
 }
 
-user_held() { # ORDER-FILE: true when a session the user started holds the order: not an auto order's cook session, nor a follow-up or verify
-  jq -r '(.mode // "manual") != "auto" and .phase == "cook"' $1
+user_held() { # ORDER-FILE: true when a session the user started holds the order: not an auto order's cook session, nor a follow-up or verify; a skeleton is always the user's
+  jq -r '((.mode // "manual") != "auto" or .stage == "skeleton") and .phase == "cook"' $1
 }
 
 claim() { # KEY: mark the order as worked by the Claude session this runs in
@@ -296,7 +297,8 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
   # the first session to work an order is the one kitchen review opens later
   local -a mine=()
   [[ -z $(jq -r '.builder // ""' $f) && -n ${CLAUDE_CODE_SESSION_ID:-} ]] && mine=(builder=$CLAUDE_CODE_SESSION_ID)
-  [[ $(jq -r '.mode // ""' $f) == auto ]] && mine+=(mode=guided)
+  # a skeleton is the user's whatever its mode, and the order keeps its mode for the build
+  [[ $(jq -r '.mode // ""' $f) == auto && $(jq -r '.stage // ""' $f) != skeleton ]] && mine+=(mode=guided)
   MODE_FORCE=1 order_set $1 status=cooking phase=cook pid=$own started=$EPOCHSECONDS "claimed_from=$st" $mine
   print -- ok
 }
@@ -308,11 +310,9 @@ close_order() { # KEY: mark the order done and move its ticket (catering's epic)
   if ! ( cd $project && $TICKET move $ticket merged "Merged: ${pr:-investigation answered}" < /dev/null >/dev/null 2>>${f:h:h}/log/ticket.log ); then
     notice ${f:h:h} "could not move $ticket with the merged moment; see log/ticket.log"
   fi
-  # a delivered catering order's spec branch has nothing left that the base lacks
-  [[ $(jq -r .recipe $f) == catering && -n $(git -C $project ls-remote --heads origin spec/$ticket 2>/dev/null) ]] &&
-    git -C $project push -q origin --delete spec/$ticket >/dev/null 2>&1
+  # a catering order's mode is only the default, so its docs PR unlocks nothing
   local earned=true
-  [[ -z $(lock_reason ${f:h:h} $(jq -r '.mode // "manual"' $f)) ]] || earned=false
+  [[ $(jq -r .recipe $f) == catering || -n $(lock_reason ${f:h:h} $(jq -r '.mode // "manual"' $f)) ]] && earned=false
   order_set $1 status=done earned=$earned
 }
 
@@ -354,9 +354,12 @@ status() { # this project: what waits on the user, what is ready to start, what 
       | ((.after // []) - ((.after // []) - $gone)) as $by | select($by | length > 0)
       | "  BLOCKED   \(.key)  waits on dropped \($by | join(", "))" ),
     ( map(select(.status == "pr-open" and (.review or .mode == "manual"))) | sort_by(.updated)[]
-      | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)\(if .builder then "  kitchen review \(.key)" else "" end)" ),
-    ( ("manual", "guided") as $m | map(select(.status == "ready" and (.mode // "manual") == $m)) | sort_by(.ready_at // .created)[]
-      | "  READY     \(.key)  \($m)  approved \((.ready_at // .created)[0:16])\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
+      | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)\(if .builder then "  kitchen review \(.key)" else "" end)\(if .catering then "  kitchen stage \(.key)" else "" end)" ),
+    ( (map(select(.status == "done")) | map(.key)) as $done
+      | map(select(.status == "ready" and (((.after // []) - $done) | length) == 0)) as $ready
+      | ("skeleton", "manual", "guided") as $m
+      | $ready | map(select(if $m == "skeleton" then .stage == "skeleton" else .stage != "skeleton" and (.mode // "manual") == $m end)) | sort_by(.ready_at // .created)[]
+      | "  READY     \(.key)  \($m)\(if .catering then "  [\(.catering)]" else "" end)  approved \((.ready_at // .created)[0:16])\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
     ( map(select(.updated > $s)) as $new
       | ( $new | map(select(.status == "done" and .pr))[]
           | "  merged    \(.key)  \(.summary // "")",
@@ -554,7 +557,10 @@ sample() { # KEY: what this PR needs before it merges, run from its worktree: re
 order_next() { # MODE: key of the current project's oldest ready order of that mode, by when it became ready
   [[ $1 == (manual|guided) ]] || die "next takes manual or guided, not $1"
   local slug; slug=$(slug_here) || exit 1
-  local key=$(orders_json $slug | jq -r --arg m $1 'map(select(.status == "ready" and .pid == 0 and (.mode // "manual") == $m)) | sort_by(.ready_at // .created) | .[0].key // empty')
+  # the user starts a catering order with take, and an order waits until every order in its after list is done
+  local key=$(orders_json $slug | jq -r --arg m $1 '(map(select(.status == "done")) | map(.key)) as $done
+    | map(select(.status == "ready" and .pid == 0 and (.mode // "manual") == $m and .recipe != "catering" and (((.after // []) - $done) | length) == 0))
+    | sort_by(.ready_at // .created) | .[0].key // empty')
   [[ -n $key ]] || die "no ready $1 order in $slug"
   print -- $key
 }
@@ -580,6 +586,26 @@ handoff() { # KEY: move this session into VS Code in the manual order's worktree
   # the waiter outlives this session: TERM it after a moment, wait for it to exit, then open the link in the new window
   nohup zsh -c 'trap "" HUP; sleep 2; kill -TERM $1 2>/dev/null; while kill -0 $1 2>/dev/null; do sleep 1; done; open "$2"' _ $CLAUDE_PID $link < /dev/null > /dev/null 2>&1 &!
   print -- "handing off $1: this session ends in a moment and reopens in VS Code"
+}
+
+stage() { # KEY: the catering deployment's PR as staged changes in its own review worktree, opened in VS Code
+  local f; f=$(need_order ${1:?KEY}) || exit 1
+  [[ -n $(jq -r '.catering // ""' $f) ]] || die "$1 is not a catering deployment"
+  # the session reviewing it holds the order as cooking, so the recorded PR is the test
+  [[ -n $(jq -r '.pr // ""' $f) ]] || die "$1 has no PR to stage"
+  local key=$(jq -r .key $f) project=$(jq -r .project ${f:h:h}/line.json) base=$(order_base $f)
+  local wt=$project/.claude/worktrees/$key rv=$project/.claude/worktrees/review-$key
+  [[ -d $wt ]] || die "no worktree at $wt"
+  local head=$(git -C $wt rev-parse HEAD) mb
+  git -C $wt fetch -q origin $base 2>/dev/null
+  mb=$(git -C $wt merge-base $head origin/$base) || die "no merge base of $key and origin/$base"
+  # a second run rebuilds the review from the PR's current head
+  [[ -d $rv ]] && { git -C $project worktree remove --force $rv >/dev/null 2>&1 || die "could not remove $rv"; }
+  git -C $project worktree add -q --detach $rv $head >/dev/null 2>&1 || die "could not add the review worktree $rv"
+  git -C $rv reset -q --soft $mb || die "could not stage the change in $rv"
+  code -n $rv < /dev/null || die "could not open $rv with code; the review worktree stays"
+  local n=$(git -C $rv diff --cached --name-only | wc -l)
+  print -- "staged $key in $rv: ${n// /} files changed"
 }
 
 order_cmd() {
@@ -664,12 +690,11 @@ land_order() { # PROJECT DIR KEY EPIC STATUS DRY: remove the worktrees of a clos
   for wt in $project/.claude/worktrees/$key(N/); do
     land_worktree $project $wt "$6" $dir "$merged" $(order_base $dir/orders/$key.json)
   done
-  # a verify session's checkout is detached and holds nothing of its own
-  wt=$project/.claude/worktrees/verify-$key
-  if [[ -d $wt ]]; then
+  # a verify or staged review checkout is detached and holds nothing of its own
+  for wt in $project/.claude/worktrees/{verify,review}-$key(N/); do
     if [[ -n $6 ]]; then print -- "  would remove ${wt:t}"
     else git -C $project worktree remove --force $wt >/dev/null 2>&1 && print -- "  removed ${wt:t}"; fi
-  fi
+  done
   return 0
 }
 
@@ -681,7 +706,7 @@ prune() { # [--dry-run]: remove the worktrees of every closed order no session h
     project=$(jq -r .project $line)
     orders_json $slug | jq -r --arg us $US '.[] | select((.status == "done" or .status == "86") and .pid == 0) | [.key, (.epic // .key), .status] | join($us)' |
       while IFS=$US read -r key epic st; do
-        [[ -d $project/.claude/worktrees/$key || -d $project/.claude/worktrees/verify-$key ]] || continue
+        [[ -d $project/.claude/worktrees/$key || -d $project/.claude/worktrees/verify-$key || -d $project/.claude/worktrees/review-$key ]] || continue
         land_order $project ${line:h} $key $epic $st "$dry" < /dev/null
       done
     [[ -n $dry ]] || today > ${line:h}/.pruned
@@ -844,7 +869,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
   local -a live
   proc_table
   orders_json $slug | jq -r --arg us $'\x1f' --argjson lim "$lim" --argjson stall "$stall" '.[] | select(.pid > 0)
-      | [.key, .status, (.pid|tostring), (.phase // "-"), ((((.mode // "manual") != "auto") and .phase == "cook")|tostring), (.log // "-"), (if (.pr // "") == "" then "-" else .pr end),
+      | [.key, .status, (.pid|tostring), (.phase // "-"), ((((.mode // "manual") != "auto" or .stage == "skeleton") and .phase == "cook")|tostring), (.log // "-"), (if (.pr // "") == "" then "-" else .pr end),
          (.recipe // "-"), ((.started // 0)|tostring), (.session // "-"), (.claimed_from // "-"),
          (($lim[.phase // ""] // 0)|tostring), ((.handed // 0)|tostring), ((.touched // 0)|tostring),
          ((.stop_at // 0)|tostring), (($stall[.phase // ""] // 0)|tostring), ((.verified_at // 0)|tostring)] | join($us)' |
@@ -926,32 +951,25 @@ finish() { # SLUG KEY: the PR merged; close the order and clear its worktrees
 follow_prs() { # SLUG DRY: close merged PRs; wake the order's session when a PR changed
   local slug=$1 dry=$2 line=$BOOK/$1/line.json
   local project=$(jq -r .project $line) hours=$(jq -r .followup_hours $line)
-  local key pr seen followed recipe spec verify state st upd
+  local key pr seen followed verify state st upd
   orders_json $slug | jq -r --arg us $'\x1f' '.[] | select(.status == "pr-open" and .pid == 0 and (.pr // "") != "")
       | [.key, .pr, (if (.pr_seen // "") == "" then "-" else .pr_seen end), ((.followed // 0)|tostring),
-         (.recipe // "-"), (if (.spec // "") == "" then "-" else .spec end), (.verify // false | tostring)] | join($us)' |
-  while IFS=$'\x1f' read -r key pr seen followed recipe spec verify; do
+         (.verify // false | tostring)] | join($us)' |
+  while IFS=$'\x1f' read -r key pr seen followed verify; do
     state=$(pr_state $project $pr)
     if [[ -z $state ]]; then log "$slug: could not read $pr; trying again next pass"; continue; fi
     st=${state%%$'\t'*} upd=${state#*$'\t'}
     case $st in
       MERGED)
         if [[ -n $dry ]]; then print -- "$slug: would close $key"
-        elif [[ $recipe == catering && $spec == - ]]; then
-          # a merged spec is planned into milestone orders with the user in a session
-          order_set $key status=ready \
-            "question=The spec merged. Run /kitchen cook $key in a session to plan its milestones."
         else finish $slug $key; fi ;;
       CLOSED) [[ -n $dry ]] || order_set $key status=86 "reason=PR closed without merging: $pr" ;;
       OPEN)
-        # catering's spec and final PRs are worked with the user, never by a follow-up; only a verdict runs
-        [[ $recipe == catering && $verify != true ]] && continue
         # a change waiting for its verdict gets a session that did not write it
         if [[ $verify == true ]]; then fire $slug $key verify pr-open "$dry"
         elif [[ $upd != $seen ]]; then fire $slug $key follow pr-open "$dry"; fi ;;
       UNSUPPORTED)
         # a host the scheduler cannot read: look in on a timer; the session closes the order when it sees the merge
-        [[ $recipe == catering && $verify != true ]] && continue
         if [[ $verify == true ]]; then fire $slug $key verify pr-open "$dry"
         elif (( EPOCHSECONDS - followed > hours * 3600 )); then fire $slug $key follow pr-open "$dry"; fi ;;
     esac
@@ -963,12 +981,12 @@ cook_next() { # SLUG DRY: start ready auto orders whose files are free, up to ma
   local max=$(jq -r .max_cooking $dir/line.json)
   local busy=$(jq -r 'map(select(.pid > 0)) | length' <<< $book)
   (( busy < max )) || return 0
-  # catering is specced and planned with the user, so only its close starts here; an order waits until every
-  # order in its after list is done; each pick claims its files for the next
+  # a catering order is wrapped up by the user and a skeleton is worked with them, so neither starts here; an order
+  # waits until every order in its after list is done; each pick claims its files for the next
   for key in ${(f)"$(jq -r --argjson now $EPOCHSECONDS --argjson free $(( max - busy )) '
     def overlaps($a; $b): ($a | startswith($b)) or ($b | startswith($a));
     (map(select(.status == "done")) | map(.key)) as $done
-    | reduce (map(select(.status == "ready" and .mode == "auto" and (.recipe != "catering" or .stage == "close") and .retry_after <= $now
+    | reduce (map(select(.status == "ready" and .mode == "auto" and (.recipe != "catering" and .stage != "skeleton") and .retry_after <= $now
         and (((.after // []) - $done) | length) == 0)) | sort_by(.created))[] as $o
       ({hot: (map(select(.status == "cooking")) | map(.station[]?)), keys: []};
        if (.keys | length) < $free and ([.hot[] as $h | $o.station[]? as $s | overlaps($h; $s)] | any | not)
@@ -1018,6 +1036,7 @@ case ${1:-status} in
   overrides) overrides ;;
   share) share ;;
   handoff) shift; handoff "$@" ;;
+  stage) shift; stage "$@" ;;
   filed) shift; filed "$@" ;;
   signoff) shift; signoff "$@" ;;
   line) shift; line_cmd "$@" ;;

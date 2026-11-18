@@ -47,6 +47,12 @@ Questions the verifying session answers for every change, one per line, written 
 
 - <e.g. Does it raise what the project costs to run?>
 
+## Docs
+
+Where this project's documentation lives and what a change must update in it, one per line, written as - <what>: <where>. A catering order's wrap-up writes what this asks for once its system ships. This section stays in the file even when the project keeps no docs (write - none): kitchen treats a project missing it as not set up.
+
+- <e.g. Public API changes: the reference under `docs/api/`>
+
 ## Sorting
 
 Rules intake applies before its own judgment when it recommends a ticket's mode and sets its review flag.

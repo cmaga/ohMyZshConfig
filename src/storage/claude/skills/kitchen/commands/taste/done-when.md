@@ -1,6 +1,6 @@
 # The done-when check
 
-Read an acceptance list against the tree and confirm each line is true: an order's done-when, a milestone's proof, or at a catering close the spec's. Nothing else reads the contract: a green suite proves the tests pass, a passed review proves the code is correct, and a stub satisfies both. `grep -rn NotImplementedError <dir>/` once would have caught a build whose ten central call sites all raised.
+Read an acceptance list against the tree and confirm each line is true: an order's done-when, or before a catering deployment's review the coverage it owes. Nothing else reads the contract: a green suite proves the tests pass, a passed review proves the code is correct, and a stub satisfies both. `grep -rn NotImplementedError <dir>/` once would have caught a build whose ten central call sites all raised.
 
 ## What to read
 

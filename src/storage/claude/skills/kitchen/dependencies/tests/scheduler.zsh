@@ -50,7 +50,7 @@ mkdir -p $SB/seed/src $SB/seed/tests $SB/seed/.claude/kitchen
 print one > $SB/seed/app.txt
 print one > $SB/seed/src/a.txt
 print one > $SB/seed/tests/foo_test.py
-print -r -- $'# House rules\n\n## Always review\n- `^secrets/`: credentials\n\n## Review when\n- the change moves money' > $SB/seed/.claude/kitchen/house.md
+print -r -- $'# House rules\n\n## Always review\n- `^secrets/`: credentials\n\n## Review when\n- the change moves money\n\n## Docs\n- docs live in docs/' > $SB/seed/.claude/kitchen/house.md
 git -C $SB/seed add -A
 git -C $SB/seed commit -q -m seed
 git -C $SB/seed push -q origin main 2>/dev/null
@@ -199,6 +199,23 @@ dead_claim_holder_returns_the_order_to_ready() {
 
 a_user_session_is_never_stopped_by_the_scheduler() {
   mkline 'max_minutes={"cook":1}' 'stall_minutes={"cook":1}'; mkorder A > /dev/null
+  spawn_claimer A $CASE/h1
+  jqedit A '.started -= 100000 | .touched -= 100000'
+  tick
+  lacks "$OUT" 'sent' 'no signal'
+  isyes "alive $CLAIMER" 'the user session lives'
+  eq "$(ord A status)" cooking status
+}
+
+claiming_an_auto_deployment_at_its_skeleton_keeps_it_auto() {
+  mkline; mkorder A catering=E1 stage=skeleton > /dev/null
+  spawn_claimer A $CASE/h1
+  eq "$(ord A status)" cooking status
+  eq "$(ord A mode)" auto 'a skeleton claim leaves the mode'
+}
+
+a_users_skeleton_session_on_an_auto_deployment_is_never_stopped_by_the_scheduler() {
+  mkline 'max_minutes={"cook":1}' 'stall_minutes={"cook":1}'; mkorder A catering=E1 stage=skeleton > /dev/null
   spawn_claimer A $CASE/h1
   jqedit A '.started -= 100000 | .touched -= 100000'
   tick
@@ -954,6 +971,9 @@ closing_an_order_stamps_whether_its_mode_was_unlocked_then() {
   jqedit B '.mode = "guided"'
   k order close B > /dev/null
   eq "$(ord B earned)" false 'guided closed while locked'
+  k order new C recipe=catering > /dev/null
+  k order close C > /dev/null
+  eq "$(ord C earned)" false 'a catering order earns nothing'
 }
 
 order_next_prints_the_oldest_ready_order_of_a_mode_by_when_it_became_ready() {
@@ -1076,6 +1096,138 @@ handoff_refuses_an_order_that_is_not_manual_and_missing_session_variables() {
   kill $v 2>/dev/null
 }
 
+# --- catering deployments ---------------------------------------------------------
+
+a_project_whose_rules_lack_docs_is_not_set_up() {
+  mkline; mode hang; mkorder A > /dev/null
+  OUT=$(k house 2>&1); RC=$?
+  eq $RC 0 'a project with all three sections'
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  print -r -- $'# House rules\n\n## Always review\n- `^secrets/`: credentials\n\n## Review when\n- the change moves money' > $CASE/other/.claude/kitchen/house.md
+  git -C $CASE/other commit -q -am 'drop docs'
+  git -C $CASE/other push -q origin main 2>/dev/null
+  git -C $PROJ fetch -q origin
+  OUT=$(k house 2>&1); RC=$?
+  eq $RC 1 'exit code without docs'
+  has "$OUT" 'not set up' 'verdict'
+  has "$OUT" '## Docs' 'names the missing section'
+  tick; nap 20
+  eq $(ncalls) 0 'no new work'
+  has "$OUT" 'not set up, so no new work' 'scheduler says why'
+}
+
+the_scheduler_never_starts_a_catering_order() {
+  mkline; mode hang
+  mkorder C1 recipe=catering stage=plan > /dev/null
+  mkorder C2 recipe=catering stage=building > /dev/null
+  mkorder C3 recipe=catering > /dev/null
+  tick; nap 20
+  eq $(ncalls) 0 'sessions'
+  eq "$(ord C2 status)" ready 'still ready'
+}
+
+the_scheduler_never_starts_a_deployment_waiting_for_its_skeleton() {
+  mkline; mode hang
+  mkorder S catering=E1 stage=skeleton > /dev/null
+  tick; nap 20
+  eq $(ncalls) 0 'no session at the skeleton'
+  k order set S stage=build > /dev/null
+  tick; wait_calls 1
+  has "$OUT" 'cook S' 'started at build'
+}
+
+a_merged_pr_on_a_catering_order_closes_it_like_any_other() {
+  mkline; mkpr C 7; mkwt C
+  k order set C recipe=catering catering=E1 > /dev/null
+  setpr 7 MERGED u2
+  tick
+  eq "$(ord C status)" done status
+  eq "$(ord C question)" '' 'no planning question'
+  has "$(<$TICKET_LOG)" "move C merged Merged: $(prurl 7)" 'ticket moved'
+  isyes "[[ ! -d $(wt C) ]]" 'worktree removed'
+}
+
+an_open_pr_on_a_catering_order_gets_follow_ups() {
+  mkline; mode hang; mkpr D 8
+  k order set D recipe=catering catering=E1 > /dev/null
+  setpr 8 OPEN u2
+  tick; wait_calls 1
+  has "$OUT" 'follow D' 'follow session'
+}
+
+order_next_skips_orders_waiting_on_their_after_list_and_catering_orders() {
+  mkline
+  mkorder B status=pr-open > /dev/null
+  mkorder A mode=manual 'after=["B"]' > /dev/null
+  mkorder C mode=manual recipe=catering > /dev/null
+  mkorder M mode=manual > /dev/null
+  eq "$(k order next manual)" M 'neither the waiting order nor the catering one'
+  k order set M status=cooking > /dev/null
+  OUT=$(k order next manual 2>&1); RC=$?
+  eq $RC 1 'nothing else is next'
+  k order set B status=done > /dev/null
+  eq "$(k order next manual)" A 'once B is done'
+}
+
+status_lists_skeleton_deployments_first_and_hides_orders_waiting_on_their_after_list() {
+  mkline
+  mkorder X status=pr-open > /dev/null
+  mkorder G mode=guided > /dev/null
+  mkorder M mode=manual > /dev/null
+  mkorder D mode=manual catering=E1 stage=build > /dev/null
+  mkorder S1 mode=guided catering=E1 stage=skeleton > /dev/null
+  mkorder S2 mode=manual catering=E1 stage=skeleton 'after=["X"]' > /dev/null
+  mkorder C mode=manual recipe=catering > /dev/null
+  mkorder P mode=manual status=pr-open pr=$(prurl 1) catering=E1 > /dev/null
+  OUT=$(k status 2>&1)
+  local -a rows=( ${(M)${(f)OUT}:#  READY *} )
+  eq $#rows 5 'ready rows'
+  has $rows[1] 'READY     S1  skeleton  [E1]  approved' 'skeleton first, whatever its mode'
+  has $rows[2] 'READY     M  manual  approved' 'manual next'
+  has $rows[3] 'READY     D  manual  [E1]  approved' 'a deployment names its catering order'
+  has $rows[4] 'READY     C  manual  approved' 'the catering order'
+  has $rows[4] '[catering]' 'catering tag'
+  has $rows[5] 'READY     G  guided  approved' 'guided last'
+  lacks "$OUT" 'S2' 'waits on X'
+  has "$OUT" '  REVIEW    P' 'review row'
+  has "$OUT" 'kitchen stage P' 'review row names stage'
+}
+
+stage_shows_the_prs_change_staged_in_a_review_worktree_and_rebuilds_it() {
+  mkline; mkorder D mode=manual status=pr-open pr=$(prurl 1) catering=E1 > /dev/null
+  mkwt D; wtcommit D src/a.txt two; wtcommit D new/b.txt x
+  advance_base other.txt
+  local rv=$(wt review-D)
+  OUT=$(k stage D 2>&1); RC=$?
+  eq $RC 0 'exit code'
+  has "$OUT" "staged D in $rv: 2 files changed" 'summary'
+  eq "$(<$CODE_LOG)" "-n $rv" 'code opened the review worktree'
+  local mb=$(git -C $PROJ merge-base D origin/main)
+  eq "$(git -C $rv diff --cached)" "$(git -C $PROJ diff $mb D)" 'staged diff is the PR change against the merge base'
+  eq "$(git -C $rv diff)" '' 'nothing unstaged'
+  eq "$(git -C $(wt D) rev-list --count $mb..D)" 2 'the PR branch keeps its commits'
+  wtcommit D src/c.txt three
+  k order set D status=cooking > /dev/null  # the reviewing session holds the order
+  OUT=$(k stage D 2>&1); RC=$?
+  eq $RC 0 'second run exit code'
+  has "$OUT" '3 files changed' 'rebuilt with the new commit'
+  eq "$(git -C $rv diff --cached)" "$(git -C $PROJ diff $mb D)" 'rebuilt diff'
+  eq "$(wc -l < $CODE_LOG | tr -d ' ')" 2 'code opened it each time'
+}
+
+stage_refuses_an_order_that_is_not_a_catering_deployment() {
+  mkline
+  mkorder A mode=manual status=pr-open > /dev/null; mkwt A
+  mkorder D mode=manual catering=E1 > /dev/null; mkwt D
+  OUT=$(k stage A 2>&1); RC=$?
+  eq $RC 1 'plain order exit code'
+  has "$OUT" 'A is not a catering deployment' 'plain order message'
+  OUT=$(k stage D 2>&1); RC=$?
+  eq $RC 1 'no PR exit code'
+  has "$OUT" 'D has no PR' 'no PR message'
+  isyes "[[ ! -f $CODE_LOG && ! -d $(wt review-A) && ! -d $(wt review-D) ]]" 'nothing opened'
+}
+
 # --- prune, dry run ---------------------------------------------------------------
 
 prune_removes_the_worktree_of_a_closed_order_no_session_holds() {
@@ -1099,6 +1251,20 @@ prune_removes_the_worktree_of_a_closed_order_no_session_holds() {
   isyes "[[ -d $(wt H1) && -d $(wt O1) && -d $(wt D1) && -d $(wt U1) ]]" 'held, open and kept worktrees stay'
   eq "$(git -C $PROJ branch --list C1)" '' 'branch deleted'
   eq "$(<$BOOKDIR/.pruned)" $(today_str) 'prune day recorded'
+}
+
+prune_removes_a_closed_orders_review_worktree() {
+  mkline
+  mkorder C1 > /dev/null; mkorder C2 > /dev/null
+  mkwt C1
+  git -C $PROJ worktree add -q --detach $(wt review-C1) origin/main 2>/dev/null
+  git -C $PROJ worktree add -q --detach $(wt review-C2) origin/main 2>/dev/null
+  k order set C1 status=done > /dev/null
+  k order set C2 status=done > /dev/null
+  OUT=$(k prune 2>&1)
+  has "$OUT" 'removed review-C1' 'review beside the order worktree'
+  has "$OUT" 'removed review-C2' 'review alone'
+  isyes "[[ ! -d $(wt C1) && ! -d $(wt review-C1) && ! -d $(wt review-C2) ]]" 'all gone'
 }
 
 prune_dry_run_removes_nothing() {

@@ -58,9 +58,8 @@ A suspected bug no run could reproduce is not confirmed: record it with `kitchen
 
 The user wrote the code, so the gate reports and fixes nothing. Run every step above except the fixes, and:
 
-- **Step 2**: `contract-check.sh` exiting 2 (no contract commit) passes. The mutation sweep runs the command recorded on the order, `python3 ~/.claude/skills/kitchen/dependencies/scripts/mutation-sweep.py origin/<base> --test-cmd "<the order's test_cmd>"`; each survivor is a finding, not a brief to a contract author.
+- **Step 2**: the tests are the contract author's, not the user's, so the mutation sweep's survivors go to the contract author as on any order.
 - **Step 6 and the bug review**: log each finding with `kitchen.zsh catch` as step 6 says, and fix none. A verified bug is a finding like any other.
-- **Tasters**: the user's tests are the contract, so test-honesty does not flag a test for being outside the contract, and the gaming taster gets the user's changed test files as the contract paths.
 - **The report**: every finding, worst first, each with its evidence (the command, its output, the file and line). Say that nothing is fixed.
 
 The user fixes and says "done" again. Rerun the steps their fixes could change, and report only what is still open.

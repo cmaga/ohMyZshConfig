@@ -74,7 +74,7 @@ File and directory names carry the analogy (`kitchen/`, `recipes/`, `stations/`,
 | Fire | dispatch |
 | 86 | dropped |
 | The line, restaurant | the pipeline, project |
-| Catering, mise en place | a spec built in milestones, prep |
+| Catering, mise en place | a plan, spec, and implementation plan, shipped in deployments; prep |
 
 "Order" stays in the prose: an order is the server's verified write-up of a ticket, a different thing from the ticket itself.
 
@@ -297,7 +297,7 @@ Decision windows of 20 to 30 minutes alternate with focus blocks of 90 to 120. I
 
 ## Redesign: catering
 
-Decided in conversation on 2026-11-18; not built yet. Where an earlier section disagrees about catering, this one holds; [What it replaces in catering](#what-it-replaces-in-catering) closes the section.
+Decided in conversation and built on 2026-11-18. Where an earlier section disagrees about catering, this one holds; [What it replaces in catering](#what-it-replaces-in-catering) closes the section.
 
 ### Why
 
@@ -316,7 +316,7 @@ Decided in conversation on 2026-11-18; not built yet. Where an earlier section d
 | Direction | The recommendation, then your lean, back and forth until you agree | Intake's recommendation stage, the architect station for competing designs, interrogate on the chosen one |
 | Plan | Refine every line | The plan template and the technical-writing station |
 | Spec | Glance | Written from the plan, for agents |
-| Implementation plan | Answer each decision in order | The gather and decisions of today's plan step, and the architect station |
+| Implementation plan | Answer each call as the walk reaches it: the session follows the spec's flows hop by hop in the order data moves, brings up each call you should make where the flow meets it, and settles the obvious ones without showing them | The gather and decisions of today's plan step, and the architect station |
 
 None of these stages has a mode. Each runs with you, so catering works in any project.
 
@@ -360,6 +360,8 @@ The planning stages and the skeleton run with you. The bodies, phase 2 on, run i
 
 - **In manual** you write the bodies, and the session checks each phase against the implementation plan when you say "check": as planned, different and better (and why), or different and worse (why, and what the plan had). The `manual-mode` skill stays a lookup helper that knows nothing of plans; the check lives in the kitchen's manual-order section.
 - **A better route rewrites the plan at once**, in any mode: the later steps it changes, with any design question it raises discussed then.
+- **Every manual order gets its tests from the contract station** before the VS Code handoff, as a deployment gets them from its skeleton. This reverses [Manual orders](#manual-orders) above, where you wrote the tests too.
+- **Each deployment is its own ticket, started with `take <KEY>`.** An auto one goes to the scheduler once its skeleton is approved.
 
 ### Review
 
@@ -369,7 +371,7 @@ The planning stages and the skeleton run with you. The bodies, phase 2 on, run i
 
 ### Wrap-up
 
-The scribe does nothing until the last deployment merges, so it never documents code still changing: deployment orders skip the vault step of [open a PR](../src/storage/claude/skills/kitchen/commands/cook/recipes/open-a-pr.md) step 3. Then:
+The scribe does nothing until the last deployment merges, so it never documents code still changing: deployment orders skip the vault step of [open a PR](../src/storage/claude/skills/kitchen/commands/cook/recipes/open-a-pr.md) step 3. Wrap-up starts in the session that confirms the last deployment merged, with you there and no command to type, and runs without a goal. Then:
 
 1. **The planning documents retire into documentation.** The scribe updates the vault from the final spec, and the project's own doc requirements are met in their own PR, or wherever the project keeps its docs. The three documents are attached to the epic for the record.
 2. **Cleanup.** The epic and the catering order close, and pruning removes the worktree with the untracked documents.
@@ -396,6 +398,7 @@ A new required `## Docs` section of the project rules says where the project's d
 - No coding study compares phase boundaries with a dependency graph inside one PR. The choice rests on where the merged result gets tested, and on Kiro and GSD converging on waves.
 - Citing `DEC-N` per task is untested; no tool reviewed does it.
 - Most of the parallel-coding evidence is 2026 preprints read as abstracts or summaries.
+- A manual order now gets its signatures from the contract author's scaffold, and you write the logic inside them. Whether that still gives you enough practice is untested until you have worked a few manual orders.
 
 ---
 
@@ -412,11 +415,11 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/serve/mode.md` | The mode recommendation intake gives with the approach |
 | `commands/open/open.md`, `open/templates/house.md` | Opening a restaurant, which writes its house rules and verify skill |
 | `commands/cook/cook.md` | The sous chef: claim, read, worktree, pickup, the recipe, and the scheduler's wakes; `cook new <task>` files a ticket for work that has none |
-| `commands/cook/recipes/` | pstack's playbooks as recipes: feature, bug-fix, refactor, perf, hillclimb, investigation, runtime-forensics, trace-forensics, prototype, change-a-skill, eval, multi-phase-plan, autonomous-run, session-pickup, pause-safely, and the PR lifecycle open-a-pr, follow-a-pr (babysit), merge (shipping); plus enforce and catering (`catering/spec.md` was ultra; `catering/plan.md` and `catering/close.md` replace the milestone build) |
+| `commands/cook/recipes/` | pstack's playbooks as recipes: feature, bug-fix, refactor, perf, hillclimb, investigation, runtime-forensics, trace-forensics, prototype, change-a-skill, eval, multi-phase-plan, autonomous-run, session-pickup, pause-safely, and the PR lifecycle open-a-pr, follow-a-pr (babysit), merge (shipping); plus enforce and catering (`catering/plan.md`, `spec.md`, `implementation.md`, `deployment.md`, and `wrap-up.md`; see [Redesign: catering](#redesign-catering)) |
 | `commands/cook/stations/` | pstack's skills as stations: how, why, blast-radius, architect, contract (from pstack's tdd), arena, swarm, figure-it-out, interrogate, no-comments, benchmark-checklist, unslop, technical-writing, show-me-your-work, ketchup, correct, create- and maintain-verification-skill; and `left-for-you.md` |
 | `dependencies/principles/` | pstack's 24 principles plus look-it-up, read when applied |
 | `dependencies/evals/` | Saved eval cases in `claude plugin eval` layout |
-| `commands/cook/templates/`, `commands/cook/scripts/` | Spec, milestone plan, plan view, exit report; `plan-view.py` and `check-plan.mjs` |
+| `commands/cook/templates/`, `commands/cook/scripts/` | The catering plan, spec, and implementation plan templates, the exit report; `check-plan.mjs`, which also checks an implementation plan |
 | `dependencies/scripts/kitchen.zsh` | Order book, status, expo, prune; shared by every command |
 | `automation.toml`, `dependencies/scripts/run.zsh` | The expo as a launchd KeepAlive agent. **Off** (`enabled = false`) |
 | `commands/taste/calibrate.md` | Taste bud calibration, `/kitchen taste calibrate`: brings the verify skill back in line with the app |
@@ -476,7 +479,7 @@ dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merg
 
 Unverified:
 
-- Catering's plan and close, and milestone orders on a spec branch: written and harness-tested in `kitchen.zsh`, never run by an agent.
+- Catering's stages, its deployments, and the staged review: written, and harness-tested in `kitchen.zsh` and `check-plan.mjs`, never run by an agent.
 - A company-account run, and a Workflow executing headless.
 - This revision's script changes until the stub run passes: claims, time limits, prune by order, the merge check and approvals, Bitbucket reads, `@/path` values, and the epic alias.
 - Facts the script relies on: `bb pr get -o json` carrying `state` and `updated_on`; `claude` appearing as the first argument of the session's process (the native install); transcripts at `~/.claude*/projects/*/<session-id>.jsonl`.

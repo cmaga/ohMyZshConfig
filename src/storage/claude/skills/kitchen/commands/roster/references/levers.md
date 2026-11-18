@@ -76,4 +76,4 @@ Impact rationale per lever: [lever-impact.md](lever-impact.md)
 
 Excluded — do not re-add: fast mode, context ceiling, skill frontmatter overrides, alwaysThinkingEnabled (thinking already defaults on across current models), fallbackModel (availability, not cost), the vault agents' `model:` (pinned to opus, 2026-10-28), CLAUDE_CODE_SUBAGENT_MODEL_FORCE / maxEffortLevel / deniedModels (global overrides and caps on the never-set list in roster.md).
 
-Retired, do not re-add: the tester, scoping, and scoping fan-out models (rows 9, 11, 7f; intake traces causes with the how and why stations, and the bug review is the interrogate station), per-card worker models (every worker runs on row 5), and the milestone build's rows 13a-13h (catering's milestones are ordinary orders).
+Retired, do not re-add: the tester, scoping, and scoping fan-out models (rows 9, 11, 7f; intake traces causes with the how and why stations, and the bug review is the interrogate station), per-card worker models (every worker runs on row 5), and the milestone build's rows 13a-13h (catering's deployments are ordinary orders).

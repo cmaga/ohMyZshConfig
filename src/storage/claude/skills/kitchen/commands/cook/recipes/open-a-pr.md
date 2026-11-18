@@ -8,10 +8,10 @@ Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 
 1. **Hold the quality gate**: follow the [taste](../../taste/taste.md) command on this branch with the order's key and done-when. Nothing goes out until it clears. On a manual order the gate reports and fixes nothing, per [a manual order](../cook.md#a-manual-order); the user fixes or accepts each finding (an accepted one goes in the PR description under Approach with their reason) and says "done" again, and steps 2 to 6 wait for that. When the first run reports nothing, they go on without a second "done".
 2. **Route what is left** per the [left for you](../stations/left-for-you.md) station: follow-up tickets filed, and calls made alone.
-3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.
+3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. A catering deployment skips this: its notes wait for [wrap-up](catering/wrap-up.md), once the code stops changing. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.
 4. **Fold the branch into one commit, then run the full suite once.**
-   1. With a clean tree, run `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base>`; it must not report the contract broken (a manual order has no contract commit, so exit 2 is fine). After the fold every test edit sits in one commit, and the check can no longer tell who made it. It names the latest contract commit.
-   2. Note `git rev-parse HEAD^{tree}`, `git fetch origin <base>`, then `git reset --soft $(git merge-base HEAD origin/<base>)` and commit per [Commits](#commits). `git rev-parse HEAD^{tree}` must print what you noted.
+   1. With a clean tree, run `bash ~/.claude/skills/kitchen/dependencies/scripts/contract-check.sh origin/<base>`; it must not report the contract broken. After the fold every test edit sits in one commit, and the check can no longer tell who made it. It names the latest contract commit.
+   2. Note `git rev-parse HEAD^{tree}`, `git fetch origin <base>`, then `git reset --soft $(git merge-base HEAD origin/<base>)` and commit per [Commits](#commits). `git rev-parse HEAD^{tree}` must print what you noted. A catering deployment skips the fold and keeps its commit per phase, so the user can read it phase by phase.
    3. `git rebase origin/<base>`, resolving any conflict so both sides' intent survives.
    4. Run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: on a manual order, report it per [SKILL.md](../../../SKILL.md#autonomy) and fix nothing. Otherwise fix, `git commit --amend --no-edit`, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun. Green: push through the `git-provider` skill (its Push operation).
 5. **Open the PR** through the `git-provider` skill (its Create PR operation, which says whether it starts ready or as a draft), targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with the `review` moment.
@@ -21,7 +21,7 @@ Opening a PR does not start a [follow a PR](follow-a-pr.md) pass. The scheduler 
 
 ## Commits
 
-Commit liberally while working; those commits save work and never reach the base. Step 4 folds them into the PR's one commit, so reverting the PR's merge removes the change whole:
+Commit liberally while working; those commits save work and never reach the base. Step 4 folds them into the PR's one commit, so reverting the PR's merge removes the change whole (a catering deployment's PR keeps one commit per phase instead):
 
 - Subject: the PR's title in the `git-provider` skill's `commitFormat` for the project; with none, Conventional Commits.
 - Body: a few lines on what the change does, not how it got there.
