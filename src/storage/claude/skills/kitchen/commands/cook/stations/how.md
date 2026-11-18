@@ -4,7 +4,7 @@ Answer "how does X work": code walkthroughs before changing something, and place
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Every spawn is an `Explore` agent whose brief says "do not edit files". Explorers take the explore role's model and every explainer the judgment role's ([SKILL.md](../../../SKILL.md#subagents)).
+Every explorer is an `Explore` agent on the explore role, and every explainer a `general-purpose` agent on the judgment role ([SKILL.md](../../../SKILL.md#subagents)); each brief says "do not edit files".
 
 ## 1. Assess complexity
 

@@ -4,7 +4,9 @@
 
 The account defaults to this session's: the one whose config_dirs names the directory in
 $CLAUDE_CONFIG_DIR (~/.claude when unset), and whose env, when it has one, matches the
-environment. An account with a matching env wins, since hosts share config dir names. Prints
+environment. An account with a matching env wins, since hosts share config dir names.
+$KITCHEN_ACCOUNT, when set, names it instead: an eval run sets it, since its config dir is a
+temporary one. Prints
 {account, levers, types, opts}: levers maps each session-wide lever to its value, types maps each
 type to the model and effort it is set to, and opts maps each type to the opts a dispatch of it
 passes. inherit and DeepSeek values bind through the agent's frontmatter, so they pass no opt;
@@ -30,7 +32,7 @@ def account_of(state, config_dir):
 
 
 def account(state):
-    return account_of(state, Path(os.environ.get('CLAUDE_CONFIG_DIR') or Path.home() / '.claude'))
+    return os.environ.get('KITCHEN_ACCOUNT') or account_of(state, Path(os.environ.get('CLAUDE_CONFIG_DIR') or Path.home() / '.claude'))
 
 
 def resolve(acct=None):

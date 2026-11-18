@@ -3,8 +3,8 @@
     python3 check-dispatch.py <transcript.jsonl> <levers.py>
 
 Prints ALL PASS or FAIL, then one line per dispatch. A dispatch passes when its description starts
-with a type, as in `review(opus/xhigh): ...`, it passes exactly that type's opts from levers.py, and
-its agent can run on that type. The other family's fallback, a general-purpose agent, passes on any
+with a type, as in `review(opus/xhigh): ...`, it passes exactly that type's model from levers.py, and
+its agent can run on that type. Effort goes ungraded: an eval run's Agent tool takes no effort opt. The other family's fallback, a general-purpose agent, passes on any
 Claude model. Agents the roster leaves out are listed, not graded.
 """
 
@@ -42,7 +42,6 @@ def dispatches(path):
 
 def grade(call, opts):
     agent = call.get('subagent_type', 'general-purpose').split(':')[-1]
-    sent = {k: call[k] for k in ('model', 'effort') if k in call}
     if agent in OUTSIDE:
         return None, 'outside the roster'
     m = PREFIX.match(call.get('description', ''))
@@ -52,10 +51,10 @@ def grade(call, opts):
     if kind not in TYPES_OF.get(agent, {kind}):
         return False, f'{agent} cannot run on {kind}'
     if kind == 'other_family' and agent == 'general-purpose':
-        claude = not sent.get('model', 'deepseek').startswith('deepseek')
+        claude = not call.get('model', 'deepseek').startswith('deepseek')
         return claude, 'fallback on a Claude model' if claude else 'fallback without a Claude model'
-    if sent != opts[kind]:
-        return False, f'passed {sent or "no opts"}, {kind} passes {opts[kind] or "none"}'
+    if call.get('model') != opts[kind].get('model'):
+        return False, f'passed model {call.get("model", "none")}, {kind} passes {opts[kind].get("model", "none")}'
     return True, ''
 
 
