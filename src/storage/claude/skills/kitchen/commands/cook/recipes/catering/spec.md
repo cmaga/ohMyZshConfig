@@ -40,7 +40,7 @@ The spec is written with the user, one question at a time. Steps 3-9 are a loop:
 
 9. **Adversarial review.**
    - **Attack lenses:** one agent per lens, each an adversary who profits from the design being wrong. Each finding: a concrete scenario with numbers, why the spec does not stop it, the smallest change that closes it.
-   - **Precedent research:** wherever the spec describes a scheme in its own words, hunt the named established equivalent (fan out on the `research_fanout_model` lever).
+   - **Precedent research:** wherever the spec describes a scheme in its own words, hunt the named established equivalent (fan out on the explore role).
    - **Verify before reporting.** Kill findings the spec already covers and ones that are speculative.
    - Each surviving hole becomes a named scenario in its part's tests.
    - **Route by size.** Minor tightening folds in directly. Anything altering strategy returns to step 3, one finding at a time, folded in only on the user's word.

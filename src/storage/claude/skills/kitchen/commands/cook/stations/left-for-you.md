@@ -24,7 +24,7 @@ Everything else fails: a finding you fixed, anything a ticket already owns, an `
 
 ## Triage
 
-Decide what you can first. A candidate your own recommendation would fold is folded now, never sent on and never asked. The rest goes to the escalation agent, a `general-purpose` agent on the `escalation_model` lever, in one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence: `file:line`, the finding or marker verbatim, the ticket search result. It returns one verdict per candidate:
+Decide what you can first. A candidate your own recommendation would fold is folded now, never sent on and never asked. The rest goes to the escalation agent (the escalation role), in one dispatch for the whole batch, told to spawn nothing and cap its return. Send each candidate with its evidence: `file:line`, the finding or marker verbatim, the ticket search result. It returns one verdict per candidate:
 
 - **`fold`**: the fix rides this branch. It needs no decision only the user can make and does not double the diff. Never judge it on the ticket's scope or the defect's age. It names the fix.
 - **`escalate`**: it cannot ride the branch, or only the user can answer it; it needs knowledge or authority only they hold. It names that, and gives its recommendation.
