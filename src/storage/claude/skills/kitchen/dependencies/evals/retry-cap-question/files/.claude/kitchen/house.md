@@ -27,4 +27,8 @@ What gets checked on every change in this project. Every rule names what enforce
 
 ## Review when
 
+## Docs
+
+- none
+
 ## Sorting
