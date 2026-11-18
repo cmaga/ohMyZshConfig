@@ -13,7 +13,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from levers import STATE, account_of
+from levers import OPTS, STATE, account_of
 
 MARKER = '.per-account'
 
@@ -21,12 +21,12 @@ MARKER = '.per-account'
 def frontmatter_values(state, account):
     """Map each agent to {key: value}; None drops the key, so the agent inherits it."""
     values = {}
-    for lever in state['levers'].values():
-        if 'agents' not in lever or not isinstance(lever['value'], dict):
-            continue
-        value = lever['value'][account]
-        for agent in lever['agents']:
-            values.setdefault(agent, {})[lever['opt']] = None if value == 'inherit' else value
+    for t in state['types'].values():
+        for agent in t.get('agents', []):
+            for opt in OPTS:
+                if opt in t:
+                    value = t[opt][account]
+                    values.setdefault(agent, {})[opt] = None if value == 'inherit' else value
     return values
 
 

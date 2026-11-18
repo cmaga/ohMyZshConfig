@@ -1,13 +1,14 @@
-"""Print one Claude account's lever values from lever-state.json.
+"""Print one Claude account's levers and types from lever-state.json.
 
     python3 levers.py [account]
 
 The account defaults to this session's: the one whose config_dirs names the directory in
 $CLAUDE_CONFIG_DIR (~/.claude when unset), and whose env, when it has one, matches the
-environment. An account with a matching env wins, since hosts share config dir names. A lever whose value is keyed by account takes that
-account's value. Prints {account, levers, agents}: levers maps each lever to its value, and agents
-maps each agent type to the opts a dispatch of it passes. inherit and DeepSeek values bind through
-the agent's frontmatter, so they pass no opt; [1m] is dropped, since the opt enum lacks it.
+environment. An account with a matching env wins, since hosts share config dir names. Prints
+{account, levers, types, opts}: levers maps each session-wide lever to its value, types maps each
+type to the model and effort it is set to, and opts maps each type to the opts a dispatch of it
+passes. inherit and DeepSeek values bind through the agent's frontmatter, so they pass no opt;
+[1m] is dropped, since the opt enum lacks it.
 """
 
 import json
@@ -16,6 +17,7 @@ import sys
 from pathlib import Path
 
 STATE = Path(__file__).resolve().parent.parent / 'lever-state.json'
+OPTS = ('model', 'effort')
 
 
 def account_of(state, config_dir):
@@ -36,14 +38,13 @@ def resolve(acct=None):
     acct = acct or account(state)
     if acct not in state['accounts']:
         sys.exit(f'no account {acct} in {STATE}')
-    levers, agents = {}, {}
-    for key, lever in state['levers'].items():
-        value = lever['value'][acct] if isinstance(lever['value'], dict) else lever['value']
-        levers[key] = value
-        if value != 'inherit' and not value.startswith('deepseek'):
-            for agent in lever.get('agents', []):
-                agents.setdefault(agent, {})[lever['opt']] = value.removesuffix('[1m]')
-    return {'account': acct, 'levers': levers, 'agents': agents}
+    levers = {key: lever['value'][acct] if isinstance(lever['value'], dict) else lever['value']
+              for key, lever in state['levers'].items()}
+    types = {name: {opt: t[opt][acct] for opt in OPTS if opt in t} for name, t in state['types'].items()}
+    opts = {name: {opt: value.removesuffix('[1m]') for opt, value in values.items()
+                   if value != 'inherit' and not value.startswith('deepseek')}
+            for name, values in types.items()}
+    return {'account': acct, 'levers': levers, 'types': types, 'opts': opts}
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@
 # only through this script, so the format lives in one place.
 #
 # State lives in ~/.claude-artifacts/workflows/kitchen/<slug>/ (user lifecycle):
-#   line.json          project path, capacity, models, and the unlock thresholds guided_after and auto_after
+#   line.json          project path, capacity, and the unlock thresholds guided_after and auto_after
 #   orders/<KEY>.json  one order per ticket
 #   catches.tsv        date key taster class note source
 #   promoted.tsv       class ticket time
@@ -417,7 +417,7 @@ line_write() { # PROJECT PAUSED: create the project's line unless it has one; pr
   mkdir -p $BOOK/$slug/orders $BOOK/$slug/log
   local f=$BOOK/$slug/line.json
   [[ -f $f ]] || jq -n --arg p $project --argjson paused $2 \
-    '{project:$p, max_cooking:2, models:{cook:""}, followup_hours:6, paused:$paused}' > $f
+    '{project:$p, max_cooking:2, followup_hours:6, paused:$paused}' > $f
   print -- $slug
 }
 
@@ -722,16 +722,15 @@ new_uuid() { # sets REPLY to a random version-4 UUID, made without a process
 
 fire() { # SLUG KEY PHASE STATUS DRY: start a headless session for an order
   local slug=$1 key=$2 phase=$3 st=$4 dry=$5 dir=$BOOK/$1
-  local mode=$phase cmd=$phase
-  [[ $phase == follow ]] && mode=cook cmd=cook
+  local cmd=$phase
+  [[ $phase == follow ]] && cmd=cook
   [[ $phase == verify ]] && cmd='taste verify'
   if [[ -n $dry ]]; then print -- "$slug: would $phase $key"; return; fi
   local of=$(order_file $key)
   (( $(jq -r '.pid // 0' $of) == 0 )) || return 0  # a session claimed it since this pass read the book
   local project=$(jq -r .project $dir/line.json)
-  # a retry after a tool error or a stall runs on the model stopped() picked
+  # a retry after a tool error or a stall runs on the model stopped() picked; any other session inherits the user's
   local model=$(jq -r '.model // ""' $of)
-  [[ -n $model ]] || model=$(jq -r --arg m $mode '.models[$m] // ""' $dir/line.json)
   local logf=$dir/log/$key.$phase.$(strftime '%Y%m%d-%H%M%S' $EPOCHSECONDS).log
   local -a extra=()
   [[ -n $model ]] && extra=(--model $model)
@@ -837,9 +836,7 @@ stopped() { # SLUG KEY PHASE LOG SESSION: a session ended without moving its ord
   # a tool error or a stall: another model
   local -a extra=()
   if [[ $cause == (tool|stuck) ]]; then
-    local mode=cook cur=$(jq -r '.model // ""' $f)
-    [[ $phase == verify ]] && mode=$phase
-    [[ -n $cur ]] || cur=$(jq -r --arg m $mode '.models[$m] // ""' $BOOK/$1/line.json)
+    local cur=$(jq -r '.model // ""' $f)
     if [[ $cur == sonnet* ]]; then extra=(model=opus); else extra=(model=sonnet); fi
   fi
   local n=$(( $(jq -r .retries $f) + 1 ))

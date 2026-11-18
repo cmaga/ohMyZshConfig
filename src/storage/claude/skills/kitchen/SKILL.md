@@ -143,27 +143,27 @@ Reach the ticket tracker only through the `ticket-provider` skill and PRs only t
 
 The session that runs the recipe owns the task list and every spawn. Agents spawn nothing; a subagent is never the coordinator of the recipe itself. Tell every agent: _do the work yourself and spawn nothing. Return only what I act on: files and commits touched, the answer with `file:line`, and what needs deciding._
 
-**Pick the agent and model by role.** Before your first dispatch, and again after compaction, run `python3 ~/.claude/skills/kitchen/commands/roster/scripts/levers.py`. It prints this account's `levers`, and under `agents` the opts every dispatch of that agent type passes. `inherit`, a missing key, or a failed run means no opt, and a value ending in `[1m]` goes in without that suffix.
+**Pick the agent by role, and its model and effort by the role's type.** Before your first dispatch, and again after compaction, run `python3 ~/.claude/skills/kitchen/commands/roster/scripts/levers.py`. Under `opts` it prints, for each type, the opts every dispatch of that type passes: pass exactly those, and none after a failed run.
 
-| Role          | For                                                                           | Agent                                                                                                                                                                                                  | Model and effort                                                                                                                                    |
-| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| code          | Code delegates: feature, refactor, bug fix, perf, hillclimb, mechanical edits | `worker-agent`                                                                                                                                                                                         | its `agents` opts; when that model cannot start (a DeepSeek model needs a session launched through `oc`), `model` from `code_fanout_model`, said so |
-| hardest       | Cross-cutting design, concurrency, subtle algorithms                          | `worker-agent`                                                                                                                                                                                         | `model` from `code_fanout_model`                                                                                                                    |
-| contract      | The tests and scaffold written before the code, never by its coder            | `worker-agent`                                                                                                                                                                                         | `model` from `review_model`                                                                                                                         |
-| explore       | Read-only search and source reading                                           | `Explore`, told not to edit files                                                                                                                                                                      | `research_fanout_model`                                                                                                                             |
-| judgment      | Explainers, synthesizers, designers, judges, prose                            | `general-purpose`                                                                                                                                                                                      | `model` from `review_model`                                                                                                                         |
-| adversary     | The bug review's adversaries, which try to break a change                     | `general-purpose`                                                                                                                                                                                      | `review_model`, `review_effort`                                                                                                                     |
-| verify        | Verification lanes and verdicts                                               | `general-purpose`                                                                                                                                                                                      | `review_fanout_model`, `review_fanout_effort`                                                                                                       |
-| other family  | A second opinion from another model family                                    | `deepseek-flash-agent`; when it cannot start (it needs a session launched through `oc`), a `general-purpose` agent on a Claude model other than the author's, said so, unless the station says to skip | its own file                                                                                                                                        |
-| escalation    | Calls only the user can make                                                  | `general-purpose`                                                                                                                                                                                      | `escalation_model`                                                                                                                                  |
-| anything else |                                                                               | `general-purpose`                                                                                                                                                                                      | `parent_fanout_model`                                                                                                                               |
+| Role          | For                                                                           | Agent                                                                                                                                                                                                  | Type                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| code          | Code delegates: feature, refactor, bug fix, perf, hillclimb, mechanical edits | `worker-agent`                                                                                                                                                                                         | code; when its model cannot start (a DeepSeek model needs a session launched through `oc`), critical code's `model`, said so |
+| hardest       | Cross-cutting design, concurrency, subtle algorithms                          | `worker-agent`                                                                                                                                                                                         | critical code                                                                                                                |
+| contract      | The tests and scaffold written before the code, never by its coder            | `worker-agent`                                                                                                                                                                                         | critical code                                                                                                                |
+| explore       | Read-only search and source reading                                           | `Explore`, told not to edit files                                                                                                                                                                      | research                                                                                                                     |
+| judgment      | Explainers, synthesizers, designers, judges, prose                            | `general-purpose`                                                                                                                                                                                      | judgment                                                                                                                     |
+| adversary     | The bug review's adversaries, which try to break a change                     | `general-purpose`                                                                                                                                                                                      | review                                                                                                                       |
+| verify        | Verification lanes and verdicts                                               | `general-purpose`                                                                                                                                                                                      | review                                                                                                                       |
+| taste         | The tasters and the comment check                                             | `taster-agent`, `comment-sicko-agent`                                                                                                                                                                  | review                                                                                                                       |
+| other family  | A second opinion from another model family                                    | `deepseek-flash-agent`; when it cannot start (it needs a session launched through `oc`), a `general-purpose` agent on a Claude model other than the author's, said so, unless the station says to skip | other family                                                                                                                 |
+| escalation    | Calls only the user can make                                                  | `general-purpose`                                                                                                                                                                                      | judgment                                                                                                                     |
+| anything else |                                                                               | `general-purpose`                                                                                                                                                                                      | general                                                                                                                      |
 
 - A brief that owes one item per entry of a list longer than about 30 (a test per catalogue row, a move per file) is split across agents by owner; one agent handed 196 wrote 33.
 - A background agent is done when it reports: check that nothing it started still runs, then stop it with `TaskStop`. Watch its output file as well (its launch result names it), since an agent can end without a report.
-- Work on a path the project rules list under `## Critical` runs one effort step higher on every role, review included.
+- A code delegate on a path the project rules list under `## Critical` runs on the critical code type; every other dispatch on such a path runs one effort step above its type's, review included.
 - Brief every `worker-agent` with this file's path, `~/.claude/skills/kitchen/SKILL.md`, which it reads before working, and with file paths rather than pasted content.
-- Match effort to the job, counting from the session's effort: one step up for the hardest work, one down for routine judgment, two down for mechanical work. Verification keeps its role's level.
-- Start every dispatch's `description` with the lever's short name and its value, as in `code-fanout(opus): seam check on the intake path`, so the user can see what ran where.
+- Start every dispatch's `description` with its type and the opts it passes, as in `critical-code(opus/xhigh): seam check on the intake path`, so the user can see what ran where.
 - **You own every subagent's work.** Review the diff and write your own summary; never pass on what it said. A second opinion is the same prompt on the other family role. Agreement is high-signal.
 - **Fresh subagents by default.** Give new work, a fix round, a retry, or a follow-up to a fresh agent with the consolidated scope: the original brief, every later directive, and the prior agent's report and branch. Message an existing agent only when the work needs state that lives in it and is costly to move: its checkout, its uncommitted changes, or a process it still runs.
 - Split work too large for one agent (about 200k tokens) yourself, along what the parts do not share, over items you enumerated. Never shorten the list to cut the agent count.
@@ -189,36 +189,36 @@ Keep a code comment only for a non-obvious why the code cannot show. A verify or
 
 ## Recipes
 
-Match the work to a recipe below and read it at `commands/cook/recipes/<name>.md`. Open the task list (`ToolSearch` with `select:TaskCreate,TaskUpdate`) with the recipe's steps copied in verbatim, one task per step, before any task-specific ones. A step you choose not to do stays, marked `skip: <reason>`.
+Match the work to a recipe below and read its file. Open the task list (`ToolSearch` with `select:TaskCreate,TaskUpdate`) with the recipe's steps copied in verbatim, one task per step, before any task-specific ones. A step you choose not to do stays, marked `skip: <reason>`.
 
 A large or cross-cutting effort, or work no recipe fits, routes to the [figure it out](commands/cook/stations/figure-it-out.md) station, which designs a bespoke recipe; on an order, intake writes it as the order's `steps` with recipe `bespoke`.
 
 What an order can carry (intake picks one):
 
-- `feature`: new or changed behavior, built from a named data shape.
-- `bug-fix`: a reported defect to reproduce, root-cause, and fix with runtime evidence.
-- `refactor`: a change to structure that keeps behavior identical.
-- `perf`: a measured slowness to trace and improve against a baseline.
-- `hillclimb`: sustained improvement of one metric against a target, one measured attempt at a time.
-- `investigation`: a read-only question answered with a cited explanation or recommendation.
-- `runtime-forensics`: a live runtime symptom (leak, spin, glitch) diagnosed from instrumentation.
-- `trace-forensics`: a captured profile, trace, or dump diagnosed after the fact.
-- `prototype`: a throwaway sketch that settles a design or behavior question by observing it.
-- `change-a-skill`: writing or editing a skill, agent, or rule.
-- `eval`: testing how a skill, structure, or prompt change affects agent behavior before promoting it.
-- `enforce`: make the project enforce a kind of slip its reviewers keep catching ("Enforce <class>").
-- `multi-phase-plan`: work that spans phases or several PRs, planned before any is built.
-- `catering`: a new system, a new design, or a large refactor whose target design is unsettled: a plan, a functional spec, and an implementation plan written with the user, then shipped in deployments, each one PR built on a skeleton the user approves and reviewed by them staged.
+- [`feature`](commands/cook/recipes/feature.md): new or changed behavior, built from a named data shape.
+- [`bug-fix`](commands/cook/recipes/bug-fix.md): a reported defect to reproduce, root-cause, and fix with runtime evidence.
+- [`refactor`](commands/cook/recipes/refactor.md): a change to structure that keeps behavior identical.
+- [`perf`](commands/cook/recipes/perf.md): a measured slowness to trace and improve against a baseline.
+- [`hillclimb`](commands/cook/recipes/hillclimb.md): sustained improvement of one metric against a target, one measured attempt at a time.
+- [`investigation`](commands/cook/recipes/investigation.md): a read-only question answered with a cited explanation or recommendation.
+- [`runtime-forensics`](commands/cook/recipes/runtime-forensics.md): a live runtime symptom (leak, spin, glitch) diagnosed from instrumentation.
+- [`trace-forensics`](commands/cook/recipes/trace-forensics.md): a captured profile, trace, or dump diagnosed after the fact.
+- [`prototype`](commands/cook/recipes/prototype.md): a throwaway sketch that settles a design or behavior question by observing it.
+- [`change-a-skill`](commands/cook/recipes/change-a-skill.md): writing or editing a skill, agent, or rule.
+- [`eval`](commands/cook/recipes/eval.md): testing how a skill, structure, or prompt change affects agent behavior before promoting it.
+- [`enforce`](commands/cook/recipes/enforce.md): make the project enforce a kind of slip its reviewers keep catching ("Enforce <class>").
+- [`multi-phase-plan`](commands/cook/recipes/multi-phase-plan.md): work that spans phases or several PRs, planned before any is built.
+- [`catering`](commands/cook/recipes/catering.md): a new system, a new design, or a large refactor whose target design is unsettled: a plan, a functional spec, and an implementation plan written with the user, then shipped in deployments, each one PR built on a skeleton the user approves and reviewed by them staged.
 - `bespoke`: the order's own `steps`.
 
 What every order passes through, run by [cook](commands/cook/cook.md):
 
-- `open-a-pr`: commits, the PR body, and stacks, at the end of every recipe that ships a change.
-- `follow-a-pr`: driving an open PR to merge-ready: conflicts, review threads, checks.
-- `merge`: landing a PR once a verdict covers it.
-- `session-pickup`: resuming work a prior session left, from its branch and transcript.
-- `pause-safely`: stopping cleanly so the next session can resume.
-- `autonomous-run`: a long task driven to a checkable predicate without stopping.
+- [`open-a-pr`](commands/cook/recipes/open-a-pr.md): commits, the PR body, and stacks, at the end of every recipe that ships a change.
+- [`follow-a-pr`](commands/cook/recipes/follow-a-pr.md): driving an open PR to merge-ready: conflicts, review threads, checks.
+- [`merge`](commands/cook/recipes/merge.md): landing a PR once a verdict covers it.
+- [`session-pickup`](commands/cook/recipes/session-pickup.md): resuming work a prior session left, from its branch and transcript.
+- [`pause-safely`](commands/cook/recipes/pause-safely.md): stopping cleanly so the next session can resume.
+- [`autonomous-run`](commands/cook/recipes/autonomous-run.md): a long task driven to a checkable predicate without stopping.
 
 ## Defects and lessons
 

@@ -259,7 +259,7 @@ the_scheduler_neither_reads_the_board_nor_starts_an_intake() {
   eq $(ncalls) 0 'no session for a new order'
   eq "$(ord N status)" new 'still new'
   isyes "[[ ! -f $TICKET_LOG ]] || [[ $(<$TICKET_LOG) != *ready* ]]" 'the ready query is never run'
-  isyes "jq -e '(has(\"rail_depth\") or (.models | has(\"serve\"))) | not' $BOOKDIR/line.json > /dev/null" 'no rail depth or serve model in line.json'
+  isyes "jq -e '(has(\"rail_depth\") or has(\"models\")) | not' $BOOKDIR/line.json > /dev/null" 'no rail depth or models in line.json'
 }
 
 scheduler_settles_the_order_when_the_session_hands_off_a_pr() {
@@ -385,6 +385,7 @@ a_tool_stop_sets_the_tool_cause_and_alternates_the_model() {
   mkline; mkorder A > /dev/null; mode say 'API Error: 400 invalid_request_error'
   tick; wait_dead A
   tick; wait_calls 2
+  lacks "$(call 1)" --model 'the first session inherits the user'"'"'s model'
   eq "$(ord A retry_cause)" tool cause
   eq "$(ord A model)" sonnet 'first switch'
   has "$(call 2)" $'--model\tsonnet' 'retry runs on sonnet'

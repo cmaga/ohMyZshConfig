@@ -175,15 +175,15 @@ if [ -d "$CLAUDE_CONFIG_SOURCE" ]; then
             # --delete removes files dropped from source, inside this repo-managed
             # skill only, so skills that exist only on this machine are never
             # touched; excluded paths are protected, so cloned repos survive.
-            if ! command_exists rsync || ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" --exclude="evals/" "$skill_dir" "$skill_dest/" 2>&1; then
+            if ! command_exists rsync || ! rsync -a --delete --exclude="dependencies/repos/" --exclude="artifacts/" --exclude="evals/" --exclude="__pycache__/" --exclude=".ruff_cache/" "$skill_dir" "$skill_dest/" 2>&1; then
                 # The same mirror without rsync, which stock Git Bash lacks
-                find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -type f | while read -r src_file; do
+                find "$skill_dir" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -not -path "*/__pycache__/*" -not -path "*/.ruff_cache/*" -type f | while read -r src_file; do
                     rel_path="${src_file#$skill_dir}"
                     dest_file="$skill_dest/$rel_path"
                     mkdir -p "$(dirname "$dest_file")"
                     cp "$src_file" "$dest_file"
                 done
-                find "$skill_dest" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -type f | while read -r dest_file; do
+                find "$skill_dest" -not -path "*/dependencies/repos/*" -not -path "*/artifacts/*" -not -path "*/evals/*" -not -path "*/__pycache__/*" -not -path "*/.ruff_cache/*" -type f | while read -r dest_file; do
                     [ -e "$skill_dir${dest_file#$skill_dest/}" ] || rm -f "$dest_file"
                 done
             fi
