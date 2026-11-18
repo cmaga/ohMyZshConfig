@@ -295,6 +295,110 @@ Decision windows of 20 to 30 minutes alternate with focus blocks of 90 to 120. I
 
 ---
 
+## Redesign: catering
+
+Decided in conversation on 2026-11-18; not built yet. Where an earlier section disagrees about catering, this one holds; [What it replaces in catering](#what-it-replaces-in-catering) closes the section.
+
+### Why
+
+- **It had become its own thing.** Catering ran its own research loop and adversarial review (`spec.md` steps 3 and 9) beside the how, why, prototype, architect, and interrogate stations that do the same work for every other order.
+- **No plan for people.** The first document was the spec, an architecture page for agents. Nothing short existed for you or a team to review and refine.
+- **A manual-only project could not take it.** `mode.md` allowed a catering spec only `guided` or `auto`, and every project starts manual-only. Past that, the close and every milestone ran headless whatever the mode.
+- **Milestones assumed one deploy.** Capability slices merged into `spec/<EPIC>` and shipped at the end in one PR, so the milestones said nothing about the road to production.
+- **A spec says what the system does, not what the code looks like.** An agent handed one still makes every structural call: module boundaries, types, which pattern to copy. In a new codebase the first code becomes the pattern everything after it copies, and a PR that size is too large for anyone to read.
+
+### The stages
+
+| Stage | You | Built from |
+|---|---|---|
+| Context, goals, requirements | Agree them | Intake's first two stages, extended to goals and requirements |
+| Investigation | Not needed; it runs in the background | The how and why stations, the look-it-up principle, the prototype recipe for anything a run settles |
+| Direction | The recommendation, then your lean, back and forth until you agree | Intake's recommendation stage, the architect station for competing designs, interrogate on the chosen one |
+| Plan | Refine every line | The plan template and the technical-writing station |
+| Spec | Glance | Written from the plan, for agents |
+| Implementation plan | Answer each decision in order | The gather and decisions of today's plan step, and the architect station |
+
+None of these stages has a mode. Each runs with you, so catering works in any project.
+
+### The documents
+
+All three are markdown, edited in place, with mermaid diagrams. They live in the catering order's worktree under `.claude-artifacts/`, which git ignores, so no PR carries them, and deployment sessions read them by absolute path. The catering order stays open until wrap-up, since pruning a closed order's worktree would delete them: ignored files do not count as uncommitted changes (`land_worktree` in `kitchen.zsh`). The Artifact pages go: `spec-template.html`, `plan-view.html`, and `plan-view.py`.
+
+- **The plan**, after Google's design docs (Malte Ubl, "Design Docs at Google", 2020): 1 to 3 pages, no schemas or code. Context and scope; Goals and non-goals; Direction (your lean, the recommendation, what was chosen and why); How it works (an overview, the trade-offs, one context diagram); Alternatives considered; Cross-cutting concerns; Rollout (how many deploys, what ships in each, why each is separate); Open questions, empty before the spec starts.
+- **The spec**, functional and for agents. A header naming what it builds and linking the plan; Terms; Functional requirements `FR-N`, each a checkable sentence traced to a goal; Non-functional requirements `NFR-N`, each with a measurable bar; Parts, `C-N` for what we run and `X-N` for outside services, each with Owns, Talks to, Behavior (`C-2.3`, citing its FR), Data, and Tests (citing behaviors and NFRs); Flows, as mermaid sequence diagrams; Records; Starting values. Every FR reaches a behavior and every NFR a test.
+- **The implementation plan.** Decisions `DEC-N`: the call, why, and what it beat; one that fixes a shared interface states the contract itself (signature, data shape, errors). Coverage: each FR, NFR, behavior, and test to the task that delivers it. The checks today's code performs and the behavior the build deletes, each with a fate, as today. Then the deployments.
+
+### Deployments
+
+A deployment replaces the milestone. A new one starts only when the next change cannot ship until the previous one is live in production:
+
+1. **Old and new must coexist across a deploy.** A schema or API change whose readers and writers deploy separately, or whose clients you do not deploy, runs expand, migrate, contract (Danilo Sato, "ParallelChange", 2014).
+2. **Data must exist in production first.** A migration or backfill runs on real data before the code that relies on it.
+3. **Something outside the repo happens in between**: infrastructure, config, a third-party setup, or a flag turned on once the deploy is checked.
+
+Everything else rides in the earliest deployment it can, so with no boundary the work is one deployment. Each names the rule that forced it and its proof, one check that fails before it and passes after. Each becomes one ticket under the epic, one order, and one PR to the base branch, with one commit per phase. The rules that split a milestone of more than about 30 items and kept it cheap to throw away go; deploys alone size it.
+
+### Phases and tasks
+
+```
+## Deployment 1: <what goes live>
+   Forced by / Proof / Touches
+   Phase 1: Skeleton   shared types, signatures and stubs with their behavior stated, the locked tests
+   Phase 2: <name>     tasks, each with depends_on, files, Consumes/Produces (DEC-N), moves/adapts/new
+```
+
+- **Phase 1 is the skeleton**: the modules, the types, the signatures with their behavior described, the pattern to follow, and the locked tests. The session researches the standard patterns for the stack and kind of feature, drafts it, and refines it with you until you approve it. It has no mode. You learn the stack's standards here, not by writing every line.
+- **Later phases are layers of the task graph.** Each task declares `depends_on` and `files`, and the phases follow from them. `check-plan.mjs` fails on a file shared within a phase, or a producer and its consumer in one phase.
+- **One task per phase by default.** A phase fans out only with a one-line reason that its tasks share no file, no interface a DEC fixes that both write, and no producer and consumer pair, and it holds at most about three. Splitting coupled code cut agent success by 30 to 74% in CooperBench and ParallACT, and a full interface spec raised two-agent integration from 25% to 58% in the Specification Gap (2026 preprints).
+- **Each task runs in a fresh worker.** Before its work merges into the deployment's branch, its diff stays inside its declared files and leaves the locked tests untouched. Locked tests from a separate, stronger author is the form of test-first the evidence favors (ExecCritic, 2026 preprint: 61.2% to 65.3% resolved on SWE-bench Verified, and 57.3% with a weak author).
+- **The phase gate** is the full suite on the merged result, then a verifier who wrote none of the phase reading the diff against the DECs its tasks cite. Its findings go to the session, which fixes them before the next phase; none reach the PR.
+- **Long-lived lanes and start-when-ready scheduling inside a deployment are rejected.** A phase boundary is the only point where parallel work inside one PR is tested merged, and lanes pile up context and drift.
+
+### Modes
+
+The planning stages and the skeleton run with you. The bodies, phase 2 on, run in the project's highest unlocked mode: auto, else guided, else manual. The mode decides who writes them; the process is the same.
+
+- **In manual** you write the bodies, and the session checks each phase against the implementation plan when you say "check": as planned, different and better (and why), or different and worse (why, and what the plan had). The `manual-mode` skill stays a lookup helper that knows nothing of plans; the check lives in the kitchen's manual-order section.
+- **A better route rewrites the plan at once**, in any mode: the later steps it changes, with any design question it raises discussed then.
+
+### Review
+
+- **Before review, the deployment checks the whole.** Every coverage row it owes is delivered by its code and a passing test. A gap in its own work is fixed there; one the size of a part becomes a ticket. The last deployment also checks every FR and NFR in the spec, and that the problem the plan opened with no longer happens.
+- **Every deployment waits for you.** You are the last check: you decide whether it needs revisions, and whether it merges and deploys.
+- **A staged review, for catering only.** The kitchen checks the PR's head out into a separate review worktree, soft-resets it to the merge base so every change shows staged in your editor, and opens it as its own VS Code window. The PR branch keeps its commits. You ask the order's session for revisions, made by whoever the mode says, and each gets a fresh verdict and a rebuilt review worktree. Approving merges it, which is the deploy.
+
+### Wrap-up
+
+The scribe does nothing until the last deployment merges, so it never documents code still changing: deployment orders skip the vault step of [open a PR](../src/storage/claude/skills/kitchen/commands/cook/recipes/open-a-pr.md) step 3. Then:
+
+1. **The planning documents retire into documentation.** The scribe updates the vault from the final spec, and the project's own doc requirements are met in their own PR, or wherever the project keeps its docs. The three documents are attached to the epic for the record.
+2. **Cleanup.** The epic and the catering order close, and pruning removes the worktree with the untracked documents.
+
+A new required `## Docs` section of the project rules says where the project's docs go and what a change must update. `kitchen.zsh house` prints `not set up` for a project that lacks it, so every existing project takes no new work until `/kitchen open` adds it.
+
+### What it replaces in catering
+
+| Today | Under the redesign |
+|---|---|
+| The spec, written with you, as the first document | The plan with you, then the spec for agents, then the implementation plan |
+| Catering's own research loop and adversarial review | The how, why, prototype, architect, and interrogate stations |
+| Artifact pages: the spec and the plan view | Markdown with mermaid, untracked in the catering worktree |
+| The spec's own PR | None |
+| Milestones: capability slices, M-1 the thinnest end-to-end path | Deployments, one per forced deploy |
+| Milestones in parallel wherever no `After` path joins them | Deployments one after another, each once the one before is live |
+| `spec/<EPIC>` and the close's one PR to the base | One PR per deployment to the base branch |
+| One mode for every milestone, and none possible for the spec in a manual-only project | No mode for planning and the skeleton; bodies in the highest unlocked mode |
+| Review picked per milestone at plan time | Every deployment waits for you, in a staged review worktree |
+| The close: census, deviations, vault notes per part | The check before each deployment's review, and wrap-up after the last |
+
+### Unverified
+
+- No coding study compares phase boundaries with a dependency graph inside one PR. The choice rests on where the merged result gets tested, and on Kiro and GSD converging on waves.
+- Citing `DEC-N` per task is untested; no tool reviewed does it.
+- Most of the parallel-coding evidence is 2026 preprints read as abstracts or summaries.
+
+---
+
 ## What is built
 
 The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and hook in one area. The kitchen's own pieces:
