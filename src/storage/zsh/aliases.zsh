@@ -88,10 +88,9 @@ alias kitchen='zsh ~/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh'
 
 # oc on DeepSeek Flash as the session model. Needs the proxy, so it refuses to
 # start without it rather than open a session whose model cannot resolve.
-# Shadows /usr/bin/od (octal dump); reach that with `command od`.
-od() {
+odeep() {
   if ! curl -sf -o /dev/null --max-time 1 http://localhost:4000/health; then
-    print -u2 "od: claude-proxy is not up; DeepSeek models need it"
+    print -u2 "odeep: claude-proxy is not up; DeepSeek models need it"
     return 1
   fi
   # DeepSeek rejects deferred tools (422 on the tool_reference blocks), so load them upfront.
