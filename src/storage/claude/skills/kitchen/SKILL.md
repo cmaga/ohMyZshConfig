@@ -189,36 +189,36 @@ Keep a code comment only for a non-obvious why the code cannot show. A verify or
 
 ## Recipes
 
-Match the work to a recipe below and read it at `commands/cook/recipes/<name>.md`. Open the task list (`ToolSearch` with `select:TaskCreate,TaskUpdate`) with the recipe's steps copied in verbatim, one task per step, before any task-specific ones. A step you choose not to do stays, marked `skip: <reason>`.
+Match the work to a recipe below and read its file. Open the task list (`ToolSearch` with `select:TaskCreate,TaskUpdate`) with the recipe's steps copied in verbatim, one task per step, before any task-specific ones. A step you choose not to do stays, marked `skip: <reason>`.
 
 A large or cross-cutting effort, or work no recipe fits, routes to the [figure it out](commands/cook/stations/figure-it-out.md) station, which designs a bespoke recipe; on an order, intake writes it as the order's `steps` with recipe `bespoke`.
 
 What an order can carry (intake picks one):
 
-- `feature`: new or changed behavior, built from a named data shape.
-- `bug-fix`: a reported defect to reproduce, root-cause, and fix with runtime evidence.
-- `refactor`: a change to structure that keeps behavior identical.
-- `perf`: a measured slowness to trace and improve against a baseline.
-- `hillclimb`: sustained improvement of one metric against a target, one measured attempt at a time.
-- `investigation`: a read-only question answered with a cited explanation or recommendation.
-- `runtime-forensics`: a live runtime symptom (leak, spin, glitch) diagnosed from instrumentation.
-- `trace-forensics`: a captured profile, trace, or dump diagnosed after the fact.
-- `prototype`: a throwaway sketch that settles a design or behavior question by observing it.
-- `change-a-skill`: writing or editing a skill, agent, or rule.
-- `eval`: testing how a skill, structure, or prompt change affects agent behavior before promoting it.
-- `enforce`: make the project enforce a kind of slip its reviewers keep catching ("Enforce <class>").
-- `multi-phase-plan`: work that spans phases or several PRs, planned before any is built.
-- `catering`: a new system, a new design, or a large refactor whose target design is unsettled: a spec written with the user, planned with them into milestone orders, cooked headless on its own branch, and delivered as one PR.
+- [`feature`](commands/cook/recipes/feature.md): new or changed behavior, built from a named data shape.
+- [`bug-fix`](commands/cook/recipes/bug-fix.md): a reported defect to reproduce, root-cause, and fix with runtime evidence.
+- [`refactor`](commands/cook/recipes/refactor.md): a change to structure that keeps behavior identical.
+- [`perf`](commands/cook/recipes/perf.md): a measured slowness to trace and improve against a baseline.
+- [`hillclimb`](commands/cook/recipes/hillclimb.md): sustained improvement of one metric against a target, one measured attempt at a time.
+- [`investigation`](commands/cook/recipes/investigation.md): a read-only question answered with a cited explanation or recommendation.
+- [`runtime-forensics`](commands/cook/recipes/runtime-forensics.md): a live runtime symptom (leak, spin, glitch) diagnosed from instrumentation.
+- [`trace-forensics`](commands/cook/recipes/trace-forensics.md): a captured profile, trace, or dump diagnosed after the fact.
+- [`prototype`](commands/cook/recipes/prototype.md): a throwaway sketch that settles a design or behavior question by observing it.
+- [`change-a-skill`](commands/cook/recipes/change-a-skill.md): writing or editing a skill, agent, or rule.
+- [`eval`](commands/cook/recipes/eval.md): testing how a skill, structure, or prompt change affects agent behavior before promoting it.
+- [`enforce`](commands/cook/recipes/enforce.md): make the project enforce a kind of slip its reviewers keep catching ("Enforce <class>").
+- [`multi-phase-plan`](commands/cook/recipes/multi-phase-plan.md): work that spans phases or several PRs, planned before any is built.
+- [`catering`](commands/cook/recipes/catering.md): a new system, a new design, or a large refactor whose target design is unsettled: a spec written with the user, planned with them into milestone orders, cooked headless on its own branch, and delivered as one PR.
 - `bespoke`: the order's own `steps`.
 
 What every order passes through, run by [cook](commands/cook/cook.md):
 
-- `open-a-pr`: commits, the PR body, and stacks, at the end of every recipe that ships a change.
-- `follow-a-pr`: driving an open PR to merge-ready: conflicts, review threads, checks.
-- `merge`: landing a PR once a verdict covers it.
-- `session-pickup`: resuming work a prior session left, from its branch and transcript.
-- `pause-safely`: stopping cleanly so the next session can resume.
-- `autonomous-run`: a long task driven to a checkable predicate without stopping.
+- [`open-a-pr`](commands/cook/recipes/open-a-pr.md): commits, the PR body, and stacks, at the end of every recipe that ships a change.
+- [`follow-a-pr`](commands/cook/recipes/follow-a-pr.md): driving an open PR to merge-ready: conflicts, review threads, checks.
+- [`merge`](commands/cook/recipes/merge.md): landing a PR once a verdict covers it.
+- [`session-pickup`](commands/cook/recipes/session-pickup.md): resuming work a prior session left, from its branch and transcript.
+- [`pause-safely`](commands/cook/recipes/pause-safely.md): stopping cleanly so the next session can resume.
+- [`autonomous-run`](commands/cook/recipes/autonomous-run.md): a long task driven to a checkable predicate without stopping.
 
 ## Defects and lessons
 
