@@ -14,16 +14,16 @@ spec). Keep every heading; delete each placeholder once filled.
 <The objective background a reader needs, and what is being built. Facts only;
 link out for detail.>
 
-## Goals and non-goals
+## Goals and out of scope
 
 Goals:
 
 - <What must be true once this ships. Each becomes functional or
   non-functional requirements in the spec.>
 
-Non-goals:
+Out of scope, and what owns it instead:
 
-- <What could reasonably be a goal but was ruled out, and why.>
+- <What a reader could reasonably expect this to do, ruled out, with why and what owns it instead.>
 
 ## Direction
 
