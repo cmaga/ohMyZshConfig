@@ -79,7 +79,7 @@
       "model": {
         "personal": "sonnet[1m]",
         "work": "sonnet[1m]",
-        "ms": "deepseek-flash[1m]",
+        "ms": "sonnet[1m]",
         "amazon": "sonnet[1m]"
       },
       "effort": {
@@ -91,12 +91,12 @@
       "agents": [
         "worker-agent"
       ],
-      "note": "2026-10-30 by user decision: personal back on sonnet, so the kitchen's evals run the setup in use; ms on deepseek-flash for high volume (2026-10-21); work on sonnet, level with opus on coding at 0.62x"
+      "note": "2026-10-30 by user decision: personal back on sonnet, so the kitchen's evals run the setup in use; ms back on sonnet 2026-11-18 by user decision, off deepseek-flash (2026-10-21, for high volume): sonnet scores about 37 points higher on Terminal-Bench 4.0; work on sonnet, level with opus on coding at 0.62x"
     },
     "critical_code": {
       "model": {
         "personal": "opus",
-        "work": "sonnet[1m]",
+        "work": "opus",
         "ms": "opus",
         "amazon": "opus"
       },
@@ -106,7 +106,7 @@
         "ms": "xhigh",
         "amazon": "xhigh"
       },
-      "note": "2026-11-18: the hardest and contract roles, and code on a ## Critical path; work stepped opus->sonnet 2026-10-21: level coding scores at 0.62x"
+      "note": "2026-11-18: the hardest and contract roles, and code on a ## Critical path; work back on opus 2026-11-18 by user decision (sonnet since 2026-10-21), for the hardest design and the contract tests, which coding benchmarks measure only partly"
     },
     "research": {
       "model": {
@@ -119,21 +119,27 @@
         "personal": "medium",
         "work": "medium",
         "ms": "medium",
-        "amazon": "medium"
+        "amazon": "xhigh"
       },
-      "note": "2026-11-18: the explore role, which was research_fanout_model"
+      "note": "2026-11-18: the explore role, which was research_fanout_model; amazon on xhigh by user decision 2026-11-18"
     },
     "other_family": {
       "model": {
         "personal": "deepseek-flash[1m]",
         "work": "deepseek-flash[1m]",
         "ms": "deepseek-flash[1m]",
-        "amazon": "deepseek-flash[1m]"
+        "amazon": "opus"
+      },
+      "effort": {
+        "personal": "inherit",
+        "work": "inherit",
+        "ms": "inherit",
+        "amazon": "max"
       },
       "agents": [
         "deepseek-flash-agent"
       ],
-      "note": "2026-11-18: the other family role, pinned in its frontmatter until now; no effort, since whether effort reaches a DeepSeek model through the proxy is unverified"
+      "note": "2026-11-18: the other family role; DeepSeek accounts set no effort, since whether effort reaches a DeepSeek model through the proxy is unverified; amazon on opus/max by user decision 2026-11-18, since DeepSeek cannot run on Bedrock, bound by dispatch opts because amazon shares ~/.claude's frontmatter with personal"
     },
     "general": {
       "model": {
