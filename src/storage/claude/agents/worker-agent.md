@@ -2,6 +2,7 @@
 name: worker-agent
 description: Delegate for code-writing and helper tasks a coordinating session spawns. Reads the coordinator's skill file, named in its brief, before any work, and applies its principles. Follows existing patterns, stays inside the files named in the brief, commits only its own files, spawns nothing, never pushes or transitions tickets.
 model: sonnet[1m]
+effort: xhigh
 disallowedTools: Agent, Artifact, ArtifactComments, ArtifactData, mcp__claude_ai_Claude_Docs, mcp__claude_ai_Gmail, mcp__claude_ai_Google_Calendar, mcp__claude_ai_Google_Drive, mcp__claude_ai_Slack, mcp__claude_ai_Atlassian, mcp__plugin_product-management_amplitude, mcp__plugin_product-management_amplitude-eu, mcp__plugin_product-management_asana, mcp__plugin_product-management_atlassian, mcp__plugin_product-management_clickup, mcp__plugin_product-management_figma, mcp__plugin_product-management_fireflies, mcp__plugin_product-management_intercom, mcp__plugin_product-management_linear, mcp__plugin_product-management_monday, mcp__plugin_product-management_notion, mcp__plugin_product-management_pendo, mcp__plugin_product-management_similarweb, mcp__plugin_product-management_slack
 ---
 

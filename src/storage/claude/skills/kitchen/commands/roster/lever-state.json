@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-18",
+  "updated": "2026-11-19",
   "accounts": {
     "personal": {
       "config_dirs": [
@@ -83,15 +83,15 @@
         "amazon": "sonnet[1m]"
       },
       "effort": {
-        "personal": "inherit",
-        "work": "inherit",
-        "ms": "inherit",
-        "amazon": "inherit"
+        "personal": "xhigh",
+        "work": "xhigh",
+        "ms": "xhigh",
+        "amazon": "xhigh"
       },
       "agents": [
         "worker-agent"
       ],
-      "note": "2026-10-30 by user decision: personal back on sonnet, so the kitchen's evals run the setup in use; ms back on sonnet 2026-11-18 by user decision, off deepseek-flash (2026-10-21, for high volume): sonnet scores about 37 points higher on Terminal-Bench 4.0; work on sonnet, level with opus on coding at 0.62x"
+      "note": "2026-10-30 by user decision: personal back on sonnet, so the kitchen's evals run the setup in use; ms back on sonnet 2026-11-18 by user decision, off deepseek-flash (2026-10-21, for high volume): sonnet scores about 37 points higher on Terminal-Bench 4.0; work on sonnet, level with opus on coding at 0.62x; effort xhigh on every account 2026-11-19 by user decision: since Claude Code 2.1.317 a subagent on another model runs at that model's own effort, so inherit stopped tracking the session's xhigh, and Sonnet 5.5 at high scores 13 points under xhigh on Terminal-Bench 4.0"
     },
     "critical_code": {
       "model": {
