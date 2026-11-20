@@ -4,11 +4,13 @@ What gets checked on every change in this project. Every rule names what enforce
 
 ## Settings
 
-- **Gate:** `<one command that runs tests, lint, and build>`
+- **Gate:** `<one command that runs this project's checks, fastest first, stopping at the first failure>`
 - **Reach:** touched lines | touched files | neighborhood
 - **Mutation:** stryker `<command that runs Stryker in this project>` | off: <reason>
 
 ## Rules
+
+A `check:` enforcer is a step of the Gate.
 
 | Rule | Enforced by | Rung | Catches |
 |---|---|---|---|
