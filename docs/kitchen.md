@@ -228,10 +228,9 @@ An auto order always reaches its PR. Where today's line stops, it carries on:
 - **The editor.** You write in VS Code with the Claude Code extension, which shares the open file and your selection with Claude. Edits land in its edit-automatically mode, and its `autosave` saves your buffers before Claude's tools run.
 - **Its own window.** Worktrees sit under a git-ignored `.claude/worktrees/`, and the panel withholds selections from git-ignored files, so the order's worktree opens as its own VS Code window. `/kitchen next manual`:
   1. claims the order and creates its worktree;
-  2. opens the worktree with `code -n`;
-  3. runs `kitchen.zsh handoff <KEY>`, which ends the terminal session (its `claude` process, which Claude Code exposes as `CLAUDE_PID`), waits for it to exit, and opens the same conversation in the new window with `vscode://anthropic.claude-code/open?session=$CLAUDE_CODE_SESSION_ID`.
+  2. runs `kitchen.zsh handoff <KEY>`, which opens the worktree with `code -n`. The session stays where it is: it tells you the tests, the command that runs them, and to say "done" when the code is in. Move the conversation into the new window's panel yourself if you want it there.
 - **Tests.** The contract station writes them before the handoff, few and weighted to the done-when's edge cases, as your starting point rather than a lock: you may edit, replace, or delete any of them. They land as a plain `test:` commit with no `Contract-` trailer, so taste, verify, and open a PR accept `contract-check.sh`'s exit 2 (no contract commit), and the mutation sweep runs over the test files the branch adds or changes. Its survivors, the verify session's own inputs, and the test-honesty and gaming tasters come back to you as findings.
-- **Ending.** You say "done" in the panel. The gate reports every finding, worst first, with its evidence, and fixes nothing. You fix them and say "done" again; the gate reruns what your fixes could change. The kitchen opens the PR, and a verify session gives its verdict; a FAIL comes back to you as findings. The PR always waits for you, and the kitchen never merges it: you do, as with catering's final PR.
+- **Ending.** You say "done" in the session. The gate reports every finding, worst first, with its evidence, and fixes nothing. You fix them and say "done" again; the gate reruns what your fixes could change. The kitchen opens the PR, and a verify session gives its verdict; a FAIL comes back to you as findings. The PR always waits for you, and the kitchen never merges it: you do, as with catering's final PR.
 
 ### Review
 
@@ -287,11 +286,6 @@ Decision windows of 20 to 30 minutes alternate with focus blocks of 90 to 120. I
 | You ask for a change in a PR comment | You ask in the order's session, which becomes guided; follow-ups still handle other reviewers' comments |
 | `phase` values `serve` and `session` | `mode` |
 | One status across every project | Status per project |
-
-### Unverified
-
-- The session link reaching the new VS Code window rather than another open one.
-- The conversation's last turn surviving the terminal session's end in the handoff.
 
 ---
 
@@ -430,7 +424,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/fire/fire.md` | `/kitchen fire`: a production incident worked with you, root cause to mitigation, each step on your go; the long-term fix and any remedy leave as tickets for the line. `open` asks for the project's `## Production` facts |
 | `agents/taster-agent.md` | One narrow judgment checker |
 | `dependencies/tests/scheduler.zsh` | The stub harness: the scheduler script against fake `oc`, `gh`, `code`, `open`, and tracker, in a throwaway sandbox |
-| `skills/manual-mode/SKILL.md` | The writing help a manual order's VS Code session loads; standalone, outside the kitchen |
+| `skills/manual-mode/SKILL.md` | The writing help a manual order's session loads; standalone, outside the kitchen |
 | `agents/worker-agent.md`, `agents/comment-sicko-agent.md` | The line cook, pstack's poteto-agent: reads `SKILL.md` before work; and the comment hater the no-comments station spawns |
 
 dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merges (or the session that merged it runs `order close`) and removes its worktrees then; `kitchen.zsh prune`, daily from the scheduler, clears what is left. Prune touches only the worktrees of closed orders no session holds: a merged order's whatever its branch's ancestry, squash merges included; a dropped order's only when its branch changes nothing the base lacks; never a worktree the pipeline did not create. It runs the worktree's teardown and syncs the vault first, and a failed teardown or a `vault:` line becomes a `notice` in the catch-up.

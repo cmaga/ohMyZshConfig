@@ -20,7 +20,7 @@
 #   kitchen modes                            the modes this project has unlocked
 #   kitchen overrides                        this project's orders that carry a mode_override, oldest first
 #   kitchen share                            how many of this project's orders made ready in the last 14 days are manual
-#   kitchen handoff KEY                      move a manual order's session into VS Code in its worktree
+#   kitchen handoff KEY                      open a manual order's worktree in a new VS Code window
 #   kitchen stage KEY                        open a catering deployment's PR as staged changes in a review worktree in VS Code
 #   kitchen filed KEY TICKET WHY             record a follow-up ticket filed for the order
 #   kitchen order get KEY                    print the order
@@ -572,20 +572,15 @@ filed() { # KEY TICKET WHY: a follow-up ticket filed for the order
     --arg t "$(now_iso)" --arg k "${2:?TICKET}" --arg w "$why"
 }
 
-handoff() { # KEY: move this session into VS Code in the manual order's worktree
+handoff() { # KEY: open the manual order's worktree in a new VS Code window
   local f; f=$(need_order ${1:?KEY}) || exit 1
   local slug; slug=$(slug_here) || exit 1
   [[ ${f:h:h:t} == $slug ]] || die "$1 is not an order of $slug"
   [[ $(jq -r '.mode // ""' $f) == manual ]] || die "$1 is not a manual order"
-  [[ -n ${CLAUDE_PID:-} && -n ${CLAUDE_CODE_SESSION_ID:-} ]] || die "CLAUDE_PID and CLAUDE_CODE_SESSION_ID must be set: run this from a Claude Code session"
   local wt=$(jq -r .project ${f:h:h}/line.json)/.claude/worktrees/$1
   [[ -d $wt ]] || die "no worktree at $wt"
-  local link="vscode://anthropic.claude-code/open?session=$CLAUDE_CODE_SESSION_ID"
   code -n $wt < /dev/null || die "could not open $wt with code"
-  if [[ $(uname) != Darwin ]]; then print -- "open $link"; return 0; fi
-  # the waiter outlives this session: TERM it after a moment, wait for it to exit, then open the link in the new window
-  nohup zsh -c 'trap "" HUP; sleep 2; kill -TERM $1 2>/dev/null; while kill -0 $1 2>/dev/null; do sleep 1; done; open "$2"' _ $CLAUDE_PID $link < /dev/null > /dev/null 2>&1 &!
-  print -- "handing off $1: this session ends in a moment and reopens in VS Code"
+  print -- "opened $wt in a new VS Code window"
 }
 
 stage() { # KEY: the catering deployment's PR as staged changes in its own review worktree, opened in VS Code

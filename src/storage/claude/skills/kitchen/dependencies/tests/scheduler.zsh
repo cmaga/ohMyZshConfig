@@ -36,9 +36,9 @@ mkdir -p $SB/bin $HOME/.claude/skills/ticket-provider/dependencies/scripts $HOME
 print -r -- $'[init]\n\tdefaultBranch = main' > $SB/gitconfig
 cp $HERE/stubs/{gh,lsof,aliases.zsh} $SB/bin/
 for t in claude jira bb curl; do cp $HERE/stubs/forbidden $SB/bin/$t; done
-# recording fakes: code logs its arguments; open logs its link and whether the handed-off session's process was already gone
+# recording fakes: code and open log their arguments
 print -r -- $'#!/bin/sh\nprintf "%s\\n" "$*" >> "$CODE_LOG"' > $SB/bin/code
-print -r -- $'#!/bin/sh\nif kill -0 "$(cat "$VICTIM_FILE")" 2>/dev/null; then s=alive; else s=gone; fi\nprintf "%s %s\\n" "$*" "$s" >> "$OPEN_LOG"' > $SB/bin/open
+print -r -- $'#!/bin/sh\nprintf "%s\\n" "$*" >> "$OPEN_LOG"' > $SB/bin/open
 chmod +x $SB/bin/code $SB/bin/open
 cp $HERE/stubs/ticket.zsh $HOME/.claude/skills/ticket-provider/dependencies/scripts/
 cp $HERE/stubs/vault-git.sh $HOME/.claude/skills/capture-documentation/scripts/
@@ -94,7 +94,6 @@ wait_dead() { # KEY: until the order's session process is gone
 }
 alive() { kill -0 $1 2>/dev/null }
 victim() { ( sleep 60 < /dev/null > /dev/null 2>&1 & print $! > $VICTIM_FILE ) } # a process whose parent is gone, as a terminal session's claude is once its shell reaps it
-wait_open() { local i; for i in {1..300}; do [[ -s $OPEN_LOG ]] && return 0; nap; done; return 1 }
 
 mkline() { # [field=value...]
   k line add $PROJ > /dev/null
@@ -1055,46 +1054,28 @@ a_filed_follow_up_ticket_is_stored_on_the_order_and_shown_in_status() {
 
 # --- handoff ------------------------------------------------------------------------
 
-handoff_ends_the_session_then_opens_its_conversation_in_the_worktree_window() {
+handoff_only_opens_the_worktree_in_a_new_window() {
   mkline; mkorder A mode=manual > /dev/null; mkwt A
   victim; local v=$(<$VICTIM_FILE)
   OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
   eq $RC 0 'exit code'
   eq "$(<$CODE_LOG)" "-n $(wt A)" 'code opens the worktree in a new window'
-  isyes "alive $v" 'the session is not ended before the command returns'
-  wait_open
-  isyes "! alive $v" 'the session received TERM'
-  eq "$(<$OPEN_LOG)" 'vscode://anthropic.claude-code/open?session=sess-9 gone' 'the link opened after the session exited'
-  kill $v 2>/dev/null
-}
-
-handoff_prints_the_link_instead_of_opening_it_off_macos() {
-  mkline; mkorder A mode=manual > /dev/null; mkwt A
-  victim; local v=$(<$VICTIM_FILE)
-  print -r -- $'#!/bin/sh\necho Linux' > $SB/bin/uname; chmod +x $SB/bin/uname
-  OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
-  rm -f $SB/bin/uname
-  eq $RC 0 'exit code'
-  has "$OUT" 'vscode://anthropic.claude-code/open?session=sess-9' 'link printed'
   nap 300
-  isyes "[[ ! -f $OPEN_LOG ]]" 'open is not called'
+  isyes "alive $v" 'the session is not ended'
+  isyes "[[ ! -f $OPEN_LOG ]]" 'no link is opened'
+  lacks "$OUT" 'vscode://' 'no link is printed'
   kill $v 2>/dev/null
 }
 
-handoff_refuses_an_order_that_is_not_manual_and_missing_session_variables() {
-  mkline; mkorder A mode=guided > /dev/null; mkorder M mode=manual > /dev/null; mkwt A; mkwt M
-  victim; local v=$(<$VICTIM_FILE)
-  OUT=$( export CLAUDE_PID=$v CLAUDE_CODE_SESSION_ID=sess-9; k handoff A 2>&1 ); RC=$?
+handoff_refuses_an_order_that_is_not_manual_or_has_no_worktree() {
+  mkline; mkorder A mode=guided > /dev/null; mkorder M mode=manual > /dev/null; mkwt A
+  OUT=$(k handoff A 2>&1); RC=$?
   eq $RC 1 'guided exit code'
   has "$OUT" 'A is not a manual order' 'guided message'
-  OUT=$( unset CLAUDE_PID; export CLAUDE_CODE_SESSION_ID=sess-9; k handoff M 2>&1 ); RC=$?
-  eq $RC 1 'unset CLAUDE_PID exit code'
-  has "$OUT" 'CLAUDE_PID and CLAUDE_CODE_SESSION_ID must be set' 'message'
-  OUT=$( export CLAUDE_PID=$v; unset CLAUDE_CODE_SESSION_ID; k handoff M 2>&1 ); RC=$?
-  eq $RC 1 'unset session id exit code'
-  isyes "[[ ! -f $CODE_LOG && ! -f $OPEN_LOG ]]" 'nothing opened'
-  isyes "alive $v" 'the session was not touched'
-  kill $v 2>/dev/null
+  OUT=$(k handoff M 2>&1); RC=$?
+  eq $RC 1 'no worktree exit code'
+  has "$OUT" 'no worktree at' 'no worktree message'
+  isyes "[[ ! -f $CODE_LOG ]]" 'nothing opened'
 }
 
 # --- catering deployments ---------------------------------------------------------
