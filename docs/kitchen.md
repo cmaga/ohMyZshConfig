@@ -230,7 +230,7 @@ An auto order always reaches its PR. Where today's line stops, it carries on:
   1. claims the order and creates its worktree;
   2. opens the worktree with `code -n`;
   3. runs `kitchen.zsh handoff <KEY>`, which ends the terminal session (its `claude` process, which Claude Code exposes as `CLAUDE_PID`), waits for it to exit, and opens the same conversation in the new window with `vscode://anthropic.claude-code/open?session=$CLAUDE_CODE_SESSION_ID`.
-- **Tests.** You write them too, so a manual order skips the contract station. The verify session's own inputs, the mutation sweep, and the test-honesty and gaming tasters still check your work. The order records your test command for the sweep, and taste and verify accept `contract-check.sh`'s exit 2 (no contract commit) on a manual order.
+- **Tests.** The contract station writes them before the handoff, few and weighted to the done-when's edge cases, as your starting point rather than a lock: you may edit, replace, or delete any of them. They land as a plain `test:` commit with no `Contract-` trailer, so taste, verify, and open a PR accept `contract-check.sh`'s exit 2 (no contract commit), and the mutation sweep runs over the test files the branch adds or changes. Its survivors, the verify session's own inputs, and the test-honesty and gaming tasters come back to you as findings.
 - **Ending.** You say "done" in the panel. The gate reports every finding, worst first, with its evidence, and fixes nothing. You fix them and say "done" again; the gate reruns what your fixes could change. The kitchen opens the PR, and a verify session gives its verdict; a FAIL comes back to you as findings. The PR always waits for you, and the kitchen never merges it: you do, as with catering's final PR.
 
 ### Review
@@ -360,7 +360,7 @@ The planning stages and the skeleton run with you. The bodies, phase 2 on, run i
 
 - **In manual** you write the bodies, and the session checks each phase against the implementation plan when you say "check": as planned, different and better (and why), or different and worse (why, and what the plan had). The `manual-mode` skill stays a lookup helper that knows nothing of plans; the check lives in the kitchen's manual-order section.
 - **A better route rewrites the plan at once**, in any mode: the later steps it changes, with any design question it raises discussed then.
-- **Every manual order gets its tests from the contract station** before the VS Code handoff, as a deployment gets them from its skeleton. This reverses [Manual orders](#manual-orders) above, where you wrote the tests too.
+- **Every manual order gets its tests from the contract station** before the VS Code handoff, as a deployment gets them from its skeleton. They are yours to change, as [Manual orders](#manual-orders) above says, and so are a manual deployment's skeleton tests and calls.
 - **Each deployment is its own ticket, started with `take <KEY>`.** An auto one goes to the scheduler once its skeleton is approved.
 
 ### Review
@@ -398,7 +398,7 @@ A new required `## Docs` section of the project rules says where the project's d
 - No coding study compares phase boundaries with a dependency graph inside one PR. The choice rests on where the merged result gets tested, and on Kiro and GSD converging on waves.
 - Citing `DEC-N` per task is untested; no tool reviewed does it.
 - Most of the parallel-coding evidence is 2026 preprints read as abstracts or summaries.
-- A manual order now gets its signatures from the contract author's scaffold, and you write the logic inside them. Whether that still gives you enough practice is untested until you have worked a few manual orders.
+- A manual order on a feature gets its signatures from the contract author's scaffold as a starting point, and you write the logic, changing any signature or call you see fit. Whether that still gives you enough practice is untested until you have worked a few manual orders.
 
 ---
 
