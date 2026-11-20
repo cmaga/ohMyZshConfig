@@ -36,7 +36,7 @@
 #   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same
 #   kitchen order close KEY                  mark the order done and move its ticket with the merged moment
 #   kitchen order list [STATUS]              this project's orders, or those with that status
-#   kitchen order transcript KEY             path of the order's last session transcript
+#   kitchen order transcript KEY [--conversation]  path of the order's last session transcript; --conversation prints only what the user and the session said
 #   kitchen decide KEY "decision: why" EVIDENCE      log a call made without the user, with what backs it
 #   kitchen catch KEY|- TASTER CLASS NOTE [--chef]   log a review finding; prints promote, or climb TICKET, when due
 #   kitchen classes [TASTER]                 catch classes this project has seen
@@ -178,8 +178,14 @@ lock_reason() { # DIR MODE: why the project has not unlocked MODE; nothing when 
   (( merged >= after )) || print -- "$2 is locked: $merged of $after merged $prev orders ($need)"
 }
 
-check_mode() { # DIR MODE: die unless MODE is one the project has unlocked
+NO_CODE_RECIPES=(investigation prototype eval runtime-forensics trace-forensics multi-phase-plan)
+GUIDED_ONLY_RECIPES=(enforce change-a-skill)
+
+check_mode() { # DIR MODE [RECIPE]: die unless MODE is one the project has unlocked and the recipe allows
   [[ $2 == (manual|guided|auto) ]] || die "mode is manual, guided, or auto, not $2"
+  (( ${GUIDED_ONLY_RECIPES[(Ie)${3:-}]} )) && { [[ $2 == guided ]] || die "$3 runs only guided"; return 0; }
+  # the lock builds trust in code the line writes, so a recipe that ships none may always run guided
+  [[ $2 == guided && -n ${3:-} ]] && (( ${NO_CODE_RECIPES[(Ie)$3]} )) && return 0
   local why=$(lock_reason $1 $2)
   [[ -z $why ]] || die $why
 }
@@ -197,12 +203,12 @@ modes() { # the modes the current project has unlocked
   return 0
 }
 
-check_kv() { # DIR field=value: die when order_set would refuse it; sets REPLY to the value
+check_kv() { # DIR field=value [RECIPE]: die when order_set would refuse it; sets REPLY to the value
   [[ $2 == *=* ]] || die "expected field=value, got: $2"
   local field=${2%%=*}
   text_of "${2#*=}"
   # a session the user resumes turns an auto order guided whatever the project has unlocked
-  [[ $field == mode && -z ${MODE_FORCE:-} ]] && check_mode $1 $REPLY
+  [[ $field == mode && -z ${MODE_FORCE:-} ]] && check_mode $1 $REPLY ${3:-}
   if (( ${+JSON_FIELDS[$field]} )); then
     jq -n --argjson v "$REPLY" '$v' >/dev/null 2>&1 || die "$field takes JSON, got: $REPLY"
   fi
@@ -213,9 +219,15 @@ order_set() { # KEY field=value...
   local f; f=$(need_order $1) || exit 1
   shift
   local -a args=()
-  local filter='.updated = $t | .touched = $e' kv field i=0
+  local filter='.updated = $t | .touched = $e' kv field i=0 recipe=$(jq -r '.recipe // ""' $f) recipe_given= mode_given=
   for kv in "$@"; do
-    check_kv ${f:h:h} $kv
+    [[ $kv == recipe=* ]] && recipe=${kv#recipe=} recipe_given=1
+    [[ $kv == mode=* ]] && mode_given=1
+  done
+  # a recipe that allows only some modes holds the mode the order keeps
+  [[ -n $recipe_given && -z $mode_given && -z ${MODE_FORCE:-} ]] && check_mode ${f:h:h} $(jq -r '.mode // "manual"' $f) $recipe
+  for kv in "$@"; do
+    check_kv ${f:h:h} $kv $recipe
     field=${kv%%=*}
     [[ $field == status && $REPLY == ready ]] && filter+=' | .ready_at = (.ready_at // $t)'
     if (( ${+JSON_FIELDS[$field]} )); then args+=(--argjson v$i "$REPLY"); else args+=(--arg v$i "$REPLY"); fi
@@ -231,8 +243,13 @@ order_new() { # SLUG KEY [field=value...]
   [[ -f $BOOK/$slug/line.json ]] || die "no line $slug"
   [[ -z $(order_file $key) ]] || die "order $key already exists"
   # a refused field must not leave a half-made order that blocks the retry
-  local kv
-  for kv in "$@"; do check_kv $BOOK/$slug $kv; done
+  local kv recipe= mode_given=
+  for kv in "$@"; do
+    [[ $kv == recipe=* ]] && recipe=${kv#recipe=}
+    [[ $kv == mode=* ]] && mode_given=1
+  done
+  [[ -n $recipe && -z $mode_given ]] && check_mode $BOOK/$slug manual $recipe
+  for kv in "$@"; do check_kv $BOOK/$slug $kv $recipe; done
   mkdir -p $BOOK/$slug/orders
   jq -n --arg k $key --arg t "$(now_iso)" \
     '{key:$k, status:"new", mode:"manual", recipe:null, review:false,
@@ -327,13 +344,27 @@ overrides() { # the current project's orders that carry a mode_override, oldest 
   orders_json $slug | jq -r 'map(select((.mode_override // "") != "")) | sort_by(.created)[] | "\(.key)  \(.mode_override | gsub("\\s*\n\\s*"; " "))"'
 }
 
-transcript() { # KEY: path of the order's last session transcript
+transcript() { # KEY [--conversation]: path of the order's last session transcript, or only what the user and the session said in it
+  [[ -z ${2:-} || $2 == --conversation ]] || die "order transcript KEY [--conversation]"
   local f; f=$(need_order $1) || exit 1
   local sid=$(jq -r '(.last_session | select(. != "")) // .session // empty' $f)
   [[ -n $sid && $sid != - ]] || die "$1 has no recorded session"
   local -a t=( $HOME/.claude*/projects/*/$sid.jsonl(N) )
   (( $#t )) || die "no transcript for session $sid"
-  print -- $t[1]
+  [[ -n ${2:-} ]] || { print -- $t[1]; return }
+  jq -r '
+    def said: if type == "string" then .
+      elif type == "array" and all(.[]; .type? != "tool_result") then [.[] | select(.type? == "text") | .text] | join("\n")
+      else "" end;
+    select((.type == "user" or .type == "assistant") and (.isMeta | not) and (.isCompactSummary | not) and (.isSidechain | not))
+    | .type as $who
+    | (.message.content | said | gsub("<system-reminder>[\\s\\S]*?</system-reminder>"; "")) as $t
+    | (if ($t | test("<command-name>"))
+       then ([$t | capture("<command-name>(?<n>[^<]*)</command-name>").n][0]) + " " + ([$t | capture("<command-args>(?<a>[\\s\\S]*?)</command-args>").a][0] // "")
+       else $t end
+       | gsub("\\A\\s+|\\s+\\z"; "")) as $say
+    | select($say != "" and ($say | startswith("<task-notification") | not))
+    | "### \(if $who == "user" then "user" else "session" end)\n\($say)\n"' $t[1]
 }
 
 # --- the user's queue ---------------------------------------------------------
@@ -638,7 +669,7 @@ order_cmd() {
         print -- "verdict=$3 fails=$fails" ;;
     close) close_order ${2:?KEY} ;;
     list) order_list ${2:-} ;;
-    transcript) transcript ${2:?KEY} ;;
+    transcript) transcript ${2:?KEY} ${3:-} ;;
     *) die "order get|new|set|claim|next|base|pr|verify|verdict|gated|approve|close|list|transcript" ;;
   esac
 }

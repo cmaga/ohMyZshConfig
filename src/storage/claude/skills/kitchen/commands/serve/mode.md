@@ -1,37 +1,43 @@
-# Mode: recommend how an order is worked
+# Mode: who writes an order's code
 
-Intake recommends a mode beside the approach, and the user approves or changes it. The mode says who writes the code:
+Intake recommends a mode with the recipe and the review call, and the user approves or changes it.
 
-- `manual`: the user writes it, starting from tests the contract station wrote first, which they may change. The session only looks things up for them.
-- `guided`: the line writes it, with the user in the session to ask.
-- `auto`: the line writes it headless, started by the scheduler. It never waits on the user.
+## The three modes
 
-## Inputs
+| Mode     | Who writes the code                                                                                                              | Who starts it                                         | Can it ask the user |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------- |
+| `manual` | The user, starting from tests the contract station wrote first, which they may change. The session only looks things up for them | The user, with `/kitchen next manual` or `take <KEY>` | Yes                 |
+| `guided` | A session, with the user there to answer                                                                                         | The user, with `/kitchen next guided` or `take <KEY>` | Yes                 |
+| `auto`   | A session started by the scheduler, with nobody there                                                                            | The scheduler                                         | Never               |
 
-- **The modes this project has unlocked**: `kitchen.zsh modes`. Offer only those; `kitchen.zsh order set` refuses a mode the project has not unlocked and says which threshold is unmet.
-- **The project rules** (`kitchen.zsh rules`): `## Sorting`, `## Critical`, and `## Always review`.
-- **The order's `station`**: the files intake expects the order to touch.
+## Which modes a project has
 
-## The rules
+Not every project has every mode available to it. `kitchen.zsh modes` prints the ones this project has. Recommend only those, since `kitchen.zsh order set` refuses any other.
 
-Take the first rule that matches among the unlocked modes. `manual` applies only to recipes that ship code (feature, bug-fix, refactor, perf, hillclimb); an investigation, prototype, eval, or multi-phase-plan is `guided` or `auto`. A `catering` order takes no mode: it runs with the user, and each deployment it files takes the project's highest unlocked mode.
+## Which recipes take which modes
 
-1. **A `## Sorting` rule** that names a mode for this ticket. It is the user's earlier call.
-2. **Manual, for risk**: a mistake would cost a lot and the checks could not catch it. A data model, an interface between components, or failure behavior qualifies. So does a path in the `station` that `## Critical` or `## Always review` lists.
-3. **Manual, for practice**: under 15% of this project's orders made ready in the last two weeks are manual. `kitchen.zsh share` prints the count.
-4. **Guided**: a call only the user can make is likely mid-work. Open design questions, unclear scope, no precedent in the repo, and an area where an earlier order in this project was parked each qualify.
-5. **Auto** otherwise: a bug fix with a reproduction, a refactor whose behavior the tests pin, a mechanical change.
+- `manual` fits only recipes that ship code: feature, bug-fix, refactor, perf, and hillclimb.
+- `enforce` and `change-a-skill` run only `guided`, whatever the project has unlocked.
+- Every other recipe is `guided` or `auto`.
+- A recipe that ships no code (investigation, prototype, eval, runtime-forensics, trace-forensics, multi-phase-plan) can always run `guided`, even where the project has not unlocked it, since no code of the line's lands.
+- `catering` takes no mode. It runs with the user, and each deployment it files takes the project's highest unlocked mode.
 
-## The output
+## How to pick one
 
-One line, sent with the approach:
+Go down this list and take the first rule that matches a mode the project has unlocked. Read the project rules first (`kitchen.zsh rules`), and the files you expect the order to touch.
 
-    Mode: <mode>. <the reason, in a sentence>. Rule: <1 to 5, naming the `## Sorting` line for rule 1>.
+1. **The project names one.** A line under `## Sorting` in the project rules gives a mode for this kind of ticket. That is the user's earlier call, so it wins.
+2. **Manual, for risk.** A mistake would be expensive and the checks could not catch it: a data model, an interface between parts, or how something fails. Touching a file listed under `## Critical` or `## Always review` counts.
+3. **Manual, for practice.** Under 15% of the orders made ready in this project in the last two weeks are manual (`kitchen.zsh share` prints the count). The user keeps their hand in the code.
+4. **Guided, for open calls.** A call only the user can make is likely to come up while the work runs: an open design question, no precedent in the repo, or an area where an earlier order in this project was parked.
+5. **Auto** otherwise: a bug fix with a reproduction, a refactor the tests pin down, a mechanical change.
 
-## When the user overrides
+## What to send
 
-When the user picks a mode other than the recommendation, log it before writing the order:
+The mode and the reason in one sentence, such as "Guided, since nothing in the repo does this yet and the design will need your call." When rule 1 decided it, name the `## Sorting` line.
 
-    kitchen.zsh order set <KEY> mode_override=@<file>
+## When the user picks another mode
 
-The file holds the recommended mode and its rule, the chosen mode, and the user's reason. Before recommending, read `kitchen.zsh overrides`, which prints this project's orders with a `mode_override` as `<KEY>  <text>`. When the same kind of override appears twice, propose a `## Sorting` rule to the user along with the recommendation.
+Before writing the order, log it: `kitchen.zsh order set <KEY> mode_override=@<file>`, the file holding the mode you recommended and why, the mode they chose, and their reason.
+
+Before recommending, run `kitchen.zsh overrides`, which lists this project's logged overrides. When the user has made the same kind of override twice, propose a `## Sorting` line that makes it the rule, along with your recommendation.

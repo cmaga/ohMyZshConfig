@@ -892,6 +892,48 @@ a_project_starts_manual_only_and_refuses_a_locked_mode() {
   eq $RC 1 'unknown mode refused'
 }
 
+a_recipe_that_ships_no_code_runs_guided_in_a_manual_only_project() {
+  k line add $PROJ > /dev/null
+  local r
+  for r in investigation prototype eval runtime-forensics trace-forensics multi-phase-plan; do
+    OUT=$(k order new N-$r recipe=$r mode=guided 2>&1); RC=$?
+    eq $RC 0 "$r made guided"
+    eq "$(ord N-$r mode)" guided "$r mode"
+  done
+  k order new S recipe=investigation > /dev/null
+  OUT=$(k order set S mode=guided 2>&1); RC=$?
+  eq $RC 0 'guided set later on a no-code order'
+  OUT=$(k order new A recipe=investigation mode=auto 2>&1); RC=$?
+  eq $RC 1 'auto stays locked'
+  OUT=$(k order new F recipe=feature mode=guided 2>&1); RC=$?
+  eq $RC 1 'a recipe that ships code stays locked'
+  k order new G recipe=feature > /dev/null
+  OUT=$(k order set G recipe=investigation mode=guided 2>&1); RC=$?
+  eq $RC 0 'the recipe set in the same command counts'
+}
+
+enforce_and_change_a_skill_run_only_guided() {
+  k line add $PROJ > /dev/null
+  local r
+  for r in enforce change-a-skill; do
+    OUT=$(k order new G-$r recipe=$r mode=guided 2>&1); RC=$?
+    eq $RC 0 "$r guided in a manual-only project"
+    OUT=$(k order new M-$r recipe=$r mode=manual 2>&1); RC=$?
+    eq $RC 1 "$r manual refused"
+    has "$OUT" "$r runs only guided" "$r refusal names it"
+    OUT=$(k order new D-$r recipe=$r 2>&1); RC=$?
+    eq $RC 1 "$r with the default manual mode refused"
+  done
+  mkline
+  OUT=$(k order new A recipe=enforce mode=auto 2>&1); RC=$?
+  eq $RC 1 'auto refused where auto is unlocked'
+  k order new X recipe=feature mode=auto > /dev/null
+  OUT=$(k order set X recipe=enforce 2>&1); RC=$?
+  eq $RC 1 'a recipe change onto an auto order refused'
+  OUT=$(k order set X recipe=enforce mode=guided 2>&1); RC=$?
+  eq $RC 0 'a recipe change with mode guided'
+}
+
 order_new_validates_before_it_writes_so_a_retry_is_not_blocked() {
   k line add $PROJ > /dev/null
   OUT=$(k order new X mode=guided 2>&1); RC=$?
@@ -1208,6 +1250,36 @@ stage_refuses_an_order_that_is_not_a_catering_deployment() {
   eq $RC 1 'no PR exit code'
   has "$OUT" 'D has no PR' 'no PR message'
   isyes "[[ ! -f $CODE_LOG && ! -d $(wt review-A) && ! -d $(wt review-D) ]]" 'nothing opened'
+}
+
+# --- transcripts ------------------------------------------------------------------
+
+an_order_transcript_conversation_prints_only_what_the_user_and_the_session_said() {
+  mkline; mkorder A status=new last_session=s1 > /dev/null
+  mkdir -p $HOME/.claude/projects/p
+  print -rl -- \
+    '{"type":"user","isMeta":true,"message":{"role":"user","content":[{"type":"text","text":"Base directory for this skill: kitchen"}]}}' \
+    '{"type":"user","message":{"role":"user","content":"<command-message>kitchen</command-message>\n<command-name>/kitchen</command-name>\n<command-args>take 7</command-args>"}}' \
+    '{"type":"assistant","message":{"role":"assistant","content":[{"type":"thinking","thinking":"a private thought"},{"type":"text","text":"Reading the ticket."},{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"ls secret-dir"}}]}}' \
+    '{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"tool output line"}]}}' \
+    '{"type":"user","message":{"role":"user","content":"<task-notification>agent done</task-notification>"}}' \
+    '{"type":"user","isCompactSummary":true,"message":{"role":"user","content":"This session is being continued"}}' \
+    '{"type":"user","isSidechain":true,"message":{"role":"user","content":"a subagent brief"}}' \
+    '{"type":"attachment","attachment":{"type":"file","content":"attached file body"}}' \
+    '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"scope it deeper<system-reminder>a reminder</system-reminder>"}]}}' \
+    '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Agreed, the fix goes a level down."}]}}' \
+    > $HOME/.claude/projects/p/s1.jsonl
+  OUT=$(k order transcript A --conversation 2>&1)
+  has "$OUT" '/kitchen take 7' 'the take'
+  has "$OUT" 'Reading the ticket.' 'a reply'
+  has "$OUT" 'scope it deeper' 'a steer'
+  has "$OUT" 'Agreed, the fix goes a level down.' 'the last reply'
+  local kept
+  for kept in 'Base directory' 'a private thought' 'secret-dir' 'tool output line' 'agent done' 'being continued' 'a subagent brief' 'attached file body' 'a reminder' '<command-name>'; do
+    lacks "$OUT" $kept "kept $kept"
+  done
+  eq "$(k order transcript A)" $HOME/.claude/projects/p/s1.jsonl 'with no option it prints the path'
+  isyes "! k order transcript A --bogus > /dev/null 2>&1" 'an unknown option refuses'
 }
 
 # --- prune, dry run ---------------------------------------------------------------
