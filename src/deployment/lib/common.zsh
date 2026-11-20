@@ -142,7 +142,7 @@ COMPANIES=("gsi" "ms")
 # Machines that take only part of this repo. `make <profile>` deploys its targets
 # and records it in .git/deploy-profile, and update.zsh then deploys only those.
 typeset -A PROFILE_TARGETS=(
-    amz-laptop  "deploy-zsh"
+    amz-laptop  "deploy-zsh deploy-caffeinate"
     amz-desktop "deploy-zsh deploy-claude-config deploy-timesheet"
 )
 
@@ -152,6 +152,7 @@ typeset -A PART_OF=(
     deploy-zsh-config    deploy-zsh
     deploy-claude-config deploy-claude
     deploy-timesheet     deploy-automations
+    deploy-caffeinate    deploy-automations
 )
 
 # =============================================================================

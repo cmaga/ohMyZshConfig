@@ -1,0 +1,11 @@
+# caffeinate: keep the Mac awake (always-on).
+# With the display off, idle sleep drops the network and stops long-running
+# work. This holds caffeinate's idle, system and disk sleep assertions for as
+# long as the agent runs. The display still sleeps and locks on its own timer.
+# Closing the lid still sleeps the Mac unless an external display is attached,
+# and system sleep is blocked only on AC power; idle sleep is blocked on battery
+# too. Not a scheduled job: a KeepAlive daemon, so it declares `keepalive`
+# instead of `cron`. macOS only (launchd); the deploy script no-ops elsewhere.
+
+enabled = true
+keepalive = true
