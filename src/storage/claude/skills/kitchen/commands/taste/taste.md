@@ -7,7 +7,7 @@ The quality of the code is capped by what gets checked, and an agent told to che
 ## Inputs
 
 - **The branch**: the current one unless named; check a named one out here first, and when git refuses (uncommitted changes, or another worktree has it), say why and stop. The base branch is what `kitchen.zsh order base <KEY>` prints, with `-` for the key outside an order.
-- **The order key**, when cook runs this; otherwise `-`. Run on its own, commit each fix on the branch and leave pushing to the user. When the order's `mode` is `manual`, the user wrote the code: follow [a manual order](#a-manual-order) below, which changes steps 2 and 6 and the bug review.
+- **The order key**, when cook runs this; otherwise `-`. Run on its own, commit each fix on the branch and leave pushing to the user. When the order's `mode` is `manual`, the user wrote the code: follow [a manual order](#a-manual-order) below, which changes steps 2, 3, and 6 and the bug review.
 - **The done-when**: the order's, when there is one. Otherwise derive it from the PR description and commit messages: each claim of what now works becomes a check.
 - **The project rules**: `.claude/kitchen/house.md` in the project. When it is missing, use the default reviewers below, Reach `touched lines`, and the project's own lint, type, and test commands, and say so.
 
@@ -58,7 +58,8 @@ A suspected bug no run could reproduce is not confirmed: record it with `kitchen
 
 The user wrote the code, so the gate reports and fixes nothing. Run every step above except the fixes, and:
 
-- **Step 2**: the tests are the contract author's, not the user's, so the mutation sweep's survivors go to the contract author as on any order.
+- **Step 2**: the tests are the user's, with no contract commit ([contract](../cook/stations/contract.md#a-manual-order)), so `contract-check.sh` exiting 2 (`no contract commit`) passes. Run the mutation sweep with `--test-cmd "<the command that runs the test files the branch adds or changes>"`, and when it adds or changes none, that is the finding. Each survivor, and each hand-checked test that still passes, is a finding, not a brief to the contract author.
+- **Step 3**: test-honesty does not flag a test for being outside the contract, and the gaming taster gets the test files the branch adds or changes as the contract paths.
 - **Step 6 and the bug review**: log each finding with `kitchen.zsh catch` as step 6 says, and fix none. A verified bug is a finding like any other.
 - **The report**: every finding, worst first, each with its evidence (the command, its output, the file and line). Say that nothing is fixed.
 

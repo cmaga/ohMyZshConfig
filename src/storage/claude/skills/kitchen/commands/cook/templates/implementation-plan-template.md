@@ -67,7 +67,7 @@ build deletes and rewrites nothing. -->
 - **Consumes:** none
 - **Produces:** DEC-1
 - **Decisions:** DEC-1
-- **Work:** <the modules, types, signatures and stubs with their behavior stated, the pattern later tasks copy, and the locked tests>
+- **Work:** <the modules, types, signatures and stubs with their behavior stated, the pattern later tasks copy, and the tests>
 
 ### Phase 2: <name>
 

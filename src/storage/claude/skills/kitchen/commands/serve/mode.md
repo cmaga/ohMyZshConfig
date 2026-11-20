@@ -2,7 +2,7 @@
 
 Intake recommends a mode beside the approach, and the user approves or changes it. The mode says who writes the code:
 
-- `manual`: the user writes it, against tests the contract station wrote first. The session only looks things up for them.
+- `manual`: the user writes it, starting from tests the contract station wrote first, which they may change. The session only looks things up for them.
 - `guided`: the line writes it, with the user in the session to ask.
 - `auto`: the line writes it headless, started by the scheduler. It never waits on the user.
 

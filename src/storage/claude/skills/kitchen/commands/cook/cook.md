@@ -47,10 +47,10 @@ A `catering` order is the standing case: its plan, spec, and implementation plan
 
 ## A manual order
 
-The user writes the code in VS Code, against tests written and locked first, as on any order. You look things up for them. The recipe's steps that write code are skipped. A catering deployment gets its tests and shape from its skeleton instead, the user writes the bodies, and you check each phase against the plan per [deployment](recipes/catering/deployment.md#manual-phases).
+The user writes the code in VS Code, starting from tests written first, which are theirs to change ([contract](stations/contract.md#a-manual-order)). You look things up for them. The recipe's steps that write code are skipped. A catering deployment gets its tests and shape from its skeleton instead, the user writes the bodies, and you check each phase against the plan per [deployment](recipes/catering/deployment.md#manual-phases).
 
 1. Do steps 1 to 3, 5, 6, and 9 above: claim, read the order, enter its worktree, and claim the ticket.
-2. Run the [contract](stations/contract.md) station, unless a catering skeleton already wrote the tests. Tell the user which tests are locked and the command that runs them.
+2. Run the [contract](stations/contract.md) station, unless a catering skeleton already wrote the tests. Tell the user which tests were written, the command that runs them, and that they may edit, replace, or delete any of them.
 3. Run `kitchen.zsh handoff <KEY>` as your last command. It opens the worktree with `code -n`, then ends this session and opens the same conversation in that window's Claude panel. Say before it what happens next.
 4. In the VS Code session, first claim the order again with `kitchen.zsh order claim <KEY>`, then load the `manual-mode` skill and follow it.
 5. When the user says "done", commit their work on the order's branch, then run the [open a PR](recipes/open-a-pr.md) recipe, so the gate sees it. The quality gate reports every finding, worst first, with its evidence, and fixes nothing. The user fixes and says "done" again, and the gate reruns what their fixes could change. They may instead accept a finding: it is listed in the PR description under Approach with their reason. When the gate's first run reports nothing, the PR opens without a second "done". Once it is clear, the PR opens and a verify session gives its verdict. A `FAIL` comes back to the user as findings, never as a fix. The PR always waits for the user, and the kitchen never merges it: they do.

@@ -7,13 +7,13 @@ One deployment of a catering order: its skeleton with the user, its phases in th
 At `stage=skeleton` the user is here: only they start a deployment at this stage, and its mode stays as filed.
 
 1. **Research the standards.** Per the [look it up](../../../../dependencies/principles/look-it-up.md) principle, the standard patterns for this stack and kind of feature, from current docs and practice, with sources; per the [how](../../stations/how.md) station, the patterns the project already uses where the deployment joins it. Present them one point at a time, per [catering](../catering.md#talking-to-the-user): the pattern, why it is the standard, and what it means for this skeleton. Where the project's pattern and the standard differ, the user picks.
-2. **Draft the skeleton** per the [architect](../../stations/architect.md) station's sketch, at the paths in the skeleton task's Files: the modules, types, signatures, and stubs whose bodies are not implemented and whose docstrings state the behavior, holding every contract its Produces line names. Then the [contract](../../stations/contract.md) station writes the locked tests for the spec tests this deployment owes, briefed with the skeleton.
+2. **Draft the skeleton** per the [architect](../../stations/architect.md) station's sketch, at the paths in the skeleton task's Files: the modules, types, signatures, and stubs whose bodies are not implemented and whose docstrings state the behavior, holding every contract its Produces line names. Then the [contract](../../stations/contract.md) station writes the tests for the spec tests this deployment owes, briefed with the skeleton and the deployment's mode.
 3. **Refine it with the user** until they approve it. A change to a contract rewrites its DEC in the implementation plan, and every task that cites it.
-4. **Commit it** as phase 1, the contract commit per the contract station, then `kitchen.zsh order set <KEY> stage=build "step=phase 1 Skeleton"`.
+4. **Commit it** as phase 1 per the contract station, a contract commit unless the deployment is `manual`, then `kitchen.zsh order set <KEY> stage=build "step=phase 1 Skeleton"`.
 5. **Hand on by mode.**
    - `auto`: `kitchen.zsh order set <KEY> status=ready pid=0`. Say the scheduler builds the rest and the PR comes back for their review, and end.
    - `guided`: hand the [goal line](../../cook.md#the-goal-line), and carry on with [The phases](#the-phases).
-   - `manual`: go the [manual way](../../cook.md#a-manual-order) from its step 2, with the locked tests' run command as its test command, and work per [Manual phases](#manual-phases).
+   - `manual`: go the [manual way](../../cook.md#a-manual-order) from its step 2, with the skeleton tests' run command as its test command, and work per [Manual phases](#manual-phases).
 
 ## The phases
 
@@ -28,7 +28,7 @@ For each phase from 2, in order:
 
 ## Manual phases
 
-The user writes the bodies in VS Code, phase by phase. When they say "check", read the diff since the last check against the phase's tasks, the DECs they cite, and the skeleton's pattern, and answer one of three: as planned; different and better, and why; or different and worse, why, and what the plan had. A better route rewrites the plan at once, as above, and a design question it raises is discussed then. At the end of each phase, run step 3's gate and report its findings to the user, who fixes them; commit the phase on their word, as step 4 does. When they say "done" after the last phase, go on at [Ready for review](#ready-for-review).
+The user writes the bodies in VS Code, phase by phase, and may change the skeleton's tests and calls as they see fit, per the [contract](../../stations/contract.md#a-manual-order) station. When they say "check", read the diff since the last check against the phase's tasks, the DECs they cite, and the skeleton's pattern, and answer one of three: as planned; different and better, and why; or different and worse, why, and what the plan had. A better route rewrites the plan at once, as above, and a design question it raises is discussed then. At the end of each phase, run step 3's gate and report its findings to the user, who fixes them; commit the phase on their word, as step 4 does. When they say "done" after the last phase, go on at [Ready for review](#ready-for-review).
 
 ## Ready for review
 

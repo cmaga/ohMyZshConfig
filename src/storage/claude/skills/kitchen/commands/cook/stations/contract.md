@@ -1,10 +1,10 @@
 # Contract
 
-Write the tests before the code is handed off, as a contract between the session that decides what the code must do and the agent that writes it. A coder talks itself out of anything it can argue with; it cannot argue with a test it may not edit. Every recipe that ships code runs this before its code delegate starts. Prototype, investigation, and a manual order (the user writes its tests) skip it.
+Write the tests before the code is handed off, as a contract between the session that decides what the code must do and the agent that writes it. A coder talks itself out of anything it can argue with; it cannot argue with a test it may not edit. Every recipe that ships code runs this before its code delegate starts, and a manual order before its handoff, where the tests are the user's to change ([a manual order](#a-manual-order)). Prototype and investigation skip it.
 
 ## Who writes it
 
-A `worker-agent` on the contract role ([SKILL.md](../../../SKILL.md#subagents)), never the agent that will write the code. Brief it with this file's path, the intent, the done-when, the scope, the recipe, and for a bug fix the planned fix. Existing tests the change makes wrong are its to update, in the contract commit.
+A `worker-agent` on the contract role ([SKILL.md](../../../SKILL.md#subagents)), never the agent that will write the code. Brief it with this file's path, the intent, the done-when, the scope, the recipe, the order's mode, and for a bug fix the planned fix. Existing tests the change makes wrong are its to update, in the contract commit.
 
 ## What the tests answer to
 
@@ -47,5 +47,13 @@ Only a contract commit may touch a contract file. `bash ~/.claude/skills/kitchen
 - The code delegate's brief carries the contract files and the `Contract-Run` command. It does not carry the done-when or how the verify session will drive the app: those stay the check the coder never saw.
 - The coder runs the contract as often as it likes, keeps no tests of its own, and challenges a test it believes wrong in its report instead of editing it.
 - A challenge you accept goes back to the contract author as a correction. The coder never makes a contract commit.
+
+## A manual order
+
+The user writes the code, so the tests are where they start, not a lock; so are a manual catering deployment's skeleton tests. The user may edit, replace, or delete any of them as they see fit, and no step treats that as a violation or tells them the tests are locked.
+
+- Write the fewest that hold, weighted to the done-when and its edge cases. Assert what a user observes through the interface users touch, never a signature or call beneath it: the user may change the implementation and its function calls.
+- Commit them as `git commit -m "test: <what they cover>"` with no `Contract-` trailer, in place of [Lock it](#lock-it). With no contract commit, `contract-check.sh` prints `no contract commit` and exits 2, and the mutation sweep needs `--test-cmd`; [taste](../../taste/taste.md#a-manual-order), [verify](../../taste/verify.md) step 3, and [open a PR](../recipes/open-a-pr.md) step 4 say what each does then.
+- The coder's side above does not apply: the user is the coder.
 
 **Report:** each contract test with the line it pins and how it failed before the code (the reported symptom for a bug, the rejecting check's error on the base branch for an unwritable fix, the not-implemented error for a feature), and each place no test was cheap with what stands in for it.
