@@ -11,7 +11,7 @@ The scheduler starts you (`/kitchen taste verify <KEY>`, phase `verify`) when a 
 5. **Audit the diff against the intent**, distrusting the PR body: what the intent needs that the diff lacks, and what the diff does that the intent does not need. Each suspicion becomes a run, per the [blast radius](../cook/stations/blast-radius.md) station's proof ladder. Leave mutation testing out: taste's mutation sweep already ran the contract against every changed line, and the order's `decisions` record each mutant it called equivalent.
 6. **Judge.** Block only on a problem you can show with a run at the head: a bug a user would hit, a failed gate, or a doc line the PR made wrong. A problem the base already has blocks only when the PR copies it or newly reaches it. Everything else is a note.
    - `FAIL`: at least one blocking problem.
-   - `PASS+NOTES`: nothing blocks, and something is worth a follow-up.
+   - `PASS+NOTES`: nothing blocks, and something should still change. Each note is fixed before the merge, as a `FAIL` finding is.
    - `PASS`: nothing blocks and nothing to add.
 7. **Answer the review criteria.** Read `## Review when` in the project rules (`kitchen.zsh rules`) and answer each question for this change, from the diff and your runs. Keep each one that holds as a reason, `<question>: <why, with file:line>`. Answer for the change itself, never for the code around it.
 8. **Record it.** Write the notes to a file: for each finding the command, the output it printed, and what the intent requires; for a pass, what you ran and saw. From the checkout of the head you verified, run `kitchen.zsh order verdict <KEY> <WORD> @<file>`, followed by each step 7 reason as its own quoted argument. Post nothing on the PR.

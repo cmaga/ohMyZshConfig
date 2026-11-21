@@ -613,6 +613,12 @@ sample_says_fix_when_the_verdict_for_this_change_is_fail() {
   sample; eq "$OUT" fix output
 }
 
+sample_says_fix_and_counts_a_round_when_the_verdict_has_notes() {
+  sampled; wtcommit A src/a.txt two; gated; verdict PASS+NOTES
+  sample; eq "$OUT" fix output
+  eq "$(ord A verify_fails)" 1 'a notes round counts toward the three-round park'
+}
+
 sample_says_verify_when_no_verdict_covers_this_change() {
   sampled; wtcommit A src/a.txt two; gated
   sample; eq "$OUT" verify output

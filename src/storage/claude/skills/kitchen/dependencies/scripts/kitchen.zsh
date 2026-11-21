@@ -571,7 +571,7 @@ sample() { # KEY: what this PR needs before it merges, run from its worktree: re
   [[ $now == $(jq -r '.gated // "none"' $f) ]] || { print -- regate; return 0; }
   # a verdict holds while the change is the one it checked; only a session that did not write the change gives one
   if [[ $now == $(jq -r '.verdict_patch // "none"' $f) ]]; then
-    [[ $(jq -r '.verdict // ""' $f) == FAIL ]] && { print -- fix; return 0; }
+    [[ $(jq -r '.verdict // ""' $f) == (FAIL|PASS+NOTES) ]] && { print -- fix; return 0; }
   else
     print -- verify; return 0
   fi
@@ -662,7 +662,7 @@ order_cmd() {
         base=$(order_base $f)
         git fetch -q origin $base 2>/dev/null
         local fails=$(jq -r '.verify_fails // 0' $f)
-        [[ $3 == FAIL ]] && fails=$(( fails + 1 ))
+        [[ $3 == (FAIL|PASS+NOTES) ]] && fails=$(( fails + 1 ))
         # pr_seen and followed clear so the scheduler wakes a session to act on the verdict
         order_set $2 "verdict=$3" "verdict_notes=${4:?notes}" "verdict_review=${(j:; :)@[5,-1]}" "verdict_patch=$(patch_id $base)" \
           "verdict_head=$(git rev-parse HEAD)" verify=false verify_fails=$fails verified_at=$EPOCHSECONDS pr_seen= followed=0
