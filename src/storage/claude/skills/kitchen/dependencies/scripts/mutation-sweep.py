@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Mutate the lines a branch changed and list every mutant its contract tests do not kill.
 
-Usage: mutation-sweep.py <base-ref> [--paths P...] [--max-per-line N] [--test-cmd CMD]
-                         [--timeout S] [--out FILE] [--list]
+Usage: mutation-sweep.py <base-ref> [--since COMMIT] [--paths P...] [--max-per-line N]
+                         [--test-cmd CMD] [--timeout S] [--out FILE] [--list]
 
 Run from the root of the repository under test, on a clean committed HEAD. Mutates the
 lines HEAD changed since the merge base with <base-ref>, in Python and shell source,
+and with --since only those that also differ from COMMIT, such as the head a gate passed,
 and runs the tests once per mutant, in place. JavaScript and TypeScript go to Stryker, one
 run per file on its changed lines, when the project rules' Mutation line names it. Every
 other changed file outside the tests and docs prints as `not swept: <path>`. Exit 0: nothing
@@ -86,9 +87,18 @@ def git(*args, check=True):
     return p.stdout
 
 
-def changed_lines(base):
+def changed_lines(base, since=None):
     merge_base = git("merge-base", base, "HEAD").strip()
-    diff = git("-c", "core.quotepath=false", "diff", "-U0", merge_base, "HEAD")
+    out = added_lines(merge_base)
+    if since:
+        # a line the base moved under keeps its text since the gate, so only the branch's own edits survive
+        later = added_lines(since)
+        out = {path: lines & later[path] for path, lines in out.items() if lines & later.get(path, set())}
+    return merge_base, out
+
+
+def added_lines(old):
+    diff = git("-c", "core.quotepath=false", "diff", "-U0", old, "HEAD")
     out, path = {}, None
     for row in diff.splitlines():
         if row.startswith("+++ "):
@@ -97,7 +107,7 @@ def changed_lines(base):
             m = re.match(r"@@ -\S+ \+(\d+)(?:,(\d+))? @@", row)
             start, n = int(m[1]), int(m[2] if m[2] is not None else 1)
             out.setdefault(path, set()).update(range(start, start + n))
-    return merge_base, out
+    return out
 
 
 def excluded(path):
@@ -622,6 +632,7 @@ def on_term(signum, frame):
 def main():
     ap = argparse.ArgumentParser(description="Mutate a branch's changed lines and list the mutants its tests do not kill.")
     ap.add_argument("base_ref")
+    ap.add_argument("--since", metavar="COMMIT", help="mutate only the changed lines that differ from this commit, such as the head the quality gate passed")
     ap.add_argument("--paths", nargs="+", help="limit to these files or directories")
     ap.add_argument("--max-per-line", type=int, default=2)
     ap.add_argument("--test-cmd", help="test command; {files} becomes the narrowed Contract-Files")
@@ -633,7 +644,7 @@ def main():
 
     if git("status", "--porcelain", "--untracked-files=no").strip():
         raise SweepError("the working tree has tracked changes; commit or restore them first")
-    merge_base, changed = changed_lines(opts.base_ref)
+    merge_base, changed = changed_lines(opts.base_ref, opts.since)
     stryker = stryker_command(opts.base_ref)
     mutants, unswept, js = [], [], {}
     for path in sorted(changed):
@@ -718,7 +729,7 @@ def main():
         print(f"not swept: {path}")
     if opts.out:
         Path(opts.out).write_text(json.dumps({
-            "base": opts.base_ref, "merge_base": merge_base, "mutants": len(results),
+            "base": opts.base_ref, "since": opts.since, "merge_base": merge_base, "mutants": len(results),
             "killed": len(results) - len(survivors), "survived": len(survivors), "timed_out": timed_out,
             "elapsed_seconds": round(elapsed, 1),
             "survivors": [dict(path=m.path, line=m.line, operator=m.operator, original=m.original, mutated=m.mutated) for m in survivors],
