@@ -1,6 +1,6 @@
 # Plan
 
-Turns the ticket into a plan the user approves: the context and goals agreed, the investigation, the direction, and the plan document, for them or an engineering team to review. Intake already showed the user the system and what fails; this picks up from there.
+Turns the ticket into a plan the user approves: the context and goals agreed, the investigation, the direction, and the plan document, for them or an engineering team to review. Intake already agreed the scope with the user, as the order's `intent`; step 1 starts from it and asks only what is still open.
 
 Keep the documents out of git first: `F="$(git rev-parse --git-common-dir)/info/exclude"; grep -qxF '.claude-artifacts/' "$F" || echo '.claude-artifacts/' >> "$F"`. The documents directory is `<docs>`, the absolute path of `.claude-artifacts/workflows/kitchen/<KEY>/` in this worktree: `kitchen.zsh order set <KEY> stage=plan docs=<docs>`.
 
