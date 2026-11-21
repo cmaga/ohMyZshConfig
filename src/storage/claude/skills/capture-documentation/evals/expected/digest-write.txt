@@ -55,7 +55,7 @@ exit=0
 - [Research: message queue evaluation](research/research-message-queue-eval.md): Evaluated alternatives to the current worker queue.
 - [Research: no frontmatter block](research/research-no-frontmatter.md): This note has no frontmatter at all; the file starts directly with the H1 above, exercising FM_MISSING_OPEN.
 - [Retry survey](research/research-retry-survey.md): Notes from reading three queue libraries' retry defaults, disagreeing with worker on backoff, which never wrote the · open
-- [Research: malformed source references](research/research-sources-bad.md): Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit that does
+- [Research: malformed source references](research/research-sources-bad.md): Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit, which a
 - [Research: unclosed frontmatter block](research/research-unclosed-frontmatter.md): The frontmatter block above never closes with a second `---`, exercising FM_MISSING_CLOSE.
 - [Research: warm cache spike](research/research-warm-cache-spike.md): A spike into pre-warming the cache layer touched by architecture/architecture-credit-deduction-flow.
 

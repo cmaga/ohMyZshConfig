@@ -11,8 +11,8 @@ created: 2026-03-08
 ## Findings
 
 Every entry in `sources` above is broken on purpose: a lowercase ticket id
-(SOURCE_TICKET_PATTERN), a commit that does not resolve in this repo
-(SOURCE_COMMIT_UNRESOLVED), a doc path that does not exist
+(SOURCE_TICKET_PATTERN), a commit, which a note never cites
+(SOURCE_REF_FORMAT), a doc path that does not exist
 (SOURCE_DOC_MISSING), and a prefix the schema does not recognize
 (SOURCE_REF_FORMAT). `basis: guessed` is not a recognized value either,
 exercising BASIS_ENUM. See [[ADR-001-use-postgres]] and

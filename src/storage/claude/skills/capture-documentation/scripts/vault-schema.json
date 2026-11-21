@@ -544,12 +544,7 @@
     "SOURCE_REF_FORMAT": {
       "severity": "fail",
       "fix": "manual",
-      "hint": "sources: [ticket:ID, pr:N, commit:sha, doc:path]"
-    },
-    "SOURCE_COMMIT_UNRESOLVED": {
-      "severity": "fail",
-      "fix": "manual",
-      "hint": "commit sha not in this repo"
+      "hint": "sources: [ticket:ID, pr:N, doc:path]; a note cites no commit"
     },
     "SOURCE_DOC_MISSING": {
       "severity": "fail",

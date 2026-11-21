@@ -32,7 +32,7 @@ A decision whose status is `superseded`, `deprecated`, or `amended` MUST carry a
 - **Any type:** add `aliases: [other name, other name]` when the subject goes by names its title does not carry.
 - **Any type:** `last_verified: YYYY-MM-DD` — the day the note's code claims were last checked; equals `created` at capture and moves only after a full re-verification.
 - **Any type:** `basis: user-stated | inferred` — where the non-code claims came from; `inferred` marks a hypothesis.
-- **Any type:** `sources: [ticket:EN-123, pr:45, commit:abc1234, doc:docs/x.md]` — resolved refs only; never a vault note.
+- **Any type:** `sources: [ticket:EN-123, pr:45, doc:docs/x.md]` — resolved refs only; never a vault note or a commit.
 - **Any type:** `review_cadence: annual | semi-annual | quarterly | monthly | annual-or-on-material-change | <N>d` — overrides the vault default of 180 days (plan 30, research 90 while open).
 - **Decision, constraint:** `governs: [server/services/execution/**, cli/publish.py]` — git pathspecs the note constrains; `governs: []` says it constrains no code; a commit under one raises a drift flag.
 - **Any type:** `applies_to: [server/src/features/x/]` — directories the rule stub covers when the Reusable surface does not name them.

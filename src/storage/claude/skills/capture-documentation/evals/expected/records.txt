@@ -49,7 +49,7 @@ research/research-inferred-no-sources.md	Sizing here is inferred from the queue 
 research/research-message-queue-eval.md	Evaluated alternatives to the current worker queue.	0	-	-
 research/research-no-frontmatter.md	This note has no frontmatter at all; the file starts directly with the H1 above, exercising FM_MISSING_OPEN.	0	-	-
 research/research-retry-survey.md	Notes from reading three queue libraries' retry defaults, disagreeing with worker on backoff, which never wrote the	0	-	-
-research/research-sources-bad.md	Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit that does	0	-	-
+research/research-sources-bad.md	Every entry in `sources` above is broken on purpose: a lowercase ticket id (SOURCE_TICKET_PATTERN), a commit, which a	0	-	-
 research/research-unclosed-frontmatter.md	The frontmatter block above never closes with a second `---`, exercising FM_MISSING_CLOSE.	0	-	-
 research/research-warm-cache-spike.md	A spike into pre-warming the cache layer touched by architecture/architecture-credit-deduction-flow.	0	-	-
 --- stderr ---

@@ -420,10 +420,9 @@ pass2b_region() {
 # ---------------------------------------------------------------------------
 # Pass 2c (shell+git): provenance/governance probes. Runs unconditionally
 # (both trees, like pass2) -- SOURCE_DOC_MISSING is a plain file-existence
-# check with no git dependency; SOURCE_COMMIT_UNRESOLVED and the dead-glob
-# checks need a repo and are skipped (not failed) outside one. Every probe
-# that needs a process is batched (one cat-file for the commits, one ls-files
-# for the globs) and the loop itself only uses builtins, since a process
+# check with no git dependency; the dead-glob checks need a repo and are
+# skipped (not failed) outside one. Every probe that needs a process is
+# batched (one ls-files for the globs) and the loop itself only uses builtins, since a process
 # start costs ~20ms under Git Bash. Bash 3.2 ships on macOS, so lookups are
 # newline-delimited strings, not associative arrays.
 # ---------------------------------------------------------------------------
@@ -441,22 +440,17 @@ pass2c_probes() {
     ($scope[0] // []) as $sc |
     def flow: if type=="string" and test("^\\[.*\\]$") then ([.[1:-1]|scan("\\s*(\"[^\"]*\"|\\x27[^\\x27]*\\x27|[^,]+)")|.[0]]|map(gsub("^ +| +$";"")|gsub("^[\"\\x27]|[\"\\x27]$";""))|map(select(.!=""))) else [] end;
     . as $r | $r.path as $p | select(($sc|length) == 0 or ($sc|index($p))) |
-    ( (($r.fm.sources // "") | flow[] | select(startswith("commit:") or startswith("doc:")) | [$p, ($r.fm_line.sources // 1), "src", ., ""]),
+    ( (($r.fm.sources // "") | flow[] | select(startswith("doc:")) | [$p, ($r.fm_line.sources // 1), "src", ., ""]),
       (($r.fm.governs // "") | flow[] | [$p, ($r.fm_line.governs // 1), "governs", ., ""]),
       (($r.fm.applies_to // "") | flow[] | [$p, ($r.fm_line.applies_to // 1), "applies_to", ., ""]),
       (($r.comp // [])[] | select(.kind != "" and .kind != "review" and .path != "") | [$p, .line, "comp", .path, .sym])
     ) | map(tostring) | join("\u001f")
   ' "$recs" 2>/dev/null > "$extracted"
 
-  # Unresolvable commits and dead globs, each found with one git call and
+  # Dead globs, found with one git call and
   # kept as newline-delimited strings for builtin `case` lookups.
-  local missing=$'\n' deadglobs=$'\n' list
+  local deadglobs=$'\n' list
   if [ "$ingit" = 1 ]; then
-    list=$(awk -F"$US" '$3=="src" && $4 ~ /^commit:/ { s=$4; sub(/^commit:/, "", s); print s "^{commit}" }' "$extracted" | sort -u)
-    if [ -n "$list" ]; then
-      missing+=$(printf '%s\n' "$list" | git -C "$repo" cat-file --batch-check 2>/dev/null |
-        awk '/ missing$/ { sub(/\^\{commit\} missing$/, "", $0); print $0 }')$'\n'
-    fi
     # --error-unmatch names every pathspec that matches nothing, one stderr
     # line each. A malformed pathspec is fatal (128) for the whole call, so
     # then each glob is tried alone, a failure counting as dead.
@@ -497,13 +491,6 @@ pass2c_probes() {
         ;;
       src)
         case "$item" in
-          commit:*)
-            [ "$ingit" = 1 ] || continue
-            sha="${item#commit:}"
-            case "$missing" in *$'\n'"$sha"$'\n'*)
-              printf 'SOURCE_COMMIT_UNRESOLVED\037%s\037%s\037commit %s not in this repo\n' "$p" "$ln" "$sha" ;;
-            esac
-            ;;
           doc:*)
             docpath="${item#doc:}"
             if [ ! -e "$repo/$docpath" ]; then
@@ -728,7 +715,7 @@ read -r -d '' PASS3_CHECKS <<'JQEOF' || true
       (if $r.fm.sources then
          (if ($r.fm.sources | isflow | not) then f($r; "SOURCE_REF_FORMAT"; ($r.fm_line.sources // 1); "sources is not a flow list [..]")
           else
-            ($r.fm.sources | flow[] | select(test("^(ticket:[^ ,]+|pr:[0-9]+|commit:[0-9a-f]{7,40}|doc:[^ ,]+)$") | not) | f($r; "SOURCE_REF_FORMAT"; ($r.fm_line.sources // 1); .)),
+            ($r.fm.sources | flow[] | select(test("^(ticket:[^ ,]+|pr:[0-9]+|doc:[^ ,]+)$") | not) | f($r; "SOURCE_REF_FORMAT"; ($r.fm_line.sources // 1); .)),
             ($r.fm.sources | flow[] | select(startswith("ticket:")) | select((ltrimstr("ticket:") | test($sc.ticket_pattern)) | not) | f($r; "SOURCE_TICKET_PATTERN"; ($r.fm_line.sources // 1); .))
           end)
        else empty end),

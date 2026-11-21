@@ -106,8 +106,8 @@ FAIL research/research-retry-survey.md:5 CONFLICT_ASYMMETRIC components/worker.m
 FAIL research/research-retry-survey.md:9 CONFLICT_UNBANNERED no > Status: CONTESTED with [[other]] on <axis> banner
 FAIL research/research-sources-bad.md:3 CONFLICT_FORMAT conflicts_with must be a flow list of [[wikilinks]]
 FAIL research/research-sources-bad.md:5 BASIS_ENUM basis guessed
+FAIL research/research-sources-bad.md:6 SOURCE_REF_FORMAT commit:0123456789abcdef0123456789abcdef01234567
 FAIL research/research-sources-bad.md:6 SOURCE_REF_FORMAT jira:1
-FAIL research/research-sources-bad.md:6 SOURCE_COMMIT_UNRESOLVED commit 0123456789abcdef0123456789abcdef01234567 not in this repo
 FAIL research/research-sources-bad.md:6 SOURCE_DOC_MISSING doc: docs/missing.md does not exist
 FAIL research/research-unclosed-frontmatter.md:1 FM_MISSING_CLOSE frontmatter never closed
 WARN .claude/rules/vault:0 RULES_FILE_OVERMATCHED src/worker/index.js matched by 5 notes
@@ -162,7 +162,7 @@ WARN research/research-inferred-no-sources.md:4 BASIS_INFERRED_NO_SOURCES inferr
 WARN research/research-sources-bad.md:6 SOURCE_TICKET_PATTERN ticket:stax-12
 WARN research/research-warm-cache-spike.md:1 SIZE_NOTE note is 40001 bytes
 WARN research/research-warm-cache-spike.md:16 SIZE_LINE line is 2200 chars
-INFO .:0 SIZE_VAULT vault is 727375 bytes
+INFO .:0 SIZE_VAULT vault is 727359 bytes
 INFO domain/domain-marker-cases.md:13 MARKER_RECHECK_DUE recheck 2020-01-01 is due
 -- drift flags --
 OPEN <sha7>-worker-1 components/worker.md src/worker/index.js M via=governs:src/worker/** commits=1 vanished=processQueueItem
