@@ -68,6 +68,15 @@ jira-cli has no `--no-pager`; use `--plain` and `--no-headers` for parseable out
 
 Re-parent an existing issue with `raw epic add EPIC KEY`. The full reference is [jira-cli-reference.md](../dependencies/docs/jira-cli-reference.md).
 
+## What jira-cli cannot do
+
+Use REST (`curl -n` against the config's server) for these, and read each one back afterwards:
+
+- **Detach an issue from its epic:** `PUT /rest/api/3/issue/<KEY>` with `{"fields":{"parent":null}}` (204). `epic remove` silently skipped one of six keys, so confirm with a `parent = <EPIC>` query.
+- **Change one sentence of a description:** fetch the ADF from `/rest/api/3/issue/<KEY>?fields=description`, substitute the sentence, and PUT it back. `issue edit -b` re-converts the whole body from markdown and mangles it. `/rest/api/2/issue/<KEY>` shows the description as wiki markup, which reads more easily.
+- **Close as Won't Do** where no transition offers it: `issue move <KEY> Done`, then PUT `{"fields":{"resolution":{"name":"Won't Do"}}}`.
+- **Link A blocks B:** `POST /rest/api/3/issueLink` with `{"type":{"name":"Blocks"},"inwardIssue":{"key":"A"},"outwardIssue":{"key":"B"}}`. The inward issue is the blocker, the reverse of what the names suggest.
+
 ## When a command fails
 
 - **Missing prerequisite** (`jira: command not found`, config not found, HTTP 401, a hang despite the rules above): run the detection battery, then setup.
