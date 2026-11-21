@@ -161,6 +161,8 @@ bb pr merge {pr-id} \
 | `squash`       | Squash all commits into one     |
 | `fast_forward` | Fast-forward if possible        |
 
+A repository's default merge strategy is set only in the web UI. No REST endpoint sets it at the repository, project, or workspace level, and `bb repo update` has no flag for it.
+
 ### Approve/Unapprove Pull Request
 
 ```bash
