@@ -461,6 +461,7 @@ Decided in conversation and built on 2026-11-22. Where an earlier section disagr
 - **The pieces.** New files are shown as the chef's table shows a piece with no precedent, whether or not the repo has one: the layout, then the signatures one module per message. Then each test file the contract author wrote. Then one `worker-agent` on the code role writes one function body or edit at a time, continued with your answer to each, so the code is still written by the role the roster sets and briefed without the done-when. The gate, the verdict and the PR run as on a guided order, under the goal line, which is handed once the last piece is agreed. Its review is set at intake; only a manual PR always waits for you.
 - **The ladder.** Every project starts manual-only. 2 merged manual orders unlock co-write, 3 merged co-write orders unlock guided, and 5 merged guided orders unlock auto (`co-write_after`, `guided_after` and `auto_after` in `line.json`). No project had set a threshold or earned a merge, so nothing migrates.
 - **Mode rule 3** is co-write for practice, and the 15% share counts manual and co-write orders. A locked pick falls back in the order auto, guided, co-write, manual.
+- **`manual-mode` is retired**, at your call on 2026-11-22. It held a manual order's session to lookups: never logic, even when asked, and a line on the data's shape after each insert. With practice moved to co-write, a manual order is one you chose to write yourself, and what you ask the session for is your call. The deployed copy stays in `~/.claude/skills/` until you delete it, since deploys never delete.
 
 ### What it changes
 
@@ -470,6 +471,7 @@ Decided in conversation and built on 2026-11-22. Where an earlier section disagr
 | 5 merged manual orders unlock guided | 2 merged manual orders unlock co-write, and 3 merged co-write orders unlock guided |
 | Mode rule 3: manual, for practice | Co-write, for practice |
 | `kitchen.zsh share` counts manual orders | Manual and co-write orders |
+| A manual order's session loads `manual-mode`, which writes no logic even when asked | It answers what you ask |
 
 ### Unverified
 
@@ -509,7 +511,6 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/fire/fire.md` | `/kitchen fire`: a production incident worked with you, root cause to mitigation, each step on your go; the long-term fix and any remedy leave as tickets for the line. `open` asks for the project's `## Production` facts |
 | `agents/taster-agent.md` | One narrow judgment checker |
 | `dependencies/tests/scheduler.zsh` | The stub harness: the scheduler script against fake `oc`, `gh`, `code`, `open`, and tracker, in a throwaway sandbox |
-| `skills/manual-mode/SKILL.md` | The writing help a manual order's session loads; standalone, outside the kitchen |
 | `agents/worker-agent.md`, `agents/comment-sicko-agent.md` | The line cook, pstack's poteto-agent: reads `SKILL.md` before work; and the comment hater the no-comments station spawns |
 
 dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merges (or the session that merged it runs `order close`) and removes its worktrees then; `kitchen.zsh prune`, daily from the scheduler, clears what is left. Prune touches only the worktrees of closed orders no session holds: a merged order's whatever its branch's ancestry, squash merges included; a dropped order's only when its branch changes nothing the base lacks; never a worktree the pipeline did not create. It runs the worktree's teardown and syncs the vault first, and a failed teardown or a `vault:` line becomes a `notice` in the catch-up.
