@@ -4,7 +4,8 @@ Catering's functional spec (recipes/catering/spec.md). Written to
 plan. For agents: precise, complete, no persuasion. The ids are permanent and
 machine-read (check-plan.mjs, the implementation plan's Coverage): FR-N, NFR-N,
 parts C-N (we run) and X-N (outside services), behaviors C-N.M, tests C-N.TM.
-An id added later takes the next free number; a retired one is never reused.
+FR-N and NFR-N are the plan's ids. An id added later takes the next free
+number, in the plan too; a retired one is never reused.
 -->
 
 # Spec: <what it builds>
@@ -17,7 +18,7 @@ Plan: `<docs>/plan.md`
 
 ## Functional requirements
 
-- **FR-1:** <one checkable sentence>. Goal: <the plan goal it serves>.
+- **FR-1:** <the plan's FR-1 as one checkable sentence>.
 
 ## Non-functional requirements
 
