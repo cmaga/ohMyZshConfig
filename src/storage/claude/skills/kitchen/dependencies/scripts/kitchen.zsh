@@ -306,7 +306,7 @@ calls() { # the user's calls at the chef's table in this project's last 20 order
 proc_table() { # one ps snapshot into PROC_PARENT, PROC_NAME and PROC_ARGS by pid; all empty where ps cannot list processes
   typeset -gA PROC_PARENT=() PROC_NAME=() PROC_ARGS=()
   local l; local -a w
-  for l in ${(f)"$(ps -A -o pid=,ppid=,args= 2>/dev/null)"}; do
+  for l in ${(f)"$(ps -A -o pid= -o ppid= -o args= 2>/dev/null)"}; do
     w=( ${=l} )
     (( $#w >= 3 )) && PROC_PARENT[$w[1]]=$w[2] PROC_NAME[$w[1]]=${w[3]:t} PROC_ARGS[$w[1]]="${w[3,-1]}"
   done
@@ -971,7 +971,7 @@ reap_orphans() { # DIR: kill every orphan working under DIR, and everything unde
   for l in ${(f)"$(lsof -d cwd -Fpn 2>/dev/null)"}; do
     case $l in
       p*) pid=${l#p} ;;
-      n*) [[ $PROC_PARENT[$pid] == 1 && ${l#n} == $1(|/*) ]] && orphans+=($pid) ;;
+      n*) [[ ${PROC_PARENT[$pid]:-} == 1 && ${l#n} == $1(|/*) ]] && orphans+=($pid) ;;
     esac
   done
   kill_tree KILL $orphans
