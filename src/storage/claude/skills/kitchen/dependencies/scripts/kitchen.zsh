@@ -34,7 +34,7 @@
 #   kitchen order verify KEY                 hand the PR to the scheduler for a verdict from a session that did not write it
 #   kitchen order verdict KEY WORD NOTES [REASON...]  record PASS, PASS+NOTES, or FAIL for the change checked out here; each REASON is a `## Review when` criterion that holds
 #   kitchen order gated KEY                  record the change the quality gate passed; run in the order's worktree
-#   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same
+#   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same; on a workspace line COMMIT is HEAD
 #   kitchen order close KEY                  mark the order done and move its ticket with the merged moment
 #   kitchen order list [STATUS]              this project's orders, or those with that status
 #   kitchen order transcript KEY [--conversation]  path of the order's last session transcript; --conversation prints only what the user and the session said
@@ -43,7 +43,9 @@
 #   kitchen classes [TASTER]                 catch classes this project has seen
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
 #   kitchen sample KEY                       what the PR needs before it merges: rebase, regate, fix, verify, review, or no
-#   kitchen line add PATH | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
+#   kitchen line add PATH [--workspace TYPE] | list | set SLUG field=value... | pause SLUG | resume SLUG | rm SLUG
+#   kitchen workspace [VERB KEY [ARG...]]    the path of the line's workspace type doc, or its VERB run for the order KEY
+#   kitchen each KEY [--changed] -- CMD...   run CMD from the top of each repo the order works in, $BASE in it that repo's base; --changed skips a repo with no commit past its base
 #   kitchen house [PATH]                     whether the project is set up: its project rules hold the review and docs sections
 #   kitchen rules [PATH]                     print the project rules: the base branch's copy when it holds one, else the main checkout's file
 #   kitchen prune [--dry-run]                remove the worktrees of closed orders
@@ -58,6 +60,7 @@ BOOK="${KITCHEN_BOOK:-$HOME/.claude-artifacts/workflows/kitchen}"
 ALIASES="${KITCHEN_ALIASES:-${ZSH:-$HOME/.oh-my-zsh}/custom/aliases.zsh}"
 VAULT_GIT="$HOME/.claude/skills/capture-documentation/scripts/vault-git.sh"
 TICKET="$HOME/.claude/skills/ticket-provider/dependencies/scripts/ticket.zsh"
+WS_DIR="${KITCHEN_WORKSPACES:-${0:A:h:h:h}/workspaces}"
 MAX_RETRIES=3
 LIMIT_WAIT=1800
 KILL_AFTER=300
@@ -73,7 +76,7 @@ REVIEW_SECTIONS=('## Always review' '## Review when' '## Docs')
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
 # Fields stored as JSON; every other field is a string.
-typeset -A JSON_FIELDS=(earned 1 after 1 review 1 filed 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1)
+typeset -A JSON_FIELDS=(earned 1 after 1 review 1 filed 1 retries 1 retry_after 1 pid 1 followed 1 station 1 done_when 1 steps 1 decisions 1 started 1 handled 1 handed 1 verify 1 verify_fails 1 verified_at 1 touched 1 stop_at 1 packages 1)
 
 die() { print -u2 -- "kitchen: $*"; exit 1; }
 # Microseconds, so the catch-up can tell an event after the last look from one in the same second.
@@ -115,10 +118,23 @@ jq_write() { # FILE FILTER [jq args...]: rewrite a JSON file atomically
   if jq "$@" "$filter" $file > $tmp; then mv $tmp $file; else rm -f $tmp; die "could not update $file"; fi
 }
 
+ws_type() {
+  jq -r '.workspace // ""' $1/line.json
+}
+
+ws_file() { # TYPE EXT: the path of the workspace type's file with that extension; dies when the type is not installed
+  [[ $1 == [A-Za-z0-9_-]## && -f $WS_DIR/$1/$1.$2 ]] || die "workspace type [$1] is not installed: no $WS_DIR/$1/$1.$2"
+  print -- $WS_DIR/$1/$1.$2
+}
+
+ws_run() { # LINE-DIR VERB [ARG...]: the line's workspace type runs VERB for the line's project
+  local s; s=$(ws_file "$(ws_type $1)" zsh) || exit 1
+  zsh $s $2 $(jq -r .project $1/line.json) "${@:3}"
+}
+
 slug_here() { # the line whose project holds the current directory
-  local common
-  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
-  local root=${common:h} f
+  local root f
+  root=$(project_root) || exit 1
   for f in $BOOK/*/line.json(N); do
     [[ $(jq -r .project $f) == $root ]] && { print -- ${f:h:t}; return; }
   done
@@ -135,9 +151,13 @@ base_of() { # PROJECT: its base branch, from its git-provider config, else the h
   print -- ${b:-main}
 }
 
-main_root() { # the main checkout of the repo holding the current directory, even from a worktree
-  local common
-  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
+project_root() { # [DIR]: the project DIR lies in, the current directory by default: its workspace line's, else the main checkout of its repo, even from a worktree
+  local d=${${1:-$PWD}:A} common p
+  local -a lines=( $BOOK/*/line.json(N) )
+  (( $#lines )) && for p in ${(f)"$(jq -r 'select((.workspace // "") != "") | .project' $lines)"}; do
+    [[ $d/ == "$p"/* ]] && { print -- $p; return; }
+  done
+  common=$(git -C $d rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git checkout"
   print -- ${common:h}
 }
 
@@ -151,7 +171,7 @@ house_missing() { # PROJECT: the review sections its project rules lack, one per
 }
 
 house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its rules lack
-  local root=${1:-$(main_root)} missing
+  local root=${1:-$(project_root)} missing
   missing=$(house_missing $root)
   [[ -z $missing ]] && { print -- "set up"; return 0; }
   print -- "not set up: the project rules (origin/$(base_of $root) or $root/.claude/kitchen/house.md) lack ${(j:, :)${(f)missing}}; run /kitchen open"
@@ -160,6 +180,7 @@ house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its r
 
 order_base() { # ORDER-FILE: the order's own base, else its project's
   local b=$(jq -r '.base // empty' $1)
+  [[ -z $b && -n $(ws_type ${1:h:h}) ]] && die "a workspace line has a base per package: kitchen.zsh workspace bases ${1:t:r}"
   [[ -n $b ]] && print -- $b || base_of $(jq -r .project ${1:h:h}/line.json)
 }
 
@@ -424,7 +445,7 @@ review() { # KEY|NUMBER: resume the order's build session here, by id, which fin
   (( $#f )) || die "no order $1"
   (( $#f == 1 )) || die "$1 matches ${(j:, :)keys}; give the full key"
   local key=${f[1]:t:r} b=$(jq -r '.builder // ""' $f[1]) project=$(jq -r .project ${f[1]:h:h}/line.json)
-  [[ -n $b ]] || die "$key has no build session on record; open it with /resume from $project/.claude/worktrees/$key"
+  [[ -n $b ]] || die "$key has no build session on record; open it with /resume from $(wt_dir ${f[1]:h:h} $key)"
   if [[ ${2:-} == --line ]]; then print -r -- "cd ${(q)project} && oc --resume $b"; return; fi
   cd $project && source $ALIASES && oc --resume $b
 }
@@ -446,23 +467,37 @@ signoff() { # KEY [answer...]: bring a dropped order back
 
 # --- lines --------------------------------------------------------------------
 
-line_add() { # PATH
-  local common
-  # a worktree registers its main checkout, the one slug_here matches
-  common=$(git -C ${1:?PATH} rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "$1 is not a git checkout"
-  ( cd ${common:h} && $TICKET provider >/dev/null ) || die "no ticket-provider config for ${common:h}; run the ticket-provider skill's setup there"
-  line_write ${common:h} false
+line_add() { # PATH [--workspace TYPE]: register the project PATH lies in, refusing one that nests with another line's; prints its slug
+  local root type= s f p
+  if [[ ${2:-} == --workspace ]]; then
+    type=${3:?TYPE}
+    s=$(ws_file $type zsh) || exit 1
+    root=$(zsh $s root ${1:?PATH}) || die "$1 is not in a $type workspace"
+    # house_rules would read the enclosing repository's branches instead of the project's own file
+    git -C $root rev-parse --git-dir >/dev/null 2>&1 && die "$root is inside a git repository"
+    for f in $BOOK/*/line.json(N); do
+      p=$(jq -r .project $f)
+      [[ $p != $root && ( $p/ == $root/* || $root/ == $p/* ) ]] && die "$root and $p, the project of line ${f:h:t}, lie one inside the other"
+    done
+  else
+    root=$(project_root ${1:?PATH} 2>/dev/null) || die "$1 is not a git checkout"
+    for f in $BOOK/*/line.json(N); do
+      [[ -n $(ws_type ${f:h}) && $(jq -r .project $f) == $root ]] && die "$1 lies in $root, the project of workspace line ${f:h:t}, so it is never a line of its own"
+    done
+  fi
+  ( cd $root && $TICKET provider >/dev/null ) || die "no ticket-provider config for $root; run the ticket-provider skill's setup there"
+  line_write $root false $type
 }
 
-line_write() { # PROJECT PAUSED: create the project's line unless it has one; prints its slug
+line_write() {
   local project=$1 slug=${1:t}
   if [[ -f $BOOK/$slug/line.json && $(jq -r .project $BOOK/$slug/line.json) != $project ]]; then
     slug=${project:h:t}-${project:t}
   fi
   mkdir -p $BOOK/$slug/orders $BOOK/$slug/log
   local f=$BOOK/$slug/line.json
-  [[ -f $f ]] || jq -n --arg p $project --argjson paused $2 \
-    '{project:$p, max_cooking:2, followup_hours:6, paused:$paused}' > $f
+  [[ -f $f ]] || jq -n --arg p $project --argjson paused $2 --arg w "${3:-}" \
+    '{project:$p, max_cooking:2, followup_hours:6, paused:$paused} + (if $w == "" then {} else {workspace:$w} end)' > $f
   print -- $slug
 }
 
@@ -485,6 +520,58 @@ line_cmd() {
     rm) [[ -d $BOOK/${2:?slug} ]] || die "no line $2"; rm -rf $BOOK/$2 ;;
     *) die "line add|list|set|pause|resume|rm" ;;
   esac
+}
+
+workspace_cmd() { # [VERB KEY [ARG...]]: the path of the line's workspace type doc, or its VERB run for the order KEY
+  local dir f
+  if (( $# )); then
+    f=$(need_order ${2:?KEY}) || exit 1
+    dir=${f:h:h}
+  else
+    local slug; slug=$(slug_here) || exit 1
+    dir=$BOOK/$slug
+  fi
+  local t=$(ws_type $dir)
+  [[ -n $t ]] || { (( $# )) && die "${dir:t} names no workspace type"; return 0; }
+  (( $# )) || { ws_file $t md; return; }
+  ws_run $dir $1 $f "${@:3}"
+}
+
+each_cmd() { # KEY [--changed] -- CMD...: run CMD from the top of each repo the order works in, BASE set to that repo's base and $BASE or ${BASE} in CMD replaced by it; a line with no workspace type runs it once, its output and exit untouched; else each run is headed with its repo and the worst exit wins
+  local f; f=$(need_order ${1:?KEY}) || exit 1
+  local dir=${f:h:h} changed= rows row label rdir base rc worst=0
+  shift
+  [[ ${1:-} == --changed ]] && { changed=1; shift; }
+  [[ ${1:-} == -- && $# -gt 1 ]] || die "usage: each KEY [--changed] -- CMD..."
+  shift
+  if [[ -z $(ws_type $dir) ]]; then
+    rdir=$(git rev-parse --show-toplevel 2>/dev/null) || die "not in a git checkout"
+    base=$(order_base $f)
+    base_args $base "$@"
+    cd $rdir && BASE=$base "${reply[@]}"
+    return
+  fi
+  rows=$(ws_run $dir repos $f $PWD) || exit 1
+  for row in ${(f)rows}; do
+    IFS=$'\x1f' read -r label rdir base <<< $row
+    [[ -n $changed ]] && unchanged $rdir $base && continue
+    print -r -- "== $label"
+    base_args $base "$@"
+    ( cd $rdir && BASE=$base "${reply[@]}" ); rc=$?
+    (( rc > worst )) && worst=$rc
+  done
+  return $worst
+}
+
+base_args() { # BASE ARG...: sets reply to the ARGs with each $BASE and ${BASE} replaced by BASE; a longer name such as $BASEDIR stays
+  local b=$1; shift
+  reply=( "${@//\$\{BASE\}/$b}" )
+  reply=( "${reply[@]//(#m)\$BASE[[:IDENT:]]#/${${MATCH:#\$BASE}:-$b}}" )
+}
+
+unchanged() { # DIR BASE: true only when git counts no commit past origin/BASE in the repo at DIR; a base it cannot read counts as changed
+  local n
+  n=$(git -C $1 rev-list --count origin/$2..HEAD 2>/dev/null) && (( n == 0 ))
 }
 
 # --- catches and promotion ------------------------------------------------------
@@ -543,14 +630,46 @@ patch_id() { # BASE [REF]: the id of REF's change (default HEAD) against origin/
   git diff -U0 origin/$1...${2:-HEAD} | git patch-id --stable | cut -d' ' -f1
 }
 
-risk() { # BASE STATION: why this checkout's change needs the user's eyes, one reason per line; STATION is the order's files, one per line
+each_repo() { # ORDER-FILE FN [ARG...]: run FN BASE [ARG...] in each repo the order works in, with REPO_LABEL set to <repo>/ and each output line prefixed with the repo's name; on a line with no type, once here with REPO_LABEL unset
+  local dir=${1:h:h} rows row label rdir base rc=0
+  if [[ -z $(ws_type $dir) ]]; then $2 $(order_base $1) "${@:3}"; return; fi
+  rows=$(ws_run $dir repos $1 $PWD) || return 1
+  for row in ${(f)rows}; do
+    IFS=$'\x1f' read -r label rdir base <<< $row
+    ( cd $rdir && REPO_LABEL=$label/ $2 $base "${@:3}" ) | sed "s|^|$label: |" || rc=1
+  done
+  return $rc
+}
+
+change_id() { # ORDER-FILE [REF]: one id for the order's change; a lone repo's is its patch id and never fails, a workspace line's hashes every repo's and fails when one cannot be read
+  if [[ -z $(ws_type ${1:h:h}) ]]; then
+    patch_id $(order_base $1) ${2:-}
+    return 0
+  fi
+  local r; r=$(each_repo $1 patch_id ${2:-}) || return 1
+  print -r -- $r | git hash-object --stdin
+}
+
+head_sha() { git rev-parse HEAD; }
+merge_base_sha() { git merge-base HEAD origin/$1; }
+fetch_base() { git fetch -q origin $1 2>/dev/null; }
+
+rebase_needed() { # BASE: prints rebase when the base moved under a file this branch changed, or under a check, so what would land was never tested
+  fetch_base $1
+  local mb=$(merge_base_sha $1) moved
+  [[ $mb == $(git rev-parse origin/$1) ]] && return 0
+  moved=$(git diff --name-only $mb origin/$1)
+  if [[ -n $(comm -12 <(print -r -- $moved | sort) <(git diff --name-only $mb HEAD | sort)) ]] || print -r -- $moved | LC_ALL=C grep -qE "$CHECK_PATHS"; then print -- rebase; fi
+}
+
+risk() { # BASE STATION: why this checkout's change needs the user's eyes, one reason per line; STATION is the order's files, one per line, each matched against REPO_LABEL followed by the repo-relative path
   local files=$(git diff --name-only origin/$1...HEAD) extra
-  extra=$(house_rules $(main_root) $1 \
+  extra=$(house_rules $(project_root) $1 \
     | awk '/^## /{on = ($0 == "## Always review")} on && /^- `/ {sub(/^- `/, ""); sub(/`.*/, ""); print}' | paste -sd'|' -)
   {
     # a path the order's station names was weighed at intake
     [[ -n $extra ]] && print -r -- $files | grep -E "$extra" \
-      | awk -v st="$2" 'BEGIN { n = split(st, s, "\n") } { for (i = 1; i <= n; i++) if (s[i] != "" && index($0, s[i]) == 1) next; print "project rule: " $0 }'
+      | awk -v st="$2" -v lb="${REPO_LABEL:-}" 'BEGIN { n = split(st, s, "\n") } { for (i = 1; i <= n; i++) if (s[i] != "" && index(lb $0, s[i]) == 1) next; print "project rule: " $0 }'
     print -r -- $files | LC_ALL=C grep -E "$CHECK_PATHS" | sed 's/^/changes a check: /'
     git diff --name-only --diff-filter=D origin/$1...HEAD | grep -iE '(^|/)(tests?|specs?|__tests__)/|[._-](test|spec)\.' | sed 's/^/deletes a test: /'
     git diff -U0 origin/$1...HEAD | grep -E '^\+[^+]' | grep -E "$SKIP_LINES" | sed 's/^+[[:space:]]*/silences a check: /'
@@ -567,21 +686,12 @@ flag_review() { # KEY REASON...: flag the order for the user's review; a reason 
 
 sample() { # KEY: what this PR needs before it merges, run from its worktree: rebase, regate, fix, verify, review, or no
   local f; f=$(need_order $1) || exit 1
-  local base moved now
-  base=$(order_base $f)
+  local now
   # the user merges a manual order's PR, approved or not, so it waits on them whatever the check below finds
   local manual=
   if [[ $(jq -r '.mode // "manual"' $f) == manual ]]; then manual=1; flag_review $1 "manual order: the user merges it"; fi
-  git fetch -q origin $base 2>/dev/null
-  local mb=$(git merge-base HEAD origin/$base)
-  if [[ $mb != $(git rev-parse origin/$base) ]]; then
-    # the base moved: a file both sides changed, or a changed check, means what would land was never tested
-    moved=$(git diff --name-only $mb origin/$base)
-    if [[ -n $(comm -12 <(print -r -- $moved | sort) <(git diff --name-only $mb HEAD | sort)) ]] || print -r -- $moved | LC_ALL=C grep -qE "$CHECK_PATHS"; then
-      print -- rebase; return 0
-    fi
-  fi
-  now=$(patch_id $base)
+  [[ -n $(each_repo $f rebase_needed) ]] && { print -- rebase; return 0; }
+  now=$(change_id $f) || exit 1
   [[ $now == $(jq -r '.gated // "none"' $f) ]] || { print -- regate; return 0; }
   # a verdict holds while the change is the one it checked; only a session that did not write the change gives one
   if [[ $now == $(jq -r '.verdict_patch // "none"' $f) ]]; then
@@ -589,7 +699,7 @@ sample() { # KEY: what this PR needs before it merges, run from its worktree: re
   else
     print -- verify; return 0
   fi
-  local -a why=( ${(f)"$(risk $base "$(jq -r '(.station // [])[]' $f)")"} )
+  local -a why=( ${(f)"$(each_repo $f risk "$(jq -r '(.station // [])[]' $f)")"} )
   local judged=$(jq -r '.verdict_review // ""' $f)
   [[ -n $judged ]] && why+=("judged: $judged")
   (( $#why )) && flag_review $1 $why
@@ -622,7 +732,7 @@ handoff() { # KEY: open the manual order's worktree in a new VS Code window
   local slug; slug=$(slug_here) || exit 1
   [[ ${f:h:h:t} == $slug ]] || die "$1 is not an order of $slug"
   [[ $(jq -r '.mode // ""' $f) == manual ]] || die "$1 is not a manual order"
-  local wt=$(jq -r .project ${f:h:h}/line.json)/.claude/worktrees/$1
+  local wt=$(wt_dir ${f:h:h} $1)
   [[ -d $wt ]] || die "no worktree at $wt"
   code -n $wt < /dev/null || die "could not open $wt with code"
   print -- "opened $wt in a new VS Code window"
@@ -631,6 +741,7 @@ handoff() { # KEY: open the manual order's worktree in a new VS Code window
 stage() { # KEY: the catering deployment's PR as staged changes in its own review worktree, opened in VS Code
   local f; f=$(need_order ${1:?KEY}) || exit 1
   [[ -n $(jq -r '.catering // ""' $f) ]] || die "$1 is not a catering deployment"
+  [[ -z $(ws_type ${f:h:h}) ]] || die "stage does not support a workspace line"
   # the session reviewing it holds the order as cooking, so the recorded PR is the test
   [[ -n $(jq -r '.pr // ""' $f) ]] || die "$1 has no PR to stage"
   local key=$(jq -r .key $f) project=$(jq -r .project ${f:h:h}/line.json) base=$(order_base $f)
@@ -649,7 +760,7 @@ stage() { # KEY: the catering deployment's PR as staged changes in its own revie
 }
 
 order_cmd() {
-  local f base
+  local f id
   case ${1:-} in
     get) f=$(need_order ${2:?KEY}) || exit 1; cat $f ;;
     new) shift; local slug; slug=$(slug_here) || exit 1; order_new $slug "$@" ;;
@@ -664,22 +775,24 @@ order_cmd() {
         state=$(pr_state $(jq -r .project ${f:h:h}/line.json) $3)
         [[ $state == *$'\t'* ]] && seen=("pr_seen=${state#*$'\t'}")
         order_set $2 "pr=$3" status=pr-open "pr_opened=${opened:-$(today)}" handed=$EPOCHSECONDS "${seen[@]}" ;;
-    gated) f=$(need_order ${2:?KEY}) || exit 1; base=$(order_base $f)
-        order_set $2 "gated=$(patch_id $base)" "gated_head=$(git rev-parse HEAD)" "gated_base=$(git merge-base HEAD origin/$base)" ;;
-    approve) f=$(need_order ${2:?KEY}) || exit 1; base=$(order_base $f)
-        order_set $2 "approved=$(patch_id $base ${3:?commit})" ;;
+    gated) f=$(need_order ${2:?KEY}) || exit 1; id=$(change_id $f) || exit 1
+        order_set $2 "gated=$id" "gated_head=$(each_repo $f head_sha)" "gated_base=$(each_repo $f merge_base_sha)" ;;
+    approve) f=$(need_order ${2:?KEY}) || exit 1
+        [[ ${3:?commit} == HEAD || -z $(ws_type ${f:h:h}) ]] || die "a workspace line approves only HEAD, each repo's current head: kitchen.zsh order approve $2 HEAD"
+        id=$(change_id $f $3) || exit 1
+        order_set $2 "approved=$id" ;;
     verify) f=$(need_order ${2:?KEY}) || exit 1
         [[ -n $(jq -r '.pr // ""' $f) ]] || die "$2 has no PR; run kitchen.zsh order pr first"
         order_set $2 status=pr-open verify=true handed=$EPOCHSECONDS ;;
     verdict) f=$(need_order ${2:?KEY}) || exit 1
         [[ ${3:-} == (PASS|PASS+NOTES|FAIL) ]] || die "verdict is PASS, PASS+NOTES, or FAIL"
-        base=$(order_base $f)
-        git fetch -q origin $base 2>/dev/null
+        each_repo $f fetch_base
+        id=$(change_id $f) || exit 1
         local fails=$(jq -r '.verify_fails // 0' $f)
         [[ $3 == (FAIL|PASS+NOTES) ]] && fails=$(( fails + 1 ))
         # pr_seen and followed clear so the scheduler wakes a session to act on the verdict
-        order_set $2 "verdict=$3" "verdict_notes=${4:?notes}" "verdict_review=${(j:; :)@[5,-1]}" "verdict_patch=$(patch_id $base)" \
-          "verdict_head=$(git rev-parse HEAD)" verify=false verify_fails=$fails verified_at=$EPOCHSECONDS pr_seen= followed=0
+        order_set $2 "verdict=$3" "verdict_notes=${4:?notes}" "verdict_review=${(j:; :)@[5,-1]}" "verdict_patch=$id" \
+          "verdict_head=$(each_repo $f head_sha)" verify=false verify_fails=$fails verified_at=$EPOCHSECONDS pr_seen= followed=0
         print -- "verdict=$3 fails=$fails" ;;
     close) close_order ${2:?KEY} ;;
     list) order_list ${2:-} ;;
@@ -723,10 +836,28 @@ land_worktree() { # PROJECT WORKTREE DRY DIR MERGED BASE: remove a closed order'
   print -- "  removed ${wt:t} ($branch)"
 }
 
+wt_dir() {
+  if [[ -n $(ws_type $1) ]]; then ws_run $1 path $2; else print -- $(jq -r .project $1/line.json)/.claude/worktrees/$2; fi
+}
+
+land_ws() { # LINE-DIR KEY MERGED DRY: a workspace line's closed order: each repo's worktree lands as a lone repo's does, then the type removes what is left
+  local dir=$1 key=$2 merged=$3 dry=$4 rows= row label wt base common kept= wd=$(wt_dir $1 $2) vd=$(wt_dir $1 verify-$2)
+  if [[ -d $wd ]] && ! rows=$(ws_run $dir repos $dir/orders/$key.json $wd); then print -- "  kept $key: its repos could not be listed"; kept=1; fi
+  for row in ${(f)rows}; do
+    IFS=$'\x1f' read -r label wt base <<< $row
+    common=$(git -C $wt rev-parse --path-format=absolute --git-common-dir)
+    land_worktree ${common:h} $wt "$dry" $dir "$merged" $base || kept=1
+  done
+  [[ -d $wd && -z $kept && -z $dry ]] && ws_run $dir remove $key && print -- "  removed $key"
+  [[ -d $vd ]] || return 0
+  if [[ -n $dry ]]; then print -- "  would remove verify-$key"; else ws_run $dir remove verify-$key && print -- "  removed verify-$key"; fi
+}
+
 land_order() { # PROJECT DIR KEY EPIC STATUS DRY: remove the worktrees of a closed order
   local project=$1 dir=$2 key=$3 epic=$4 merged= wt
   [[ $5 == done ]] && merged=1
   mkdir -p $dir/log
+  [[ -z $(ws_type $dir) ]] || { land_ws $dir $key "$merged" "$6"; return 0; }
   for wt in $project/.claude/worktrees/$key(N/); do
     land_worktree $project $wt "$6" $dir "$merged" $(order_base $dir/orders/$key.json)
   done
@@ -739,14 +870,19 @@ land_order() { # PROJECT DIR KEY EPIC STATUS DRY: remove the worktrees of a clos
 }
 
 prune() { # [--dry-run]: remove the worktrees of every closed order no session holds
-  local dry=${1:-} line slug project key epic st US=$'\x1f'
+  local dry=${1:-} line slug project typed key epic st US=$'\x1f'
   for line in $BOOK/*/line.json(N); do
     slug=${line:h:t}
     print -- $slug
     project=$(jq -r .project $line)
+    typed=$(ws_type ${line:h})
     orders_json $slug | jq -r --arg us $US '.[] | select((.status == "done" or .status == "86") and .pid == 0) | [.key, (.epic // .key), .status] | join($us)' |
       while IFS=$US read -r key epic st; do
-        [[ -d $project/.claude/worktrees/$key || -d $project/.claude/worktrees/verify-$key || -d $project/.claude/worktrees/review-$key ]] || continue
+        if [[ -z $typed ]]; then
+          [[ -d $project/.claude/worktrees/$key || -d $project/.claude/worktrees/verify-$key || -d $project/.claude/worktrees/review-$key ]] || continue
+        else
+          [[ -d $(wt_dir ${line:h} $key) || -d $(wt_dir ${line:h} verify-$key) || -d $(wt_dir ${line:h} review-$key) ]] || continue
+        fi
         land_order $project ${line:h} $key $epic $st "$dry" < /dev/null
       done
     [[ -n $dry ]] || today > ${line:h}/.pruned
@@ -890,10 +1026,23 @@ stopped() { # SLUG KEY PHASE LOG SESSION: a session ended without moving its ord
   fi
 }
 
-progress() { # PROJECT KEY TOUCHED STARTED: when the session last left a side effect: an order update, or a commit or reset in its worktree
+reply_mtime() { # FILE: raises REPLY to FILE's mtime when that is later
   local -a m
+  [[ -f $1 ]] && zstat -A m +mtime $1 2>/dev/null && (( m[1] > REPLY )) && REPLY=$m[1]
+  return 0
+}
+
+progress() { # LINE-DIR KEY TOUCHED STARTED: when the session last left a side effect: an order update, or a commit or reset in its worktree, in any repo of it
+  local row label rdir base
   REPLY=$(( $3 > $4 ? $3 : $4 ))
-  [[ -f $1/.git/worktrees/$2/logs/HEAD ]] && zstat -A m +mtime $1/.git/worktrees/$2/logs/HEAD 2>/dev/null && (( m[1] > REPLY )) && REPLY=$m[1]
+  if [[ -z $(ws_type $1) ]]; then
+    reply_mtime "$(jq -r .project $1/line.json)"/.git/worktrees/$2/logs/HEAD
+    return 0
+  fi
+  for row in ${(f)"$(ws_run $1 repos $1/orders/$2.json "$(wt_dir $1 $2)" 2>/dev/null)"}; do
+    IFS=$'\x1f' read -r label rdir base <<< $row
+    reply_mtime "$(git -C $rdir rev-parse --absolute-git-dir 2>/dev/null)"/logs/HEAD
+  done
   return 0
 }
 
@@ -901,7 +1050,6 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
   local slug=$1 line=$BOOK/$1/line.json
   local lim=$(jq -c --argjson d "$DEFAULT_MINUTES" '$d + (.max_minutes // {})' $line)
   local stall=$(jq -c --argjson d "$DEFAULT_STALL" '$d + (.stall_minutes // {})' $line)
-  local project=$(jq -r .project $line)
   local key st pid phase user logf pr recipe started sid from limit handed sig alive touched stopat stallmin verified why
   local -a live
   proc_table
@@ -934,7 +1082,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
           sig=KILL why="still running after TERM"
         else
           # judged by its side effects, never by what it says: no order update and no commit is no progress
-          progress $project $key $touched $started
+          progress $BOOK/$slug $key $touched $started
           (( stallmin > 0 && EPOCHSECONDS - REPLY > stallmin * 60 )) || continue
           sig=TERM why="no progress in $stallmin minutes"
         fi
@@ -1085,9 +1233,11 @@ case ${1:-status} in
   promoted) shift; promoted "$@" ;;
   sample) shift; sample "$@" ;;
   house) shift; house_cmd "$@" ;;
-  rules) shift; house_rules "${1:-$(main_root)}" ;;
+  rules) shift; house_rules "${1:-$(project_root)}" ;;
   prune) shift; prune "$@" ;;
   tick) shift; tick "$@" ;;
+  workspace) shift; workspace_cmd "$@" ;;
+  each) shift; each_cmd "$@" ;;
   help) sed -n '/^# Usage:/,/^$/p' $0 ;;
   *) sed -n '/^# Usage:/,/^$/p' $0; exit 1 ;;
 esac

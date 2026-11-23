@@ -15,6 +15,8 @@ A raw ticket is often a placeholder: stale, a duplicate, low value, or written w
     - where each part of the `answer` came from: what the user was shown, what they decided, and why
     - why the session stopped, and whether this skill's text caused it. If the skill's text caused the stop, handle it per [SKILL.md](../../SKILL.md#defects-and-lessons).
 
+    On a workspace line, read the type's doc now (`kitchen.zsh workspace` prints its path). It adds to steps 2 to 7: the fields the order carries, how you pick them, and how `station` paths read.
+
 2.  **Gather Context** Read the ticket with the `ticket-provider` skill.
 
 - Grab all possible information associated with the ticket: summary, description, every comment, links, status, assignee, and attachments. Capture the reporter's words, the expected and observed behavior, version and environment, frequency and trigger, error text, links to existing PRs or commits, and any statement that someone is already on it. Read screenshots and logs; when one cannot be read, say so rather than guess what it shows. If you can't access external links stop an ask the user, to paste it for you.

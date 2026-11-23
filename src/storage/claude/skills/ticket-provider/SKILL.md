@@ -20,7 +20,7 @@ Shell variables do not survive between Bash calls: start every command with that
 
 ## Config
 
-One file per project, never committed: `<main checkout>/.claude/ticket-provider/config.json`. Every worktree reaches it through git's common dir, so nothing is copied into worktrees. Setup adds `.claude/ticket-provider/` to `$(git rev-parse --git-common-dir)/info/exclude`.
+One file per project, never committed: `<main checkout>/.claude/ticket-provider/config.json`. Every worktree reaches it through git's common dir, so nothing is copied into worktrees. Setup adds `.claude/ticket-provider/` to `$(git rev-parse --git-common-dir)/info/exclude`. A project whose repositories sit below one directory, such as a Brazil workspace, keeps the file in that directory's `.claude/ticket-provider/`, since `ticket.zsh` reads the nearest config at or above the main checkout.
 
 | Field | Meaning |
 | --- | --- |

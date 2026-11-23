@@ -6,6 +6,8 @@ Contents: Steps, Commits, Titles, The PR body, Size and stacks.
 
 ## Steps
 
+On a workspace line, take steps 3 to 5 from the type's doc (`kitchen.zsh workspace` prints its path), which opens one PR across the order's repositories.
+
 1. **Hold the quality gate**: follow the [taste](../../taste/taste.md) command on this branch with the order's key and done-when. Nothing goes out until it clears. On a manual order the gate reports and fixes nothing, per [a manual order](../cook.md#a-manual-order); the user fixes or accepts each finding (an accepted one goes in the PR description under Approach with their reason) and says "done" again, and steps 2 to 6 wait for that. When the first run reports nothing, they go on without a second "done".
 2. **Route what is left** per the [left for you](../stations/left-for-you.md) station: follow-up tickets filed, and calls made alone.
 3. **Record the gate.** When a vault rule under `.claude/rules/vault/` loaded for a file you changed, first dispatch `vault-scribe-agent` with what changed and why; nothing else writes vault notes. A catering deployment skips this: its notes wait for [wrap-up](catering/wrap-up.md), once the code stops changing. Then `kitchen.zsh order gated <KEY>` records the change the gate passed, so a later change to it is caught.

@@ -3,8 +3,10 @@
 # tracker only through this, so a project changes trackers by changing its
 # config, never its callers.
 #
-# Config: <main checkout>/.claude/ticket-provider/config.json, found from any
-# worktree through git's common dir. The provider's own files sit beside it:
+# Config: the nearest .claude/ticket-provider/config.json at or above the main
+# checkout, found from any worktree through git's common dir (outside git, at or
+# above the current directory), short of $HOME, so a directory of several repos
+# holds one config for them all. The provider's own files sit beside it:
 # jira-cli.yml for jira, .beads/ for taskei (bdei runs from that directory).
 #
 # Usage: a BODY is literal text, or @/path/to/file to read it from a file.
@@ -28,10 +30,15 @@ set -uo pipefail
 
 die() { print -u2 -- "ticket: $*"; exit 1; }
 
-root=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || die "not in a git repository"
-root=${root%/.git}
-dir=$root/.claude/ticket-provider
-cfg=$dir/config.json
+rel=.claude/ticket-provider/config.json
+top=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && top=${top%/.git}
+root=${top:-$PWD:A} home=${HOME:A}
+while [[ ! -f $root/$rel && $root != (/|$home) ]]; do root=${root:h}; done
+# $HOME/.claude is the user's own Claude config, never a project's
+[[ -f $root/$rel && $root != $home ]] || root=$top
+[[ -n $root ]] || die "not in a git repository"
+cfg=$root/$rel
+dir=${cfg:h}
 [[ -f $cfg ]] || die "no $cfg; run the ticket-provider skill's setup for this project"
 conf() { jq -r "$1 // empty" $cfg; }
 provider=$(conf .provider)

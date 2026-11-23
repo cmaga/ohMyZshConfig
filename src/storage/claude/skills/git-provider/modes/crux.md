@@ -9,9 +9,9 @@ Amazon's code review system, for repos whose remote is `git.amazon.com` (Brazil 
 
 ## Pre-flight
 
-1. **In a Brazil workspace:** `brazil workspace show` succeeds from the repo. A worktree must also sit inside the workspace to build; one nested under the package (`.claude/worktrees/<name>`) does.
+1. **In a Brazil workspace:** `brazil workspace show` succeeds from the repo. A worktree must also sit inside the workspace to build; one nested under the package (`.claude/worktrees/<name>`) does. A `brazil worktree` is a workspace of its own. Its `src/` holds a git worktree of each package it lists. Run `cr --all` from that `src/`. Detect Provider needs a git repository, so run it from one of the package directories.
 2. **Authenticated:** an auth or Midway error from `cr` or the MCP tools means the session expired; ask the user to run `mwinit`.
-3. **Branch tracks the base:** `git branch --set-upstream-to origin/{baseBranch}`, so CRUX can resolve a merge target. Without it the CR is created unmergeable.
+3. **Branch tracks the base:** `git branch --set-upstream-to origin/{baseBranch}`, so CRUX can resolve a merge target. Without it the CR is created unmergeable. In a worktree of several packages, each package's branch tracks its own base, and the bases can differ. `cr` takes each package's range and destination from that upstream.
 
 `baseBranch` defaults to `mainline` here.
 
@@ -20,8 +20,8 @@ Amazon's code review system, for repos whose remote is `git.amazon.com` (Brazil 
 | Operation | How |
 | --- | --- |
 | Cut a branch | `git fetch origin {base}` and `git push origin origin/{base}:refs/heads/{name}`. Refused for want of permission: create the branch with the first CR into it instead, `--new-destination-branch {base}:{name}` in place of `--destination-branch` |
-| Push | Before a CR exists, nothing: Create PR uploads the commit. After, `cr -r {CR-ID} --parent origin/{base} --no-amend --no-open` updates the draft revision in place (a new draft once a revision was published); there is no other way to update a CR |
-| Create PR | `cr --parent origin/{base} --destination-branch {base} --summary "{title}" --description {body-file} --issue {ticketId} --no-amend --no-open`; it prints the CR URL and leaves revision 1 a draft |
+| Push | Before a CR exists, nothing: Create PR uploads the commit. After, `cr -r {CR-ID} --parent origin/{base} --no-amend --no-open` updates the draft revision in place (a new draft once a revision was published); there is no other way to update a CR. In a worktree of several packages: `cr -r {CR-ID} --all --no-amend --no-open` |
+| Create PR | `cr --parent origin/{base} --destination-branch {base} --summary "{title}" --description {body-file} --issue {ticketId} --no-amend --no-open`; it prints the CR URL and leaves revision 1 a draft. In a worktree of several packages: `cr --all --summary "{title}" --description {body-file} --issue {ticketId} --no-amend --no-open` |
 | List PRs | No script-readable list. Read `https://code.amazon.com/reviews/from-user/{login}` with the builder-mcp `ReadInternalWebsites` tool, or the CRs a ticket links (`ticket.zsh get` shows Taskei's `related_code_reviews`) |
 | Diff | `git diff origin/{base}...HEAD` in the worktree; the CR's description through `get-cr-info` |
 | Get PR | `CodeReviewReadActions` `get-cr-info`: `merged` is the reliable landed signal, since status is per revision. From a script: `curl -sL --cookie ~/.midway/cookie -H 'Accept: application/json' https://code.amazon.com/reviews/{CR-ID}.json`, whose `.revision.cr_revision` has `status` (`SHIPPED` once merged), `approved_by`, `analyzers`, and `last_updated_at`; it is the CR page's own JSON, not a published API, and fails once the Midway cookie expires |
@@ -31,7 +31,7 @@ Amazon's code review system, for repos whose remote is `git.amazon.com` (Brazil 
 | Checks | Poll `get-approval-status` every few minutes until no analyzer (dry-run build, coverage, and the package's own) is pending on the latest revision |
 | Build Logs | `get-approval-status`, each analyzer's status message and details; the CR page links each analyzer's full run |
 | Rerun a check | `CodeReviewWriteActions` `retry-analyzer` with the analyzer's name, once it failed or faulted |
-| Merge | `cr -r {CR-ID} --parent origin/{base} --no-amend --publish --auto-merge --no-open` on the draft the gate passed. It queues the merge; the CR has landed only once `status` reads `SHIPPED` |
+| Merge | `cr -r {CR-ID} --parent origin/{base} --no-amend --publish --auto-merge --no-open` on the draft the gate passed. It queues the merge; the CR has landed only once `status` reads `SHIPPED`. In a worktree of several packages: `cr -r {CR-ID} --all --no-amend --publish --auto-merge --no-open` |
 | Approve | None; an author cannot approve their own CR |
 
 `{CR-ID}` is the `CR-<n>` in the URL Create PR printed (for kitchen, the order's `pr`).
@@ -39,3 +39,11 @@ Amazon's code review system, for repos whose remote is `git.amazon.com` (Brazil 
 `--no-amend` keeps the commit's SHA: by default `cr` rewrites the commit message to add the CR URL, which changes the SHA and breaks anything recorded against the old one. `--issue` links the ticket in the CR, and a ticket's tracker may comment the CR back onto the ticket.
 
 The package's `.crux_template.md` fills the description when `--description` is absent. When you pass `--description`, write the body under the template's section headings yourself.
+
+**Several packages in one worktree.** Run `cr` with `--all` from the worktree's `src/`, in the form the Push, Create PR, and Merge rows give. Pass no `--parent` and no `--destination-branch`, since each sets one value for every package. `--all` puts every package whose branch holds commits its upstream lacks into one CR, each against its own upstream. An update must keep every package already in the CR, and CRUX merges all of a CR's packages or none.
+
+A CR whose packages merge into different branches is unverified. Right after Create PR, read the CR page (`ReadInternalWebsites` on its URL) and confirm each package shows its own destination branch. Publish nothing until it does. When `cr` refuses the mix, or the page shows a package with the wrong destination, leave that draft unpublished and open one CR per distinct base instead:
+
+- Each CR is the single-package Create PR with `-i {that base's packages}` added, since its `--parent` and `--destination-branch` hold for every package in it. Push and Merge add the same `-i`.
+- Order the CRs so a package's CR comes after the CRs of the packages it builds against.
+- CRUX stacks a CR only on a published one, so Merge publishes the CRs in that order, and adds `--stack {the CR before}` to each one after the first. Whether `--stack` works with `-r` is unverified. `CodeReviewWriteActions` `add-dependency` sets the same link on an existing CR.

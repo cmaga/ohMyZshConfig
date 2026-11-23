@@ -550,13 +550,18 @@ def kill(p):
 def stryker_command(base):
     """The command the project rules' Mutation line runs Stryker with, None when absent or off.
 
-    A copy of the rules on the base branch wins over the main checkout's file, as kitchen.zsh reads them.
+    The file KITCHEN_RULES names, when it is set, is the rules. Otherwise a copy of the rules on the base branch wins
+    over the main checkout's file, as kitchen.zsh reads them.
     """
-    rules = git("show", f"{base}:{HOUSE}", check=False)
-    if not rules:
-        main_root = Path(git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()).parent
-        with contextlib.suppress(OSError):
-            rules = (main_root / HOUSE).read_text()
+    named = os.environ.get("KITCHEN_RULES")
+    if named:
+        rules = Path(named).read_text()
+    else:
+        rules = git("show", f"{base}:{HOUSE}", check=False)
+        if not rules:
+            main_root = Path(git("rev-parse", "--path-format=absolute", "--git-common-dir").strip()).parent
+            with contextlib.suppress(OSError):
+                rules = (main_root / HOUSE).read_text()
     m = re.search(r"^- \*\*Mutation:\*\*\s*stryker\s+`([^`]+)`", rules, re.M)
     return m[1] if m else None
 

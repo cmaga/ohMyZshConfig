@@ -10,6 +10,7 @@ The quality of the code is capped by what gets checked, and an agent told to che
 - **The order key**, when cook runs this; otherwise `-`. Run on its own, commit each fix on the branch and leave pushing to the user. When the order's `mode` is `manual`, the user wrote the code: follow [a manual order](#a-manual-order) below, which changes steps 2, 3, and 6 and the bug review.
 - **The done-when**: the order's, when there is one. Otherwise derive it from the PR description and commit messages: each claim of what now works becomes a check.
 - **The project rules**: `.claude/kitchen/house.md` in the project. When it is missing, use the default reviewers below, Reach `touched lines`, and the project's own lint, type, and test commands, and say so.
+- **On a workspace line** (`kitchen.zsh workspace` prints the path of the type's doc), take step 2 and the tasters' diff ranges from that doc. It runs the Gate once across the order's repositories, and the contract check and the mutation sweep through `kitchen.zsh each <KEY> --changed`, once in each repository with commits and against that repository's base. A finding names its repository.
 
 ## Steps
 

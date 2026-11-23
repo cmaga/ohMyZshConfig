@@ -2,6 +2,8 @@
 
 Set the current project up for the pipeline, with the user: its project rules (what gets checked on every change, and what enforces each rule), its verify skill (how an agent drives the app the way a user does), and its registration with the pipeline. The project rules and verify skill are committed to the project and are the user's to edit. Every step is idempotent: re-running `open` repairs what is missing and leaves the rest.
 
+A directory of several git repositories, not one, registers under a workspace type, one of the directories under `~/.claude/skills/kitchen/workspaces/`. Before step 1, read that type's doc, `<type>/<type>.md` there, and take its version of each step below that it names. Its version of step 4 registers the line with `kitchen.zsh line add <path> --workspace <type>`.
+
 1. **Equipment.** `ticket.zsh provider` (from the `ticket-provider` skill) must print the project's tracker; if it fails, run that skill's setup first. Run the `git-provider` skill's pre-flight for the project's host, and confirm `kitchen.zsh order base -` prints the branch work merges into.
 2. **Project rules.** Write `.claude/kitchen/house.md` from [templates/house.md](templates/house.md), or refresh the one that exists.
    1. **Find the mistake classes** per the [correct](../cook/stations/correct.md) station: what the project already enforces (its lint, type, formatter, and CI config, the conventions in its `CLAUDE.md`), the review comments on the last 20 merged PRs (through the `git-provider` skill), and the last 50 commits for reverts and fix-ups. A class seen twice is a rule.
