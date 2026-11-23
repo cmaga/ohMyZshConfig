@@ -1,6 +1,6 @@
 # Workspace type: Brazil
 
-A Brazil project is a team's parent Brazil workspace, one directory with no version set and no `.git` that holds the team's packages. Each package is its own git repository, and an order gives each package it changes its own base branch. An order works in a `brazil worktree` of the workspace, pinned to one version set, and opens one CR across the packages it changed.
+A Brazil project is a team's parent Brazil workspace, one directory with no `.git` that holds the team's packages. Nothing builds in it, so the version set `brazil ws use` gives it when it has none never matters. Each package is its own git repository, and an order gives each package it changes its own base branch. An order works in a `brazil worktree` of the workspace, pinned to one version set, and opens one CR across the packages it changed.
 
 `kitchen.zsh workspace` prints this file's path on a line registered with `--workspace brazil`. Each section below names the kitchen file and the steps it replaces or adds to. Take those steps from here, and every other step as its own file says.
 
@@ -8,7 +8,7 @@ A Brazil project is a team's parent Brazil workspace, one directory with no vers
 
 | Path | What it is |
 | --- | --- |
-| `<ws>` | The project, such as `~/dev/amz/Robogami`. Not a git repository. Holds `.claude/kitchen/house.md` and `.claude/ticket-provider/`, which no branch can change and no commit records. |
+| `<ws>` | The project, such as `~/dev/amz/Robogami`. Not a git repository. Holds `.claude/kitchen/house.md`, `.claude/ticket-provider/`, and one verify skill per package in `.claude/skills/verify-<package>/`, which no branch can change and no commit records. |
 | `<ws>/src/<Pkg>` | The parent checkouts, shared by every order. Never edit, build in, or switch branches in one. |
 | `<ws>/worktrees/<KEY>` | The order's worktree, a Brazil workspace pinned to the order's `version_set`. Its `src/<Pkg>` are git worktrees of the parent checkouts, each on a branch named `<KEY>` that tracks `origin/<base>`. Not a git repository itself. |
 | `<ws>/worktrees/verify-<KEY>` | The verifier's worktree. It holds the same packages, each detached at the head of the order's branch. |
@@ -35,7 +35,7 @@ Read this before [open](../../commands/open/open.md) step 1. Each step here repl
    - `Mutation` is one line for every package, and the sweep fails in a JavaScript or TypeScript package that lacks Stryker. Record Stryker only once every such package the team changes has it installed. Otherwise record `off:` and why.
    - The `## Critical` and `## Always review` regexes are relative to a package's root and apply in every package, as in one repository. A rule meant for one package says so with a path only that package has.
    - The file is in no git repository, so there is no base-branch copy, and `kitchen.zsh rules` reads this one file.
-3. **The verify skill** stays in the app's package, committed in that package's own repository (`<Pkg>/.claude/skills/verify-<app>/`). Write it from an order's worktree of that package, and ship it in a CR of its own. A session finds it at `<wt>/src/<Pkg>/.claude/skills/verify*`.
+3. **The verify skills.** Every package in `<ws>/src` gets a verify skill of its own at `<ws>/.claude/skills/verify-<package>/`, outside every repository, so none is committed and a session at `<ws>` loads them all. Write each per the [create a verification skill](../../commands/cook/stations/create-verification-skill.md) station, driving the package in a `brazil worktree` of its own, never in `<ws>/src`. Each takes the package directory of a worktree as its input, so it drives an order's head and its base alike. A package checked out later gets its skill then.
 4. **Register** with `kitchen.zsh line add <ws> --workspace brazil`, which prints the slug. The path can be any directory under `<ws>`, a worktree's included, and running it again changes nothing. The command accepts a workspace fresh from `brazil ws create`, before any package is checked out. A package inside `<ws>` is never its own line. Once `<ws>` is registered, `line add` without `--workspace` refuses any directory inside it. When a line already exists for a directory inside `<ws>`, `line add <ws> --workspace brazil` refuses too. Each refusal names the other line. What to do with that line is the user's call, since `kitchen.zsh line rm <slug>` deletes its orders with it. Then run `kitchen.zsh line set <slug> max_cooking=1`. Whether two `brazil-build` runs in two worktrees at once share state outside their worktrees is unverified, so keep one order cooking until two have built at once without a failure.
 5. **Tell the user** as open step 5 says, with two changes. Each order records a base per package. The project rules are a file the user owns, in no repository.
 
@@ -61,7 +61,7 @@ Replaces [cook](../../commands/cook/cook.md) steps 5 and 6, and adds to step 10.
 
 5. **Enter the order's worktree.** `kitchen.zsh workspace enter <KEY>` creates it from the order's `version_set` and `packages`, or repairs it, and prints `<wt>`. Each package's branch is `<KEY>`, on its own base and tracking it. Work by absolute path under `<wt>/src/<Pkg>/`, and `cd` there in each command. Never use `EnterWorktree`, which enters one git repository. Then run the Gate once on the untouched worktree, as [The gate](#the-gate-per-package) says. Red there means a package's base does not match the version set, or a base fails on its own. On an `auto` order, park it with `kitchen.zsh order set <KEY> status=86 "reason=parked: the Gate fails on the untouched worktree, so a package's base may not match the version set"`. Otherwise tell the user. Once a base in `packages` is corrected, run `kitchen.zsh workspace enter <KEY>` again: a package with no commits of the order's own moves onto its new base, and one with commits stays and is named.
 6. **On a pickup**, the trail is `kitchen.zsh workspace check <KEY>` and `kitchen.zsh each <KEY> --changed -- git --no-pager log --oneline origin/\$BASE..HEAD`. A package with dirty files gets its own `wip: <step>` commit.
-10. **Before changing a package the order lacks**, read its base from its release page as intake does. Add it with `kitchen.zsh order set <KEY> packages=@<file> station=@<file>`, then run `kitchen.zsh workspace enter <KEY>`, which adds the package and never removes one. A package in the worktree with no entry in `packages` makes every gate command refuse, so no gate can skip it. When the worktree lacks a package that `packages` lists, `kitchen.zsh each`, `workspace check`, `order gated`, and `sample` fail and name it, until `kitchen.zsh workspace enter <KEY>` adds it.
+10. **Before changing a package the order lacks**, read its base from its release page as intake does. Add it with `kitchen.zsh order set <KEY> packages=@<file> station=@<file>`, then run `kitchen.zsh workspace enter <KEY>`, which adds the package and never removes one. A package new to `<ws>/src` gets its verify skill first, per [Open](#open) step 3. A package in the worktree with no entry in `packages` makes every gate command refuse, so no gate can skip it. When the worktree lacks a package that `packages` lists, `kitchen.zsh each`, `workspace check`, `order gated`, and `sample` fail and name it, until `kitchen.zsh workspace enter <KEY>` adds it.
 
 The contract station commits each package's tests in that package's own repository, and the contract check reads each package as it reads one repository, a manual order's included.
 
@@ -96,7 +96,7 @@ Replaces [verify](../../commands/taste/verify.md) step 2, and adds to steps 3, 4
 
 2. **Check out the CR head on your own.** `kitchen.zsh workspace enter <KEY> verify-<KEY>` prints `<vw>`. Each package there is detached at the tip of the order's branch in `<wt>`, which is the head the CR holds.
 3. Run the contract check and the Gate as [The gate](#the-gate-per-package) says, from inside `<vw>`, so `kitchen.zsh each` runs in its packages and not the order's.
-4. Drive the app through the verify skill of its package, `<vw>/src/<Pkg>/.claude/skills/verify*`.
+4. Drive the change through the verify skill of each package it changed, `<ws>/.claude/skills/verify-<package>/`, in `<vw>/src/<Pkg>`, and the done-when lines through whichever of them each line names.
 8. Run `kitchen.zsh order verdict <KEY> ...` from any directory inside `<vw>`. The heads match the author's, so the verdict's id matches the change, and `sample` asks for no second verdict.
 9. Leave `<vw>` where it is, with no `ExitWorktree`. Cleanup removes it with the order.
 
