@@ -25,12 +25,6 @@ Out of scope, and what owns it instead:
 
 - <What a reader could reasonably expect this to do, ruled out, with why and what owns it instead.>
 
-## Direction
-
-- **Your lean:** <what the user leaned toward before the recommendation>
-- **Recommended:** <the recommendation, with its basis>
-- **Chosen:** <the direction agreed, and why>
-
 ## How it works
 
 <An overview first, then the trade-offs behind it.>
