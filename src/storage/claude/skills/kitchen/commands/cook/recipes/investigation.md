@@ -11,7 +11,7 @@ Investigation requests are read-only. They produce a cited explanation or a reco
 3. Any number you measure to answer it goes through the [benchmark checklist](../stations/benchmark-checklist.md) station first, before you report it. At the least, run each side 5 times and report the median and range, however large the gap.
 4. A recommendation between options also says what stays the same under each, and how you checked that, test for test.
 5. Produce the how-shaped output (Overview / Key Concepts / How It Works / Where Things Live / Gotchas), or a recommendation with a tradeoffs table if the request is a decision between alternatives.
-6. Apply the [unslop](../stations/unslop.md) station to the reply.
+6. With an order, write the reply through the [unslop](../stations/unslop.md) station before step 7 posts it.
 7. With an order, post the reply as a comment on the ticket through the `ticket-provider` skill, the answer first, then the evidence. With the user here, give it to them too.
 8. File one ticket through the `ticket-provider` skill for each change the answer leads to, naming the change and the recipe that would build it, such as [bug fix](bug-fix.md) or [feature](feature.md), and record each with `kitchen.zsh filed <KEY> <TICKET> <WHY>`. With the user here, ask which to file first. Open no order for them: each enters the line when the user takes it. Then run `kitchen.zsh order close <KEY>`. The investigation ends in its answer and the tickets it files.
 

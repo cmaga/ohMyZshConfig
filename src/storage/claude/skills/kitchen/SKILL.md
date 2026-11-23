@@ -62,7 +62,9 @@ The Principles below ground every trigger. In the reply that ends a recipe, name
 - **Parallel fan-out**: the [swarm](commands/cook/stations/swarm.md) station for coverage, races, and exploration; the [arena](commands/cook/stations/arena.md) station for design or code bakeoffs.
 - **Contested design**: the [interrogate](commands/cook/stations/interrogate.md) station before shipping.
 - **Nontrivial multi-step work**: write the throughput checkpoint ([feature](commands/cook/recipes/feature.md) step 3).
-- **Any prose, your reply included**: the [unslop](commands/cook/stations/unslop.md) station, and the reply per [Writing the reply](#writing-the-reply). Prose an agent reads (skills, agents, rules) also follows the `claude-feature-authoring` skill.
+- **Prose written for someone other than the user** (a PR or CR, a commit message, a ticket comment, a doc, a plan the team reviews): the [unslop](commands/cook/stations/unslop.md) station. A reply, a log, or a note only the user reads skips it.
+- **Your reply**: per [Writing the reply](#writing-the-reply).
+- **Prose an agent reads** (skills, agents, rules): the `claude-feature-authoring` skill.
 - **Docs, PR descriptions, commit messages**: the [technical-writing](commands/cook/stations/technical-writing.md) station.
 - **Before review**: the [taste](commands/taste/taste.md) command's tasters and the [no-comments](commands/cook/stations/no-comments.md) station.
 - **Shipping UI, CLI, or service behavior**: drive it through the project's verify skill (`.claude/skills/verify*`), else the `run` skill; browsers through Playwright MCP. For a bug fix, reproduce it first on that surface yourself.

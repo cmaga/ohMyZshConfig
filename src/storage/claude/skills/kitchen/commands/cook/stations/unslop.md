@@ -1,6 +1,6 @@
 # Unslop
 
-Cut AI tells from any writing.
+Cut AI tells from prose written for someone other than the user. A reply, a log, or a note only the user reads skips this station.
 
 Edit text to remove AI patterns. Scan for the patterns below, then rewrite. Preserve meaning and match the intended tone.
 
