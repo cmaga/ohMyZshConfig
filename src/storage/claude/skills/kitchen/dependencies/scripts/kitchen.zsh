@@ -32,7 +32,7 @@
 #   kitchen order base KEY|-                 the branch the order's work starts from and merges into; - for this repo's
 #   kitchen order pr KEY URL                 record the PR and hand it to the scheduler
 #   kitchen order verify KEY                 hand the PR to the scheduler for a verdict from a session that did not write it
-#   kitchen order verdict KEY WORD NOTES [REASON...]  record PASS, PASS+NOTES, or FAIL for the change checked out here; each REASON is a `## Review when` criterion that holds
+#   kitchen order verdict KEY WORD NOTES [REASON...]  record PASS, PASS+NOTES, or FAIL for the change checked out here; each REASON is a Questions that hold a PR question that holds
 #   kitchen order gated KEY                  record the change the quality gate passed; run in the order's worktree
 #   kitchen order approve KEY COMMIT         record the change the user approved; it holds while the change stays the same; on a workspace line COMMIT is HEAD
 #   kitchen order close KEY                  mark the order done and move its ticket with the merged moment
@@ -71,7 +71,7 @@ DEFAULT_STALL='{"cook":60,"follow":45,"verify":45}'
 # A change to these paths moves a check, so a base that changed one leaves a branch untested until it rebases.
 CHECK_PATHS='(^|/)(\.github/workflows/|\.gitlab-ci\.yml$|bitbucket-pipelines\.yml$|\.circleci/|\.pre-commit-config\.yaml$|\.husky/|\.eslintrc|eslint\.config\.|tsconfig[^/]*\.json$|\.prettierrc|biome\.jsonc?$|\.?ruff\.toml$|mypy\.ini$|\.golangci|pyproject\.toml$|setup\.cfg$|\.flake8$|tox\.ini$|pytest\.ini$|(jest|vitest)\.config\.|\.claude/kitchen/house\.md$|\.claude/skills/verify[-/])'
 # Every project's rules hold all three, empty or not: the paths that always wait for the user, the questions a verifier answers, and where the project's docs go and what a change must update.
-REVIEW_SECTIONS=('## Always review' '## Review when' '## Docs')
+REVIEW_SECTIONS=('### Critical paths' '### Questions that hold a PR' '### Docs')
 # An added line matching this skips or silences a check.
 SKIP_LINES='(eslint-disable|@ts-ignore|@ts-expect-error|@ts-nocheck|#[[:space:]]*type:[[:space:]]*ignore|#[[:space:]]*noqa|nolint|pragma: no cover|\.skip\(|(^|[^[:alnum:]_])x(it|describe)\(|@pytest\.mark\.(skip|xfail)|@Disabled|@Ignore|t\.Skip\()'
 
@@ -165,16 +165,53 @@ house_rules() { # PROJECT [BASE]: the project rules; a copy on the base branch w
   git -C $1 show origin/${2:-$(base_of $1)}:.claude/kitchen/house.md 2>/dev/null || cat $1/.claude/kitchen/house.md 2>/dev/null
 }
 
-house_missing() { # PROJECT: the review sections its project rules lack, one per line; nothing when it is set up
-  local rules=$(house_rules $1) s
-  for s in $REVIEW_SECTIONS; do print -r -- $rules | grep -qxF -- $s || print -- $s; done
+house_rows() { # RULES: each row of the Critical paths table, as path, extra effort, waits for me, and its cell count, split by \x1f; a \| in a cell reads as |
+  print -r -- $1 | awk '
+    /^#/{on = ($0 == "### Critical paths"); next}
+    on && /^\|/ && !/^\|[ :|-]*$/ && !/^\|[[:space:]]*Path[[:space:]]*\|/ {
+      line = $0; gsub(/\\\|/, "\001", line)
+      n = split(line, c, "|") - 2
+      for (i = 2; i <= 5; i++) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", c[i]); gsub(/\001/, "|", c[i]) }
+      print c[2] "\037" c[4] "\037" c[5] "\037" n
+    }'
 }
 
-house_cmd() { # [PATH]: exits 0 when the project is set up; else says what its rules lack
+row_problem() { # REGEX-CELL EFFORT REVIEW CELLS: why kitchen cannot read a Critical paths row; nothing when it can
+  local re=$1 rx=${${1#\`}%\`}
+  if (( $4 != 4 )); then print -r -- "a path row has $4 cells, not 4 (write each | inside a regex as \\|): $re"
+  elif [[ $re != \`*\` ]]; then print -r -- "a path row's regex is not in backticks: $re"
+  elif [[ -z $rx ]]; then print -r -- "a path row's regex is empty, which would match every path"
+  elif [[ $rx == \<* ]]; then print -r -- "a path row is still the template's example; fill or delete it: $re"
+  elif [[ $2 != (yes|no) || $3 != (yes|no) ]]; then print -r -- "a path row's Extra effort and Waits for me each take yes or no: $re"
+  else print -n | grep -E -- $rx 2>/dev/null; (( $? == 2 )) && print -r -- "a path row's regex is not an extended regular expression: $re"
+  fi
+}
+
+review_paths() { # RULES: the readable path rows' regexes whose Waits for me says yes, joined into one alternation
+  local re effort review n
+  house_rows $1 | while IFS=$'\x1f' read -r re effort review n; do
+    [[ -z $(row_problem "$re" "$effort" "$review" "$n") && $review == yes ]] && print -r -- ${${re#\`}%\`}
+  done | paste -sd'|' -
+}
+
+house_problems() { # RULES: what keeps project rules from counting as set up, one per line; nothing when they do
+  local s re effort review n
+  for s in $REVIEW_SECTIONS; do print -r -- $1 | grep -qxF -- $s || print -- "lack $s"; done
+  house_rows $1 | while IFS=$'\x1f' read -r re effort review n; do row_problem "$re" "$effort" "$review" "$n"; done
+}
+
+house_missing() { # PROJECT: what keeps its project rules from counting as set up, one per line; nothing when they do
+  house_problems "$(house_rules $1)"
+}
+
+house_cmd() { # [PATH]: exits 0 when the project is set up; else says what keeps its rules from it
   local root=${1:-$(project_root)} missing
   missing=$(house_missing $root)
   [[ -z $missing ]] && { print -- "set up"; return 0; }
-  print -- "not set up: the project rules (origin/$(base_of $root) or $root/.claude/kitchen/house.md) lack ${(j:, :)${(f)missing}}; run /kitchen open"
+  local -a probs=( ${(f)missing} ) lacks=( ${${(M)${(f)missing}:#lack *}#lack } )
+  probs=( ${probs:#lack *} )
+  (( $#lacks )) && probs=( "lack ${(j:, :)lacks}" $probs )
+  print -r -- "not set up: the project rules (origin/$(base_of $root) or $root/.claude/kitchen/house.md) ${(j:; :)probs}; run /kitchen open"
   return 1
 }
 
@@ -663,13 +700,14 @@ rebase_needed() { # BASE: prints rebase when the base moved under a file this br
 }
 
 risk() { # BASE STATION: why this checkout's change needs the user's eyes, one reason per line; STATION is the order's files, one per line, each matched against REPO_LABEL followed by the repo-relative path
-  local files=$(git diff --name-only origin/$1...HEAD) extra
-  extra=$(house_rules $(project_root) $1 \
-    | awk '/^## /{on = ($0 == "## Always review")} on && /^- `/ {sub(/^- `/, ""); sub(/`.*/, ""); print}' | paste -sd'|' -)
+  local files=$(git diff --name-only origin/$1...HEAD) extra rules=$(house_rules $(project_root) $1)
+  extra=$(review_paths $rules)
   {
+    # a row kitchen cannot read may be the one that should hold this change, so it holds every change until fixed
+    [[ -n $(house_problems $rules | grep -v '^lack ') ]] && print -- "project rule: a Critical paths row kitchen cannot read; kitchen.zsh house names it"
     # a path the order's station names was weighed at intake
     [[ -n $extra ]] && print -r -- $files | grep -E "$extra" \
-      | awk -v st="$2" -v lb="${REPO_LABEL:-}" 'BEGIN { n = split(st, s, "\n") } { for (i = 1; i <= n; i++) if (s[i] != "" && index(lb $0, s[i]) == 1) next; print "project rule: " $0 }'
+      | ST=$2 LB=${REPO_LABEL:-} awk 'BEGIN { n = split(ENVIRON["ST"], s, "\n") } { for (i = 1; i <= n; i++) if (s[i] != "" && index(ENVIRON["LB"] $0, s[i]) == 1) next; print "project rule: " $0 }'
     print -r -- $files | LC_ALL=C grep -E "$CHECK_PATHS" | sed 's/^/changes a check: /'
     git diff --name-only --diff-filter=D origin/$1...HEAD | grep -iE '(^|/)(tests?|specs?|__tests__)/|[._-](test|spec)\.' | sed 's/^/deletes a test: /'
     git diff -U0 origin/$1...HEAD | grep -E '^\+[^+]' | grep -E "$SKIP_LINES" | sed 's/^+[[:space:]]*/silences a check: /'

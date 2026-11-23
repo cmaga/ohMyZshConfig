@@ -17,7 +17,7 @@ On a workspace line, take steps 3 to 5 from the type's doc (`kitchen.zsh workspa
    3. `git rebase origin/<base>`, resolving any conflict so both sides' intent survives.
    4. Run the `Gate` command from the project rules (`.claude/kitchen/house.md`). Red: on a manual order, report it per [SKILL.md](../../../SKILL.md#autonomy) and fix nothing. Otherwise fix, `git commit --amend --no-edit`, re-run only the failures each fix could change, then every failure once, then the full suite; a test that fails twice at the same step after a fix is a finding to trace, not one to rerun. Green: push through the `git-provider` skill (its Push operation).
 5. **Open the PR** through the `git-provider` skill (its Create PR operation, which says whether it starts ready or as a draft), targeting `<base>`, with a title and body per the sections below written through the [technical writing](../stations/technical-writing.md) and [unslop](../stations/unslop.md) stations. Record it with `kitchen.zsh order set <KEY> pr=<url>` and move the ticket with the `review` moment.
-6. Run the [merge](merge.md) recipe. A PR flagged for the user's review still gets its verdict first: `sample` prints `verify` before `review`, and the PR goes to the user only when `sample` prints `review`.
+6. Run the [merge](merge.md) recipe. The final review's verdict covers the PR while the fold and rebase changed no line; when they did, `sample` prints `regate` or `verify` first, and the PR goes to the user only when `sample` prints `review`.
 
 Opening a PR does not start a [follow a PR](follow-a-pr.md) pass. The scheduler wakes a session when the PR changes.
 

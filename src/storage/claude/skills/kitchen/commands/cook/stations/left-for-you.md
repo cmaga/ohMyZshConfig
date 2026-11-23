@@ -29,7 +29,7 @@ Decide what you can first. A candidate your own recommendation would fold is fol
 - **`fold`**: the fix rides this branch. It needs no decision only the user can make and does not double the diff. Never judge it on the ticket's scope or the defect's age. It names the fix.
 - **`escalate`**: it cannot ride the branch, or only the user can answer it; it needs knowledge or authority only they hold. It names that, and gives its recommendation.
 
-Apply every `fold` yourself, one commit per fold (a fixup when it corrects a branch commit), send the commits through the bug review again, and re-run the tests the folds affect. Record each verdict with `kitchen.zsh decide`, the `file:line` or command behind it as the evidence. A candidate that turns up later goes through this same triage.
+Apply every `fold` yourself, one commit per fold (a fixup when it corrects a branch commit), run [taste](../../taste/taste.md) step 4 on them, send the final reviewer the re-review brief as taste step 5 does, and re-run the tests the folds affect. Record each verdict with `kitchen.zsh decide`, the `file:line` or command behind it as the evidence. A candidate that turns up later goes through this same triage.
 
 Each `escalate` then goes by the order's mode:
 

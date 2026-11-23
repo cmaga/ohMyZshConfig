@@ -1,34 +1,27 @@
-# Project rules
+# House rules
 
-What gets checked on every change in this project. Every rule names what enforces it.
+## Project conventions
 
-## Settings
+### Enforcement scripts
+
+| Name | Command |
+|---|---|
+
+## Kitchen setup
 
 - **Gate:** `sh -n scripts/cleanup.sh`
 - **Reach:** touched files
 - **Mutation:** off: a small fixture project
 
-## Rules
+### Critical paths
 
-| Rule | Enforced by | Rung | Catches |
+| Path | What it is | Extra effort | Waits for me |
 |---|---|---|---|
 
-## Tasters
+### Questions that hold a PR
 
-- tidy
-- consistency
-- test-honesty
-- minimal
-- gaming
+### Intake defaults
 
-## Critical
-
-## Always review
-
-## Review when
-
-## Docs
+### Docs
 
 - none
-
-## Sorting

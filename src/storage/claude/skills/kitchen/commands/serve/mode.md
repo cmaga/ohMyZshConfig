@@ -27,18 +27,18 @@ Not every project has every mode available to it. `kitchen.zsh modes` prints the
 
 Go down this list and take the first rule that matches. When its mode is locked, take the nearest unlocked mode toward manual, in the order auto, guided, co-write, manual. Read the project rules first (`kitchen.zsh rules`), and the files you expect the order to touch.
 
-1. **The project names one.** A line under `## Sorting` in the project rules gives a mode for this kind of ticket. That is the user's earlier call, so it wins.
-2. **Guided, for risk.** A mistake would be expensive and the checks could not catch it: a data model, an interface between parts, or how something fails. Touching a file listed under `## Critical` or `## Always review` counts. The user makes those calls at the [chef's table](../cook/stations/chefs-table.md), and the line writes the code.
+1. **The project names one.** A line under Intake defaults in the project rules gives a mode for this kind of ticket. That is the user's earlier call, so it wins.
+2. **Guided, for risk.** A mistake would be expensive and the checks could not catch it: a data model, an interface between parts, or how something fails. Touching a path listed under Critical paths counts. The user makes those calls at the [chef's table](../cook/stations/chefs-table.md), and the line writes the code.
 3. **Co-write, for practice.** Under 15% of the orders made ready in this project in the last two weeks are manual or co-write (`kitchen.zsh share` prints the count). The user keeps their hand in the code by reading it as it is written.
 4. **Guided, for open calls.** A call only the user can make is likely to come up while the work runs: an open design question, no precedent in the repo, or an area where an earlier order in this project was parked.
 5. **Auto** otherwise: a bug fix with a reproduction, a refactor the tests pin down, a mechanical change.
 
 ## What to send
 
-The mode and the reason in one sentence, such as "Guided, since nothing in the repo does this yet and the design will need your call." When rule 1 decided it, name the `## Sorting` line.
+The mode and the reason in one sentence, such as "Guided, since nothing in the repo does this yet and the design will need your call." When rule 1 decided it, name the Intake defaults line.
 
 ## When the user picks another mode
 
 A locked mode cannot be picked: say what unlocks it, and that `kitchen.zsh line set <slug> <mode>_after=<n>` lowers the threshold if they want it now. Before writing the order with the mode they chose, log it: `kitchen.zsh order set <KEY> mode_override=@<file>`, the file holding the mode you recommended and why, the mode they chose, and their reason.
 
-Before recommending, run `kitchen.zsh overrides`, which lists this project's logged overrides. When the user has made the same kind of override twice, propose a `## Sorting` line that makes it the rule, along with your recommendation.
+Before recommending, run `kitchen.zsh overrides`, which lists this project's logged overrides. When the user has made the same kind of override twice, propose an Intake defaults line that makes it the rule, along with your recommendation.

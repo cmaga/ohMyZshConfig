@@ -81,7 +81,7 @@ Haiku is dominated at high and above: Sonnet at medium or high costs no more and
 | judgment | judgment, escalation | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 60 / 30 (est.) |
 | review | adversary, verify, taste | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 60 / 35 |
 | code | code | `worker-agent` frontmatter, built per account | fable<br>opus<br>sonnet[1m]<br>haiku<br>deepseek-v4-pro[1m] (proxy; dominated by flash)<br>deepseek-flash[1m] (proxy) | inherit (the model's own)<br>max<br>xhigh<br>high<br>medium<br>low | 30 / 30 |
-| critical code | hardest, contract, code on a `## Critical` path | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 45 / 20 (est.) |
+| critical code | hardest, contract, code on an Extra effort path | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 45 / 20 (est.) |
 | research | explore | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 8 / 3 (est.) |
 | other family | other family | `deepseek-flash-agent` frontmatter, built per account | deepseek-v4-pro[1m] (proxy; dominated by flash)<br>deepseek-flash[1m] (proxy) | none | 15 (est.) |
 | general | anything else | dispatch opts | fable<br>opus<br>sonnet[1m]<br>haiku | max<br>xhigh<br>high<br>medium<br>low | 40 / 15 (est.) |

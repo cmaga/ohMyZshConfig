@@ -23,6 +23,6 @@ Then fix the most frequent classes now, one commit each. Prove each new check fa
 
 ## Keep the rule table
 
-Last, keep the `## Rules` table in the project rules (`.claude/kitchen/house.md`), which pairs each rule with what enforces it and the rung it sits on. Add a row for each class you fixed, and drop a rule once its mistake can't happen.
+Last, keep the Project conventions in the project rules (`.claude/kitchen/house.md`), where each convention names what enforces it. Add one under its topic for each class you fixed, with its enforcer and any new script under Enforcement scripts, and drop a convention once its mistake can't happen.
 
 **Reply:** each class with its evidence, the level you picked, and why a higher level didn't work.

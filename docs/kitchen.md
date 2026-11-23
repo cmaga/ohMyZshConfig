@@ -34,7 +34,7 @@ So you own *what* gets checked, and the kitchen does the checking, on every chan
 | Expo | A shell script on a timer | Watches the board and the rail, fires orders, restarts what fell over. Spends no tokens |
 | Sous chef | The main session of one order | Runs the order's recipe, fires line cooks, holds the quality gate |
 | Line cooks | Worker agents | Each cooks one station (a set of files no other cook touches) |
-| Tasters | Narrow judgment checkers | Each tastes for one thing only |
+| Tasters | Two judgment reviewers | One for kitchen's general checks, one for the project's own |
 | Thermometers | Lint, types, tests, scripts | Deterministic, run on every plate |
 
 ## Vocabulary
@@ -117,7 +117,7 @@ The server reads a ticket, checks it against the code (still a problem? already 
 
 How a project's code stays good. Separate from the kitchen loop below.
 
-**House rules.** Each project carries a committed table. Every rule names what enforces it; a rule with no enforcer is not on the bar.
+**House rules.** Each project's rules file has two parts. Project conventions: what every change follows, industry practices included, grouped by topic, each ending with what enforces it, and the enforcement scripts listed at the bottom. Kitchen setup: the Gate, Reach, critical paths, the questions that hold a PR, intake defaults, docs, and production. A convention with no enforcer is not on the bar.
 
 | Rule | Enforced by |
 |---|---|
@@ -128,6 +128,8 @@ How a project's code stays good. Separate from the kitchen loop below.
 - A deterministic check wherever one can do the job. Checks live in the project's own lint, hooks, and CI, so humans and CI hit them too.
 - Text only for real judgment calls, read by a taster.
 - Reach is set per project. A production app tidies only the lines a change touched; a personal repo tidies the neighborhood.
+
+**The pass.** Before any PR: the Gate (free, so first), a verify by an agent that did not write the change, the general and project tasters in parallel, the Gate again, then one final review on another model family that reads the whole change once and proves each bug with a run. The same reviewer then checks only the fixes, as a person re-reviews a PR, and approves by recording the verdict. A fix that changes behavior gets a verify targeted at it, not a full one. Three re-reviews with findings send the order to you.
 
 **Tasting.** You review at least one PR per project per day. Your review comments on it are catches.
 
@@ -149,7 +151,7 @@ The ladder, strongest first:
 4. **Climb.** A slip that gets past an existing enforcement means it didn't take. The next order lands at least one rung higher, or goes to you.
 5. **Retire.** A lower rung made redundant by a higher one is deleted. The only way the table shrinks.
 
-Calls that reach the review queue climb a two-rung ladder of their own: a sentence in intake's notes, then a `## Sorting` rule in the project rules, which intake applies before its own judgment.
+Calls that reach the review queue climb a two-rung ladder of their own: a sentence in intake's notes, then an Intake defaults line in the project rules, which intake applies before its own judgment.
 
 ## Self-tuning: the kitchen loop
 
@@ -505,8 +507,8 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `dependencies/scripts/kitchen.zsh` | Order book, status, expo, prune; shared by every command |
 | `automation.toml`, `dependencies/scripts/run.zsh` | The expo as a launchd KeepAlive agent. **Off** (`enabled = false`) |
 | `commands/taste/calibrate.md` | Taste bud calibration, `/kitchen taste calibrate`: brings the verify skill back in line with the app |
-| `commands/taste/taste.md`, `taste/done-when.md` | The pass, also `/kitchen taste` on any branch: done-when, thermometers, tasters, no-comments, and the bug review (the interrogate station) |
-| `commands/taste/verify.md` | The verdict, `/kitchen taste verify <KEY>`: a session that did not write the change runs it and records PASS, PASS+NOTES, or FAIL |
+| `commands/taste/taste.md`, `taste/done-when.md` | The pass, also `/kitchen taste` on any branch: the Gate, a verify, the general and project tasters, the Gate again, and the final review, which gives the verdict before the PR |
+| `commands/taste/verify.md` | Does the change work: an agent that did not write it drives it, in full or targeted at a fix, before the PR; after the PR, `/kitchen taste verify <KEY>` records PASS, PASS+NOTES, or FAIL for a change no verdict covers |
 | `commands/roster/roster.md`, `commands/roster/` | Model and effort per type of work, was `optimize-usage`; the vault agents left it, pinned to opus |
 | `commands/reflect/reflect.md`, `commands/reflect/` | `/kitchen reflect`: three reviewers mine the session for lessons; the kitchen rows you pick are edited and left uncommitted for your review, and the rest route per Defects and lessons. pstack's manual `/reflect`; a station until 2026-11-03 |
 | `commands/fire/fire.md` | `/kitchen fire`: a production incident worked with you, root cause to mitigation, each step on your go; the long-term fix and any remedy leave as tickets for the line. `open` asks for the project's `## Production` facts |
@@ -533,6 +535,7 @@ dev-workflow's `cleanup` is gone. The scheduler closes an order when its PR merg
 - **A team's packages are one project** (2026-11-20). On Amazon a team's code is many Brazil packages, each its own git repository, and one ticket can touch several. The team is the project, a parent Brazil workspace with no version set such as `~/dev/amz/Robogami`, registered once with `kitchen.zsh line add <path> --workspace brazil`. Its project rules and tracker config sit at the workspace root, which is in no repository, so no branch can change them and no commit records them. Each order is one `brazil worktree` named after its key, pinned to one version set, with one CR across the packages it changed. A ticket that needs two version sets is a multi-phase plan. Each package merges into its own base, the branch its major version in that version set builds from, and intake reads it from the package's release page, since the version set carries versions and no branch. The core learns one generic seam, a workspace type. The type says where an order's repositories are and what each one's base is, and the core runs each of its rules, such as patch identity, risk, the rebase check, and cleanup, once per repository. A line with no type has one repository, so both kinds of line run one copy of each rule. `kitchen.zsh each <KEY> [--changed] -- <command>` runs a one-repository tool such as `contract-check.sh` in every repository against its own base, so a gate cannot check one package of several and print `held`. Everything Brazil-specific lives in `skills/kitchen/workspaces/brazil/`, deleting it returns the core to one repository per project, and a harness case fails when a core file names an installed type. The design rejects six other shapes. A type verb per step that touches a repository puts the rebase, risk, and keep rules in the type a second time. Types as sourced libraries would carry one line's redefinitions into the next line of the same `tick`. A synthetic single repository over the worktree fakes every merge base. Moving each parent checkout onto its package's base makes two orders on different version sets move one shared checkout. Detecting the type in `line add` would stop a lone package from registering as its own line. Taking each base from the parent checkout's upstream is the state that failed the probe build. Unverified: one CR whose packages merge into different branches (the CRUX mode falls back to one stacked CR per base), `cr` run from a worktree, and two builds in two worktrees at once, so a workspace line starts at `max_cooking` 1. `kitchen.zsh stage`, and with it catering, refuses a workspace line.
 - **The plan is an HLD** (2026-11-23). It replaced a 1-to-3-page doc after Google's design docs (Malte Ubl, "Design Docs at Google", 2020), at your call, so the plan is the HLD the team reviews. The page cap is lifted, since that HLD runs about six pages, and the guidance stays: plain language, no schemas or code, every sentence one a reviewer acts on. Alternatives moved into "Why...?" notes, and Open questions went, since plan step 4 puts each one to you before the plan is done. The spec keeps the plan's FR and NFR ids instead of numbering its own, so one id names one requirement in both. The headings stay title case, as the HLD writes them, though the unslop station asks for sentence case.
 - **Unslop is for prose others read** (2026-11-23). At your call, the unslop station runs only on prose written for someone other than you: a PR or CR, a commit message, a ticket comment, a doc, and the plans the team reviews or an owner runs. Replies, the decision log, and notes only you read skip it. An investigation's reply goes through it only when an order posts it on the ticket, and a blast-radius writeup only before it goes public. The separate pass that humanize-writing (github.com/jpeggdev/humanize-writing) runs was not added. Unslop and the technical-writing station already cover its patterns, and its last pass, which adds opinion, first person, and loose structure, conflicts with both.
+- **Verify first, two tasters, one final review** (2026-11-23). The pass ran six single-check tasters, a comment hater, and two bug adversaries before the PR, and the first independent verify only after it. Every agent pays to load the change: in ATR-171 each taster spent about 25K tokens getting up to speed. Now an independent verify runs before the PR, so you never see one that does not work; the five general checks and the comment check run as one taster and the project's checks as another; and one final review on another model family replaces the two adversaries and records the verdict. A re-check after a fix is targeted at it: the final reviewer reads the whole change once, then the same reviewer checks only the fixes and approves, as a person re-reviews a PR, since reviewing everything again mostly adds false positives (arXiv 2603.16244: 62% more).
 - **A bug counts only once a run proves it**: the quality gate writes the failing test before fixing, and a finding no run reproduces is logged as an unproven decision with the command tried.
 - **Decisions the line makes alone** are logged per order (`kitchen.zsh decide`), listed in the PR under "Decided alone", and shown in the chef's catch-up.
 - **No recipe fits**: the order is `bespoke`, carries its own steps, and goes to the review queue once.

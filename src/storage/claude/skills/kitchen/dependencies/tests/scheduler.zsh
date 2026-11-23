@@ -50,7 +50,7 @@ mkdir -p $SB/seed/src $SB/seed/tests $SB/seed/.claude/kitchen
 print one > $SB/seed/app.txt
 print one > $SB/seed/src/a.txt
 print one > $SB/seed/tests/foo_test.py
-print -r -- $'# House rules\n\n## Always review\n- `^secrets/`: credentials\n\n## Review when\n- the change moves money\n\n## Docs\n- docs live in docs/' > $SB/seed/.claude/kitchen/house.md
+print -r -- $'# House rules\n\n### Critical paths\n\n| Path | What it is | Extra effort | Waits for me |\n|---|---|---|---|\n| `^secrets/` | credentials | no | yes |\n| `^(vault\\|keys)/` | escaped alternation | no | yes |\n| `^slow/` | costly but not held | yes | no |\n\n### Questions that hold a PR\n- the change moves money\n\n### Docs\n- docs live in docs/' > $SB/seed/.claude/kitchen/house.md
 git -C $SB/seed add -A
 git -C $SB/seed commit -q -m seed
 git -C $SB/seed push -q origin main 2>/dev/null
@@ -693,12 +693,39 @@ sample_says_verify_when_no_verdict_covers_this_change() {
   sample; eq "$OUT" verify output
 }
 
-sample_says_review_for_a_path_under_always_review() {
+sample_says_review_for_a_path_that_waits_for_the_user() {
   sampled; wtcommit A secrets/key.txt x; gated; verdict PASS
   sample
   eq "$OUT" review output
   eq "$(ord A review)" true review
   has "$(ord A review_why)" 'project rule: secrets/key.txt' reason
+}
+
+sample_reads_an_escaped_pipe_in_a_path_as_alternation() {
+  sampled; wtcommit A keys/k.txt x; gated; verdict PASS
+  sample
+  eq "$OUT" review output
+  has "$(ord A review_why)" 'project rule: keys/k.txt' reason
+}
+
+sample_leaves_an_extra_effort_path_that_does_not_wait_to_the_verdict() {
+  sampled; wtcommit A slow/s.txt x; gated; verdict PASS
+  sample
+  eq "$OUT" no output
+  eq "$(ord A review)" false review
+}
+
+sample_holds_every_change_while_a_path_row_is_unreadable() {
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  print -r -- $'# House rules\n\n### Critical paths\n\n| Path | What it is | Extra effort | Waits for me |\n|---|---|---|---|\n| `^secrets/` | credentials | no | yes |\n| `^(a|b)/` | bare pipe | no | yes |\n\n### Questions that hold a PR\n\n### Docs\n- none' > $CASE/other/.claude/kitchen/house.md
+  git -C $CASE/other commit -q -am 'bare pipe'
+  git -C $CASE/other push -q origin main 2>/dev/null
+  git -C $PROJ fetch -q origin
+  sampled; wtcommit A secrets/key.txt x; gated; verdict PASS
+  sample
+  eq "$OUT" review output
+  has "$(ord A review_why)" 'project rule: secrets/key.txt' 'the readable row still holds its path'
+  has "$(ord A review_why)" 'a Critical paths row kitchen cannot read' 'the unreadable row holds the change'
 }
 
 sample_says_review_for_a_deleted_test() {
@@ -738,7 +765,7 @@ sample_says_review_for_an_order_flagged_at_intake() {
   eq "$(ord A review_why)" 'looks and feels' reason
 }
 
-sample_leaves_an_always_review_path_inside_the_orders_station_to_intake() {
+sample_leaves_a_waiting_path_inside_the_orders_station_to_intake() {
   mkline; mkorder A status=pr-open 'station=["secrets/"]' > /dev/null; mkwt A
   wtcommit A secrets/key.txt x; gated; verdict PASS
   sample
@@ -1259,17 +1286,33 @@ a_project_whose_rules_lack_docs_is_not_set_up() {
   OUT=$(k house 2>&1); RC=$?
   eq $RC 0 'a project with all three sections'
   git clone -q $CASE/origin.git $CASE/other 2>/dev/null
-  print -r -- $'# House rules\n\n## Always review\n- `^secrets/`: credentials\n\n## Review when\n- the change moves money' > $CASE/other/.claude/kitchen/house.md
+  print -r -- $'# House rules\n\n### Critical paths\n\n| Path | What it is | Extra effort | Waits for me |\n|---|---|---|---|\n| `^secrets/` | credentials | no | yes |\n\n### Questions that hold a PR\n- the change moves money' > $CASE/other/.claude/kitchen/house.md
   git -C $CASE/other commit -q -am 'drop docs'
   git -C $CASE/other push -q origin main 2>/dev/null
   git -C $PROJ fetch -q origin
   OUT=$(k house 2>&1); RC=$?
   eq $RC 1 'exit code without docs'
   has "$OUT" 'not set up' 'verdict'
-  has "$OUT" '## Docs' 'names the missing section'
+  has "$OUT" '### Docs' 'names the missing section'
   tick; nap 20
   eq $(ncalls) 0 'no new work'
   has "$OUT" 'not set up, so no new work' 'scheduler says why'
+}
+
+a_path_row_with_a_bare_pipe_is_not_set_up() {
+  mkline
+  git clone -q $CASE/origin.git $CASE/other 2>/dev/null
+  print -r -- $'# House rules\n\n### Critical paths\n\n| Path | What it is | Extra effort | Waits for me |\n|---|---|---|---|\n| `^(a|b)/` | bare pipe | no | yes |\n| `^c/` | flag | maybe | yes |\n| `` | empty | no | yes |\n| `<e.g. ^src/ledger/>` | <what it is> | yes | yes |\n\n### Questions that hold a PR\n\n### Docs\n- none' > $CASE/other/.claude/kitchen/house.md
+  git -C $CASE/other commit -q -am 'bare pipe'
+  git -C $CASE/other push -q origin main 2>/dev/null
+  git -C $PROJ fetch -q origin
+  OUT=$(k house 2>&1); RC=$?
+  eq $RC 1 'exit code'
+  has "$OUT" 'a path row has 5 cells, not 4 (write each | inside a regex as \|): `^(a' 'names the unreadable row and the fix'
+  has "$OUT" "a path row's Extra effort and Waits for me each take yes or no: \`^c/\`" 'names the bad flag'
+  has "$OUT" "a path row's regex is empty" 'names the empty regex'
+  has "$OUT" "a path row is still the template's example" 'names the unfilled example'
+  lacks "$OUT" 'lack' 'every section is there'
 }
 
 the_scheduler_never_starts_a_catering_order() {
@@ -1553,7 +1596,7 @@ each_replaces_only_a_whole_base_variable_with_the_base_on_either_kind_of_line() 
 
 the_mutation_sweep_takes_the_rules_kitchen_rules_names_over_the_base_branchs_own_copy() {
   mkwt A; wtcommit A src/a.js 'export const f = (a, b) => a + b;'
-  print -r -- $'# Team rules\n\n- **Mutation:** stryker `npx stryker run -c team.conf.json`\n\n## Always review\n\n## Review when\n\n## Docs' > $CASE/team.md
+  print -r -- $'# Team rules\n\n- **Mutation:** stryker `npx stryker run -c team.conf.json`\n\n### Critical paths\n\n### Questions that hold a PR\n\n### Docs' > $CASE/team.md
   local sweep=${KITCHEN:h}/mutation-sweep.py
   OUT=$( cd $(wt A) && KITCHEN_RULES=$CASE/team.md python3 -I $sweep --list --test-cmd true origin/main 2>&1 )
   has "$OUT" 'src/a.js: npx stryker run -c team.conf.json' 'the base branch'"'"'s rules name no Stryker, and the ones KITCHEN_RULES names do'
