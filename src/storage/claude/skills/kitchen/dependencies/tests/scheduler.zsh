@@ -97,7 +97,7 @@ victim() { ( sleep 60 < /dev/null > /dev/null 2>&1 & print $! > $VICTIM_FILE ) }
 
 mkline() { # [field=value...]
   k line add $PROJ > /dev/null
-  k line set proj guided_after=0 auto_after=0 "$@"
+  k line set proj co-write_after=0 guided_after=0 auto_after=0 "$@"
   today_str > $BOOKDIR/.pruned
 }
 mkorder() { k order new "$1" status=ready recipe=feature mode=auto "${@:2}" }
@@ -211,6 +211,23 @@ claiming_an_auto_deployment_at_its_skeleton_keeps_it_auto() {
   spawn_claimer A $CASE/h1
   eq "$(ord A status)" cooking status
   eq "$(ord A mode)" auto 'a skeleton claim leaves the mode'
+}
+
+claiming_an_auto_order_held_for_the_users_calls_keeps_it_auto() {
+  mkline; mkorder A stage=calls > /dev/null
+  spawn_claimer A $CASE/h1
+  eq "$(ord A status)" cooking status
+  eq "$(ord A mode)" auto 'a claim at the calls stage leaves the mode'
+}
+
+a_users_session_on_an_order_held_for_their_calls_is_never_stopped_by_the_scheduler() {
+  mkline 'max_minutes={"cook":1}' 'stall_minutes={"cook":1}'; mkorder A stage=calls > /dev/null
+  spawn_claimer A $CASE/h1
+  jqedit A '.started -= 100000 | .touched -= 100000'
+  tick
+  lacks "$OUT" 'sent' 'no signal'
+  isyes "alive $CLAIMER" 'the user session lives'
+  eq "$(ord A status)" cooking status
 }
 
 a_users_skeleton_session_on_an_auto_deployment_is_never_stopped_by_the_scheduler() {
@@ -746,6 +763,36 @@ a_decision_is_logged_with_its_evidence_and_shown_once_under_a_merge_that_never_w
   lacks "$OUT" 'chose X' 'shown once'
 }
 
+a_call_the_user_made_is_logged_as_theirs_and_left_out_of_the_calls_made_alone() {
+  mkline; mkorder A status=done pr=$(prurl 1) summary=shipped > /dev/null
+  k decide A 'chose X: because Y' 'f.py:1' > /dev/null
+  k decide A 'wire shape: one limit per answer' 'recommended a limit per stop' --chef changed > /dev/null
+  k decide A 'partial file: deleted' 'recommended deleting it' --chef kept > /dev/null
+  eq "$(ord A decisions | jq -r '.[1].by + "|" + .[1].took')" 'chef|changed' 'the changed call'
+  eq "$(ord A decisions | jq -r '.[2].by + "|" + .[2].took')" 'chef|kept' 'the kept call'
+  eq "$(ord A decisions | jq -r '.[0] | has("by")')" false 'a call made alone carries no owner'
+  eq "$(k calls)" 'calls 2 in 1 orders, changed 1' 'the count'
+  OUT=$(k status 2>&1)
+  has "$OUT" 'decided   chose X' 'the call made alone is shown'
+  lacks "$OUT" 'wire shape' 'the user already made theirs'
+  OUT=$(k decide A 'x: y' 'z' --chef maybe 2>&1); RC=$?
+  eq $RC 1 'an unknown outcome is refused'
+}
+
+status_lists_orders_held_for_the_users_calls_first() {
+  mkline
+  mkorder G mode=guided > /dev/null
+  mkorder S mode=guided catering=E1 stage=skeleton > /dev/null
+  mkorder H stage=calls 'question=2 calls wait for you' > /dev/null
+  OUT=$(k status 2>&1)
+  local -a rows=( ${(M)${(f)OUT}:#  READY *} )
+  eq $#rows 3 'ready rows'
+  has $rows[1] 'READY     H  calls  approved' 'the held order first, whatever its mode'
+  has $rows[1] '2 calls wait for you' 'what waits'
+  has $rows[2] 'READY     S  skeleton' 'then the skeleton'
+  has $rows[3] 'READY     G  guided' 'then guided'
+}
+
 status_never_repeats_what_it_showed_even_from_the_same_second() {
   mkline
   mkorder A status=86 reason=nope > /dev/null
@@ -826,14 +873,15 @@ order_list_shows_only_the_current_project_and_stops_outside_one() {
   has "$OUT" 'no registered project' 'message'
 }
 
-status_lists_ready_manual_then_guided_orders_with_when_they_were_approved() {
+status_lists_ready_manual_then_co_write_then_guided_orders_with_when_they_were_approved() {
   mkline
-  mkorder G mode=guided > /dev/null; mkorder M1 mode=manual > /dev/null; mkorder A > /dev/null
+  mkorder G mode=guided > /dev/null; mkorder C mode=co-write > /dev/null; mkorder M1 mode=manual > /dev/null; mkorder A > /dev/null
   OUT=$(k status 2>&1)
   local -a rows=( ${(M)${(f)OUT}:#  READY *} )
-  eq $#rows 2 'auto orders are not listed'
+  eq $#rows 3 'auto orders are not listed'
   has $rows[1] 'READY     M1  manual  approved 20' 'manual first'
-  has $rows[2] 'READY     G  guided  approved 20' 'then guided'
+  has $rows[2] 'READY     C  co-write  approved 20' 'then co-write'
+  has $rows[3] 'READY     G  guided  approved 20' 'then guided'
   lacks "$OUT" QUEUED 'no queue row'
 }
 
@@ -887,13 +935,16 @@ an_order_starts_as_manual() {
 a_project_starts_manual_only_and_refuses_a_locked_mode() {
   k line add $PROJ > /dev/null
   eq "$(k modes)" manual 'unlocked modes'
-  OUT=$(k order new X mode=guided 2>&1); RC=$?
+  OUT=$(k order new X mode=co-write 2>&1); RC=$?
   eq $RC 1 'exit code'
-  has "$OUT" 'guided is locked: 0 of 5 merged manual orders (guided_after)' 'unmet threshold'
+  has "$OUT" 'co-write is locked: 0 of 2 merged manual orders (co-write_after)' 'unmet threshold'
+  OUT=$(k order new X mode=guided 2>&1); RC=$?
+  eq $RC 1 'guided refused'
+  has "$OUT" 'guided is locked: co-write is locked: 0 of 2 merged manual orders (co-write_after)' 'guided waits on co-write'
   k order new X > /dev/null
   OUT=$(k order set X mode=auto 2>&1); RC=$?
   eq $RC 1 'auto refused'
-  has "$OUT" 'auto is locked: guided is locked: 0 of 5 merged manual orders (guided_after)' 'auto waits on guided'
+  has "$OUT" 'auto is locked: guided is locked: co-write is locked: 0 of 2 merged manual orders (co-write_after)' 'auto waits on guided'
   OUT=$(k order set X mode=sideways 2>&1); RC=$?
   eq $RC 1 'unknown mode refused'
 }
@@ -957,13 +1008,13 @@ order_new_validates_before_it_writes_so_a_retry_is_not_blocked() {
   eq "$(ord X mode)" manual 'the retry creates the order'
 }
 
-share_counts_manual_orders_made_ready_in_the_last_two_weeks() {
+share_counts_manual_and_co_write_orders_made_ready_in_the_last_two_weeks() {
   mkline
-  mkorder A mode=manual > /dev/null; mkorder B mode=manual > /dev/null; mkorder C > /dev/null
+  mkorder A mode=manual > /dev/null; mkorder B mode=co-write > /dev/null; mkorder C > /dev/null; mkorder G mode=guided > /dev/null
   mkorder D mode=manual > /dev/null; jqedit D '.ready_at = "2000-01-01T00:00:00"'
   k order new N > /dev/null
   OUT=$(k share 2>&1)
-  has "$OUT" 'manual 2 of 3 orders made ready since' 'two of the three recent ready orders are manual'
+  has "$OUT" 'manual or co-write 2 of 4 orders made ready since' 'two of the four recent ready orders are manual or co-write'
 }
 
 orders_merged_before_modes_existed_unlock_nothing() {
@@ -973,24 +1024,38 @@ orders_merged_before_modes_existed_unlock_nothing() {
   eq "$(k modes)" manual 'six merges with no mode leave the project manual-only'
 }
 
-merged_manual_orders_unlock_guided_and_merged_guided_orders_unlock_auto() {
+two_manual_merges_unlock_co_write_three_co_write_merges_unlock_guided_and_five_guided_merges_unlock_auto() {
   k line add $PROJ > /dev/null
   local i
-  for i in 1 2 3 4; do k order new M$i status=done earned=true pr=$(prurl $i) > /dev/null; done
-  k order new open1 status=pr-open pr=$(prurl 9) > /dev/null
-  eq "$(k modes)" manual '4 merged manual orders'
-  k order new M5 status=done earned=true pr=$(prurl 5) > /dev/null
-  eq "$(k modes)" $'manual\nguided' '5 merged manual orders'
-  k line set proj auto_after=2 > /dev/null
-  k order new G1 status=done earned=true pr=$(prurl 6) mode=guided > /dev/null
-  eq "$(k modes)" $'manual\nguided' 'one of two merged guided orders'
+  k order new M1 status=done earned=true pr=$(prurl 1) > /dev/null
+  k order new open1 status=pr-open pr=$(prurl 99) > /dev/null
+  eq "$(k modes)" manual '1 merged manual order'
+  k order new M2 status=done earned=true pr=$(prurl 2) > /dev/null
+  eq "$(k modes)" $'manual\nco-write' '2 merged manual orders'
+  for i in 1 2; do k order new C$i status=done earned=true pr=$(prurl 1$i) mode=co-write > /dev/null; done
+  eq "$(k modes)" $'manual\nco-write' '2 merged co-write orders'
+  OUT=$(k order set open1 mode=guided 2>&1); RC=$?
+  eq $RC 1 'guided still locked'
+  has "$OUT" 'guided is locked: 2 of 3 merged co-write orders (guided_after)' 'unmet threshold'
+  k order new C3 status=done earned=true pr=$(prurl 13) mode=co-write > /dev/null
+  eq "$(k modes)" $'manual\nco-write\nguided' '3 merged co-write orders'
+  for i in 1 2 3 4; do k order new G$i status=done earned=true pr=$(prurl 2$i) mode=guided > /dev/null; done
+  eq "$(k modes)" $'manual\nco-write\nguided' '4 merged guided orders'
   OUT=$(k order set open1 mode=auto 2>&1); RC=$?
   eq $RC 1 'auto still locked'
-  has "$OUT" 'auto is locked: 1 of 2 merged guided orders (auto_after)' 'unmet threshold'
-  k order new G2 status=done earned=true pr=$(prurl 7) mode=guided > /dev/null
-  eq "$(k modes)" $'manual\nguided\nauto' 'two merged guided orders'
+  has "$OUT" 'auto is locked: 4 of 5 merged guided orders (auto_after)' 'unmet threshold'
+  k order new G5 status=done earned=true pr=$(prurl 25) mode=guided > /dev/null
+  eq "$(k modes)" $'manual\nco-write\nguided\nauto' '5 merged guided orders'
   k order set open1 mode=auto > /dev/null
   eq "$(ord open1 mode)" auto 'auto accepted'
+}
+
+a_threshold_set_on_the_line_replaces_its_default() {
+  k line add $PROJ > /dev/null
+  k line set proj co-write_after=0 guided_after=1 > /dev/null
+  eq "$(k modes)" $'manual\nco-write' 'co-write unlocked with no merge'
+  k order new C1 status=done earned=true pr=$(prurl 1) mode=co-write > /dev/null
+  eq "$(k modes)" $'manual\nco-write\nguided' 'one merged co-write order unlocks guided'
 }
 
 an_unstamped_or_unearned_merge_counts_toward_no_unlock() {
@@ -1001,13 +1066,16 @@ an_unstamped_or_unearned_merge_counts_toward_no_unlock() {
   k order new X > /dev/null
   OUT=$(k order set X mode=auto 2>&1); RC=$?
   eq $RC 1 'auto refused'
-  has "$OUT" 'auto is locked: guided is locked: 0 of 5 merged manual orders (guided_after)' 'names the lower lock'
-  for i in 1 2 3 4 5; do k order new M$i status=done earned=true pr=$(prurl 1$i) > /dev/null; done
-  eq "$(k modes)" $'manual\nguided' 'five earned manual orders, guided orders unstamped'
+  has "$OUT" 'auto is locked: guided is locked: co-write is locked: 0 of 2 merged manual orders (co-write_after)' 'names the lowest lock'
+  for i in 1 2; do k order new M$i status=done earned=true pr=$(prurl 1$i) > /dev/null; done
+  for i in 1 2 3; do k order new C$i status=done pr=$(prurl 3$i) > /dev/null; jqedit C$i '.mode = "co-write"'; done
+  eq "$(k modes)" $'manual\nco-write' 'two earned manual orders, co-write orders unstamped'
+  for i in 1 2 3; do jqedit C$i '.earned = true'; done
+  eq "$(k modes)" $'manual\nco-write\nguided' 'three earned co-write orders, guided orders unstamped'
   for i in 1 2 3 4 5; do jqedit G$i '.earned = false'; done
-  eq "$(k modes)" $'manual\nguided' 'five unearned guided orders'
+  eq "$(k modes)" $'manual\nco-write\nguided' 'five unearned guided orders'
   for i in 1 2 3 4 5; do jqedit G$i '.earned = true'; done
-  eq "$(k modes)" $'manual\nguided\nauto' 'five earned manual and five earned guided orders'
+  eq "$(k modes)" $'manual\nco-write\nguided\nauto' 'earned manual, co-write and guided orders'
 }
 
 closing_an_order_stamps_whether_its_mode_was_unlocked_then() {
@@ -1019,6 +1087,10 @@ closing_an_order_stamps_whether_its_mode_was_unlocked_then() {
   jqedit B '.mode = "guided"'
   k order close B > /dev/null
   eq "$(ord B earned)" false 'guided closed while locked'
+  k order new W > /dev/null
+  jqedit W '.mode = "co-write"'
+  k order close W > /dev/null
+  eq "$(ord W earned)" false 'co-write closed while locked'
   k order new C recipe=catering > /dev/null
   k order close C > /dev/null
   eq "$(ord C earned)" false 'a catering order earns nothing'
@@ -1029,6 +1101,7 @@ order_next_prints_the_oldest_ready_order_of_a_mode_by_when_it_became_ready() {
   k order new LATE recipe=feature mode=manual > /dev/null
   mkorder EARLY mode=manual > /dev/null
   mkorder G mode=guided > /dev/null
+  mkorder C mode=co-write > /dev/null
   mkorder A > /dev/null
   nap 5
   k order set LATE status=ready > /dev/null
@@ -1038,6 +1111,7 @@ order_next_prints_the_oldest_ready_order_of_a_mode_by_when_it_became_ready() {
   eq "$(ord EARLY ready_at)" $stamp 'stamped once'
   eq "$(k order next manual)" EARLY 'manual'
   eq "$(k order next guided)" G 'guided'
+  eq "$(k order next co-write)" C 'co-write'
   k order set EARLY status=cooking > /dev/null
   eq "$(k order next manual)" LATE 'a claimed order is not next'
 }
@@ -1154,6 +1228,17 @@ the_scheduler_never_starts_a_catering_order() {
   tick; nap 20
   eq $(ncalls) 0 'sessions'
   eq "$(ord C2 status)" ready 'still ready'
+}
+
+the_scheduler_never_starts_an_order_held_for_the_users_calls_until_they_answer() {
+  mkline; mode hang
+  mkorder H stage=calls 'question=2 calls wait for you' > /dev/null
+  tick; nap 20
+  eq $(ncalls) 0 'no session while the calls wait'
+  k order set H status=ready pid=0 stage= question= > /dev/null
+  tick; wait_calls 1
+  has "$OUT" 'cook H' 'started once the user answered'
+  eq "$(ord H mode)" auto 'still auto'
 }
 
 the_scheduler_never_starts_a_deployment_waiting_for_its_skeleton() {

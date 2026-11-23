@@ -7,12 +7,13 @@ One deployment of a catering order: its skeleton with the user, its phases in th
 At `stage=skeleton` the user is here: only they start a deployment at this stage, and its mode stays as filed.
 
 1. **Research the standards.** Per the [look it up](../../../../dependencies/principles/look-it-up.md) principle, the standard patterns for this stack and kind of feature, from current docs and practice, with sources; per the [how](../../stations/how.md) station, the patterns the project already uses where the deployment joins it. Present them one point at a time, per [catering](../catering.md#talking-to-the-user): the pattern, why it is the standard, and what it means for this skeleton. Where the project's pattern and the standard differ, the user picks.
-2. **Draft the skeleton** per the [architect](../../stations/architect.md) station's sketch, at the paths in the skeleton task's Files: the modules, types, signatures, and stubs whose bodies are not implemented and whose docstrings state the behavior, holding every contract its Produces line names. Then the [contract](../../stations/contract.md) station writes the tests for the spec tests this deployment owes, briefed with the skeleton and the deployment's mode.
-3. **Refine it with the user** until they approve it. A change to a contract rewrites its DEC in the implementation plan, and every task that cites it.
+2. **Write the skeleton with the user, one part at a time**, per the [chef's table](../../stations/chefs-table.md#a-piece-with-no-precedent) station, from the [architect](../../stations/architect.md) station's sketch and at the paths in the skeleton task's Files: the modules, types, signatures, and stubs whose bodies are not implemented and whose docstrings state the behavior, holding every contract its Produces line names. A change to a contract rewrites its DEC in the implementation plan, and every task that cites it.
+3. **Write its tests.** The [contract](../../stations/contract.md) station writes the tests for the spec tests this deployment owes, briefed with the agreed skeleton and the deployment's mode. Show them to the user and refine until they approve.
 4. **Commit it** as phase 1 per the contract station, a contract commit unless the deployment is `manual`, then `kitchen.zsh order set <KEY> stage=build "step=phase 1 Skeleton"`.
 5. **Hand on by mode.**
    - `auto`: `kitchen.zsh order set <KEY> status=ready pid=0`. Say the scheduler builds the rest and the PR comes back for their review, and end.
    - `guided`: hand the [goal line](../../cook.md#the-goal-line), and carry on with [The phases](#the-phases).
+   - `co-write`: carry on with [The phases](#the-phases) one task at a time, each written the [co-write way](../../cook.md#a-co-write-order) from its step 2 by one worker for the whole deployment, the gate's fixes included, and hand the goal line once the last phase is committed.
    - `manual`: go the [manual way](../../cook.md#a-manual-order) from its step 2, with the skeleton tests' run command as its test command, and work per [Manual phases](#manual-phases).
 
 ## The phases

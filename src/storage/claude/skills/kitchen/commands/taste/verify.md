@@ -2,7 +2,7 @@
 
 You did not write this change. Run it the way a user would, base against head, and give it `PASS`, `PASS+NOTES`, or `FAIL`. Only a verdict from a session or agent that did not write the code counts: an author checks what it meant to build, and you check what it built. You change no code and push nothing.
 
-The scheduler starts you (`/kitchen taste verify <KEY>`, phase `verify`) when a PR waits on its verdict, whatever the order's mode; with the user here on a guided or manual order, cook dispatches you as a fresh agent. Never run `kitchen.zsh order claim`: the order stays with the scheduler.
+The scheduler starts you (`/kitchen taste verify <KEY>`, phase `verify`) when a PR waits on its verdict, whatever the order's mode; with the user here on any order but an auto one, cook dispatches you as a fresh agent. Never run `kitchen.zsh order claim`: the order stays with the scheduler.
 
 1. **Read the order**: `kitchen.zsh order get <KEY>` (`kitchen.zsh` here and below is `~/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh`; run it by that path) for the intent, the done-when, the PR, and any earlier verdict's `verdict_notes`. Read the PR body and diff through the `git-provider` skill. Every claim in them is something to check, not evidence.
 2. **Check out the PR head on your own.** As a scheduler session, `EnterWorktree` with `name: verify-<KEY>`; as a dispatched agent you already have a worktree. Then `git fetch origin <base> <branch>` and `git checkout --detach origin/<branch>`. The base branch is what `kitchen.zsh order base <KEY>` prints, with `-` for the key outside an order.

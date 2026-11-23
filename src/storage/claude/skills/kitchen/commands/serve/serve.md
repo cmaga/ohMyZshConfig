@@ -43,7 +43,7 @@ A raw ticket is often a placeholder: stale, a duplicate, low value, or written w
 7.  **Write the order** in one command. First write each text field to its own file with the Write tool, the list fields (`done_when`, `station`, `steps`) as JSON arrays. `intent` is the agreed scope. `station` lists the files and directories you expect the order to touch; the scheduler never runs two orders whose stations overlap.
 
         kitchen.zsh order set <KEY> status=ready recipe=<recipe> \
-          mode=<manual|guided|auto> review=<true|false> review_why=@<file> \
+          mode=<manual|co-write|guided|auto> review=<true|false> review_why=@<file> \
           answer=@<file> summary=@<file> intent=@<file> done_when=@<file> \
           station=@<file> steps=@<file>
 

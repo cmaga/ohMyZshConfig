@@ -56,7 +56,7 @@ cp -R "$tickets_skill" "$HOME/.claude/skills/ticket-provider"
 k="$HOME/.claude/skills/kitchen/dependencies/scripts/kitchen.zsh"
 # every mode unlocked, so a case can take the mode it tests
 slug=$(zsh "$k" line add "$PWD" 2>/dev/null)
-zsh "$k" line set "$slug" guided_after=0 auto_after=0 >/dev/null
+zsh "$k" line set "$slug" co-write_after=0 guided_after=0 auto_after=0 >/dev/null
 
 mkdir -p "$HOME/.jira-mock"
 tickets=$case_dir/tickets.json

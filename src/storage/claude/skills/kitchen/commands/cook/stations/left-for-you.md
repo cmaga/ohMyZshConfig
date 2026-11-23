@@ -1,6 +1,6 @@
 # Left for you
 
-A PR is finished code: no question rides on it, and no order waits on an answer. What only the user can decide is asked in the session when they are there (`manual` and `guided`) and decided by the escalation agent when they are not (`auto`), so an `auto` order reaches its PR unless it cannot run at all ([Autonomy](../../../SKILL.md#autonomy)). This is how a candidate is routed.
+A PR is finished code: no question rides on it. The design calls that are the user's were put to them before the code, at the [chef's table](chefs-table.md). What only the user can decide after that is asked in the session when they are there (`manual` and `guided`) and decided by the escalation agent when they are not (`auto`), so an `auto` order past the chef's table reaches its PR unless it cannot run at all ([Autonomy](../../../SKILL.md#autonomy)). This is how a candidate is routed.
 
 ## Discovered issues
 
@@ -34,7 +34,7 @@ Apply every `fold` yourself, one commit per fold (a fixup when it corrects a bra
 Each `escalate` then goes by the order's mode:
 
 - **`auto`**: a fix that cannot ride is filed as a ticket and cited in the PR, as above. A Design finding or a product call is decided by the escalation agent's own recommendation, recorded with `kitchen.zsh decide`, listed in the PR description under Approach, and sets `review=true "review_why=decided alone: <the call>"`. A better design than the decided one, or a change to what the ticket says to keep, is never made: build the decided one, file the alternative as a follow-up ticket with `kitchen.zsh filed`, and cite it in the PR.
-- **`guided`**: asked of the user, as below, a better design or a change to what the ticket keeps included.
+- **`co-write` and `guided`**: asked of the user, as below, a better design or a change to what the ticket keeps included.
 - **`manual`**: the user writes the code; the gate reports these as findings.
 
 ## The cap
@@ -43,7 +43,7 @@ Each `escalate` then goes by the order's mode:
 
 ## With the user here
 
-In a `guided` session, present the `escalate` items one at a time: what it is, why it could not ride the branch, the escalation agent's recommendation and yours where they differ. Then stop. The user decides; dispatch a subagent to carry out the decision, and for a ticket they say to file, record it with `kitchen.zsh filed`. **The user saying `next` advances.** Never present two at once. Nothing is held for them afterward: the PR does not wait on an answer.
+In a `co-write` or `guided` session, present the `escalate` items one at a time: what it is, why it could not ride the branch, the escalation agent's recommendation and yours where they differ. Then stop. The user decides; dispatch a subagent to carry out the decision, and for a ticket they say to file, record it with `kitchen.zsh filed`. **The user saying `next` advances.** Never present two at once. Nothing is held for them afterward: the PR does not wait on an answer.
 
 > **Concurrent venue probes on the trader's start floor: file it, or leave it?**
 >

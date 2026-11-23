@@ -4,7 +4,7 @@
 # only through this script, so the format lives in one place.
 #
 # State lives in ~/.claude-artifacts/workflows/kitchen/<slug>/ (user lifecycle):
-#   line.json          project path, capacity, and the unlock thresholds guided_after and auto_after
+#   line.json          project path, capacity, and the unlock thresholds co-write_after, guided_after and auto_after
 #   orders/<KEY>.json  one order per ticket
 #   catches.tsv        date key taster class note source
 #   promoted.tsv       class ticket time
@@ -19,15 +19,16 @@
 #   kitchen signoff KEY ANSWER...            bring a dropped order back
 #   kitchen modes                            the modes this project has unlocked
 #   kitchen overrides                        this project's orders that carry a mode_override, oldest first
-#   kitchen share                            how many of this project's orders made ready in the last 14 days are manual
+#   kitchen share                            how many of this project's orders made ready in the last 14 days are manual or co-write
+#   kitchen calls                            how many calls the user made at the chef's table in this project's last 20 orders that had one, and how many changed the recommendation
 #   kitchen handoff KEY                      open a manual order's worktree in a new VS Code window
 #   kitchen stage KEY                        open a catering deployment's PR as staged changes in a review worktree in VS Code
 #   kitchen filed KEY TICKET WHY             record a follow-up ticket filed for the order
 #   kitchen order get KEY                    print the order
 #   kitchen order new KEY [field=value...]   create an order in the current project
 #   kitchen order set KEY field=value...     update fields
-#   kitchen order claim KEY                  mark the order as worked by this session; refused while another holds it; an auto order becomes guided
-#   kitchen order next MODE                  key of the project's oldest ready order of that mode (manual or guided)
+#   kitchen order claim KEY                  mark the order as worked by this session; refused while another holds it; an auto order becomes guided, except at the skeleton or calls stage
+#   kitchen order next MODE                  key of the project's oldest ready order of that mode (manual, co-write or guided)
 #   kitchen order base KEY|-                 the branch the order's work starts from and merges into; - for this repo's
 #   kitchen order pr KEY URL                 record the PR and hand it to the scheduler
 #   kitchen order verify KEY                 hand the PR to the scheduler for a verdict from a session that did not write it
@@ -37,7 +38,7 @@
 #   kitchen order close KEY                  mark the order done and move its ticket with the merged moment
 #   kitchen order list [STATUS]              this project's orders, or those with that status
 #   kitchen order transcript KEY [--conversation]  path of the order's last session transcript; --conversation prints only what the user and the session said
-#   kitchen decide KEY "decision: why" EVIDENCE      log a call made without the user, with what backs it
+#   kitchen decide KEY "decision: why" EVIDENCE [--chef kept|changed]  log a call made without the user, with what backs it; --chef logs one the user made, and whether they kept the recommendation
 #   kitchen catch KEY|- TASTER CLASS NOTE [--chef]   log a review finding; prints promote, or climb TICKET, when due
 #   kitchen classes [TASTER]                 catch classes this project has seen
 #   kitchen promoted CLASS TICKET|-          record what answers a due promotion; - leaves it until its next catch
@@ -60,7 +61,7 @@ TICKET="$HOME/.claude/skills/ticket-provider/dependencies/scripts/ticket.zsh"
 MAX_RETRIES=3
 LIMIT_WAIT=1800
 KILL_AFTER=300
-UNLOCK_AFTER=5
+typeset -A UNLOCK_AFTER=(co-write 2 guided 3 auto 5)
 DEFAULT_MINUTES='{"cook":360,"follow":120,"verify":90}'
 # A session with no side effect this long is stuck: no order update, no commit or reset in its worktree.
 DEFAULT_STALL='{"cook":60,"follow":45,"verify":45}'
@@ -163,15 +164,17 @@ order_base() { # ORDER-FILE: the order's own base, else its project's
 }
 
 lock_reason() { # DIR MODE: why the project has not unlocked MODE; nothing when it has
-  local need prev merged=0
+  local need=${2}_after prev merged=0
   case $2 in
     manual) return 0 ;;
-    guided) need=guided_after prev=manual ;;
-    auto) need=auto_after prev=guided
-      local below=$(lock_reason $1 $prev)
-      [[ -z $below ]] || { print -- "$2 is locked: $below"; return 0; } ;;
+    co-write) prev=manual ;;
+    guided) prev=co-write ;;
+    auto) prev=guided ;;
+    *) print -- "$2 is not a mode"; return 0 ;;
   esac
-  local after=$(jq -r --arg k $need --argjson d $UNLOCK_AFTER '.[$k] // $d' $1/line.json)
+  local below=$(lock_reason $1 $prev)
+  [[ -z $below ]] || { print -- "$2 is locked: $below"; return 0; }
+  local after=$(jq -r --arg k $need --argjson d $UNLOCK_AFTER[$2] '.[$k] // $d' $1/line.json)
   local -a f=( $1/orders/*.json(N) )
   # an order merged before modes existed, or while its mode was locked, is not earned and counts toward nothing
   (( $#f )) && merged=$(jq -s --arg m $prev 'map(select(.status == "done" and (.pr // "") != "" and .mode == $m and .earned == true)) | length' $f)
@@ -182,7 +185,7 @@ NO_CODE_RECIPES=(investigation prototype eval runtime-forensics trace-forensics 
 GUIDED_ONLY_RECIPES=(enforce change-a-skill)
 
 check_mode() { # DIR MODE [RECIPE]: die unless MODE is one the project has unlocked and the recipe allows
-  [[ $2 == (manual|guided|auto) ]] || die "mode is manual, guided, or auto, not $2"
+  [[ $2 == (manual|co-write|guided|auto) ]] || die "mode is manual, co-write, guided, or auto, not $2"
   (( ${GUIDED_ONLY_RECIPES[(Ie)${3:-}]} )) && { [[ $2 == guided ]] || die "$3 runs only guided"; return 0; }
   # the lock builds trust in code the line writes, so a recipe that ships none may always run guided
   [[ $2 == guided && -n ${3:-} ]] && (( ${NO_CODE_RECIPES[(Ie)$3]} )) && return 0
@@ -190,16 +193,16 @@ check_mode() { # DIR MODE [RECIPE]: die unless MODE is one the project has unloc
   [[ -z $why ]] || die $why
 }
 
-share() { # this project's manual share, for intake's practice pick: manual orders among those made ready in the last 14 days
+share() { # this project's practice share, for intake's practice pick: manual and co-write orders among those made ready in the last 14 days
   local slug; slug=$(slug_here) || exit 1
   local since=$(strftime '%Y-%m-%dT%H:%M:%S' $(( EPOCHSECONDS - 14 * 86400 )))
-  orders_json $slug | jq -r --arg s "$since" 'map(select((.ready_at // "") > $s)) | "manual \(map(select(.mode == "manual")) | length) of \(length) orders made ready since \($s[0:10])"'
+  orders_json $slug | jq -r --arg s "$since" 'map(select((.ready_at // "") > $s)) | "manual or co-write \(map(select(.mode == "manual" or .mode == "co-write")) | length) of \(length) orders made ready since \($s[0:10])"'
 }
 
 modes() { # the modes the current project has unlocked
   local slug; slug=$(slug_here) || exit 1
   local m
-  for m in manual guided auto; do [[ -z $(lock_reason $BOOK/$slug $m) ]] && print -- $m; done
+  for m in manual co-write guided auto; do [[ -z $(lock_reason $BOOK/$slug $m) ]] && print -- $m; done
   return 0
 }
 
@@ -259,13 +262,24 @@ order_new() { # SLUG KEY [field=value...]
   return 0
 }
 
-decide() { # KEY DECISION EVIDENCE: a call made without the user, with what backs it
+decide() { # KEY DECISION EVIDENCE [--chef kept|changed]: a call made without the user, with what backs it; --chef logs a call the user made at the chef's table, and whether they kept the recommendation
   local f; f=$(need_order $1) || exit 1
-  local d e
+  local d e took=
   text_of "${2:?decision}"; d=$REPLY
   text_of "${3:?evidence}"; e=$REPLY
-  jq_write $f '.decisions = ((.decisions // []) + [{at: $t, what: $d, evidence: $e}]) | .updated = $t' \
-    --arg t "$(now_iso)" --arg d "$d" --arg e "$e"
+  if [[ ${4:-} == --chef ]]; then
+    [[ ${5:-} == (kept|changed) ]] || die "--chef takes kept or changed"
+    took=$5
+  fi
+  jq_write $f '.decisions = ((.decisions // []) + [{at: $t, what: $d, evidence: $e} + (if $took == "" then {} else {by: "chef", took: $took} end)]) | .updated = $t' \
+    --arg t "$(now_iso)" --arg d "$d" --arg e "$e" --arg took "$took"
+}
+
+calls() { # the user's calls at the chef's table in this project's last 20 orders that had one, and how many changed the recommendation
+  local slug; slug=$(slug_here) || exit 1
+  orders_json $slug | jq -r '[.[] | select(any((.decisions // [])[]; .by == "chef"))] | sort_by(.updated) | reverse | .[0:20] as $o
+    | [$o[] | .decisions[] | select(.by == "chef")] as $c
+    | "calls \($c | length) in \($o | length) orders, changed \($c | map(select(.took == "changed")) | length)"'
 }
 
 proc_table() { # one ps snapshot into PROC_PARENT, PROC_NAME and PROC_ARGS by pid; all empty where ps cannot list processes
@@ -278,8 +292,8 @@ proc_table() { # one ps snapshot into PROC_PARENT, PROC_NAME and PROC_ARGS by pi
   return 0
 }
 
-user_held() { # ORDER-FILE: true when a session the user started holds the order: not an auto order's cook session, nor a follow-up or verify; a skeleton is always the user's
-  jq -r '((.mode // "manual") != "auto" or .stage == "skeleton") and .phase == "cook"' $1
+user_held() { # ORDER-FILE: true when a session the user started holds the order: not an auto order's cook session, nor a follow-up or verify; a skeleton, or an order held for the user's calls, is always the user's
+  jq -r '((.mode // "manual") != "auto" or .stage == "skeleton" or .stage == "calls") and .phase == "cook"' $1
 }
 
 claim() { # KEY: mark the order as worked by the Claude session this runs in
@@ -314,8 +328,8 @@ claim() { # KEY: mark the order as worked by the Claude session this runs in
   # the first session to work an order is the one kitchen review opens later
   local -a mine=()
   [[ -z $(jq -r '.builder // ""' $f) && -n ${CLAUDE_CODE_SESSION_ID:-} ]] && mine=(builder=$CLAUDE_CODE_SESSION_ID)
-  # a skeleton is the user's whatever its mode, and the order keeps its mode for the build
-  [[ $(jq -r '.mode // ""' $f) == auto && $(jq -r '.stage // ""' $f) != skeleton ]] && mine+=(mode=guided)
+  # a skeleton, or an order held for the user's calls, is the user's whatever its mode, and the order keeps its mode for the build
+  [[ $(jq -r '.mode // ""' $f) == auto && $(jq -r '.stage // ""' $f) != (skeleton|calls) ]] && mine+=(mode=guided)
   MODE_FORCE=1 order_set $1 status=cooking phase=cook pid=$own started=$EPOCHSECONDS "claimed_from=$st" $mine
   print -- ok
 }
@@ -388,13 +402,13 @@ status() { # this project: what waits on the user, what is ready to start, what 
       | "  REVIEW    \(.key)\(if .recipe == "catering" then "  [catering]" else "" end)  \(.pr)\(if .review_why then "  (\(.review_why))" else "" end)\(if .builder then "  kitchen review \(.key)" else "" end)\(if .catering then "  kitchen stage \(.key)" else "" end)" ),
     ( (map(select(.status == "done")) | map(.key)) as $done
       | map(select(.status == "ready" and (((.after // []) - $done) | length) == 0)) as $ready
-      | ("skeleton", "manual", "guided") as $m
-      | $ready | map(select(if $m == "skeleton" then .stage == "skeleton" else .stage != "skeleton" and (.mode // "manual") == $m end)) | sort_by(.ready_at // .created)[]
+      | ("calls", "skeleton", "manual", "co-write", "guided") as $m
+      | $ready | map(select(if $m == "calls" or $m == "skeleton" then .stage == $m else .stage != "skeleton" and .stage != "calls" and (.mode // "manual") == $m end)) | sort_by(.ready_at // .created)[]
       | "  READY     \(.key)  \($m)\(if .catering then "  [\(.catering)]" else "" end)  approved \((.ready_at // .created)[0:16])\(if .recipe == "catering" then "  [catering]" else "" end)  \(.question // .summary // "")" ),
     ( map(select(.updated > $s)) as $new
       | ( $new | map(select(.status == "done" and .pr))[]
           | "  merged    \(.key)  \(.summary // "")",
-            ( select((.review // false) | not) | (.decisions // [])[] | "    decided   \(.what)\(if .evidence then "  (\(.evidence))" else "" end)" ) ),
+            ( select((.review // false) | not) | (.decisions // [])[] | select(.by != "chef") | "    decided   \(.what)\(if .evidence then "  (\(.evidence))" else "" end)" ) ),
         ( $new | map(select(.status == "86"))[] | "  dropped   \(.key)  \(.reason // "")" ),
         ( .[] | .key as $k | (.filed // [])[] | select(.at > $s) | "  filed     \($k)  \(.ticket)  \(.why)" ) )' <<< $book
   [[ -f $dir/promoted.tsv ]] && awk -F'\t' -v s="$since" '$3 > s {print "  promoted  " $1 " -> " $2}' $dir/promoted.tsv
@@ -586,7 +600,7 @@ sample() { # KEY: what this PR needs before it merges, run from its worktree: re
 }
 
 order_next() { # MODE: key of the current project's oldest ready order of that mode, by when it became ready
-  [[ $1 == (manual|guided) ]] || die "next takes manual or guided, not $1"
+  [[ $1 == (manual|co-write|guided) ]] || die "next takes manual, co-write, or guided, not $1"
   local slug; slug=$(slug_here) || exit 1
   # the user starts a catering order with take, and an order waits until every order in its after list is done
   local key=$(orders_json $slug | jq -r --arg m $1 '(map(select(.status == "done")) | map(.key)) as $done
@@ -892,7 +906,7 @@ reap() { # SLUG: settle every session that ended since the last pass; stop one p
   local -a live
   proc_table
   orders_json $slug | jq -r --arg us $'\x1f' --argjson lim "$lim" --argjson stall "$stall" '.[] | select(.pid > 0)
-      | [.key, .status, (.pid|tostring), (.phase // "-"), ((((.mode // "manual") != "auto" or .stage == "skeleton") and .phase == "cook")|tostring), (.log // "-"), (if (.pr // "") == "" then "-" else .pr end),
+      | [.key, .status, (.pid|tostring), (.phase // "-"), ((((.mode // "manual") != "auto" or .stage == "skeleton" or .stage == "calls") and .phase == "cook")|tostring), (.log // "-"), (if (.pr // "") == "" then "-" else .pr end),
          (.recipe // "-"), ((.started // 0)|tostring), (.session // "-"), (.claimed_from // "-"),
          (($lim[.phase // ""] // 0)|tostring), ((.handed // 0)|tostring), ((.touched // 0)|tostring),
          ((.stop_at // 0)|tostring), (($stall[.phase // ""] // 0)|tostring), ((.verified_at // 0)|tostring)] | join($us)' |
@@ -1004,12 +1018,12 @@ cook_next() { # SLUG DRY: start ready auto orders whose files are free, up to ma
   local max=$(jq -r .max_cooking $dir/line.json)
   local busy=$(jq -r 'map(select(.pid > 0)) | length' <<< $book)
   (( busy < max )) || return 0
-  # a catering order is wrapped up by the user and a skeleton is worked with them, so neither starts here; an order
+  # a catering order is wrapped up by the user, a skeleton is worked with them, and an order held for their calls waits on their answer, so none starts here; an order
   # waits until every order in its after list is done; each pick claims its files for the next
   for key in ${(f)"$(jq -r --argjson now $EPOCHSECONDS --argjson free $(( max - busy )) '
     def overlaps($a; $b): ($a | startswith($b)) or ($b | startswith($a));
     (map(select(.status == "done")) | map(.key)) as $done
-    | reduce (map(select(.status == "ready" and .mode == "auto" and (.recipe != "catering" and .stage != "skeleton") and .retry_after <= $now
+    | reduce (map(select(.status == "ready" and .mode == "auto" and (.recipe != "catering" and .stage != "skeleton" and .stage != "calls") and .retry_after <= $now
         and (((.after // []) - $done) | length) == 0)) | sort_by(.created))[] as $o
       ({hot: (map(select(.status == "cooking")) | map(.station[]?)), keys: []};
        if (.keys | length) < $free and ([.hot[] as $h | $o.station[]? as $s | overlaps($h; $s)] | any | not)
@@ -1058,6 +1072,7 @@ case ${1:-status} in
   modes) modes ;;
   overrides) overrides ;;
   share) share ;;
+  calls) calls ;;
   handoff) shift; handoff "$@" ;;
   stage) shift; stage "$@" ;;
   filed) shift; filed "$@" ;;

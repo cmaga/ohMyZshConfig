@@ -36,11 +36,11 @@ Compare viable candidates on interface depth. Prefer the design that hides more 
 
 Arena returns one synthesized design package. Its synthesis decision fills the rationale's "Synthesis decision" section.
 
-## Phase C: Agree (opt-in)
+## Phase C: Agree
 
-Default: proceed directly to implementation with the synthesized design. No human checkpoint.
+Run the [chef's table](chefs-table.md) station on the synthesized design: the calls that are the user's go to them, and the rest of the design proceeds with no checkpoint.
 
-Opt in to a checkpoint when the invoker explicitly asks: "architect with checkpoint," "stop and show me before implementing," or similar. Then surface the synthesized design and pause for sign-off.
+Surface the whole design and pause for sign-off only when the invoker explicitly asks: "architect with checkpoint," "stop and show me before implementing," or similar.
 
 The synthesis can ship as its own commit either way, as the "scaffold first" mode of the [foundational thinking](../../../dependencies/principles/foundational-thinking.md) principle. Planned and scoped breakage during fill-in is fine, per the [outcome-oriented execution](../../../dependencies/principles/outcome-oriented-execution.md) principle. For adversarial pressure on the design before implementing, run the [interrogate](interrogate.md) station on the synthesized sketch.
 

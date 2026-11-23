@@ -16,7 +16,7 @@ A measured slowness to trace and improve against a baseline.
    7. Do it cheaper.
 
    When an earlier mantra meets the target, stop.
-3. Plan the fix from the trace. If it crosses a function boundary, run the [architect](../stations/architect.md) station first. Delegate implementation to a `worker-agent` on the code role ([SKILL.md](../../../SKILL.md#subagents)). Review the diff. Capture a post-fix trace. Apply the [sequence verifiable units](../../../dependencies/principles/sequence-verifiable-units.md) principle, verifying each attempt before trying the next.
+3. Plan the fix from the trace. If it crosses a function boundary, run the [architect](../stations/architect.md) station first. A call in the plan that is the user's goes to them first, per the [chef's table](../stations/chefs-table.md) station. Delegate implementation to a `worker-agent` on the code role ([SKILL.md](../../../SKILL.md#subagents)). Review the diff. Capture a post-fix trace. Apply the [sequence verifiable units](../../../dependencies/principles/sequence-verifiable-units.md) principle, verifying each attempt before trying the next.
 4. Parse and compare the artifacts (JSON to sqlite, diff). "Inconclusive" or wrong-surface is not a pass. Flag it.
 5. Cite the measurement in the PR.
 6. Run the [open a PR](open-a-pr.md) recipe.
