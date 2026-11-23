@@ -439,6 +439,47 @@ Your design calls had no place. The three-mode redesign had you make them at int
 
 ---
 
+## Redesign: four modes
+
+Decided in conversation and built on 2026-11-22. Where an earlier section disagrees, this one holds.
+
+### Why
+
+- **Manual's value was reading, not typing.** You reported on 2026-11-22 that manual helped because reading and probing the code produced useful changes, and that typing it was far too slow. In the week after modes began, engine merged no manual order: two were dropped, and two were still being written after 3 and 5 days.
+- **Reading code as it is written kept most of what writing it teaches, in the one trial found.** In Anthropic's randomized trial of 52 developers learning a new library ([How AI assistance impacts the formation of coding skills](https://www.anthropic.com/research/AI-assistance-coding-skills), early 2026, read as its research page), the AI group scored 50% on a comprehension quiz against 67% for those who coded by hand. Those who had the AI write code and then asked it questions to understand it scored 65% or more, and those who handed it everything scored under 40%. The reading group was 2 people, the tool was a chat assistant, and the authors claim no cause.
+- **Co-write is for learning, not for risk.** Picking a whole-order mode for risk sent 14 of 23 engine orders to typing ([the chef's table](#redesign-the-chefs-table)). Risk stays with the chef's table, and co-write takes manual's practice rule.
+
+### How it works
+
+| Mode | Who writes the code | Who starts it |
+|---|---|---|
+| manual | You | You |
+| co-write | The line, one piece at a time, each read by you before the next | You, with `/kitchen next co-write` or `take <KEY>` |
+| guided | The line, with you in the session | You |
+| auto | The line, headless | The scheduler |
+
+- **The pieces.** New files are shown as the chef's table shows a piece with no precedent, whether or not the repo has one: the layout, then the signatures one module per message. Then each test file the contract author wrote. Then one `worker-agent` on the code role writes one function body or edit at a time, continued with your answer to each, so the code is still written by the role the roster sets and briefed without the done-when. The gate, the verdict and the PR run as on a guided order, under the goal line, which is handed once the last piece is agreed. Its review is set at intake; only a manual PR always waits for you.
+- **The ladder.** Every project starts manual-only. 2 merged manual orders unlock co-write, 3 merged co-write orders unlock guided, and 5 merged guided orders unlock auto (`co-write_after`, `guided_after` and `auto_after` in `line.json`). No project had set a threshold or earned a merge, so nothing migrates.
+- **Mode rule 3** is co-write for practice, and the 15% share counts manual and co-write orders. A locked pick falls back in the order auto, guided, co-write, manual.
+
+### What it changes
+
+| Before | Now |
+|---|---|
+| Three modes | Four |
+| 5 merged manual orders unlock guided | 2 merged manual orders unlock co-write, and 3 merged co-write orders unlock guided |
+| Mode rule 3: manual, for practice | Co-write, for practice |
+| `kitchen.zsh share` counts manual orders | Manual and co-write orders |
+
+### Unverified
+
+- The thresholds 2, 3 and 5 are a judgment, as the 5 and 5 they replace were.
+- Whether co-write teaches you enough at a pace you can keep rests on your report and one small trial. It shows in how long co-write orders take, and in how much you change once you read the code.
+- A piece is sized only as "what reads in one go".
+- Continuing one worker across pieces with `SendMessage` has not run in a real order.
+
+---
+
 ## What is built
 
 The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and hook in one area. The kitchen's own pieces:
