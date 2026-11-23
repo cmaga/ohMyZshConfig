@@ -116,7 +116,7 @@ Adds to [merge](../../commands/cook/recipes/merge.md) and [follow a PR](../../co
 
 ## Cleanup
 
-`kitchen.zsh prune` and the scheduler's daily pass land a closed order's worktree one package at a time, by the rules that land a lone repository's worktree. They keep a package with uncommitted changes, one with a detached head, and a dropped order's package whose changes its base lacks. Then they delete the Brazil worktree and `verify-<KEY>`. A `package-lock.json` the Gate rewrote and nobody restored keeps the worktree.
+`kitchen.zsh prune` and the scheduler's daily pass land a closed order's worktree one package at a time, by the rules that land a lone repository's worktree. They keep a package with uncommitted changes, one with a detached head, and a dropped order's package whose changes its base lacks. Then they delete the Brazil worktree, run the teardown of each package in `verify-<KEY>`, and delete it too. A teardown file lives in the package directory, `<wt>/src/<Pkg>/.claude-artifacts/teardown.sh`, never at the Brazil worktree's root, where nothing runs it. A `package-lock.json` the Gate rewrote and nobody restored keeps the worktree.
 
 ## Subagents
 

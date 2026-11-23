@@ -845,6 +845,12 @@ notice() { # DIR TEXT: a line for the user's next catch-up
   print -r -- "$(now_iso)	${2//	/ }" >> $1/notices.tsv
 }
 
+run_teardown() { # DIR WORKTREE: run what the worktree's sessions recorded to undo, before it goes
+  [[ -f $2/.claude-artifacts/teardown.sh ]] || return 0
+  ( cd $2 && bash .claude-artifacts/teardown.sh < /dev/null ) >> $1/log/teardown.log 2>&1 && return 0
+  notice $1 "teardown failed in ${2:t}; see $1/log/teardown.log"
+}
+
 land_worktree() { # PROJECT WORKTREE DRY DIR MERGED BASE: remove a closed order's worktree; else say why it stays
   local project=$1 wt=$2 dry=$3 dir=$4 merged=$5 base=$6 l
   local branch=$(git -C $wt branch --show-current 2>/dev/null)
@@ -859,9 +865,7 @@ land_worktree() { # PROJECT WORKTREE DRY DIR MERGED BASE: remove a closed order'
     fi
   fi
   if [[ -n $dry ]]; then print -- "  would remove ${wt:t} ($branch)"; return 0; fi
-  if [[ -f $wt/.claude-artifacts/teardown.sh ]] && ! ( cd $wt && bash .claude-artifacts/teardown.sh < /dev/null ) >> $dir/log/teardown.log 2>&1; then
-    notice $dir "teardown failed in ${wt:t}; see $dir/log/teardown.log"
-  fi
+  run_teardown $dir $wt
   # a test the run timed out can leave its child looping after the worktree is gone
   reap_orphans $wt
   # the vault branch can only tell it landed while the code branch still exists
@@ -888,7 +892,10 @@ land_ws() { # LINE-DIR KEY MERGED DRY: a workspace line's closed order: each rep
   done
   [[ -d $wd && -z $kept && -z $dry ]] && ws_run $dir remove $key && print -- "  removed $key"
   [[ -d $vd ]] || return 0
-  if [[ -n $dry ]]; then print -- "  would remove verify-$key"; else ws_run $dir remove verify-$key && print -- "  removed verify-$key"; fi
+  if [[ -n $dry ]]; then print -- "  would remove verify-$key"; return 0; fi
+  for wt in $vd/src/*(/N); do run_teardown $dir $wt; done
+  reap_orphans $vd
+  ws_run $dir remove verify-$key && print -- "  removed verify-$key"
 }
 
 land_order() { # PROJECT DIR KEY EPIC STATUS DRY: remove the worktrees of a closed order
@@ -902,7 +909,11 @@ land_order() { # PROJECT DIR KEY EPIC STATUS DRY: remove the worktrees of a clos
   # a verify or staged review checkout is detached and holds nothing of its own
   for wt in $project/.claude/worktrees/{verify,review}-$key(N/); do
     if [[ -n $6 ]]; then print -- "  would remove ${wt:t}"
-    else git -C $project worktree remove --force $wt >/dev/null 2>&1 && print -- "  removed ${wt:t}"; fi
+    else
+      run_teardown $dir $wt
+      reap_orphans $wt
+      git -C $project worktree remove --force $wt >/dev/null 2>&1 && print -- "  removed ${wt:t}"
+    fi
   done
   return 0
 }

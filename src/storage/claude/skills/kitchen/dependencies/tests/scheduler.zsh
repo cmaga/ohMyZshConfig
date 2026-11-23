@@ -25,7 +25,7 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 unset CLAUDE_CODE_SESSION_ID ZSH
-export HOME=$SB/home
+export HOME=$SB/home ZDOTDIR=$SB/home
 export PATH=$SB/bin:$PATH
 export GIT_CONFIG_GLOBAL=$SB/gitconfig GIT_CONFIG_NOSYSTEM=1
 export GIT_AUTHOR_NAME=harness GIT_AUTHOR_EMAIL=harness@example.invalid
@@ -1729,6 +1729,19 @@ prune_removes_a_closed_orders_review_worktree() {
   has "$OUT" 'removed review-C1' 'review beside the order worktree'
   has "$OUT" 'removed review-C2' 'review alone'
   isyes "[[ ! -d $(wt C1) && ! -d $(wt review-C1) && ! -d $(wt review-C2) ]]" 'all gone'
+}
+
+prune_runs_the_teardown_of_a_closed_orders_verify_and_review_worktrees() {
+  mkline; mkorder C1 > /dev/null
+  local n; for n in verify-C1 review-C1; do
+    git -C $PROJ worktree add -q --detach $(wt $n) origin/main 2>/dev/null
+    mkdir -p $(wt $n)/.claude-artifacts
+    print "echo $n >> $BOOKDIR/teardowns" > $(wt $n)/.claude-artifacts/teardown.sh
+  done
+  k order set C1 status=done > /dev/null
+  k prune > /dev/null 2>&1
+  eq "$(sort $BOOKDIR/teardowns 2>&1)" $'review-C1\nverify-C1' 'each ran once before its worktree went'
+  isyes "[[ ! -d $(wt verify-C1) && ! -d $(wt review-C1) ]]" 'both gone'
 }
 
 prune_dry_run_removes_nothing() {

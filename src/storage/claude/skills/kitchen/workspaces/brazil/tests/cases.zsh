@@ -216,6 +216,20 @@ prune_removes_each_package_the_verify_worktree_and_the_brazil_worktree_and_keeps
   lacks "$(git -C $WS/src/PkgA worktree list)" /worktrees/verify-K1/ 'nor the verifier'"'"'s'
 }
 
+prune_runs_the_teardown_of_each_package_of_the_verify_worktree() {
+  bzws; bzorder K1; bzwt K1
+  bzcreate verify-K1
+  local p; for p in PkgA PkgB; do
+    git -C $(bzpkg verify-K1 $p) checkout -q --detach K1
+    mkdir -p $(bzpkg verify-K1 $p)/.claude-artifacts
+    print "echo $p >> $WS/teardowns" > $(bzpkg verify-K1 $p)/.claude-artifacts/teardown.sh
+  done
+  kw $WS order set K1 status=done > /dev/null 2>&1
+  OUT=$(kw $WS prune 2>&1)
+  eq "$(sort $WS/teardowns 2>&1)" $'PkgA\nPkgB' 'each package ran its teardown once'
+  has "$OUT" 'removed verify-K1' 'then the verify worktree went'
+}
+
 workspace_bases_lists_each_package_of_the_order_with_its_base() {
   bzws; bzorder K1
   eq "$(kw $WS workspace bases K1 2>&1)" $'PkgA\tmainline\nPkgB\ttesting' 'one package<TAB>base row each'
