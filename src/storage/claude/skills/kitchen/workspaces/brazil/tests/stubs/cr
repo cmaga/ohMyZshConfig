@@ -1,0 +1,27 @@
+#!/usr/bin/env zsh
+# Stand-in for CRUX's `cr`: logs each call to $CR_LOG. With --all it plans the review as the real cr does, every
+# package under the current directory whose branch holds commits, one `<Pkg> -> <branch> (<commits>)` line each to
+# $CR_PLAN, each against its own upstream. The real cr applies --parent and --destination-branch to every package
+# alike and refuses neither with --all, so here --parent counts each package's commits from that ref and
+# --destination-branch names that branch for every package. It does not model whether CRUX accepts packages with
+# different destinations in one review. Prints a review URL.
+print -r -- "$PWD ${(q)@}" >> $CR_LOG
+if (( ${@[(Ie)--all]} )); then
+  parent= dest=
+  for (( i = 1; i <= $#; i++ )); do
+    case $argv[i] in
+      --parent) parent=$argv[i+1] ;;
+      --parent=*) parent=${argv[i]#*=} ;;
+      --destination-branch) dest=$argv[i+1] ;;
+      --destination-branch=*) dest=${argv[i]#*=} ;;
+    esac
+  done
+  for d in $PWD/*(/N); do
+    [[ -e $d/.git ]] || continue
+    up=
+    [[ -n $parent && -n $dest ]] || up=$(git -C $d rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null) || { print -u2 -- "stub cr: ${d:t} tracks no branch"; exit 1; }
+    n=$(git -C $d rev-list --count ${parent:-$up}..HEAD 2>/dev/null) || { print -u2 -- "stub cr: ${d:t} has no ${parent:-$up}"; exit 1; }
+    (( n )) && print -r -- "${d:t} -> ${dest:-${up#origin/}} ($n)" >> $CR_PLAN
+  done
+fi
+print -- https://code.amazon.com/reviews/CR-1234

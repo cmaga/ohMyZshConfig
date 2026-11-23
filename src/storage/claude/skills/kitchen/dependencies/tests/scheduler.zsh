@@ -67,6 +67,10 @@ fresh() {
   git clone -q $CASE/origin.git $CASE/proj 2>/dev/null
   PROJ=$CASE/proj
   BOOKDIR=$CASE/book/proj
+  unset KITCHEN_WORKSPACES
+  # a workspace type's tools reach outside the sandbox everywhere but in its own cases, which put its stubs in place
+  local t
+  for t in ${HERE:h:h}/workspaces/*/tests/stubs/*(N:t); do cp $HERE/stubs/forbidden $SB/bin/$t; done
   export KITCHEN_BOOK=$CASE/book OC_CALLS=$CASE/oc.calls OC_MODE=$CASE/oc.mode GH_STATE=$CASE/gh
   export TICKET_LOG=$CASE/ticket.log VAULT_LOG=$CASE/vault.log CODE_LOG=$CASE/code.log OPEN_LOG=$CASE/open.log VICTIM_FILE=$CASE/victim.pid
 }
@@ -144,6 +148,54 @@ gated() { kw $(wt A) order gated A > /dev/null }
 verdict() { kw $(wt A) order verdict A $1 notes > /dev/null }
 sample() { OUT=$(kw $(wt A) sample A 2>&1) }
 clean_change() { sampled; wtcommit A src/a.txt two; gated; verdict PASS }
+
+# a workspace type named trip that logs every call and fails, so a case can tell whether the core asked any type
+tripwire() {
+  mkdir -p $SB/trip/trip
+  print -r -- $'printf "%s\\n" "$*" >> "$TRIP_LOG"\nexit 1' > $SB/trip/trip/trip.zsh
+  export KITCHEN_WORKSPACES=$SB/trip TRIP_LOG=$CASE/trip.log
+}
+# a project that is a directory of two repos, A merging into main and B into testing, and the line that names its type
+fakews() {
+  WS=$CASE/ws BOOKDIR=$KITCHEN_BOOK/ws
+  mkdir -p $WS/src $WS/worktrees $WS/.claude/kitchen $SB/types/fake; touch $WS/.fakeworkspace
+  cp $PROJ/.claude/kitchen/house.md $WS/.claude/kitchen/house.md
+  cp -R $CASE/origin.git $CASE/originB.git
+  git clone -q $CASE/originB.git $CASE/bseed 2>/dev/null
+  git -C $CASE/bseed checkout -q -b testing; print testing > $CASE/bseed/src/b.txt
+  git -C $CASE/bseed add -A; git -C $CASE/bseed commit -q -m testing; git -C $CASE/bseed push -q origin testing 2>/dev/null
+  git clone -q $CASE/origin.git $WS/src/A 2>/dev/null; git clone -q $CASE/originB.git $WS/src/B 2>/dev/null
+  cp $HERE/stubs/ws-fake.zsh $SB/types/fake/fake.zsh; print doc > $SB/types/fake/fake.md
+  export KITCHEN_WORKSPACES=$SB/types
+  kw $WS line add $WS --workspace fake > /dev/null 2>&1
+  kw $WS line set ws co-write_after=0 guided_after=0 auto_after=0 > /dev/null 2>&1
+}
+wsorder() { kw $WS order new $1 status=ready recipe=feature mode=auto 'packages={"A":"main","B":"testing"}' "${@:2}" > /dev/null 2>&1 }
+wswt() { # KEY: the order's worktree, A on main and B on testing, each tracking its base
+  local p b
+  for p in A B; do
+    b=main; [[ $p == B ]] && b=testing
+    mkdir -p $WS/worktrees/$1/src
+    git -C $WS/src/$p worktree add -q -b $1 $WS/worktrees/$1/src/$p origin/$b 2>/dev/null
+    git -C $WS/worktrees/$1/src/$p branch -q --set-upstream-to=origin/$b $1
+  done
+}
+wspkg() { print -r -- $WS/worktrees/$1/src/$2 } # KEY REPO
+wscommit() { # KEY REPO FILE LINE
+  mkdir -p $(wspkg $1 $2)/${3:h}; print -r -- $4 >> $(wspkg $1 $2)/$3
+  git -C $(wspkg $1 $2) add -A; git -C $(wspkg $1 $2) commit -q -m "change $3"
+}
+wsquiet() { # KEY: no repo of the order's worktree has moved since 2020, by its worktree's reflog or its branch's
+  local p
+  for p in A B; do
+    touch -t 202001010000 $(git -C $(wspkg $1 $p) rev-parse --absolute-git-dir)/logs/HEAD \
+      $(git -C $(wspkg $1 $p) rev-parse --path-format=absolute --git-common-dir)/logs/refs/heads/$1
+  done
+}
+mkprobe() { # probe ARG...: prints the directory it ran in, its BASE, and its arguments; exits with the number in ./.exit
+  print -r -- $'#!/bin/sh\nprintf \'%s %s %s\\n\' "$PWD" "$BASE" "$*"\n[ -f .exit ] && exit "$(cat .exit)"\nexit 0' > $SB/bin/probe
+  chmod +x $SB/bin/probe
+}
 
 # --- claims -----------------------------------------------------------------------
 
@@ -1373,6 +1425,230 @@ an_order_transcript_conversation_prints_only_what_the_user_and_the_session_said(
   isyes "! k order transcript A --bogus > /dev/null 2>&1" 'an unknown option refuses'
 }
 
+# --- workspace types --------------------------------------------------------------
+
+an_untyped_line_never_calls_a_workspace_type() {
+  tripwire
+  mkline; mkorder A status=pr-open > /dev/null; mkwt A
+  wtcommit A src/a.txt two; wtcommit A secrets/key.txt x
+  gated; verdict PASS; sample
+  kw $(wt A) order approve A HEAD > /dev/null
+  kw $(wt A) each A -- true > /dev/null 2>&1
+  k order base A > /dev/null; k rules > /dev/null; k house > /dev/null; k status > /dev/null; k order list > /dev/null
+  k order set A status=done > /dev/null; k prune > /dev/null
+  tick
+  OUT=$(k workspace 2>&1); RC=$?
+  eq $RC 0 'workspace on a line with no type'
+  eq "$OUT" '' 'prints nothing'
+  OUT=$(k workspace enter A 2>&1); RC=$?
+  eq $RC 1 'a verb on a line with no type'
+  has "$OUT" 'names no workspace type' 'says so'
+  isyes "[[ ! -f $TRIP_LOG ]]" 'no workspace type was called by any of it'
+}
+
+line_add_without_a_type_is_what_it_was_and_a_type_is_asked_only_when_named() {
+  tripwire
+  mkdir $CASE/nowhere
+  OUT=$(kw $CASE line add $CASE/nowhere 2>&1); RC=$?
+  eq $RC 1 'exit code'
+  has "$OUT" "$CASE/nowhere is not a git checkout" 'the message it always had'
+  isyes "[[ ! -f $TRIP_LOG ]]" 'no type is asked when none is named'
+  OUT=$(kw $CASE line add $CASE/nowhere --workspace trip 2>&1); RC=$?
+  eq $RC 1 'a named type that does not hold the path'
+  has "$OUT" 'is not in a trip workspace' 'refuses'
+  eq "$([[ -f $TRIP_LOG ]] && <$TRIP_LOG)" "root $CASE/nowhere" 'and the type was asked exactly that'
+}
+
+an_untyped_orders_ids_are_the_plain_git_ones() {
+  sampled; wtcommit A src/a.txt two; gated; verdict PASS
+  local want=$(git -C $(wt A) diff -U0 origin/main...HEAD | git patch-id --stable | cut -d' ' -f1)
+  eq "$(ord A gated)" $want 'gated is the lone repo patch id'
+  eq "$(ord A verdict_patch)" $want 'so is the verdict patch'
+  eq "$(ord A gated_head)" "$(git -C $(wt A) rev-parse HEAD)" 'gated_head is a bare sha'
+  eq "$(ord A verdict_head)" "$(git -C $(wt A) rev-parse HEAD)" 'verdict_head is a bare sha'
+  eq "$(ord A gated_base)" "$(git -C $(wt A) merge-base HEAD origin/main)" 'gated_base is a bare sha'
+  kw $(wt A) order approve A $(git -C $(wt A) rev-parse HEAD) > /dev/null
+  eq "$(ord A approved)" $want 'approved by its commit is the same id'
+}
+
+the_core_names_no_installed_workspace_type() {
+  local kitchen=${HERE:h:h} t
+  for t in $kitchen/workspaces/*(N/:t); do
+    eq "$(grep -rliw $t $kitchen --exclude-dir=workspaces --exclude-dir=evals --exclude-dir=__pycache__)" '' "files outside workspaces/ naming $t"
+  done
+}
+
+a_typed_line_registers_by_name_and_claims_every_directory_under_its_project() {
+  fakews
+  eq "$(jq -r .workspace $BOOKDIR/line.json 2>&1)" fake 'the line names its type'
+  eq "$(kw $WS/src/A line add . --workspace fake 2>&1)" ws 'naming the type from inside a repo finds the same line'
+  wsorder A; wswt A
+  eq "$(kw $WS order list 2>&1 | cut -f2)" A 'the project root, which is no git checkout, belongs to the line'
+  eq "$(kw $WS/worktrees/A/src/B order list 2>&1 | cut -f2)" A 'so does a worktree of a repo under it'
+}
+
+workspace_prints_the_type_doc_and_hands_any_verb_to_the_type_with_the_order() {
+  fakews; wsorder A
+  eq "$(kw $WS workspace 2>&1)" $SB/types/fake/fake.md 'the type doc'
+  eq "$(kw $WS workspace echo A x 'y z' 2>&1)" "[$WS][$BOOKDIR/orders/A.json][x][y z]" 'the verb, the project, the order file, then the rest, each its own argument'
+}
+
+order_base_refuses_on_a_typed_line() {
+  fakews; wsorder A
+  OUT=$(kw $WS order base A 2>&1); RC=$?
+  eq $RC 1 'there is no single base'
+  has "$OUT" 'base per package' 'and says why'
+}
+
+a_typed_orders_approval_takes_head_and_refuses_a_commit_of_one_repo() {
+  fakews; wsorder A review=true; wswt A
+  wscommit A A src/a.txt two; wscommit A B src/b.txt two
+  kw $WS order gated A > /dev/null 2>&1; kw $WS order verdict A PASS notes > /dev/null 2>&1
+  eq "$(kw $WS sample A 2>&1)" review 'the change waits for the user'
+  OUT=$(kw $WS order approve A $(git -C $(wspkg A A) rev-parse HEAD) 2>&1); RC=$?
+  eq $RC 1 'a commit is one repo'"'"'s head, so it is refused'
+  has "$OUT" HEAD 'with a message saying to approve HEAD'
+  eq "$(ord A approved)" '' 'and nothing is recorded'
+  kw $WS order approve A HEAD > /dev/null 2>&1
+  eq "$(kw $WS sample A 2>&1)" no 'HEAD approves the change as every repo holds it'
+}
+
+a_line_is_refused_inside_another_lines_project_and_over_one() {
+  fakews
+  mkdir -p $CASE/Qteam/src $CASE/Qnew/src; touch $CASE/Qteam/.fakeworkspace $CASE/Qnew/.fakeworkspace
+  git clone -q $CASE/origin.git $CASE/Qteam/src/Pkg 2>/dev/null; git clone -q $CASE/origin.git $CASE/Qnew/src/Qlone 2>/dev/null
+  kw $CASE/Qteam line add $CASE/Qteam --workspace fake > /dev/null 2>&1
+  local inner=$CASE/Qteam/src/Pkg
+  OUT=$(kw $inner line add $inner 2>&1); RC=$?
+  eq $RC 1 'a line with no type inside a typed line'"'"'s project'
+  has "${OUT//$inner}" Qteam 'names the typed line'
+  kw $CASE/Qnew/src/Qlone line add $CASE/Qnew/src/Qlone > /dev/null 2>&1
+  OUT=$(kw $CASE/Qnew line add $CASE/Qnew --workspace fake 2>&1); RC=$?
+  eq $RC 1 'a typed line over another line'"'"'s project'
+  has "$OUT" Qlone 'names the line inside it'
+  eq "$(ls $KITCHEN_BOOK)" $'Qlone\nQteam\nws' 'neither refused line is registered'
+}
+
+ticket_provider_refuses_a_repo_with_no_config_as_well_when_home_is_a_symlink() {
+  local real=$CASE/realhome link=$CASE/homelink tz=${HERE:h:h:h}/ticket-provider/dependencies/scripts/ticket.zsh
+  mkdir -p $real/.claude/ticket-provider $real/repo
+  print -r -- '{"provider":"jira"}' > $real/.claude/ticket-provider/config.json
+  ln -s $real $link; git init -q $real/repo
+  ( cd $real/repo && HOME=$real zsh $tz provider ) > /dev/null 2>&1; RC=$?
+  eq $RC 1 'the user'"'"'s own config is no project'"'"'s'
+  OUT=$( cd $link/repo && HOME=$link zsh $tz provider 2>&1 ); RC=$?
+  eq $RC 1 'nor when HOME names it through a symlink'
+  lacks "$OUT" jira 'whose provider is not read'
+}
+
+each_replaces_only_a_whole_base_variable_with_the_base_on_either_kind_of_line() {
+  mkprobe; sampled
+  local -a args=('$BASEDIR' '$BASE_REF' '${BASE}x' '$BASE' '${BASE}' 'origin/$BASE..HEAD')
+  OUT=$(kw $(wt A) each A -- probe "${args[@]}" 2>&1)
+  eq "$OUT" "$(wt A) main \$BASEDIR \$BASE_REF mainx main main origin/main..HEAD" 'a line with no type'
+  fakews; wsorder W; wswt W
+  OUT=$(kw $WS each W -- probe "${args[@]}" 2>&1)
+  eq "$OUT" "== A"$'\n'"$(wspkg W A) main \$BASEDIR \$BASE_REF mainx main main origin/main..HEAD"$'\n'"== B"$'\n'"$(wspkg W B) testing \$BASEDIR \$BASE_REF testingx testing testing origin/testing..HEAD" 'a typed line'
+}
+
+the_mutation_sweep_takes_the_rules_kitchen_rules_names_over_the_base_branchs_own_copy() {
+  mkwt A; wtcommit A src/a.js 'export const f = (a, b) => a + b;'
+  print -r -- $'# Team rules\n\n- **Mutation:** stryker `npx stryker run -c team.conf.json`\n\n## Always review\n\n## Review when\n\n## Docs' > $CASE/team.md
+  local sweep=${KITCHEN:h}/mutation-sweep.py
+  OUT=$( cd $(wt A) && KITCHEN_RULES=$CASE/team.md python3 -I $sweep --list --test-cmd true origin/main 2>&1 )
+  has "$OUT" 'src/a.js: npx stryker run -c team.conf.json' 'the base branch'"'"'s rules name no Stryker, and the ones KITCHEN_RULES names do'
+  lacks "$OUT" 'not swept: src/a.js' 'so the file is swept'
+  OUT=$( unset KITCHEN_RULES; cd $(wt A) && python3 -I $sweep --list --test-cmd true origin/main 2>&1 )
+  has "$OUT" 'not swept: src/a.js' 'with KITCHEN_RULES unset the base branch'"'"'s copy holds'
+}
+
+a_typed_orders_gate_protocol_runs_over_every_repo_against_its_own_base() {
+  fakews; wsorder A; wswt A
+  wscommit A A src/a.txt two; wscommit A B src/b.txt two
+  kw $WS order gated A > /dev/null 2>&1
+  eq "$(ord A gated_head)" "A: $(git -C $(wspkg A A) rev-parse HEAD)"$'\n'"B: $(git -C $(wspkg A B) rev-parse HEAD)" 'gated_head: a row per repo'
+  eq "$(kw $WS sample A 2>&1)" verify 'no verdict yet, asked from the project root'
+  eq "$(kw $(wspkg A B)/src sample A 2>&1)" verify 'the same from inside a repo'
+  kw $WS order verdict A PASS notes > /dev/null 2>&1
+  eq "$(kw $WS sample A 2>&1)" no 'a verdict covers the change'
+  wscommit A B src/b.txt three
+  eq "$(kw $WS sample A 2>&1)" regate 'a commit in one repo invalidates the gate'
+  kw $WS order gated A > /dev/null 2>&1
+  git clone -q $CASE/originB.git $CASE/other 2>/dev/null
+  git -C $CASE/other checkout -q testing; print more >> $CASE/other/src/b.txt
+  git -C $CASE/other commit -qam move; git -C $CASE/other push -q origin testing 2>/dev/null
+  eq "$(kw $WS sample A 2>&1)" rebase "B's base moved under a file B changed"
+}
+
+a_rule_path_in_a_repo_waits_for_the_user_unless_the_station_names_it() {
+  fakews; wsorder A 'station=["B/secrets/"]'; wswt A
+  wscommit A B secrets/key.txt x; wscommit A A src/a.txt two
+  kw $WS order gated A > /dev/null 2>&1; kw $WS order verdict A PASS notes > /dev/null 2>&1
+  eq "$(kw $WS sample A 2>&1)" no 'the station names it'
+  kw $WS order set A 'station=["A/"]' > /dev/null 2>&1
+  eq "$(kw $WS sample A 2>&1)" review 'outside the station it waits'
+  has "$(ord A review_why)" 'B: project rule: secrets/key.txt' 'the reason names the repo'
+}
+
+prune_lands_each_repo_of_a_closed_order_then_its_worktree_and_keeps_a_dirty_repo() {
+  fakews; wsorder A; wsorder D; wswt A; wswt D
+  print x > $(wspkg D B)/loose.txt
+  kw $WS order set A status=done > /dev/null 2>&1; kw $WS order set D status=done > /dev/null 2>&1
+  OUT=$(kw $WS prune --dry-run 2>&1)
+  has "$OUT" 'would remove A (A)' 'a dry run says what it would do'
+  isyes "[[ -d $(wspkg A A) ]]" 'and does not'
+  OUT=$(kw $WS prune 2>&1)
+  has "$OUT" 'removed A (A)' 'repo A'; has "$OUT" 'removed B (A)' 'repo B'
+  has "$OUT" 'kept B: uncommitted changes' 'a dirty repo is kept'
+  isyes "[[ ! -e $WS/worktrees/A && -d $(wspkg D B) ]]" 'the clean order is gone and the dirty repo stays'
+  eq "$(git -C $WS/src/A branch --list A)" '' 'its branch is gone'
+}
+
+a_commit_in_any_repo_is_progress_and_none_in_any_is_a_stall() {
+  fakews; mode hang; kw $WS line set ws 'stall_minutes={"cook":1}' > /dev/null 2>&1
+  wsorder A; wswt A
+  tick; wait_calls 1
+  local pid=$(ord A pid)
+  jqedit A '.started -= 300 | .touched -= 300'
+  wsquiet A; wscommit A A src/a.txt work
+  tick
+  lacks "$OUT" 'sent' 'a commit in the first repo is progress'
+  wsquiet A; wscommit A B src/b.txt work
+  tick
+  lacks "$OUT" 'sent' 'so is a commit in the second'
+  isyes "alive $pid" 'session still running'
+  wsquiet A
+  tick
+  has "$OUT" 'no progress in 1 minutes; sent TERM' 'a commit in neither is a stall'
+}
+
+each_on_an_untyped_line_runs_once_from_the_repo_top_and_leaves_output_and_exit_alone() {
+  mkprobe; sampled
+  print 3 > $(wt A)/.exit
+  OUT=$(kw $(wt A)/src each A -- probe 'origin/$BASE' 2>&1); RC=$?
+  eq "$OUT" "$(wt A) main origin/main" 'one run from the top of the repo with the order base as BASE, and nothing added'
+  eq $RC 3 'the exit code is the command'"'"'s'
+}
+
+each_on_a_typed_line_runs_once_per_repo_with_its_base_heads_each_output_and_exits_with_the_worst_code() {
+  mkprobe; fakews; wsorder A; wswt A
+  print 3 > $(wspkg A A)/.exit; print 1 > $(wspkg A B)/.exit
+  OUT=$(kw $WS each A -- probe 'origin/$BASE' 2>&1); RC=$?
+  eq "$OUT" "== A"$'\n'"$(wspkg A A) main origin/main"$'\n'"== B"$'\n'"$(wspkg A B) testing origin/testing" 'a headed run from the top of each repo with its own BASE'
+  eq $RC 3 'the worst code when the first repo fails worse'
+  print 1 > $(wspkg A A)/.exit; print 3 > $(wspkg A B)/.exit
+  kw $WS each A -- probe x > /dev/null 2>&1; RC=$?
+  eq $RC 3 'the worst code when the last repo fails worse'
+}
+
+each_changed_skips_a_repo_with_no_commit_past_its_own_base() {
+  mkprobe; fakews; wsorder A; wswt A
+  wscommit A A src/a.txt two
+  OUT=$(kw $WS each A --changed -- probe x 2>&1); RC=$?
+  eq "$OUT" "== A"$'\n'"$(wspkg A A) main x" 'B sits at its base testing, which main lacks, so only A runs'
+  eq $RC 0 'exit code'
+}
+
 # --- prune, dry run ---------------------------------------------------------------
 
 prune_removes_the_worktree_of_a_closed_order_no_session_holds() {
@@ -1439,12 +1715,14 @@ tick_dry_run_prints_the_pass_and_changes_nothing() {
 }
 
 no_tool_outside_the_sandbox_was_called() {
-  eq "$([[ -f $FORBIDDEN_LOG ]] && <$FORBIDDEN_LOG)" '' 'calls to claude, jira, bb or curl'
+  eq "$([[ -f $FORBIDDEN_LOG ]] && <$FORBIDDEN_LOG)" '' 'calls to claude, jira, bb, curl, or a workspace type'"'"'s tool outside its own cases'
 }
 
 # --- runner -----------------------------------------------------------------------
 
 CASES=( ${(f)"$(sed -n '/^# --- claims/,/^# --- runner/s/^\([a-z_0-9]*\)() {.*/\1/p' $0)"} )
+# a workspace type's own cases go before the last case, which checks that the whole run reached no tool outside the sandbox
+for x in ${HERE:h:h}/workspaces/*/tests/cases.zsh(N); do source $x; CASES[-1,-2]=( ${(f)"$(sed -n '/^# --- cases/,$s/^\([a-z_0-9]*\)() {.*/\1/p' $x)"} ); done
 (( $# )) && CASES=( "$@" )
 
 run_case() {

@@ -1,0 +1,83 @@
+#!/usr/bin/env zsh
+# Stand-in for `brazil worktree`, shaped by the probes of 2026-11-19 and 2026-11-20 against the real tool. A package
+# not yet in the workspace is checked out from $BRAZIL_REMOTES/<Pkg>.git. Only `worktree` is stubbed, and the
+# workspace's own packageInfo is never rewritten.
+[[ ${1:-} == worktree ]] || { print -u2 -- "stub brazil: only worktree is stubbed: $*"; exit 85; }
+shift; verb=${1:-}; (( $# )) && shift
+ws= name= vs= force=; pkgs=()
+while (( $# )); do
+  case $1 in
+    --workspace) ws=${2:A}; shift 2 ;;
+    --name|-n) name=$2; shift 2 ;;
+    --versionSet|-vs) vs=$2; shift 2 ;;
+    --package|-p) pkgs+=($2); shift 2 ;;
+    --force|-f) force=1; shift ;;
+    *) print -u2 -- "stub brazil: unknown option $1"; exit 85 ;;
+  esac
+done
+if [[ -z $ws ]]; then ws=$PWD; while [[ $ws != / && ! -f $ws/packageInfo ]]; do ws=${ws:h}; done; fi
+[[ -f $ws/packageInfo ]] || { print -u2 -- "stub brazil: not in a workspace"; exit 86; }
+wt=$ws/worktrees/$name
+
+pinned() { sed -n 's/^ *versionSet = "\(.*\)";/\1/p' $1/packageInfo }
+
+trap '[[ -n ${held:-} ]] && rmdir $ws/.stub-brazil-busy 2>/dev/null' EXIT
+busy() { # two commands changing one workspace's packages at once are not known to be safe; refuse the second, so a case sees whether they were serialized
+  mkdir $ws/.stub-brazil-busy 2>/dev/null || { print -u2 -- "stub brazil: another brazil command is changing $ws"; exit 86; }
+  held=1
+  sleep ${BRAZIL_STUB_HOLD:-0}
+}
+
+info() { # the worktree's packageInfo as brazil writes it: marked a worktree, pinned to its version set
+  local p; local -a rows=()
+  for p in $wt/src/*(/N:t); do rows+=("    $p-1.0 = \".\";"); done
+  print -r -- $'base = {\n    worktree = "true";\n    workspace = "stub_'$name$'";\n    versionSet = "'$vs$'";\n};\npackages = {\n'${(F)rows}$'\n};' > $wt/packageInfo
+}
+
+addpkg() { # PACKAGE: the worktree's branch is named after it, starts at the parent checkout's HEAD, and tracks the parent's upstream
+  [[ -d $ws/src/$1 ]] || git clone -q $BRAZIL_REMOTES/$1.git $ws/src/$1 2>/dev/null || { print -u2 -- "stub brazil: no package $1"; exit 86; }
+  local up=$(git -C $ws/src/$1 rev-parse --abbrev-ref --symbolic-full-name '@{u}')
+  git -C $ws/src/$1 worktree add -q -b $name $wt/src/$1 2>/dev/null || { print -u2 -- "stub brazil: cannot add $1 to worktree $name"; exit 86; }
+  git -C $wt/src/$1 branch -q --set-upstream-to=$up $name
+  print -- "Added package $1 to worktree $name"
+}
+
+case $verb in
+  create)
+    [[ -n $name && -n $vs ]] || { print -u2 -- "stub brazil: create needs --name and --versionSet"; exit 85; }
+    [[ -e $wt ]] && { print -u2 -- "Worktree '$name' already exists"; exit 86; }
+    busy
+    mkdir -p $wt/src
+    print -- "Created worktree $name at $wt"
+    print -- "Set worktree $name to version set $vs"
+    for p in $pkgs; do addpkg $p; done
+    info ;;
+  use)
+    [[ -d $wt ]] || { print -u2 -- "Worktree '$name' not found"; exit 86; }
+    busy
+    [[ -n $vs ]] || vs=$(pinned $wt)
+    for p in $pkgs; do [[ -d $wt/src/$p ]] || addpkg $p; done
+    info ;;
+  delete)
+    [[ -d $wt ]] || { print -u2 -- "Worktree '$name' not found"; exit 86; }
+    busy
+    for d in $wt/src/*(/N); do
+      [[ -z $force && ( -n $(git -C $d status --porcelain 2>/dev/null) || -n $(git -C $d log --oneline HEAD --not --remotes 2>/dev/null) ) ]] || continue
+      print -u2 -- "Failed to delete worktree: Worktree '$name' has packages with uncommitted changes or unpushed commits: ${d:t}. Use --force to delete it."
+      exit 86
+    done
+    for d in $wt/src/*(/N); do
+      git -C $ws/src/${d:t} worktree remove --force $d 2>/dev/null
+      git -C $ws/src/${d:t} branch -D $name > /dev/null 2>&1
+    done
+    rm -rf ${wt:?}
+    print -- "Deleted worktree $name" ;;
+  list)
+    print -- '| Name | Path | Version Set |'; print -- '|------|------|-------------|'
+    for d in $ws/worktrees/*(/N); do print -r -- "| ${d:t} | $d | $(pinned $d) |"; done ;;
+  describe)
+    [[ -d $wt ]] || { print -u2 -- "Worktree '$name' not found"; exit 86; }
+    print -r -- "Worktree:    $name"$'\n'"Path:        $wt"$'\n'"Version Set: $(pinned $wt)"$'\n'"Branch:      $name"$'\n'"Packages:"
+    for d in $wt/src/*(/N); do print -r -- "  - ${d:t}  $(git -C $d branch --show-current)@$(git -C $d rev-parse --short HEAD)"; done ;;
+  *) print -u2 -- "stub brazil: no worktree $verb"; exit 85 ;;
+esac
