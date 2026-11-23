@@ -230,6 +230,13 @@ prune_runs_the_teardown_of_each_package_of_the_verify_worktree() {
   has "$OUT" 'removed verify-K1' 'then the verify worktree went'
 }
 
+workspace_enter_gives_each_package_its_vault_and_still_prints_only_the_path() {
+  bzws; bzorder K1
+  OUT=$(kw $WS workspace enter K1 2>/dev/null)
+  eq "$OUT" $WS/worktrees/K1 'stdout is the worktree path alone'
+  eq "$(sort $VAULT_LOG 2>&1)" "sync $(bzpkg K1 PkgA)"$'\n'"sync $(bzpkg K1 PkgB)" 'the vault is synced once in each package'
+}
+
 workspace_bases_lists_each_package_of_the_order_with_its_base() {
   bzws; bzorder K1
   eq "$(kw $WS workspace bases K1 2>&1)" $'PkgA\tmainline\nPkgB\ttesting' 'one package<TAB>base row each'

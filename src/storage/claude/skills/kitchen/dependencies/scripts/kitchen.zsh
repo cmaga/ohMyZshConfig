@@ -571,7 +571,21 @@ workspace_cmd() { # [VERB KEY [ARG...]]: the path of the line's workspace type d
   local t=$(ws_type $dir)
   [[ -n $t ]] || { (( $# )) && die "${dir:t} names no workspace type"; return 0; }
   (( $# )) || { ws_file $t md; return; }
-  ws_run $dir $1 $f "${@:3}"
+  [[ $1 == enter ]] || { ws_run $dir $1 $f "${@:3}"; return; }
+  local wt; wt=$(ws_run $dir enter $f "${@:3}") || exit 1
+  print -r -- $wt
+  # a session on a workspace line enters no worktree, so no hook gives a package its vault
+  vault_sync_ws $dir $f $wt
+}
+
+vault_sync_ws() { # LINE-DIR ORDER-FILE WORKTREE: sync each repo's vault into the worktree, its vault: lines on stderr
+  [[ -f $VAULT_GIT ]] || return 0
+  local row label rdir base
+  for row in ${(f)"$(ws_run $1 repos $2 $3 2>/dev/null)"}; do
+    IFS=$'\x1f' read -r label rdir base <<< $row
+    bash $VAULT_GIT sync $rdir < /dev/null 2>&1 | grep '^vault:' >&2
+  done
+  return 0
 }
 
 each_cmd() { # KEY [--changed] -- CMD...: run CMD from the top of each repo the order works in, BASE set to that repo's base and $BASE or ${BASE} in CMD replaced by it; a line with no workspace type runs it once, its output and exit untouched; else each run is headed with its repo and the worst exit wins
