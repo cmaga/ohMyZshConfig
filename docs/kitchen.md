@@ -396,6 +396,49 @@ A new required `## Docs` section of the project rules says where the project's d
 
 ---
 
+## Redesign: the chef's table
+
+Decided in conversation and built on 2026-11-22. Where an earlier section disagrees, this one holds; [What it changes](#what-it-changes) closes the section.
+
+### Why
+
+Your design calls had no place. The three-mode redesign had you make them at intake, with the approach. On 2026-11-20 intake stopped covering the approach (commit `bf11fa9`), and the design step kept its default of no checkpoint. So the session made them alone, and you met them at PR review, after the code was built on them.
+
+- **What needed you in an order was a handful of calls, not a stage or an area.** Five ways to set your involvement were tested against 23 engine orders. One mode per order sent 14 to typing. A level per stage could not describe 5, since enforce, bespoke and investigation have no such stages. A level per area could not describe 7, since the risky call is usually the contract between two areas. A single handoff point fit, but at intake it is a guess. Named calls found by the design fit all 23.
+- **The calls were costly ones made alone.** EN-485 set the wire contract between Risk and the Arbiter. EN-523 deleted two Risk trips. On EN-534 you overturned a stored-data call at review and the work was rebuilt, with EN-542 after it.
+- **The mode rule sent nearly everything to typing.** 30 of engine's 32 code orders with a station touch a `## Critical` path, which rule 2 sent to manual. You reported on 2026-11-22 that manual's value was reading and probing the code, and that typing it was far too slow.
+- **Published work sets involvement per decision, by the cost of an error.** Parasuraman, Sheridan and Wickens (2000) set the level per function and let it vary in use. Funk and Miller (2008) give full authority over a task except one named subtask. Onnasch and others (2014, a meta-analysis of 18 experiments, read as its abstract) put the cost boundary between automation that analyses and automation that selects the action. So the session analyses and recommends, and you select on the costly calls.
+
+### How it works
+
+- **The station** is `commands/cook/stations/chefs-table.md`. Once an order's design exists and before any test or code, the session classifies each call. A call that a run, a read or the repo's precedent settles is the session's. Of the rest, five kinds are yours: stored or wire data, an interface another part uses, how it fails, what a person sees or must do, and a piece with no precedent.
+- **One message.** Your calls arrive together, each with its options and a recommendation, and a last line naming what the session settled itself, so you can take one back. You approve the list or name the calls to change.
+- **A piece with no precedent** is shown as it is written: the layout, then the types and signatures one module at a time, each read before the next. A catering deployment's skeleton goes the same way; it was drafted whole and then refined.
+- **With nobody there, an order holds**: `stage=calls`, `status=ready`, and a `calls` row at the top of `/kitchen status`. You take it and answer, and it goes back to the scheduler in its own mode.
+- **Where it is wired**: the architect station's Phase C, a line in the planning step of the bug-fix, refactor and perf recipes, and a non-negotiable in `SKILL.md`. A manual order skips it, and a catering order makes its calls in the plan.
+- **The record**: `kitchen.zsh decide <KEY> ... --chef kept|changed` logs each call you made and whether you kept the recommendation, and `kitchen.zsh calls` counts them over the last 20 orders that had one.
+
+### What it changes
+
+| Before | Now |
+|---|---|
+| The architect station proceeds with no checkpoint unless asked | Its Phase C puts your calls to you; the rest of the design still proceeds unasked |
+| An auto order never waits on you | It holds at a call that is yours, and nowhere else |
+| A product call found before the code is decided by the escalation agent, and the PR is flagged | It is yours, before the code. One a review finds once the code exists still goes to the escalation agent |
+| Mode rule 2: manual, for risk | Guided, for risk: you make the calls and the line writes the code. Manual stays for practice, a `## Sorting` line, or your say |
+| A catering deployment's skeleton is drafted, then refined with you | Written with you one part at a time |
+| The goal line is handed once "the approach is agreed at intake" | Once your calls at the chef's table are made |
+
+### Unverified
+
+- No study compares where the human gate sits for coding agents, and none tests writing a layout in parts against approving a finished draft. The second rests on your one catering deployment and two small lab studies of other tasks.
+- In engine about 19 of the 23 orders tested had at least one such call, so nearly every order there will stop at the table. A kind is too wide if you keep the recommendation in more than nine of ten of its calls over 20 orders (`kitchen.zsh calls` gives the total); cut the kind that never changes.
+- Whether it works shows in failed verdicts and in calls overturned at review, before and after. The order book holds the first. The second needs each change you ask for at review logged as a chef catch.
+- The hold for an auto order is tested only in the script's harness. No project has auto unlocked.
+- The station was run as dry trials on Sonnet, each handed a design and graded on what it did. A trial is not a session under a full recipe, and the saved eval cases have not been run against it.
+
+---
+
 ## What is built
 
 The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and hook in one area. The kitchen's own pieces:
@@ -410,6 +453,7 @@ The floor plan in the repo's `CLAUDE.md` places every skill, agent, rule, and ho
 | `commands/open/open.md`, `open/templates/house.md` | Opening a restaurant, which writes its house rules and verify skill |
 | `commands/cook/cook.md` | The sous chef: claim, read, worktree, pickup, the recipe, and the scheduler's wakes; `cook new <task>` files a ticket for work that has none |
 | `commands/cook/recipes/` | pstack's playbooks as recipes: feature, bug-fix, refactor, perf, hillclimb, investigation, runtime-forensics, trace-forensics, prototype, change-a-skill, eval, multi-phase-plan, autonomous-run, session-pickup, pause-safely, and the PR lifecycle open-a-pr, follow-a-pr (babysit), merge (shipping); plus enforce and catering (`catering/plan.md`, `spec.md`, `implementation.md`, `deployment.md`, and `wrap-up.md`; see [Redesign: catering](#redesign-catering)) |
+| `commands/cook/stations/chefs-table.md` | The chef's table: the design calls that are yours, put to you before the code, and a piece with no precedent written with you part by part |
 | `commands/cook/stations/` | pstack's skills as stations: how, why, blast-radius, architect, contract (from pstack's tdd), arena, swarm, figure-it-out, interrogate, no-comments, benchmark-checklist, unslop, technical-writing, show-me-your-work, ketchup, correct, create- and maintain-verification-skill; and `left-for-you.md` |
 | `dependencies/principles/` | pstack's 24 principles plus look-it-up, read when applied |
 | `dependencies/evals/` | Saved eval cases in `claude plugin eval` layout |
